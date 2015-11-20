@@ -1,18 +1,20 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.facebook.presto</groupId>
         <artifactId>presto-root</artifactId>
-        <version>0.127-SNAPSHOT</version>
+        <version>0.126</version>
     </parent>
 
-    <artifactId>presto-example-http</artifactId>
-    <description>Presto - Example HTTP Connector</description>
+    <groupId>bloomberg</groupId>
+    <artifactId>presto-accumulo</artifactId>
+    <description>Presto - Accumulo Connector</description>
     <packaging>presto-plugin</packaging>
 
     <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+        <air.main.basedir>${project.basedir}</air.main.basedir>
     </properties>
 
     <dependencies>
