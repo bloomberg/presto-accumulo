@@ -15,6 +15,7 @@
 
     <properties>
         <air.main.basedir>${project.basedir}</air.main.basedir>
+        <air.check.skip-checkstyle>true</air.check.skip-checkstyle>
     </properties>
 
     <dependencies>
