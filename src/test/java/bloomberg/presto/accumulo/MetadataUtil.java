@@ -56,6 +56,7 @@ public final class MetadataUtil {
 
     public static final class TestingTypeDeserializer extends
             FromStringDeserializer<Type> {
+        private static final long serialVersionUID = 6499869751749572439L;
         private final Map<String, Type> types = ImmutableMap.<String, Type> of(
                 StandardTypes.BOOLEAN, BOOLEAN, StandardTypes.BIGINT, BIGINT,
                 StandardTypes.DOUBLE, DOUBLE, StandardTypes.VARCHAR, VARCHAR);
