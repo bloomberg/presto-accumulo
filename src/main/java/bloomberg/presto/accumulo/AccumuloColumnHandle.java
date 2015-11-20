@@ -13,20 +13,18 @@
  */
 package bloomberg.presto.accumulo;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
+
+import java.util.Objects;
+
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.type.Type;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Objects;
-
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static java.util.Objects.requireNonNull;
-
-public final class AccumuloColumnHandle
-        implements ColumnHandle
-{
+public final class AccumuloColumnHandle implements ColumnHandle {
     private final String connectorId;
     private final String columnName;
     private final Type columnType;
@@ -37,8 +35,7 @@ public final class AccumuloColumnHandle
             @JsonProperty("connectorId") String connectorId,
             @JsonProperty("columnName") String columnName,
             @JsonProperty("columnType") Type columnType,
-            @JsonProperty("ordinalPosition") int ordinalPosition)
-    {
+            @JsonProperty("ordinalPosition") int ordinalPosition) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.columnName = requireNonNull(columnName, "columnName is null");
         this.columnType = requireNonNull(columnType, "columnType is null");
@@ -46,43 +43,36 @@ public final class AccumuloColumnHandle
     }
 
     @JsonProperty
-    public String getConnectorId()
-    {
+    public String getConnectorId() {
         return connectorId;
     }
 
     @JsonProperty
-    public String getColumnName()
-    {
+    public String getColumnName() {
         return columnName;
     }
 
     @JsonProperty
-    public Type getColumnType()
-    {
+    public Type getColumnType() {
         return columnType;
     }
 
     @JsonProperty
-    public int getOrdinalPosition()
-    {
+    public int getOrdinalPosition() {
         return ordinalPosition;
     }
 
-    public ColumnMetadata getColumnMetadata()
-    {
+    public ColumnMetadata getColumnMetadata() {
         return new ColumnMetadata(columnName, columnType, false);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(connectorId, columnName);
     }
 
     @Override
-    public boolean equals(Object obj)
-    {
+    public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
@@ -91,18 +81,14 @@ public final class AccumuloColumnHandle
         }
 
         AccumuloColumnHandle other = (AccumuloColumnHandle) obj;
-        return Objects.equals(this.connectorId, other.connectorId) &&
-                Objects.equals(this.columnName, other.columnName);
+        return Objects.equals(this.connectorId, other.connectorId)
+                && Objects.equals(this.columnName, other.columnName);
     }
 
     @Override
-    public String toString()
-    {
-        return toStringHelper(this)
-                .add("connectorId", connectorId)
-                .add("columnName", columnName)
-                .add("columnType", columnType)
-                .add("ordinalPosition", ordinalPosition)
-                .toString();
+    public String toString() {
+        return toStringHelper(this).add("connectorId", connectorId)
+                .add("columnName", columnName).add("columnType", columnType)
+                .add("ordinalPosition", ordinalPosition).toString();
     }
 }

@@ -13,20 +13,6 @@
  */
 package bloomberg.presto.accumulo;
 
-import com.facebook.presto.spi.RecordCursor;
-import com.facebook.presto.spi.type.Type;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
-import com.google.common.io.ByteSource;
-import com.google.common.io.CountingInputStream;
-import io.airlift.slice.Slice;
-import io.airlift.slice.Slices;
-
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
@@ -34,11 +20,24 @@ import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import io.airlift.slice.Slice;
+import io.airlift.slice.Slices;
 
-public class AccumuloRecordCursor
-        implements RecordCursor
-{
-    private static final Splitter LINE_SPLITTER = Splitter.on(",").trimResults();
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+
+import com.facebook.presto.spi.RecordCursor;
+import com.facebook.presto.spi.type.Type;
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
+import com.google.common.io.ByteSource;
+import com.google.common.io.CountingInputStream;
+
+public class AccumuloRecordCursor implements RecordCursor {
+    private static final Splitter LINE_SPLITTER = Splitter.on(",")
+            .trimResults();
 
     private final List<AccumuloColumnHandle> columnHandles;
     private final int[] fieldToColumnIndex;
@@ -48,8 +47,8 @@ public class AccumuloRecordCursor
 
     private List<String> fields;
 
-    public AccumuloRecordCursor(List<AccumuloColumnHandle> columnHandles, ByteSource byteSource)
-    {
+    public AccumuloRecordCursor(List<AccumuloColumnHandle> columnHandles,
+            ByteSource byteSource) {
         this.columnHandles = columnHandles;
 
         fieldToColumnIndex = new int[columnHandles.size()];
@@ -58,43 +57,38 @@ public class AccumuloRecordCursor
             fieldToColumnIndex[i] = columnHandle.getOrdinalPosition();
         }
 
-        try (CountingInputStream input = new CountingInputStream(byteSource.openStream())) {
+        try (CountingInputStream input = new CountingInputStream(
+                byteSource.openStream())) {
             lines = byteSource.asCharSource(UTF_8).readLines().iterator();
             totalBytes = input.getCount();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw Throwables.propagate(e);
         }
     }
 
     @Override
-    public long getTotalBytes()
-    {
+    public long getTotalBytes() {
         return totalBytes;
     }
 
     @Override
-    public long getCompletedBytes()
-    {
+    public long getCompletedBytes() {
         return totalBytes;
     }
 
     @Override
-    public long getReadTimeNanos()
-    {
+    public long getReadTimeNanos() {
         return 0;
     }
 
     @Override
-    public Type getType(int field)
-    {
+    public Type getType(int field) {
         checkArgument(field < columnHandles.size(), "Invalid field index");
         return columnHandles.get(field).getColumnType();
     }
 
     @Override
-    public boolean advanceNextPosition()
-    {
+    public boolean advanceNextPosition() {
         if (!lines.hasNext()) {
             return false;
         }
@@ -104,8 +98,7 @@ public class AccumuloRecordCursor
         return true;
     }
 
-    private String getFieldValue(int field)
-    {
+    private String getFieldValue(int field) {
         checkState(fields != null, "Cursor has not been advanced yet");
 
         int columnIndex = fieldToColumnIndex[field];
@@ -113,54 +106,48 @@ public class AccumuloRecordCursor
     }
 
     @Override
-    public boolean getBoolean(int field)
-    {
+    public boolean getBoolean(int field) {
         checkFieldType(field, BOOLEAN);
         return Boolean.parseBoolean(getFieldValue(field));
     }
 
     @Override
-    public long getLong(int field)
-    {
+    public long getLong(int field) {
         checkFieldType(field, BIGINT);
         return Long.parseLong(getFieldValue(field));
     }
 
     @Override
-    public double getDouble(int field)
-    {
+    public double getDouble(int field) {
         checkFieldType(field, DOUBLE);
         return Double.parseDouble(getFieldValue(field));
     }
 
     @Override
-    public Slice getSlice(int field)
-    {
+    public Slice getSlice(int field) {
         checkFieldType(field, VARCHAR);
         return Slices.utf8Slice(getFieldValue(field));
     }
 
     @Override
-    public Object getObject(int field)
-    {
+    public Object getObject(int field) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean isNull(int field)
-    {
+    public boolean isNull(int field) {
         checkArgument(field < columnHandles.size(), "Invalid field index");
         return Strings.isNullOrEmpty(getFieldValue(field));
     }
 
-    private void checkFieldType(int field, Type expected)
-    {
+    private void checkFieldType(int field, Type expected) {
         Type actual = getType(field);
-        checkArgument(actual.equals(expected), "Expected field %s to be type %s but is %s", field, expected, actual);
+        checkArgument(actual.equals(expected),
+                "Expected field %s to be type %s but is %s", field, expected,
+                actual);
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
     }
 }

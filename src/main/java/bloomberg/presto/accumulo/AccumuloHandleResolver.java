@@ -13,72 +13,67 @@
  */
 package bloomberg.presto.accumulo;
 
+import static java.util.Objects.requireNonNull;
+
+import javax.inject.Inject;
+
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorHandleResolver;
 import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.ConnectorTableHandle;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 
-import javax.inject.Inject;
-
-import static java.util.Objects.requireNonNull;
-
-public class AccumuloHandleResolver
-        implements ConnectorHandleResolver
-{
+public class AccumuloHandleResolver implements ConnectorHandleResolver {
     private final String connectorId;
 
     @Inject
-    public AccumuloHandleResolver(AccumuloConnectorId clientId)
-    {
-        this.connectorId = requireNonNull(clientId, "clientId is null").toString();
+    public AccumuloHandleResolver(AccumuloConnectorId clientId) {
+        this.connectorId = requireNonNull(clientId, "clientId is null")
+                .toString();
     }
 
     @Override
-    public boolean canHandle(ConnectorTableHandle tableHandle)
-    {
-        return tableHandle instanceof AccumuloTableHandle && ((AccumuloTableHandle) tableHandle).getConnectorId().equals(connectorId);
+    public boolean canHandle(ConnectorTableHandle tableHandle) {
+        return tableHandle instanceof AccumuloTableHandle
+                && ((AccumuloTableHandle) tableHandle).getConnectorId().equals(
+                        connectorId);
     }
 
     @Override
-    public boolean canHandle(ColumnHandle columnHandle)
-    {
-        return columnHandle instanceof AccumuloColumnHandle && ((AccumuloColumnHandle) columnHandle).getConnectorId().equals(connectorId);
+    public boolean canHandle(ColumnHandle columnHandle) {
+        return columnHandle instanceof AccumuloColumnHandle
+                && ((AccumuloColumnHandle) columnHandle).getConnectorId()
+                        .equals(connectorId);
     }
 
     @Override
-    public boolean canHandle(ConnectorSplit split)
-    {
-        return split instanceof AccumuloSplit && ((AccumuloSplit) split).getConnectorId().equals(connectorId);
+    public boolean canHandle(ConnectorSplit split) {
+        return split instanceof AccumuloSplit
+                && ((AccumuloSplit) split).getConnectorId().equals(connectorId);
     }
 
     @Override
-    public boolean canHandle(ConnectorTableLayoutHandle handle)
-    {
+    public boolean canHandle(ConnectorTableLayoutHandle handle) {
         return handle instanceof AccumuloTableLayoutHandle;
     }
 
     @Override
-    public Class<? extends ConnectorTableLayoutHandle> getTableLayoutHandleClass()
-    {
+    public Class<? extends ConnectorTableLayoutHandle> getTableLayoutHandleClass() {
         return AccumuloTableLayoutHandle.class;
     }
 
     @Override
-    public Class<? extends ConnectorTableHandle> getTableHandleClass()
-    {
+    public Class<? extends ConnectorTableHandle> getTableHandleClass() {
         return AccumuloTableHandle.class;
     }
 
     @Override
-    public Class<? extends ColumnHandle> getColumnHandleClass()
-    {
+    public Class<? extends ColumnHandle> getColumnHandleClass() {
         return AccumuloColumnHandle.class;
     }
 
     @Override
-    public Class<? extends ConnectorSplit> getSplitClass()
-    {
+    public Class<? extends ConnectorSplit> getSplitClass() {
         return AccumuloSplit.class;
     }
 }

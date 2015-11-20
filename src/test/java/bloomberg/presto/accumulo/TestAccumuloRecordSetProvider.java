@@ -13,43 +13,38 @@
  */
 package bloomberg.presto.accumulo;
 
-import bloomberg.presto.accumulo.AccumuloColumnHandle;
-import bloomberg.presto.accumulo.AccumuloConnectorId;
-import bloomberg.presto.accumulo.AccumuloRecordSetProvider;
-import bloomberg.presto.accumulo.AccumuloSplit;
-
-import com.facebook.presto.spi.RecordCursor;
-import com.facebook.presto.spi.RecordSet;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
-import java.net.URI;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.testing.TestingConnectorSession.SESSION;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-public class TestAccumuloRecordSetProvider
-{
+import java.net.URI;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+
+import com.facebook.presto.spi.RecordCursor;
+import com.facebook.presto.spi.RecordSet;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
+public class TestAccumuloRecordSetProvider {
     private ExampleHttpServer exampleHttpServer;
     private URI dataUri;
 
     @Test
-    public void testGetRecordSet()
-            throws Exception
-    {
-        AccumuloRecordSetProvider recordSetProvider = new AccumuloRecordSetProvider(new AccumuloConnectorId("test"));
-        RecordSet recordSet = recordSetProvider.getRecordSet(SESSION, new AccumuloSplit("test", "schema", "table", dataUri), ImmutableList.of(
-                new AccumuloColumnHandle("test", "text", VARCHAR, 0),
-                new AccumuloColumnHandle("test", "value", BIGINT, 1)));
+    public void testGetRecordSet() throws Exception {
+        AccumuloRecordSetProvider recordSetProvider = new AccumuloRecordSetProvider(
+                new AccumuloConnectorId("test"));
+        RecordSet recordSet = recordSetProvider.getRecordSet(SESSION,
+                new AccumuloSplit("test", "schema", "table", dataUri),
+                ImmutableList.of(new AccumuloColumnHandle("test", "text",
+                        VARCHAR, 0), new AccumuloColumnHandle("test", "value",
+                        BIGINT, 1)));
         assertNotNull(recordSet, "recordSet is null");
 
         RecordCursor cursor = recordSet.cursor();
@@ -59,11 +54,8 @@ public class TestAccumuloRecordSetProvider
         while (cursor.advanceNextPosition()) {
             data.put(cursor.getSlice(0).toStringUtf8(), cursor.getLong(1));
         }
-        assertEquals(data, ImmutableMap.<String, Long>builder()
-                .put("ten", 10L)
-                .put("eleven", 11L)
-                .put("twelve", 12L)
-                .build());
+        assertEquals(data, ImmutableMap.<String, Long> builder()
+                .put("ten", 10L).put("eleven", 11L).put("twelve", 12L).build());
     }
 
     //
@@ -71,17 +63,13 @@ public class TestAccumuloRecordSetProvider
     //
 
     @BeforeClass
-    public void setUp()
-            throws Exception
-    {
+    public void setUp() throws Exception {
         exampleHttpServer = new ExampleHttpServer();
         dataUri = exampleHttpServer.resolve("/example-data/numbers-2.csv");
     }
 
     @AfterClass
-    public void tearDown()
-            throws Exception
-    {
+    public void tearDown() throws Exception {
         if (exampleHttpServer != null) {
             exampleHttpServer.stop();
         }

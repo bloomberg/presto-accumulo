@@ -13,35 +13,29 @@
  */
 package bloomberg.presto.accumulo;
 
-import bloomberg.presto.accumulo.AccumuloConfig;
-
-import com.google.common.collect.ImmutableMap;
-
 import io.airlift.configuration.testing.ConfigAssertions;
-
-import org.testng.annotations.Test;
 
 import java.net.URI;
 import java.util.Map;
 
-public class TestAccumuloConfig
-{
+import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableMap;
+
+public class TestAccumuloConfig {
     @Test
-    public void testDefaults()
-    {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(AccumuloConfig.class)
-                .setMetadata(null));
+    public void testDefaults() {
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions
+                .recordDefaults(AccumuloConfig.class).setMetadata(null));
     }
 
     @Test
-    public void testExplicitPropertyMappings()
-    {
+    public void testExplicitPropertyMappings() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("metadata-uri", "file://test.json")
-                .build();
+                .put("metadata-uri", "file://test.json").build();
 
-        AccumuloConfig expected = new AccumuloConfig()
-                .setMetadata(URI.create("file://test.json"));
+        AccumuloConfig expected = new AccumuloConfig().setMetadata(URI
+                .create("file://test.json"));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

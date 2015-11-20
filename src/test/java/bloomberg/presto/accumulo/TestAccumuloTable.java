@@ -13,39 +13,34 @@
  */
 package bloomberg.presto.accumulo;
 
-import bloomberg.presto.accumulo.AccumuloColumn;
-import bloomberg.presto.accumulo.AccumuloTable;
-
-import com.facebook.presto.spi.ColumnMetadata;
-import com.google.common.collect.ImmutableList;
-
-import org.testng.annotations.Test;
-
-import java.net.URI;
-
 import static bloomberg.presto.accumulo.MetadataUtil.TABLE_CODEC;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static org.testng.Assert.assertEquals;
 
-public class TestAccumuloTable
-{
+import java.net.URI;
+
+import org.testng.annotations.Test;
+
+import com.facebook.presto.spi.ColumnMetadata;
+import com.google.common.collect.ImmutableList;
+
+public class TestAccumuloTable {
     private final AccumuloTable exampleTable = new AccumuloTable("tableName",
-            ImmutableList.of(new AccumuloColumn("a", VARCHAR), new AccumuloColumn("b", BIGINT)),
-            ImmutableList.of(URI.create("file://table-1.json"), URI.create("file://table-2.json")));
+            ImmutableList.of(new AccumuloColumn("a", VARCHAR),
+                    new AccumuloColumn("b", BIGINT)), ImmutableList.of(
+                    URI.create("file://table-1.json"),
+                    URI.create("file://table-2.json")));
 
     @Test
-    public void testColumnMetadata()
-    {
+    public void testColumnMetadata() {
         assertEquals(exampleTable.getColumnsMetadata(), ImmutableList.of(
-                new ColumnMetadata("a", VARCHAR, false),
-                new ColumnMetadata("b", BIGINT, false)));
+                new ColumnMetadata("a", VARCHAR, false), new ColumnMetadata(
+                        "b", BIGINT, false)));
     }
 
     @Test
-    public void testRoundTrip()
-            throws Exception
-    {
+    public void testRoundTrip() throws Exception {
         String json = TABLE_CODEC.toJson(exampleTable);
         AccumuloTable exampleTableCopy = TABLE_CODEC.fromJson(json);
 

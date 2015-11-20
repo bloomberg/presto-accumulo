@@ -13,32 +13,28 @@
  */
 package bloomberg.presto.accumulo;
 
+import java.util.Objects;
+
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Objects;
-
-public class AccumuloTableLayoutHandle
-    implements ConnectorTableLayoutHandle
-{
+public class AccumuloTableLayoutHandle implements ConnectorTableLayoutHandle {
     private final AccumuloTableHandle table;
 
     @JsonCreator
-    public AccumuloTableLayoutHandle(@JsonProperty("table") AccumuloTableHandle table)
-    {
+    public AccumuloTableLayoutHandle(
+            @JsonProperty("table") AccumuloTableHandle table) {
         this.table = table;
     }
 
     @JsonProperty
-    public AccumuloTableHandle getTable()
-    {
+    public AccumuloTableHandle getTable() {
         return table;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -50,14 +46,12 @@ public class AccumuloTableLayoutHandle
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(table);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return table.toString();
     }
 }

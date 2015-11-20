@@ -13,6 +13,14 @@
  */
 package bloomberg.presto.accumulo;
 
+import static bloomberg.presto.accumulo.Types.checkType;
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
+import java.util.List;
+
+import javax.inject.Inject;
+
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.ConnectorSession;
@@ -20,33 +28,26 @@ import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.RecordSet;
 import com.google.common.collect.ImmutableList;
 
-import javax.inject.Inject;
-
-import java.util.List;
-
-import static bloomberg.presto.accumulo.Types.checkType;
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
-
-public class AccumuloRecordSetProvider
-        implements ConnectorRecordSetProvider
-{
+public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
     private final String connectorId;
 
     @Inject
-    public AccumuloRecordSetProvider(AccumuloConnectorId connectorId)
-    {
-        this.connectorId = requireNonNull(connectorId, "connectorId is null").toString();
+    public AccumuloRecordSetProvider(AccumuloConnectorId connectorId) {
+        this.connectorId = requireNonNull(connectorId, "connectorId is null")
+                .toString();
     }
 
     @Override
-    public RecordSet getRecordSet(ConnectorSession session, ConnectorSplit split, List<? extends ColumnHandle> columns)
-    {
+    public RecordSet getRecordSet(ConnectorSession session,
+            ConnectorSplit split, List<? extends ColumnHandle> columns) {
         requireNonNull(split, "partitionChunk is null");
-        AccumuloSplit exampleSplit = checkType(split, AccumuloSplit.class, "split");
-        checkArgument(exampleSplit.getConnectorId().equals(connectorId), "split is not for this connector");
+        AccumuloSplit exampleSplit = checkType(split, AccumuloSplit.class,
+                "split");
+        checkArgument(exampleSplit.getConnectorId().equals(connectorId),
+                "split is not for this connector");
 
-        ImmutableList.Builder<AccumuloColumnHandle> handles = ImmutableList.builder();
+        ImmutableList.Builder<AccumuloColumnHandle> handles = ImmutableList
+                .builder();
         for (ColumnHandle handle : columns) {
             handles.add(checkType(handle, AccumuloColumnHandle.class, "handle"));
         }

@@ -13,21 +13,19 @@
  */
 package bloomberg.presto.accumulo;
 
-import com.facebook.presto.spi.Connector;
-import com.facebook.presto.spi.ConnectorHandleResolver;
-import com.facebook.presto.spi.ConnectorMetadata;
-import com.facebook.presto.spi.ConnectorRecordSetProvider;
-import com.facebook.presto.spi.ConnectorSplitManager;
+import static java.util.Objects.requireNonNull;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.log.Logger;
 
 import javax.inject.Inject;
 
-import static java.util.Objects.requireNonNull;
+import com.facebook.presto.spi.Connector;
+import com.facebook.presto.spi.ConnectorHandleResolver;
+import com.facebook.presto.spi.ConnectorMetadata;
+import com.facebook.presto.spi.ConnectorRecordSetProvider;
+import com.facebook.presto.spi.ConnectorSplitManager;
 
-public class AccumuloConnector
-        implements Connector
-{
+public class AccumuloConnector implements Connector {
     private static final Logger log = Logger.get(AccumuloConnector.class);
 
     private final LifeCycleManager lifeCycleManager;
@@ -37,51 +35,45 @@ public class AccumuloConnector
     private final AccumuloHandleResolver handleResolver;
 
     @Inject
-    public AccumuloConnector(
-            LifeCycleManager lifeCycleManager,
-            AccumuloMetadata metadata,
-            AccumuloSplitManager splitManager,
+    public AccumuloConnector(LifeCycleManager lifeCycleManager,
+            AccumuloMetadata metadata, AccumuloSplitManager splitManager,
             AccumuloRecordSetProvider recordSetProvider,
-            AccumuloHandleResolver handleResolver)
-    {
-        this.lifeCycleManager = requireNonNull(lifeCycleManager, "lifeCycleManager is null");
+            AccumuloHandleResolver handleResolver) {
+        this.lifeCycleManager = requireNonNull(lifeCycleManager,
+                "lifeCycleManager is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.splitManager = requireNonNull(splitManager, "splitManager is null");
-        this.recordSetProvider = requireNonNull(recordSetProvider, "recordSetProvider is null");
-        this.handleResolver = requireNonNull(handleResolver, "handleResolver is null");
+        this.recordSetProvider = requireNonNull(recordSetProvider,
+                "recordSetProvider is null");
+        this.handleResolver = requireNonNull(handleResolver,
+                "handleResolver is null");
     }
 
     @Override
-    public ConnectorMetadata getMetadata()
-    {
+    public ConnectorMetadata getMetadata() {
         return metadata;
     }
 
     @Override
-    public ConnectorSplitManager getSplitManager()
-    {
+    public ConnectorSplitManager getSplitManager() {
         return splitManager;
     }
 
     @Override
-    public ConnectorRecordSetProvider getRecordSetProvider()
-    {
+    public ConnectorRecordSetProvider getRecordSetProvider() {
         return recordSetProvider;
     }
 
     @Override
-    public ConnectorHandleResolver getHandleResolver()
-    {
+    public ConnectorHandleResolver getHandleResolver() {
         return handleResolver;
     }
 
     @Override
-    public final void shutdown()
-    {
+    public final void shutdown() {
         try {
             lifeCycleManager.stop();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error(e, "Error shutting down connector");
         }
     }

@@ -13,6 +13,11 @@
  */
 package bloomberg.presto.accumulo;
 
+import static java.util.Objects.requireNonNull;
+
+import java.net.MalformedURLException;
+import java.util.List;
+
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.RecordSet;
 import com.facebook.presto.spi.type.Type;
@@ -21,23 +26,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Resources;
 
-import java.net.MalformedURLException;
-import java.util.List;
-
-import static java.util.Objects.requireNonNull;
-
-public class AccumuloRecordSet
-        implements RecordSet
-{
+public class AccumuloRecordSet implements RecordSet {
     private final List<AccumuloColumnHandle> columnHandles;
     private final List<Type> columnTypes;
     private final ByteSource byteSource;
 
-    public AccumuloRecordSet(AccumuloSplit split, List<AccumuloColumnHandle> columnHandles)
-    {
+    public AccumuloRecordSet(AccumuloSplit split,
+            List<AccumuloColumnHandle> columnHandles) {
         requireNonNull(split, "split is null");
 
-        this.columnHandles = requireNonNull(columnHandles, "column handles is null");
+        this.columnHandles = requireNonNull(columnHandles,
+                "column handles is null");
         ImmutableList.Builder<Type> types = ImmutableList.builder();
         for (AccumuloColumnHandle column : columnHandles) {
             types.add(column.getColumnType());
@@ -46,21 +45,18 @@ public class AccumuloRecordSet
 
         try {
             byteSource = Resources.asByteSource(split.getUri().toURL());
-        }
-        catch (MalformedURLException e) {
+        } catch (MalformedURLException e) {
             throw Throwables.propagate(e);
         }
     }
 
     @Override
-    public List<Type> getColumnTypes()
-    {
+    public List<Type> getColumnTypes() {
         return columnTypes;
     }
 
     @Override
-    public RecordCursor cursor()
-    {
+    public RecordCursor cursor() {
         return new AccumuloRecordCursor(columnHandles, byteSource);
     }
 }

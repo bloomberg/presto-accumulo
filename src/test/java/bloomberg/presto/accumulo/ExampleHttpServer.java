@@ -13,12 +13,6 @@
  */
 package bloomberg.presto.accumulo;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Resources;
-import com.google.inject.Binder;
-import com.google.inject.Injector;
-import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.server.TheServlet;
@@ -26,68 +20,63 @@ import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.node.testing.TestingNodeModule;
 
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.util.Map;
 
-public class ExampleHttpServer
-{
+import javax.servlet.Servlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
+import com.google.inject.Binder;
+import com.google.inject.Injector;
+import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
+
+public class ExampleHttpServer {
     private final LifeCycleManager lifeCycleManager;
     private final URI baseUri;
 
-    public ExampleHttpServer()
-            throws Exception
-    {
-        Bootstrap app = new Bootstrap(
-                new TestingNodeModule(),
-                new TestingHttpServerModule(),
-                new ExampleHttpServerModule());
+    public ExampleHttpServer() throws Exception {
+        Bootstrap app = new Bootstrap(new TestingNodeModule(),
+                new TestingHttpServerModule(), new ExampleHttpServerModule());
 
-        Injector injector = app
-                .strictConfig()
-                .doNotInitializeLogging()
+        Injector injector = app.strictConfig().doNotInitializeLogging()
                 .initialize();
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         baseUri = injector.getInstance(TestingHttpServer.class).getBaseUrl();
     }
 
-    public void stop()
-            throws Exception
-    {
+    public void stop() throws Exception {
         lifeCycleManager.stop();
     }
 
-    public URI resolve(String s)
-    {
+    public URI resolve(String s) {
         return baseUri.resolve(s);
     }
 
-    private static class ExampleHttpServerModule
-            implements Module
-    {
+    private static class ExampleHttpServerModule implements Module {
         @Override
-        public void configure(Binder binder)
-        {
-            binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.<String, String>of());
-            binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(new ExampleHttpServlet());
+        public void configure(Binder binder) {
+            binder.bind(new TypeLiteral<Map<String, String>>() {
+            }).annotatedWith(TheServlet.class)
+                    .toInstance(ImmutableMap.<String, String> of());
+            binder.bind(Servlet.class).annotatedWith(TheServlet.class)
+                    .toInstance(new ExampleHttpServlet());
         }
     }
 
-    private static class ExampleHttpServlet
-            extends HttpServlet
-    {
+    private static class ExampleHttpServlet extends HttpServlet {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response)
-                throws IOException
-        {
-            URL dataUrl = Resources.getResource(TestAccumuloClient.class, request.getPathInfo());
+        protected void doGet(HttpServletRequest request,
+                HttpServletResponse response) throws IOException {
+            URL dataUrl = Resources.getResource(TestAccumuloClient.class,
+                    request.getPathInfo());
             Resources.asByteSource(dataUrl).copyTo(response.getOutputStream());
         }
     }

@@ -13,22 +13,19 @@
  */
 package bloomberg.presto.accumulo;
 
+import static io.airlift.json.JsonCodec.jsonCodec;
+import static org.testng.Assert.assertEquals;
 import io.airlift.json.JsonCodec;
 import io.airlift.testing.EquivalenceTester;
 
 import org.testng.annotations.Test;
 
-import bloomberg.presto.accumulo.AccumuloTableHandle;
-import static io.airlift.json.JsonCodec.jsonCodec;
-import static org.testng.Assert.assertEquals;
-
-public class TestAccumuloTableHandle
-{
-    private final AccumuloTableHandle tableHandle = new AccumuloTableHandle("connectorId", "schemaName", "tableName");
+public class TestAccumuloTableHandle {
+    private final AccumuloTableHandle tableHandle = new AccumuloTableHandle(
+            "connectorId", "schemaName", "tableName");
 
     @Test
-    public void testJsonRoundTrip()
-    {
+    public void testJsonRoundTrip() {
         JsonCodec<AccumuloTableHandle> codec = jsonCodec(AccumuloTableHandle.class);
         String json = codec.toJson(tableHandle);
         AccumuloTableHandle copy = codec.fromJson(json);
@@ -36,13 +33,21 @@ public class TestAccumuloTableHandle
     }
 
     @Test
-    public void testEquivalence()
-    {
-        EquivalenceTester.equivalenceTester()
-                .addEquivalentGroup(new AccumuloTableHandle("connector", "schema", "table"), new AccumuloTableHandle("connector", "schema", "table"))
-                .addEquivalentGroup(new AccumuloTableHandle("connectorX", "schema", "table"), new AccumuloTableHandle("connectorX", "schema", "table"))
-                .addEquivalentGroup(new AccumuloTableHandle("connector", "schemaX", "table"), new AccumuloTableHandle("connector", "schemaX", "table"))
-                .addEquivalentGroup(new AccumuloTableHandle("connector", "schema", "tableX"), new AccumuloTableHandle("connector", "schema", "tableX"))
+    public void testEquivalence() {
+        EquivalenceTester
+                .equivalenceTester()
+                .addEquivalentGroup(
+                        new AccumuloTableHandle("connector", "schema", "table"),
+                        new AccumuloTableHandle("connector", "schema", "table"))
+                .addEquivalentGroup(
+                        new AccumuloTableHandle("connectorX", "schema", "table"),
+                        new AccumuloTableHandle("connectorX", "schema", "table"))
+                .addEquivalentGroup(
+                        new AccumuloTableHandle("connector", "schemaX", "table"),
+                        new AccumuloTableHandle("connector", "schemaX", "table"))
+                .addEquivalentGroup(
+                        new AccumuloTableHandle("connector", "schema", "tableX"),
+                        new AccumuloTableHandle("connector", "schema", "tableX"))
                 .check();
     }
 }

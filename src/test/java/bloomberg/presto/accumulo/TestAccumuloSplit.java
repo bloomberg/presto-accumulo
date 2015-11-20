@@ -13,51 +13,56 @@
  */
 package bloomberg.presto.accumulo;
 
-import bloomberg.presto.accumulo.AccumuloSplit;
+import static io.airlift.json.JsonCodec.jsonCodec;
+import static org.testng.Assert.assertEquals;
+import io.airlift.json.JsonCodec;
+
+import java.net.URI;
+
+import org.testng.annotations.Test;
 
 import com.facebook.presto.spi.HostAddress;
 import com.google.common.collect.ImmutableList;
 
-import io.airlift.json.JsonCodec;
-
-import org.testng.annotations.Test;
-
-import java.net.URI;
-
-import static io.airlift.json.JsonCodec.jsonCodec;
-import static org.testng.Assert.assertEquals;
-
-public class TestAccumuloSplit
-{
-    private final AccumuloSplit split = new AccumuloSplit("connectorId", "schemaName", "tableName", URI.create("http://127.0.0.1/test.file"));
+public class TestAccumuloSplit {
+    private final AccumuloSplit split = new AccumuloSplit("connectorId",
+            "schemaName", "tableName", URI.create("http://127.0.0.1/test.file"));
 
     @Test
-    public void testAddresses()
-    {
+    public void testAddresses() {
         // http split with default port
-        AccumuloSplit httpSplit = new AccumuloSplit("connectorId", "schemaName", "tableName", URI.create("http://example.com/example"));
-        assertEquals(httpSplit.getAddresses(), ImmutableList.of(HostAddress.fromString("example.com")));
+        AccumuloSplit httpSplit = new AccumuloSplit("connectorId",
+                "schemaName", "tableName",
+                URI.create("http://example.com/example"));
+        assertEquals(httpSplit.getAddresses(),
+                ImmutableList.of(HostAddress.fromString("example.com")));
         assertEquals(httpSplit.isRemotelyAccessible(), true);
 
         // http split with custom port
-        httpSplit = new AccumuloSplit("connectorId", "schemaName", "tableName", URI.create("http://example.com:8080/example"));
-        assertEquals(httpSplit.getAddresses(), ImmutableList.of(HostAddress.fromParts("example.com", 8080)));
+        httpSplit = new AccumuloSplit("connectorId", "schemaName", "tableName",
+                URI.create("http://example.com:8080/example"));
+        assertEquals(httpSplit.getAddresses(),
+                ImmutableList.of(HostAddress.fromParts("example.com", 8080)));
         assertEquals(httpSplit.isRemotelyAccessible(), true);
 
         // http split with default port
-        AccumuloSplit httpsSplit = new AccumuloSplit("connectorId", "schemaName", "tableName", URI.create("https://example.com/example"));
-        assertEquals(httpsSplit.getAddresses(), ImmutableList.of(HostAddress.fromString("example.com")));
+        AccumuloSplit httpsSplit = new AccumuloSplit("connectorId",
+                "schemaName", "tableName",
+                URI.create("https://example.com/example"));
+        assertEquals(httpsSplit.getAddresses(),
+                ImmutableList.of(HostAddress.fromString("example.com")));
         assertEquals(httpsSplit.isRemotelyAccessible(), true);
 
         // http split with custom port
-        httpsSplit = new AccumuloSplit("connectorId", "schemaName", "tableName", URI.create("https://example.com:8443/example"));
-        assertEquals(httpsSplit.getAddresses(), ImmutableList.of(HostAddress.fromParts("example.com", 8443)));
+        httpsSplit = new AccumuloSplit("connectorId", "schemaName",
+                "tableName", URI.create("https://example.com:8443/example"));
+        assertEquals(httpsSplit.getAddresses(),
+                ImmutableList.of(HostAddress.fromParts("example.com", 8443)));
         assertEquals(httpsSplit.isRemotelyAccessible(), true);
     }
 
     @Test
-    public void testJsonRoundTrip()
-    {
+    public void testJsonRoundTrip() {
         JsonCodec<AccumuloSplit> codec = jsonCodec(AccumuloSplit.class);
         String json = codec.toJson(split);
         AccumuloSplit copy = codec.fromJson(json);
@@ -66,7 +71,8 @@ public class TestAccumuloSplit
         assertEquals(copy.getTableName(), split.getTableName());
         assertEquals(copy.getUri(), split.getUri());
 
-        assertEquals(copy.getAddresses(), ImmutableList.of(HostAddress.fromString("127.0.0.1")));
+        assertEquals(copy.getAddresses(),
+                ImmutableList.of(HostAddress.fromString("127.0.0.1")));
         assertEquals(copy.isRemotelyAccessible(), true);
     }
 }
