@@ -17,8 +17,6 @@ import static io.airlift.json.JsonCodec.jsonCodec;
 import static org.testng.Assert.assertEquals;
 import io.airlift.json.JsonCodec;
 
-import java.net.URI;
-
 import org.testng.annotations.Test;
 
 import com.facebook.presto.spi.HostAddress;
@@ -26,39 +24,16 @@ import com.google.common.collect.ImmutableList;
 
 public class TestAccumuloSplit {
     private final AccumuloSplit split = new AccumuloSplit("connectorId",
-            "schemaName", "tableName", URI.create("http://127.0.0.1/test.file"));
+            "schemaName", "tableName");
 
     @Test
     public void testAddresses() {
-        // http split with default port
+        // split with default port
         AccumuloSplit httpSplit = new AccumuloSplit("connectorId",
-                "schemaName", "tableName",
-                URI.create("http://example.com/example"));
+                "schemaName", "tableName");
         assertEquals(httpSplit.getAddresses(),
-                ImmutableList.of(HostAddress.fromString("example.com")));
+                ImmutableList.of(HostAddress.fromString("127.0.0.1")));
         assertEquals(httpSplit.isRemotelyAccessible(), true);
-
-        // http split with custom port
-        httpSplit = new AccumuloSplit("connectorId", "schemaName", "tableName",
-                URI.create("http://example.com:8080/example"));
-        assertEquals(httpSplit.getAddresses(),
-                ImmutableList.of(HostAddress.fromParts("example.com", 8080)));
-        assertEquals(httpSplit.isRemotelyAccessible(), true);
-
-        // http split with default port
-        AccumuloSplit httpsSplit = new AccumuloSplit("connectorId",
-                "schemaName", "tableName",
-                URI.create("https://example.com/example"));
-        assertEquals(httpsSplit.getAddresses(),
-                ImmutableList.of(HostAddress.fromString("example.com")));
-        assertEquals(httpsSplit.isRemotelyAccessible(), true);
-
-        // http split with custom port
-        httpsSplit = new AccumuloSplit("connectorId", "schemaName",
-                "tableName", URI.create("https://example.com:8443/example"));
-        assertEquals(httpsSplit.getAddresses(),
-                ImmutableList.of(HostAddress.fromParts("example.com", 8443)));
-        assertEquals(httpsSplit.isRemotelyAccessible(), true);
     }
 
     @Test
@@ -69,7 +44,6 @@ public class TestAccumuloSplit {
         assertEquals(copy.getConnectorId(), split.getConnectorId());
         assertEquals(copy.getSchemaName(), split.getSchemaName());
         assertEquals(copy.getTableName(), split.getTableName());
-        assertEquals(copy.getUri(), split.getUri());
 
         assertEquals(copy.getAddresses(),
                 ImmutableList.of(HostAddress.fromString("127.0.0.1")));

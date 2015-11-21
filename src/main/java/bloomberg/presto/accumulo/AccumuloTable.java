@@ -17,7 +17,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Objects.requireNonNull;
 
-import java.net.URI;
 import java.util.List;
 
 import com.facebook.presto.spi.ColumnMetadata;
@@ -29,18 +28,14 @@ public class AccumuloTable {
     private final String name;
     private final List<AccumuloColumn> columns;
     private final List<ColumnMetadata> columnsMetadata;
-    private final List<URI> sources;
 
     @JsonCreator
     public AccumuloTable(@JsonProperty("name") String name,
-            @JsonProperty("columns") List<AccumuloColumn> columns,
-            @JsonProperty("sources") List<URI> sources) {
+            @JsonProperty("columns") List<AccumuloColumn> columns) {
         checkArgument(!isNullOrEmpty(name), "name is null or is empty");
         this.name = requireNonNull(name, "name is null");
         this.columns = ImmutableList.copyOf(requireNonNull(columns,
                 "columns is null"));
-        this.sources = ImmutableList.copyOf(requireNonNull(sources,
-                "sources is null"));
 
         ImmutableList.Builder<ColumnMetadata> columnsMetadata = ImmutableList
                 .builder();
@@ -59,11 +54,6 @@ public class AccumuloTable {
     @JsonProperty
     public List<AccumuloColumn> getColumns() {
         return columns;
-    }
-
-    @JsonProperty
-    public List<URI> getSources() {
-        return sources;
     }
 
     public List<ColumnMetadata> getColumnsMetadata() {

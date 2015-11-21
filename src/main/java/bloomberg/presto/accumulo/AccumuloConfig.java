@@ -13,23 +13,17 @@
  */
 package bloomberg.presto.accumulo;
 
-import io.airlift.configuration.Config;
-
-import java.net.URI;
-
-import javax.validation.constraints.NotNull;
-
 public class AccumuloConfig {
-    private URI metadata;
-
-    @NotNull
-    public URI getMetadata() {
-        return metadata;
-    }
-
-    @Config("metadata-uri")
-    public AccumuloConfig setMetadata(URI metadata) {
-        this.metadata = metadata;
-        return this;
-    }
+    // private URI metadata;
+    //
+    // @NotNull
+    // public URI getMetadata() {
+    // return metadata;
+    // }
+    //
+    // @Config("metadata-uri")
+    // public AccumuloConfig setMetadata(URI metadata) {
+    // this.metadata = metadata;
+    // return this;
+    // }
 }

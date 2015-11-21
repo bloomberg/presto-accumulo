@@ -17,7 +17,6 @@ import static bloomberg.presto.accumulo.Types.checkType;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,14 +32,14 @@ import com.facebook.presto.spi.FixedSplitSource;
 
 public class AccumuloSplitManager implements ConnectorSplitManager {
     private final String connectorId;
-    private final AccumuloClient exampleClient;
+    private final AccumuloClient client;
 
     @Inject
     public AccumuloSplitManager(AccumuloConnectorId connectorId,
-            AccumuloClient exampleClient) {
+            AccumuloClient client) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null")
                 .toString();
-        this.exampleClient = requireNonNull(exampleClient, "client is null");
+        this.client = requireNonNull(client, "client is null");
     }
 
     @Override
@@ -49,17 +48,15 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         AccumuloTableLayoutHandle layoutHandle = checkType(layout,
                 AccumuloTableLayoutHandle.class, "layout");
         AccumuloTableHandle tableHandle = layoutHandle.getTable();
-        AccumuloTable table = exampleClient.getTable(
-                tableHandle.getSchemaName(), tableHandle.getTableName());
+        AccumuloTable table = client.getTable(tableHandle.getSchemaName(),
+                tableHandle.getTableName());
         // this can happen if table is removed during a query
         checkState(table != null, "Table %s.%s no longer exists",
                 tableHandle.getSchemaName(), tableHandle.getTableName());
 
         List<ConnectorSplit> splits = new ArrayList<>();
-        for (URI uri : table.getSources()) {
-            splits.add(new AccumuloSplit(connectorId, tableHandle
-                    .getSchemaName(), tableHandle.getTableName(), uri));
-        }
+        splits.add(new AccumuloSplit(connectorId, tableHandle.getSchemaName(),
+                tableHandle.getTableName()));
         Collections.shuffle(splits);
 
         return new FixedSplitSource(connectorId, splits);

@@ -44,15 +44,14 @@ import com.google.common.collect.ImmutableSet;
 
 public class AccumuloMetadata implements ConnectorMetadata {
     private final String connectorId;
-
-    private final AccumuloClient exampleClient;
+    private final AccumuloClient client;
 
     @Inject
     public AccumuloMetadata(AccumuloConnectorId connectorId,
             AccumuloClient exampleClient) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null")
                 .toString();
-        this.exampleClient = requireNonNull(exampleClient, "client is null");
+        this.client = requireNonNull(exampleClient, "client is null");
     }
 
     @Override
@@ -61,7 +60,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
     }
 
     public List<String> listSchemaNames() {
-        return ImmutableList.copyOf(exampleClient.getSchemaNames());
+        return ImmutableList.copyOf(client.getSchemaNames());
     }
 
     @Override
@@ -71,7 +70,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
             return null;
         }
 
-        AccumuloTable table = exampleClient.getTable(tableName.getSchemaName(),
+        AccumuloTable table = client.getTable(tableName.getSchemaName(),
                 tableName.getTableName());
         if (table == null) {
             return null;
@@ -127,13 +126,13 @@ public class AccumuloMetadata implements ConnectorMetadata {
         if (schemaNameOrNull != null) {
             schemaNames = ImmutableSet.of(schemaNameOrNull);
         } else {
-            schemaNames = exampleClient.getSchemaNames();
+            schemaNames = client.getSchemaNames();
         }
 
         ImmutableList.Builder<SchemaTableName> builder = ImmutableList
                 .builder();
         for (String schemaName : schemaNames) {
-            for (String tableName : exampleClient.getTableNames(schemaName)) {
+            for (String tableName : client.getTableNames(schemaName)) {
                 builder.add(new SchemaTableName(schemaName, tableName));
             }
         }
@@ -148,7 +147,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
         checkArgument(exampleTableHandle.getConnectorId().equals(connectorId),
                 "tableHandle is not for this connector");
 
-        AccumuloTable table = exampleClient.getTable(
+        AccumuloTable table = client.getTable(
                 exampleTableHandle.getSchemaName(),
                 exampleTableHandle.getTableName());
         if (table == null) {
@@ -188,7 +187,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
             return null;
         }
 
-        AccumuloTable table = exampleClient.getTable(tableName.getSchemaName(),
+        AccumuloTable table = client.getTable(tableName.getSchemaName(),
                 tableName.getTableName());
         if (table == null) {
             return null;

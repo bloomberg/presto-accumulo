@@ -27,6 +27,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public final class AccumuloColumnHandle implements ColumnHandle {
     private final String connectorId;
     private final String columnName;
+    private final String columnFamily;
+    private final String columnQualifier;
     private final Type columnType;
     private final int ordinalPosition;
 
@@ -40,6 +42,10 @@ public final class AccumuloColumnHandle implements ColumnHandle {
         this.columnName = requireNonNull(columnName, "columnName is null");
         this.columnType = requireNonNull(columnType, "columnType is null");
         this.ordinalPosition = ordinalPosition;
+
+        int idx = columnName.indexOf("__");
+        this.columnFamily = columnName.substring(0, idx);
+        this.columnQualifier = columnName.substring(idx + 2);
     }
 
     @JsonProperty
@@ -50,6 +56,14 @@ public final class AccumuloColumnHandle implements ColumnHandle {
     @JsonProperty
     public String getColumnName() {
         return columnName;
+    }
+
+    public String getColumnFamily() {
+        return columnFamily;
+    }
+
+    public String getColumnQualifier() {
+        return columnQualifier;
     }
 
     @JsonProperty

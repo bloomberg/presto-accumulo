@@ -39,7 +39,7 @@ public class AccumuloConnectorFactory implements ConnectorFactory {
 
     @Override
     public String getName() {
-        return "example-http";
+        return "accumulo";
     }
 
     @Override

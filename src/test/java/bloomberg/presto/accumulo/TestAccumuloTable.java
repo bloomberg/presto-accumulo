@@ -18,8 +18,6 @@ import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static org.testng.Assert.assertEquals;
 
-import java.net.URI;
-
 import org.testng.annotations.Test;
 
 import com.facebook.presto.spi.ColumnMetadata;
@@ -27,16 +25,14 @@ import com.google.common.collect.ImmutableList;
 
 public class TestAccumuloTable {
     private final AccumuloTable exampleTable = new AccumuloTable("tableName",
-            ImmutableList.of(new AccumuloColumn("a", VARCHAR),
-                    new AccumuloColumn("b", BIGINT)), ImmutableList.of(
-                    URI.create("file://table-1.json"),
-                    URI.create("file://table-2.json")));
+            ImmutableList.of(new AccumuloColumn("cf1", "cq1", VARCHAR),
+                    new AccumuloColumn("cf2", "cq2", BIGINT)));
 
     @Test
     public void testColumnMetadata() {
         assertEquals(exampleTable.getColumnsMetadata(), ImmutableList.of(
-                new ColumnMetadata("a", VARCHAR, false), new ColumnMetadata(
-                        "b", BIGINT, false)));
+                new ColumnMetadata("cf1__cq1", VARCHAR, false),
+                new ColumnMetadata("cf2__cq2", BIGINT, false)));
     }
 
     @Test
@@ -46,6 +42,5 @@ public class TestAccumuloTable {
 
         assertEquals(exampleTableCopy.getName(), exampleTable.getName());
         assertEquals(exampleTableCopy.getColumns(), exampleTable.getColumns());
-        assertEquals(exampleTableCopy.getSources(), exampleTable.getSources());
     }
 }

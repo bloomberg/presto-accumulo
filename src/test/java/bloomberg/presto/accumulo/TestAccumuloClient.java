@@ -14,44 +14,27 @@
 package bloomberg.presto.accumulo;
 
 import static bloomberg.presto.accumulo.MetadataUtil.CATALOG_CODEC;
-import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-
-import java.net.URI;
-import java.net.URL;
 
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Resources;
 
 public class TestAccumuloClient {
     @Test
     public void testMetadata() throws Exception {
-        URL metadataUrl = Resources.getResource(TestAccumuloClient.class,
-                "/example-data/example-metadata.json");
-        assertNotNull(metadataUrl, "metadataUrl is null");
-        URI metadata = metadataUrl.toURI();
-        AccumuloClient client = new AccumuloClient(
-                new AccumuloConfig().setMetadata(metadata), CATALOG_CODEC);
-        assertEquals(client.getSchemaNames(),
-                ImmutableSet.of("example", "tpch"));
-        assertEquals(client.getTableNames("example"),
-                ImmutableSet.of("numbers"));
-        assertEquals(client.getTableNames("tpch"),
-                ImmutableSet.of("orders", "lineitem"));
+        AccumuloClient client = new AccumuloClient(new AccumuloConfig(),
+                CATALOG_CODEC);
+        assertEquals(client.getSchemaNames(), ImmutableSet.of("foo"));
+        assertEquals(client.getTableNames("foo"), ImmutableSet.of("bar"));
 
-        AccumuloTable table = client.getTable("example", "numbers");
+        AccumuloTable table = client.getTable("foo", "bar");
         assertNotNull(table, "table is null");
-        assertEquals(table.getName(), "numbers");
-        assertEquals(table.getColumns(), ImmutableList.of(new AccumuloColumn(
-                "text", VARCHAR), new AccumuloColumn("value", BIGINT)));
-        assertEquals(
-                table.getSources(),
-                ImmutableList.of(metadata.resolve("numbers-1.csv"),
-                        metadata.resolve("numbers-2.csv")));
+        assertEquals(table.getName(), "bar");
+        assertEquals(table.getColumns(),
+                ImmutableList.of(new AccumuloColumn("cf1", "cq1", VARCHAR)));
     }
 }

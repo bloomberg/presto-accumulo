@@ -13,30 +13,23 @@
  */
 package bloomberg.presto.accumulo;
 
-import static com.google.common.collect.Iterables.transform;
-import static com.google.common.collect.Maps.transformValues;
-import static com.google.common.collect.Maps.uniqueIndex;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import io.airlift.json.JsonCodec;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
 
-import com.google.common.base.Function;
+import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Resources;
 
 public class AccumuloClient {
     /**
@@ -51,8 +44,7 @@ public class AccumuloClient {
         requireNonNull(config, "config is null");
         requireNonNull(catalogCodec, "catalogCodec is null");
 
-        schemas = Suppliers.memoize(schemasSupplier(catalogCodec,
-                config.getMetadata()));
+        schemas = Suppliers.memoize(schemasSupplier(catalogCodec));
     }
 
     public Set<String> getSchemaNames() {
@@ -79,46 +71,15 @@ public class AccumuloClient {
     }
 
     private static Supplier<Map<String, Map<String, AccumuloTable>>> schemasSupplier(
-            final JsonCodec<Map<String, List<AccumuloTable>>> catalogCodec,
-            final URI metadataUri) {
+            final JsonCodec<Map<String, List<AccumuloTable>>> catalogCodec) {
+        Map<String, Map<String, AccumuloTable>> tables = new HashMap<>();
+        List<AccumuloColumn> col = new ArrayList<>();
+        col.add(new AccumuloColumn("cf1", "cq1", VarcharType.VARCHAR));
+        Map<String, AccumuloTable> value = new HashMap<>();
+        value.put("bar", new AccumuloTable("bar", col));
+        tables.put("foo", value);
         return () -> {
-            try {
-                return lookupSchemas(metadataUri, catalogCodec);
-            } catch (IOException e) {
-                throw Throwables.propagate(e);
-            }
-        };
-    }
-
-    private static Map<String, Map<String, AccumuloTable>> lookupSchemas(
-            URI metadataUri,
-            JsonCodec<Map<String, List<AccumuloTable>>> catalogCodec)
-            throws IOException {
-        URL result = metadataUri.toURL();
-        String json = Resources.toString(result, UTF_8);
-        Map<String, List<AccumuloTable>> catalog = catalogCodec.fromJson(json);
-
-        return ImmutableMap.copyOf(transformValues(catalog,
-                resolveAndIndexTables(metadataUri)));
-    }
-
-    private static Function<List<AccumuloTable>, Map<String, AccumuloTable>> resolveAndIndexTables(
-            final URI metadataUri) {
-        return tables -> {
-            Iterable<AccumuloTable> resolvedTables = transform(tables,
-                    tableUriResolver(metadataUri));
-            return ImmutableMap.copyOf(uniqueIndex(resolvedTables,
-                    AccumuloTable::getName));
-        };
-    }
-
-    private static Function<AccumuloTable, AccumuloTable> tableUriResolver(
-            final URI baseUri) {
-        return table -> {
-            List<URI> sources = ImmutableList.copyOf(transform(
-                    table.getSources(), baseUri::resolve));
-            return new AccumuloTable(table.getName(), table.getColumns(),
-                    sources);
+            return ImmutableMap.copyOf(tables);
         };
     }
 }

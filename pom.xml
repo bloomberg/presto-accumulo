@@ -49,11 +49,6 @@
             <artifactId>guice</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
-        </dependency>
-
         <!-- Presto SPI -->
         <dependency>
             <groupId>com.facebook.presto</groupId>

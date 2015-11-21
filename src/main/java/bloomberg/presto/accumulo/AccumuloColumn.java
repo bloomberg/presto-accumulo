@@ -24,20 +24,34 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class AccumuloColumn {
-    private final String name;
+    private final String family;
+    private final String qualifier;
     private final Type type;
 
     @JsonCreator
-    public AccumuloColumn(@JsonProperty("name") String name,
+    public AccumuloColumn(@JsonProperty("family") String family,
+            @JsonProperty("qualifier") String qualifier,
             @JsonProperty("type") Type type) {
-        checkArgument(!isNullOrEmpty(name), "name is null or is empty");
-        this.name = name;
+        checkArgument(!isNullOrEmpty(family), "family is null or is empty");
+        checkArgument(!isNullOrEmpty(qualifier),
+                "qualifier is null or is empty");
+        this.family = family;
+        this.qualifier = qualifier;
         this.type = requireNonNull(type, "type is null");
     }
 
-    @JsonProperty
     public String getName() {
-        return name;
+        return family + "__" + qualifier;
+    }
+
+    @JsonProperty
+    public String getFamily() {
+        return family;
+    }
+
+    @JsonProperty
+    public String getQualifier() {
+        return qualifier;
     }
 
     @JsonProperty
@@ -47,7 +61,7 @@ public final class AccumuloColumn {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type);
+        return Objects.hash(family, qualifier, type);
     }
 
     @Override
@@ -60,12 +74,13 @@ public final class AccumuloColumn {
         }
 
         AccumuloColumn other = (AccumuloColumn) obj;
-        return Objects.equals(this.name, other.name)
+        return Objects.equals(this.family, other.family)
+                && Objects.equals(this.qualifier, other.qualifier)
                 && Objects.equals(this.type, other.type);
     }
 
     @Override
     public String toString() {
-        return name + ":" + type;
+        return family + ":" + qualifier + ":" + type;
     }
 }

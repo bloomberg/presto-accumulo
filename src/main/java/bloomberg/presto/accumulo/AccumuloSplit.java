@@ -15,7 +15,6 @@ package bloomberg.presto.accumulo;
 
 import static java.util.Objects.requireNonNull;
 
-import java.net.URI;
 import java.util.List;
 
 import com.facebook.presto.spi.ConnectorSplit;
@@ -28,24 +27,19 @@ public class AccumuloSplit implements ConnectorSplit {
     private final String connectorId;
     private final String schemaName;
     private final String tableName;
-    private final URI uri;
     private final boolean remotelyAccessible;
     private final ImmutableList<HostAddress> addresses;
 
     @JsonCreator
     public AccumuloSplit(@JsonProperty("connectorId") String connectorId,
             @JsonProperty("schemaName") String schemaName,
-            @JsonProperty("tableName") String tableName,
-            @JsonProperty("uri") URI uri) {
-        this.schemaName = requireNonNull(schemaName, "schema name is null");
+            @JsonProperty("tableName") String tableName) {
         this.connectorId = requireNonNull(connectorId, "connector id is null");
+        this.schemaName = requireNonNull(schemaName, "schema name is null");
         this.tableName = requireNonNull(tableName, "table name is null");
-        this.uri = requireNonNull(uri, "uri is null");
 
-        // if ("http".equalsIgnoreCase(uri.getScheme()) ||
-        // "https".equalsIgnoreCase(uri.getScheme())) {
         remotelyAccessible = true;
-        addresses = ImmutableList.of(HostAddress.fromUri(uri));
+        addresses = ImmutableList.of(HostAddress.fromString("127.0.0.1"));
     }
 
     @JsonProperty
@@ -63,14 +57,8 @@ public class AccumuloSplit implements ConnectorSplit {
         return tableName;
     }
 
-    @JsonProperty
-    public URI getUri() {
-        return uri;
-    }
-
     @Override
     public boolean isRemotelyAccessible() {
-        // only http or https is remotely accessible
         return remotelyAccessible;
     }
 

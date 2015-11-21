@@ -18,51 +18,31 @@ import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 
-import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.type.Type;
-import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
-import com.google.common.io.ByteSource;
-import com.google.common.io.CountingInputStream;
 
 public class AccumuloRecordCursor implements RecordCursor {
-    private static final Splitter LINE_SPLITTER = Splitter.on(",")
-            .trimResults();
 
     private final List<AccumuloColumnHandle> columnHandles;
     private final int[] fieldToColumnIndex;
 
-    private final Iterator<String> lines;
-    private final long totalBytes;
+    private final String fieldValue = "value";
+    private final long totalBytes = fieldValue.getBytes().length;
+    private boolean read = false;
 
-    private List<String> fields;
-
-    public AccumuloRecordCursor(List<AccumuloColumnHandle> columnHandles,
-            ByteSource byteSource) {
+    public AccumuloRecordCursor(List<AccumuloColumnHandle> columnHandles) {
         this.columnHandles = columnHandles;
 
         fieldToColumnIndex = new int[columnHandles.size()];
         for (int i = 0; i < columnHandles.size(); i++) {
             AccumuloColumnHandle columnHandle = columnHandles.get(i);
             fieldToColumnIndex[i] = columnHandle.getOrdinalPosition();
-        }
-
-        try (CountingInputStream input = new CountingInputStream(
-                byteSource.openStream())) {
-            lines = byteSource.asCharSource(UTF_8).readLines().iterator();
-            totalBytes = input.getCount();
-        } catch (IOException e) {
-            throw Throwables.propagate(e);
         }
     }
 
@@ -89,20 +69,12 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     @Override
     public boolean advanceNextPosition() {
-        if (!lines.hasNext()) {
-            return false;
-        }
-        String line = lines.next();
-        fields = LINE_SPLITTER.splitToList(line);
-
-        return true;
+        return !read;
     }
 
     private String getFieldValue(int field) {
-        checkState(fields != null, "Cursor has not been advanced yet");
-
-        int columnIndex = fieldToColumnIndex[field];
-        return fields.get(columnIndex);
+        read = true;
+        return this.fieldValue;
     }
 
     @Override

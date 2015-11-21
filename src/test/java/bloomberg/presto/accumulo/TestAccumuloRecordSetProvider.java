@@ -13,15 +13,13 @@
  */
 package bloomberg.presto.accumulo;
 
-import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.testing.TestingConnectorSession.SESSION;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-import java.net.URI;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -30,32 +28,29 @@ import org.testng.annotations.Test;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.RecordSet;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 public class TestAccumuloRecordSetProvider {
-    private ExampleHttpServer exampleHttpServer;
-    private URI dataUri;
 
     @Test
     public void testGetRecordSet() throws Exception {
         AccumuloRecordSetProvider recordSetProvider = new AccumuloRecordSetProvider(
                 new AccumuloConnectorId("test"));
         RecordSet recordSet = recordSetProvider.getRecordSet(SESSION,
-                new AccumuloSplit("test", "schema", "table", dataUri),
-                ImmutableList.of(new AccumuloColumnHandle("test", "text",
-                        VARCHAR, 0), new AccumuloColumnHandle("test", "value",
-                        BIGINT, 1)));
+                new AccumuloSplit("test", "foo", "bar"), ImmutableList
+                        .of(new AccumuloColumnHandle("test", "cf1__cq1",
+                                VARCHAR, 0)));
         assertNotNull(recordSet, "recordSet is null");
 
         RecordCursor cursor = recordSet.cursor();
         assertNotNull(cursor, "cursor is null");
 
-        Map<String, Long> data = new LinkedHashMap<>();
+        List<String> data = new ArrayList<>();
         while (cursor.advanceNextPosition()) {
-            data.put(cursor.getSlice(0).toStringUtf8(), cursor.getLong(1));
+            data.add(cursor.getSlice(0).toStringUtf8());
         }
-        assertEquals(data, ImmutableMap.<String, Long> builder()
-                .put("ten", 10L).put("eleven", 11L).put("twelve", 12L).build());
+
+        assertEquals(data, ImmutableList.<String> builder().add("value")
+                .build());
     }
 
     //
@@ -64,14 +59,9 @@ public class TestAccumuloRecordSetProvider {
 
     @BeforeClass
     public void setUp() throws Exception {
-        exampleHttpServer = new ExampleHttpServer();
-        dataUri = exampleHttpServer.resolve("/example-data/numbers-2.csv");
     }
 
     @AfterClass
     public void tearDown() throws Exception {
-        if (exampleHttpServer != null) {
-            exampleHttpServer.stop();
-        }
     }
 }

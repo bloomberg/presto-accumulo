@@ -14,16 +14,11 @@
 package bloomberg.presto.accumulo;
 
 import static bloomberg.presto.accumulo.MetadataUtil.CATALOG_CODEC;
-import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.testing.TestingConnectorSession.SESSION;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
-
-import java.net.URI;
-import java.net.URL;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -36,53 +31,39 @@ import com.facebook.presto.spi.TableNotFoundException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Resources;
 
 @Test(singleThreaded = true)
 public class TestAccumuloMetadata {
     private static final String CONNECTOR_ID = "TEST";
-    private static final AccumuloTableHandle NUMBERS_TABLE_HANDLE = new AccumuloTableHandle(
-            CONNECTOR_ID, "example", "numbers");
+    private static final AccumuloTableHandle TEST_TABLE_HANDLE = new AccumuloTableHandle(
+            CONNECTOR_ID, "foo", "bar");
     private AccumuloMetadata metadata;
-    private URI metadataUri;
 
     @BeforeMethod
     public void setUp() throws Exception {
-        URL metadataUrl = Resources.getResource(TestAccumuloClient.class,
-                "/example-data/example-metadata.json");
-        assertNotNull(metadataUrl, "metadataUrl is null");
-        metadataUri = metadataUrl.toURI();
-        AccumuloClient client = new AccumuloClient(
-                new AccumuloConfig().setMetadata(metadataUri), CATALOG_CODEC);
+        AccumuloClient client = new AccumuloClient(new AccumuloConfig(),
+                CATALOG_CODEC);
         metadata = new AccumuloMetadata(new AccumuloConnectorId(CONNECTOR_ID),
                 client);
     }
 
     @Test
     public void testListSchemaNames() {
-        assertEquals(metadata.listSchemaNames(SESSION),
-                ImmutableSet.of("example", "tpch"));
+        assertEquals(metadata.listSchemaNames(SESSION), ImmutableSet.of("foo"));
     }
 
     @Test
     public void testGetTableHandle() {
         assertEquals(metadata.getTableHandle(SESSION, new SchemaTableName(
-                "example", "numbers")), NUMBERS_TABLE_HANDLE);
-        assertNull(metadata.getTableHandle(SESSION, new SchemaTableName(
-                "example", "unknown")));
-        assertNull(metadata.getTableHandle(SESSION, new SchemaTableName(
-                "unknown", "numbers")));
-        assertNull(metadata.getTableHandle(SESSION, new SchemaTableName(
-                "unknown", "unknown")));
+                "foo", "bar")), TEST_TABLE_HANDLE);
     }
 
     @Test
     public void testGetColumnHandles() {
         // known table
-        assertEquals(metadata.getColumnHandles(SESSION, NUMBERS_TABLE_HANDLE),
-                ImmutableMap.of("text", new AccumuloColumnHandle(CONNECTOR_ID,
-                        "text", VARCHAR, 0), "value", new AccumuloColumnHandle(
-                        CONNECTOR_ID, "value", BIGINT, 1)));
+        assertEquals(metadata.getColumnHandles(SESSION, TEST_TABLE_HANDLE),
+                ImmutableMap.of("cf1__cq1", new AccumuloColumnHandle(
+                        CONNECTOR_ID, "cf1__cq1", VARCHAR, 0)));
 
         // unknown table
         try {
@@ -103,12 +84,12 @@ public class TestAccumuloMetadata {
     public void getTableMetadata() {
         // known table
         ConnectorTableMetadata tableMetadata = metadata.getTableMetadata(
-                SESSION, NUMBERS_TABLE_HANDLE);
-        assertEquals(tableMetadata.getTable(), new SchemaTableName("example",
-                "numbers"));
-        assertEquals(tableMetadata.getColumns(), ImmutableList.of(
-                new ColumnMetadata("text", VARCHAR, false), new ColumnMetadata(
-                        "value", BIGINT, false)));
+                SESSION, TEST_TABLE_HANDLE);
+        assertEquals(tableMetadata.getTable(),
+                new SchemaTableName("foo", "bar"));
+        assertEquals(tableMetadata.getColumns(),
+                ImmutableList
+                        .of(new ColumnMetadata("cf1__cq1", VARCHAR, false)));
 
         // unknown tables should produce null
         assertNull(metadata.getTableMetadata(SESSION, new AccumuloTableHandle(
@@ -123,17 +104,11 @@ public class TestAccumuloMetadata {
     public void testListTables() {
         // all schemas
         assertEquals(ImmutableSet.copyOf(metadata.listTables(SESSION, null)),
-                ImmutableSet.of(new SchemaTableName("example", "numbers"),
-                        new SchemaTableName("tpch", "orders"),
-                        new SchemaTableName("tpch", "lineitem")));
+                ImmutableSet.of(new SchemaTableName("foo", "bar")));
 
         // specific schema
-        assertEquals(
-                ImmutableSet.copyOf(metadata.listTables(SESSION, "example")),
-                ImmutableSet.of(new SchemaTableName("example", "numbers")));
-        assertEquals(ImmutableSet.copyOf(metadata.listTables(SESSION, "tpch")),
-                ImmutableSet.of(new SchemaTableName("tpch", "orders"),
-                        new SchemaTableName("tpch", "lineitem")));
+        assertEquals(ImmutableSet.copyOf(metadata.listTables(SESSION, "foo")),
+                ImmutableSet.of(new SchemaTableName("foo", "bar")));
 
         // unknown schema
         assertEquals(
@@ -143,9 +118,11 @@ public class TestAccumuloMetadata {
 
     @Test
     public void getColumnMetadata() {
-        assertEquals(metadata.getColumnMetadata(SESSION, NUMBERS_TABLE_HANDLE,
-                new AccumuloColumnHandle(CONNECTOR_ID, "text", VARCHAR, 0)),
-                new ColumnMetadata("text", VARCHAR, false));
+        assertEquals(
+                metadata.getColumnMetadata(SESSION, TEST_TABLE_HANDLE,
+                        new AccumuloColumnHandle(CONNECTOR_ID, "cf1__cq1",
+                                VARCHAR, 0)), new ColumnMetadata("cf1__cq1",
+                        VARCHAR, false));
 
         // example connector assumes that the table handle and column handle are
         // properly formed, so it will return a metadata object for any
@@ -167,6 +144,6 @@ public class TestAccumuloMetadata {
 
     @Test(expectedExceptions = PrestoException.class)
     public void testDropTableTable() {
-        metadata.dropTable(SESSION, NUMBERS_TABLE_HANDLE);
+        metadata.dropTable(SESSION, TEST_TABLE_HANDLE);
     }
 }
