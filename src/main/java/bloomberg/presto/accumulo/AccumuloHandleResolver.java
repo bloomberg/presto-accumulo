@@ -35,8 +35,8 @@ public class AccumuloHandleResolver implements ConnectorHandleResolver {
     @Override
     public boolean canHandle(ConnectorTableHandle tableHandle) {
         return tableHandle instanceof AccumuloTableHandle
-                && ((AccumuloTableHandle) tableHandle).getConnectorId().equals(
-                        connectorId);
+                && ((AccumuloTableHandle) tableHandle).getConnectorId()
+                        .equals(connectorId);
     }
 
     @Override

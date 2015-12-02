@@ -42,7 +42,8 @@ public class AccumuloConnector implements Connector {
         this.lifeCycleManager = requireNonNull(lifeCycleManager,
                 "lifeCycleManager is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
-        this.splitManager = requireNonNull(splitManager, "splitManager is null");
+        this.splitManager = requireNonNull(splitManager,
+                "splitManager is null");
         this.recordSetProvider = requireNonNull(recordSetProvider,
                 "recordSetProvider is null");
         this.handleResolver = requireNonNull(handleResolver,

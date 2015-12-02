@@ -33,8 +33,8 @@ public class AccumuloPlugin implements Plugin {
     @Override
     public synchronized void setOptionalConfig(
             Map<String, String> optionalConfig) {
-        this.optionalConfig = ImmutableMap.copyOf(requireNonNull(
-                optionalConfig, "optionalConfig is null"));
+        this.optionalConfig = ImmutableMap.copyOf(
+                requireNonNull(optionalConfig, "optionalConfig is null"));
     }
 
     @Inject
@@ -49,8 +49,9 @@ public class AccumuloPlugin implements Plugin {
     @Override
     public synchronized <T> List<T> getServices(Class<T> type) {
         if (type == ConnectorFactory.class) {
-            return ImmutableList.of(type.cast(new AccumuloConnectorFactory(
-                    typeManager, getOptionalConfig())));
+            return ImmutableList
+                    .of(type.cast(new AccumuloConnectorFactory(typeManager,
+                            getOptionalConfig())));
         }
         return ImmutableList.of();
     }

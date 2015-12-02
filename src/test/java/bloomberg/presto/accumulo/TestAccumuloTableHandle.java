@@ -26,7 +26,8 @@ public class TestAccumuloTableHandle {
 
     @Test
     public void testJsonRoundTrip() {
-        JsonCodec<AccumuloTableHandle> codec = jsonCodec(AccumuloTableHandle.class);
+        JsonCodec<AccumuloTableHandle> codec = jsonCodec(
+                AccumuloTableHandle.class);
         String json = codec.toJson(tableHandle);
         AccumuloTableHandle copy = codec.fromJson(json);
         assertEquals(copy, tableHandle);
@@ -34,20 +35,25 @@ public class TestAccumuloTableHandle {
 
     @Test
     public void testEquivalence() {
-        EquivalenceTester
-                .equivalenceTester()
+        EquivalenceTester.equivalenceTester()
                 .addEquivalentGroup(
                         new AccumuloTableHandle("connector", "schema", "table"),
                         new AccumuloTableHandle("connector", "schema", "table"))
                 .addEquivalentGroup(
-                        new AccumuloTableHandle("connectorX", "schema", "table"),
-                        new AccumuloTableHandle("connectorX", "schema", "table"))
+                        new AccumuloTableHandle("connectorX", "schema",
+                                "table"),
+                        new AccumuloTableHandle("connectorX", "schema",
+                                "table"))
                 .addEquivalentGroup(
-                        new AccumuloTableHandle("connector", "schemaX", "table"),
-                        new AccumuloTableHandle("connector", "schemaX", "table"))
+                        new AccumuloTableHandle("connector", "schemaX",
+                                "table"),
+                        new AccumuloTableHandle("connector", "schemaX",
+                                "table"))
                 .addEquivalentGroup(
-                        new AccumuloTableHandle("connector", "schema", "tableX"),
-                        new AccumuloTableHandle("connector", "schema", "tableX"))
+                        new AccumuloTableHandle("connector", "schema",
+                                "tableX"),
+                        new AccumuloTableHandle("connector", "schema",
+                                "tableX"))
                 .check();
     }
 }

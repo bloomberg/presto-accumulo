@@ -193,7 +193,8 @@ public class AccumuloMetadata implements ConnectorMetadata {
             return null;
         }
 
-        return new ConnectorTableMetadata(tableName, table.getColumnsMetadata());
+        return new ConnectorTableMetadata(tableName,
+                table.getColumnsMetadata());
     }
 
     private List<SchemaTableName> listTables(ConnectorSession session,

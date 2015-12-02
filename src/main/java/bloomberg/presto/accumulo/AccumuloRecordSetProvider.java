@@ -49,7 +49,8 @@ public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
         ImmutableList.Builder<AccumuloColumnHandle> handles = ImmutableList
                 .builder();
         for (ColumnHandle handle : columns) {
-            handles.add(checkType(handle, AccumuloColumnHandle.class, "handle"));
+            handles.add(
+                    checkType(handle, AccumuloColumnHandle.class, "handle"));
         }
 
         return new AccumuloRecordSet(exampleSplit, handles.build());

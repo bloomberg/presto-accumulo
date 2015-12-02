@@ -33,8 +33,8 @@ public class AccumuloConnectorFactory implements ConnectorFactory {
     public AccumuloConnectorFactory(TypeManager typeManager,
             Map<String, String> optionalConfig) {
         this.typeManager = requireNonNull(typeManager, "typeManager is null");
-        this.optionalConfig = ImmutableMap.copyOf(requireNonNull(
-                optionalConfig, "optionalConfig is null"));
+        this.optionalConfig = ImmutableMap.copyOf(
+                requireNonNull(optionalConfig, "optionalConfig is null"));
     }
 
     @Override
@@ -50,8 +50,8 @@ public class AccumuloConnectorFactory implements ConnectorFactory {
 
         try {
             // A plugin is not required to use Guice; it is just very convenient
-            Bootstrap app = new Bootstrap(new JsonModule(), new AccumuloModule(
-                    connectorId, typeManager));
+            Bootstrap app = new Bootstrap(new JsonModule(),
+                    new AccumuloModule(connectorId, typeManager));
 
             Injector injector = app.strictConfig().doNotInitializeLogging()
                     .setRequiredConfigurationProperties(requiredConfig)

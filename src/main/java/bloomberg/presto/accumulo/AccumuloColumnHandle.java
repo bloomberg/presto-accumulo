@@ -33,8 +33,7 @@ public final class AccumuloColumnHandle implements ColumnHandle {
     private final int ordinalPosition;
 
     @JsonCreator
-    public AccumuloColumnHandle(
-            @JsonProperty("connectorId") String connectorId,
+    public AccumuloColumnHandle(@JsonProperty("connectorId") String connectorId,
             @JsonProperty("columnName") String columnName,
             @JsonProperty("columnType") Type columnType,
             @JsonProperty("ordinalPosition") int ordinalPosition) {

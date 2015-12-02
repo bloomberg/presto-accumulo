@@ -43,8 +43,8 @@ public final class MetadataUtil {
 
     static {
         ObjectMapperProvider objectMapperProvider = new ObjectMapperProvider();
-        objectMapperProvider.setJsonDeserializers(ImmutableMap
-                .<Class<?>, JsonDeserializer<?>> of(Type.class,
+        objectMapperProvider.setJsonDeserializers(
+                ImmutableMap.<Class<?>, JsonDeserializer<?>> of(Type.class,
                         new TestingTypeDeserializer()));
         JsonCodecFactory codecFactory = new JsonCodecFactory(
                 objectMapperProvider);
@@ -54,8 +54,8 @@ public final class MetadataUtil {
         COLUMN_CODEC = codecFactory.jsonCodec(AccumuloColumnHandle.class);
     }
 
-    public static final class TestingTypeDeserializer extends
-            FromStringDeserializer<Type> {
+    public static final class TestingTypeDeserializer
+            extends FromStringDeserializer<Type> {
         private static final long serialVersionUID = 6499869751749572439L;
         private final Map<String, Type> types = ImmutableMap.<String, Type> of(
                 StandardTypes.BOOLEAN, BOOLEAN, StandardTypes.BIGINT, BIGINT,
@@ -66,7 +66,8 @@ public final class MetadataUtil {
         }
 
         @Override
-        protected Type _deserialize(String value, DeserializationContext context) {
+        protected Type _deserialize(String value,
+                DeserializationContext context) {
             Type type = types.get(value.toLowerCase(ENGLISH));
             if (type == null) {
                 throw new IllegalArgumentException(

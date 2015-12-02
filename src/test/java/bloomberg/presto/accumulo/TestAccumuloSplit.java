@@ -29,8 +29,8 @@ public class TestAccumuloSplit {
     @Test
     public void testAddresses() {
         // split with default port
-        AccumuloSplit httpSplit = new AccumuloSplit("connectorId",
-                "schemaName", "tableName");
+        AccumuloSplit httpSplit = new AccumuloSplit("connectorId", "schemaName",
+                "tableName");
         assertEquals(httpSplit.getAddresses(),
                 ImmutableList.of(HostAddress.fromString("127.0.0.1")));
         assertEquals(httpSplit.isRemotelyAccessible(), true);

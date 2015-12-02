@@ -36,9 +36,9 @@ public class TestAccumuloRecordSetProvider {
         AccumuloRecordSetProvider recordSetProvider = new AccumuloRecordSetProvider(
                 new AccumuloConnectorId("test"));
         RecordSet recordSet = recordSetProvider.getRecordSet(SESSION,
-                new AccumuloSplit("test", "foo", "bar"), ImmutableList
-                        .of(new AccumuloColumnHandle("test", "cf1__cq1",
-                                VARCHAR, 0)));
+                new AccumuloSplit("test", "foo", "bar"),
+                ImmutableList.of(new AccumuloColumnHandle("test", "cf1__cq1",
+                        VARCHAR, 0)));
         assertNotNull(recordSet, "recordSet is null");
 
         RecordCursor cursor = recordSet.cursor();
@@ -49,8 +49,8 @@ public class TestAccumuloRecordSetProvider {
             data.add(cursor.getSlice(0).toStringUtf8());
         }
 
-        assertEquals(data, ImmutableList.<String> builder().add("value")
-                .build());
+        assertEquals(data,
+                ImmutableList.<String> builder().add("value").build());
     }
 
     //

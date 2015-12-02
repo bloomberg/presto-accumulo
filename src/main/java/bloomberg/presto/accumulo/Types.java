@@ -25,9 +25,8 @@ final class Types {
         if (value == null) {
             throw new NullPointerException(format("%s is null", name));
         }
-        checkArgument(target.isInstance(value),
-                "%s must be of type %s, not %s", name, target.getName(), value
-                        .getClass().getName());
+        checkArgument(target.isInstance(value), "%s must be of type %s, not %s",
+                name, target.getName(), value.getClass().getName());
         return target.cast(value);
     }
 }

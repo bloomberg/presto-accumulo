@@ -45,8 +45,8 @@ public class AccumuloModule implements Module {
         binder.bind(TypeManager.class).toInstance(typeManager);
 
         binder.bind(AccumuloConnector.class).in(Scopes.SINGLETON);
-        binder.bind(AccumuloConnectorId.class).toInstance(
-                new AccumuloConnectorId(connectorId));
+        binder.bind(AccumuloConnectorId.class)
+                .toInstance(new AccumuloConnectorId(connectorId));
         binder.bind(AccumuloMetadata.class).in(Scopes.SINGLETON);
         binder.bind(AccumuloClient.class).in(Scopes.SINGLETON);
         binder.bind(AccumuloSplitManager.class).in(Scopes.SINGLETON);
@@ -54,14 +54,14 @@ public class AccumuloModule implements Module {
         binder.bind(AccumuloHandleResolver.class).in(Scopes.SINGLETON);
         configBinder(binder).bindConfig(AccumuloConfig.class);
 
-        jsonBinder(binder).addDeserializerBinding(Type.class).to(
-                TypeDeserializer.class);
+        jsonBinder(binder).addDeserializerBinding(Type.class)
+                .to(TypeDeserializer.class);
         jsonCodecBinder(binder).bindMapJsonCodec(String.class,
                 listJsonCodec(AccumuloTable.class));
     }
 
-    public static final class TypeDeserializer extends
-            FromStringDeserializer<Type> {
+    public static final class TypeDeserializer
+            extends FromStringDeserializer<Type> {
         private static final long serialVersionUID = -3547534717872348558L;
         private final TypeManager typeManager;
 
@@ -73,7 +73,8 @@ public class AccumuloModule implements Module {
         }
 
         @Override
-        protected Type _deserialize(String value, DeserializationContext context) {
+        protected Type _deserialize(String value,
+                DeserializationContext context) {
             Type type = typeManager.getType(parseTypeSignature(value));
             checkArgument(type != null, "Unknown type %s", value);
             return type;

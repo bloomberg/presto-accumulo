@@ -34,17 +34,15 @@ public class TestAccumuloColumnHandle {
 
     @Test
     public void testEquivalence() {
-        EquivalenceTester
-                .equivalenceTester()
+        EquivalenceTester.equivalenceTester()
                 .addEquivalentGroup(
                         new AccumuloColumnHandle("connectorId", "cf1__cfq1",
                                 VARCHAR, 0),
                         new AccumuloColumnHandle("connectorId", "cf1__cfq1",
                                 VARCHAR, 0),
-                        new AccumuloColumnHandle("connectorId", "cf1__cfq1",
-                                BIGINT, 0),
-                        new AccumuloColumnHandle("connectorId", "cf1__cfq1",
-                                VARCHAR, 1))
+                new AccumuloColumnHandle("connectorId", "cf1__cfq1", BIGINT, 0),
+                new AccumuloColumnHandle("connectorId", "cf1__cfq1", VARCHAR,
+                        1))
                 .addEquivalentGroup(
                         new AccumuloColumnHandle("connectorIdX", "cf1__cfq1",
                                 VARCHAR, 0),
@@ -62,6 +60,7 @@ public class TestAccumuloColumnHandle {
                         new AccumuloColumnHandle("connectorId", "cf2__cfq2",
                                 BIGINT, 0),
                         new AccumuloColumnHandle("connectorId", "cf2__cfq2",
-                                VARCHAR, 1)).check();
+                                VARCHAR, 1))
+                .check();
     }
 }

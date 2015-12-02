@@ -30,9 +30,9 @@ public class TestAccumuloTable {
 
     @Test
     public void testColumnMetadata() {
-        assertEquals(exampleTable.getColumnsMetadata(), ImmutableList.of(
-                new ColumnMetadata("cf1__cq1", VARCHAR, false),
-                new ColumnMetadata("cf2__cq2", BIGINT, false)));
+        assertEquals(exampleTable.getColumnsMetadata(),
+                ImmutableList.of(new ColumnMetadata("cf1__cq1", VARCHAR, false),
+                        new ColumnMetadata("cf2__cq2", BIGINT, false)));
     }
 
     @Test

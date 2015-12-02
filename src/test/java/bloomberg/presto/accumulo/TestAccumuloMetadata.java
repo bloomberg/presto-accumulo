@@ -111,7 +111,8 @@ public class TestAccumuloMetadata {
                 ImmutableSet.of(new SchemaTableName("default", "foo")));
 
         // specific schema
-        assertEquals(ImmutableSet.copyOf(metadata.listTables(SESSION, "default")),
+        assertEquals(
+                ImmutableSet.copyOf(metadata.listTables(SESSION, "default")),
                 ImmutableSet.of(new SchemaTableName("default", "foo")));
 
         // unknown schema
