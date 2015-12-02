@@ -21,14 +21,15 @@ import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.HostAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
+
+import static com.google.common.collect.Lists.newArrayList;
 
 public class AccumuloSplit implements ConnectorSplit {
     private final String connectorId;
     private final String schemaName;
     private final String tableName;
     private final boolean remotelyAccessible;
-    private final ImmutableList<HostAddress> addresses;
+    private final List<HostAddress> addresses;
 
     @JsonCreator
     public AccumuloSplit(@JsonProperty("connectorId") String connectorId,
@@ -39,7 +40,7 @@ public class AccumuloSplit implements ConnectorSplit {
         this.tableName = requireNonNull(tableName, "table name is null");
 
         remotelyAccessible = true;
-        addresses = ImmutableList.of(HostAddress.fromString("127.0.0.1"));
+        addresses = newArrayList(HostAddress.fromString("127.0.0.1"));
     }
 
     @JsonProperty
