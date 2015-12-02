@@ -13,17 +13,33 @@
  */
 package bloomberg.presto.accumulo;
 
+import javax.validation.constraints.NotNull;
+
+import io.airlift.configuration.Config;
+
 public class AccumuloConfig {
-    // private URI metadata;
-    //
-    // @NotNull
-    // public URI getMetadata() {
-    // return metadata;
-    // }
-    //
-    // @Config("metadata-uri")
-    // public AccumuloConfig setMetadata(URI metadata) {
-    // this.metadata = metadata;
-    // return this;
-    // }
+    private String schema;
+    private String table;
+
+    @NotNull
+    public String getSchema() {
+        return this.schema;
+    }
+
+    @Config("schema")
+    public AccumuloConfig setSchema(String schema) {
+        this.schema = schema;
+        return this;
+    }
+
+    @NotNull
+    public String getTable() {
+        return this.table;
+    }
+
+    @Config("table")
+    public AccumuloConfig setTable(String table) {
+        this.table = table;
+        return this;
+    }
 }

@@ -32,16 +32,16 @@ public class AccumuloTable {
     @JsonCreator
     public AccumuloTable(@JsonProperty("name") String name,
             @JsonProperty("columns") List<AccumuloColumn> columns) {
-        checkArgument(!isNullOrEmpty(name), "name is null or is empty");
-        this.name = requireNonNull(name, "name is null");
-        this.columns = ImmutableList.copyOf(requireNonNull(columns,
-                "columns is null"));
+        checkArgument(!isNullOrEmpty(name), "table name is null or is empty");
+        this.name = requireNonNull(name, "table name is null");
+        this.columns = ImmutableList
+                .copyOf(requireNonNull(columns, "table columns are null"));
 
         ImmutableList.Builder<ColumnMetadata> columnsMetadata = ImmutableList
                 .builder();
         for (AccumuloColumn column : this.columns) {
-            columnsMetadata.add(new ColumnMetadata(column.getName(), column
-                    .getType(), false));
+            columnsMetadata.add(new ColumnMetadata(column.getName(),
+                    column.getType(), false));
         }
         this.columnsMetadata = columnsMetadata.build();
     }

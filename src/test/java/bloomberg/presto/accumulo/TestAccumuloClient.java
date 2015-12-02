@@ -26,14 +26,16 @@ import com.google.common.collect.ImmutableSet;
 public class TestAccumuloClient {
     @Test
     public void testMetadata() throws Exception {
-        AccumuloClient client = new AccumuloClient(new AccumuloConfig(),
-                CATALOG_CODEC);
-        assertEquals(client.getSchemaNames(), ImmutableSet.of("foo"));
-        assertEquals(client.getTableNames("foo"), ImmutableSet.of("bar"));
+        AccumuloConfig config = new AccumuloConfig();
+        config.setSchema("default");
+        config.setTable("foo");
+        AccumuloClient client = new AccumuloClient(config, CATALOG_CODEC);
+        assertEquals(client.getSchemaNames(), ImmutableSet.of("default"));
+        assertEquals(client.getTableNames("default"), ImmutableSet.of("foo"));
 
-        AccumuloTable table = client.getTable("foo", "bar");
+        AccumuloTable table = client.getTable("default", "foo");
         assertNotNull(table, "table is null");
-        assertEquals(table.getName(), "bar");
+        assertEquals(table.getName(), "foo");
         assertEquals(table.getColumns(),
                 ImmutableList.of(new AccumuloColumn("cf1", "cq1", VARCHAR)));
     }

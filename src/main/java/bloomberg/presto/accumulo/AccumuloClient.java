@@ -36,13 +36,18 @@ public class AccumuloClient {
      * SchemaName -> (TableName -> TableMetadata)
      */
     private final Supplier<Map<String, Map<String, AccumuloTable>>> schemas;
+    private String schema = null;
+    private String table = null;
 
     @Inject
     public AccumuloClient(AccumuloConfig config,
             JsonCodec<Map<String, List<AccumuloTable>>> catalogCodec)
-            throws IOException {
+                    throws IOException {
         requireNonNull(config, "config is null");
         requireNonNull(catalogCodec, "catalogCodec is null");
+
+        schema = config.getSchema();
+        table = config.getTable();
 
         schemas = Suppliers.memoize(schemasSupplier(catalogCodec));
     }
@@ -70,14 +75,14 @@ public class AccumuloClient {
         return tables.get(tableName);
     }
 
-    private static Supplier<Map<String, Map<String, AccumuloTable>>> schemasSupplier(
+    private Supplier<Map<String, Map<String, AccumuloTable>>> schemasSupplier(
             final JsonCodec<Map<String, List<AccumuloTable>>> catalogCodec) {
         Map<String, Map<String, AccumuloTable>> tables = new HashMap<>();
         List<AccumuloColumn> col = new ArrayList<>();
         col.add(new AccumuloColumn("cf1", "cq1", VarcharType.VARCHAR));
         Map<String, AccumuloTable> value = new HashMap<>();
-        value.put("bar", new AccumuloTable("bar", col));
-        tables.put("foo", value);
+        value.put(table, new AccumuloTable(table, col));
+        tables.put(schema, value);
         return () -> {
             return ImmutableMap.copyOf(tables);
         };
