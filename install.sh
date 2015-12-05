@@ -12,7 +12,7 @@ function check_exit_code() {
 	fi
 }
 
-echo "Building with Maven..."
+echo "Building with Maven... Sorry."
 mvn clean package
 check_exit_code
 

@@ -18,28 +18,52 @@ import javax.validation.constraints.NotNull;
 import io.airlift.configuration.Config;
 
 public class AccumuloConfig {
-    private String schema;
-    private String table;
+    private String instance;
+    private String zooKeepers;
+    private String username;
+    private String password;
 
     @NotNull
-    public String getSchema() {
-        return this.schema;
+    public String getInstance() {
+        return this.instance;
     }
 
-    @Config("schema")
-    public AccumuloConfig setSchema(String schema) {
-        this.schema = schema;
+    @Config("instance")
+    public AccumuloConfig setInstance(String instance) {
+        this.instance = instance;
         return this;
     }
 
     @NotNull
-    public String getTable() {
-        return this.table;
+    public String getZooKeepers() {
+        return this.zooKeepers;
     }
 
-    @Config("table")
-    public AccumuloConfig setTable(String table) {
-        this.table = table;
+    @Config("zookeepers")
+    public AccumuloConfig setZooKeepers(String zooKeepers) {
+        this.zooKeepers = zooKeepers;
+        return this;
+    }
+
+    @NotNull
+    public String getUsername() {
+        return this.username;
+    }
+
+    @Config("username")
+    public AccumuloConfig setUsername(String username) {
+        this.username = username;
+        return this;
+    }
+
+    @NotNull
+    public String getPassword() {
+        return this.password;
+    }
+
+    @Config("password")
+    public AccumuloConfig setPassword(String password) {
+        this.password = password;
         return this;
     }
 }

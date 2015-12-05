@@ -14,8 +14,11 @@
     <packaging>presto-plugin</packaging>
 
     <properties>
+        <accumulo.version>1.6.2</accumulo.version>
         <air.main.basedir>${project.basedir}</air.main.basedir>
+        <air.check.skip-all>true</air.check.skip-all>
         <air.check.skip-checkstyle>true</air.check.skip-checkstyle>
+        <air.check.fail-dependency-version-check>false</air.check.fail-dependency-version-check>
     </properties>
 
     <dependencies>
@@ -50,8 +53,8 @@
         </dependency>
 
         <dependency>
-           <groupId>javax.validation</groupId>
-           <artifactId>validation-api</artifactId>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
         </dependency>
 
         <!-- Presto SPI -->
@@ -89,6 +92,13 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- Accumulo -->
+        <dependency>
+            <groupId>org.apache.accumulo</groupId>
+            <artifactId>accumulo-core</artifactId>
+            <version>${accumulo.version}</version>
         </dependency>
 
         <!-- for testing -->

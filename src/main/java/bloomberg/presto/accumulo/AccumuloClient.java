@@ -14,77 +14,97 @@
 package bloomberg.presto.accumulo;
 
 import static java.util.Objects.requireNonNull;
-import io.airlift.json.JsonCodec;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.apache.accumulo.core.client.AccumuloException;
+import org.apache.accumulo.core.client.AccumuloSecurityException;
+import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.ZooKeeperInstance;
+import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+
 import com.facebook.presto.spi.type.VarcharType;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+
+import io.airlift.json.JsonCodec;
+import io.airlift.log.Logger;
 
 public class AccumuloClient {
     /**
      * SchemaName -> (TableName -> TableMetadata)
      */
-    private final Supplier<Map<String, Map<String, AccumuloTable>>> schemas;
-    private String schema = null;
-    private String table = null;
+    private static final Logger LOG = Logger.get(AccumuloClient.class);
+    private ZooKeeperInstance inst = null;
+    private Connector conn = null;
 
     @Inject
     public AccumuloClient(AccumuloConfig config,
             JsonCodec<Map<String, List<AccumuloTable>>> catalogCodec)
-                    throws IOException {
+                    throws IOException, AccumuloException,
+                    AccumuloSecurityException {
+        LOG.debug("constructor");
         requireNonNull(config, "config is null");
         requireNonNull(catalogCodec, "catalogCodec is null");
 
-        schema = config.getSchema();
-        table = config.getTable();
-
-        schemas = Suppliers.memoize(schemasSupplier(catalogCodec));
+        inst = new ZooKeeperInstance(config.getInstance(),
+                config.getZooKeepers());
+        conn = inst.getConnector(config.getUsername(),
+                new PasswordToken(config.getPassword().getBytes()));
     }
 
     public Set<String> getSchemaNames() {
-        return schemas.get().keySet();
+        try {
+            Set<String> schemas = new HashSet<>();
+            schemas.add("default");
+            schemas.addAll(conn.namespaceOperations().list());
+            return schemas;
+        } catch (AccumuloException | AccumuloSecurityException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Set<String> getTableNames(String schema) {
         requireNonNull(schema, "schema is null");
-        Map<String, AccumuloTable> tables = schemas.get().get(schema);
-        if (tables == null) {
-            return ImmutableSet.of();
+        Set<String> tableNames = new HashSet<>();
+
+        for (String tableFromAccumulo : conn.tableOperations().list()) {
+            LOG.debug(String.format("Scanned table %s from Accumulo",
+                    tableFromAccumulo));
+            if (tableFromAccumulo.contains(".")) {
+                String[] tokens = tableFromAccumulo.split("\\.");
+                if (tokens.length == 2) {
+                    if (tokens[0].equals(schema)) {
+                        LOG.debug(String.format("Added table %s", tokens[1]));
+                        tableNames.add(tokens[1]);
+                    }
+                } else {
+                    throw new RuntimeException(String.format(
+                            "Splits from %s is not of length two: %s",
+                            tableFromAccumulo, tokens));
+                }
+            } else if (schema.equals("default")) {
+                LOG.debug(String.format("Added table %s", tableFromAccumulo));
+                tableNames.add(tableFromAccumulo);
+            }
         }
-        return tables.keySet();
+
+        return tableNames;
     }
 
     public AccumuloTable getTable(String schema, String tableName) {
+        LOG.debug("getTable");
         requireNonNull(schema, "schema is null");
         requireNonNull(tableName, "tableName is null");
-        Map<String, AccumuloTable> tables = schemas.get().get(schema);
-        if (tables == null) {
-            return null;
-        }
-        return tables.get(tableName);
-    }
 
-    private Supplier<Map<String, Map<String, AccumuloTable>>> schemasSupplier(
-            final JsonCodec<Map<String, List<AccumuloTable>>> catalogCodec) {
-        Map<String, Map<String, AccumuloTable>> tables = new HashMap<>();
         List<AccumuloColumn> col = new ArrayList<>();
         col.add(new AccumuloColumn("cf1", "cq1", VarcharType.VARCHAR));
-        Map<String, AccumuloTable> value = new HashMap<>();
-        value.put(table, new AccumuloTable(table, col));
-        tables.put(schema, value);
-        return () -> {
-            return ImmutableMap.copyOf(tables);
-        };
+        AccumuloTable table = new AccumuloTable(tableName, col);
+        return table;
     }
 }
