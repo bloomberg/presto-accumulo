@@ -30,7 +30,7 @@ import com.facebook.presto.spi.RecordSet;
 import com.google.common.collect.ImmutableList;
 
 public class TestAccumuloRecordSet {
-    @Test
+    @Test(enabled = false)
     public void testGetColumnTypes() throws Exception {
         RecordSet recordSet = new AccumuloRecordSet(
                 new AccumuloSplit("test", "schema", "table"),
@@ -67,7 +67,7 @@ public class TestAccumuloRecordSet {
         assertEquals(recordSet.getColumnTypes(), ImmutableList.of());
     }
 
-    @Test
+    @Test(enabled = false)
     public void testCursorSimple() throws Exception {
         RecordSet recordSet = new AccumuloRecordSet(
                 new AccumuloSplit("test", "foo", "table"),

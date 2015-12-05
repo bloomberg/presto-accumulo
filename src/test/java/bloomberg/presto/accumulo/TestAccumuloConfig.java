@@ -13,21 +13,28 @@
  */
 package bloomberg.presto.accumulo;
 
+import java.util.Map;
+
+import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableMap;
+
+import io.airlift.configuration.testing.ConfigAssertions;
+
 public class TestAccumuloConfig {
-    // @Test
-    // public void testDefaults() {
-    // ConfigAssertions.assertRecordedDefaults(ConfigAssertions
-    // .recordDefaults(AccumuloConfig.class));
-    // }
-    //
-    // @Test
-    // public void testExplicitPropertyMappings() {
-    // Map<String, String> properties = new ImmutableMap.Builder<String,
-    // String>()
-    // .build();
-    //
-    // AccumuloConfig expected = new AccumuloConfig();
-    //
-    // ConfigAssertions.assertFullMapping(properties, expected);
-    // }
+    @Test(enabled = false)
+    public void testDefaults() {
+        ConfigAssertions.assertRecordedDefaults(
+                ConfigAssertions.recordDefaults(AccumuloConfig.class));
+    }
+
+    @Test(enabled = false)
+    public void testExplicitPropertyMappings() {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .build();
+
+        AccumuloConfig expected = new AccumuloConfig();
+
+        ConfigAssertions.assertFullMapping(properties, expected);
+    }
 }

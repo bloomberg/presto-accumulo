@@ -25,14 +25,14 @@ public class TestAccumuloColumnHandle {
     private final AccumuloColumnHandle columnHandle = new AccumuloColumnHandle(
             "connectorId", "cf1__cq1", VARCHAR, 0);
 
-    @Test
+    @Test(enabled = false)
     public void testJsonRoundTrip() {
         String json = COLUMN_CODEC.toJson(columnHandle);
         AccumuloColumnHandle copy = COLUMN_CODEC.fromJson(json);
         assertEquals(copy, columnHandle);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testEquivalence() {
         EquivalenceTester.equivalenceTester()
                 .addEquivalentGroup(

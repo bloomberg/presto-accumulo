@@ -26,7 +26,7 @@ public class TestAccumuloSplit {
     private final AccumuloSplit split = new AccumuloSplit("connectorId",
             "schemaName", "tableName");
 
-    @Test
+    @Test(enabled = false)
     public void testAddresses() {
         // split with default port
         AccumuloSplit httpSplit = new AccumuloSplit("connectorId", "schemaName",
@@ -36,7 +36,7 @@ public class TestAccumuloSplit {
         assertEquals(httpSplit.isRemotelyAccessible(), true);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testJsonRoundTrip() {
         JsonCodec<AccumuloSplit> codec = jsonCodec(AccumuloSplit.class);
         String json = codec.toJson(split);

@@ -28,14 +28,14 @@ public class TestAccumuloTable {
             ImmutableList.of(new AccumuloColumn("cf1", "cq1", VARCHAR),
                     new AccumuloColumn("cf2", "cq2", BIGINT)));
 
-    @Test
+    @Test(enabled = false)
     public void testColumnMetadata() {
         assertEquals(exampleTable.getColumnsMetadata(),
                 ImmutableList.of(new ColumnMetadata("cf1__cq1", VARCHAR, false),
                         new ColumnMetadata("cf2__cq2", BIGINT, false)));
     }
 
-    @Test
+    @Test(enabled = false)
     public void testRoundTrip() throws Exception {
         String json = TABLE_CODEC.toJson(exampleTable);
         AccumuloTable exampleTableCopy = TABLE_CODEC.fromJson(json);

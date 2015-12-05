@@ -24,7 +24,7 @@ public class TestAccumuloTableHandle {
     private final AccumuloTableHandle tableHandle = new AccumuloTableHandle(
             "connectorId", "schemaName", "tableName");
 
-    @Test
+    @Test(enabled = false)
     public void testJsonRoundTrip() {
         JsonCodec<AccumuloTableHandle> codec = jsonCodec(
                 AccumuloTableHandle.class);
@@ -33,7 +33,7 @@ public class TestAccumuloTableHandle {
         assertEquals(copy, tableHandle);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testEquivalence() {
         EquivalenceTester.equivalenceTester()
                 .addEquivalentGroup(

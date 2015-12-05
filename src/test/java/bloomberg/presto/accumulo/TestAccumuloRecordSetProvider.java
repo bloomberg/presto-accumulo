@@ -31,7 +31,7 @@ import com.google.common.collect.ImmutableList;
 
 public class TestAccumuloRecordSetProvider {
 
-    @Test
+    @Test(enabled = false)
     public void testGetRecordSet() throws Exception {
         AccumuloRecordSetProvider recordSetProvider = new AccumuloRecordSetProvider(
                 new AccumuloConnectorId("test"));
