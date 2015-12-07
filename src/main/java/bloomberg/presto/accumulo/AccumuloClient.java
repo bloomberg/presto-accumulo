@@ -62,7 +62,14 @@ public class AccumuloClient {
         try {
             Set<String> schemas = new HashSet<>();
             schemas.add("default");
-            schemas.addAll(conn.namespaceOperations().list());
+
+            // add all non-accumulo reserved namespaces
+            for (String ns : conn.namespaceOperations().list()) {
+                if (!ns.equals("accumulo")) {
+                    schemas.add(ns);
+                }
+            }
+
             return schemas;
         } catch (AccumuloException | AccumuloSecurityException e) {
             throw new RuntimeException(e);
@@ -71,13 +78,18 @@ public class AccumuloClient {
 
     public Set<String> getTableNames(String schema) {
         requireNonNull(schema, "schema is null");
+
+        if (schema.equals("accumulo")) {
+            throw new RuntimeException("accumulo is a reserved schema");
+        }
+
         Set<String> tableNames = new HashSet<>();
 
-        for (String tableFromAccumulo : conn.tableOperations().list()) {
+        for (String accumuloTable : conn.tableOperations().list()) {
             LOG.debug(String.format("Scanned table %s from Accumulo",
-                    tableFromAccumulo));
-            if (tableFromAccumulo.contains(".")) {
-                String[] tokens = tableFromAccumulo.split("\\.");
+                    accumuloTable));
+            if (accumuloTable.contains(".")) {
+                String[] tokens = accumuloTable.split("\\.");
                 if (tokens.length == 2) {
                     if (tokens[0].equals(schema)) {
                         LOG.debug(String.format("Added table %s", tokens[1]));
@@ -86,11 +98,14 @@ public class AccumuloClient {
                 } else {
                     throw new RuntimeException(String.format(
                             "Splits from %s is not of length two: %s",
-                            tableFromAccumulo, tokens));
+                            accumuloTable, tokens));
                 }
             } else if (schema.equals("default")) {
-                LOG.debug(String.format("Added table %s", tableFromAccumulo));
-                tableNames.add(tableFromAccumulo);
+                // skip trace table
+                if (!accumuloTable.equals("trace")) {
+                    LOG.debug(String.format("Added table %s", accumuloTable));
+                    tableNames.add(accumuloTable);
+                }
             }
         }
 
