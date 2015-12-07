@@ -16,7 +16,6 @@ package bloomberg.presto.accumulo;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,7 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 
-import com.facebook.presto.spi.type.VarcharType;
+import com.facebook.presto.spi.ColumnMetadata;
 
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
@@ -42,6 +41,7 @@ public class AccumuloClient {
     private static final Logger LOG = Logger.get(AccumuloClient.class);
     private ZooKeeperInstance inst = null;
     private Connector conn = null;
+    private AccumuloColumnMetadataProvider columnMetadata = null;
 
     @Inject
     public AccumuloClient(AccumuloConfig config,
@@ -56,6 +56,8 @@ public class AccumuloClient {
                 config.getZooKeepers());
         conn = inst.getConnector(config.getUsername(),
                 new PasswordToken(config.getPassword().getBytes()));
+
+        columnMetadata = AccumuloColumnMetadataProvider.getDefault(config);
     }
 
     public Set<String> getSchemaNames() {
@@ -116,10 +118,13 @@ public class AccumuloClient {
         LOG.debug("getTable");
         requireNonNull(schema, "schema is null");
         requireNonNull(tableName, "tableName is null");
+        return new AccumuloTable(tableName,
+                columnMetadata.getColumnMetadata(schema, tableName));
+    }
 
-        List<AccumuloColumn> col = new ArrayList<>();
-        col.add(new AccumuloColumn("cf1", "cq1", VarcharType.VARCHAR));
-        AccumuloTable table = new AccumuloTable(tableName, col);
-        return table;
+    public AccumuloColumn getColumnMetadata(String schema, String table,
+            ColumnMetadata column) {
+        return columnMetadata.getAccumuloColumn(schema, table,
+                column.getName());
     }
 }

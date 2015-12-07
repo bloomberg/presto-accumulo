@@ -25,14 +25,14 @@ import com.google.common.collect.ImmutableList;
 
 public class TestAccumuloTable {
     private final AccumuloTable exampleTable = new AccumuloTable("tableName",
-            ImmutableList.of(new AccumuloColumn("cf1", "cq1", VARCHAR),
-                    new AccumuloColumn("cf2", "cq2", BIGINT)));
+            ImmutableList.of(new AccumuloColumn("col_a", "cf1", "cq1", VARCHAR),
+                    new AccumuloColumn("col_b", "cf2", "cq2", BIGINT)));
 
     @Test(enabled = false)
     public void testColumnMetadata() {
         assertEquals(exampleTable.getColumnsMetadata(),
-                ImmutableList.of(new ColumnMetadata("cf1__cq1", VARCHAR, false),
-                        new ColumnMetadata("cf2__cq2", BIGINT, false)));
+                ImmutableList.of(new ColumnMetadata("col_a", VARCHAR, false),
+                        new ColumnMetadata("col_b", BIGINT, false)));
     }
 
     @Test(enabled = false)

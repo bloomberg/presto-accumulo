@@ -34,7 +34,7 @@ public class TestAccumuloClient {
         AccumuloTable table = client.getTable("default", "foo");
         assertNotNull(table, "table is null");
         assertEquals(table.getName(), "foo");
-        assertEquals(table.getColumns(),
-                ImmutableList.of(new AccumuloColumn("cf1", "cq1", VARCHAR)));
+        assertEquals(table.getColumns(), ImmutableList
+                .of(new AccumuloColumn("col_a", "cf1", "cq1", VARCHAR)));
     }
 }

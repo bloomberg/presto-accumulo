@@ -17,6 +17,7 @@ mvn clean package
 check_exit_code
 
 echo "Making plugin directory..."
+sudo rm -rf $PRESTO_HOME/plugin/accumulo/
 sudo mkdir -p $PRESTO_HOME/plugin/accumulo/
 check_exit_code
 

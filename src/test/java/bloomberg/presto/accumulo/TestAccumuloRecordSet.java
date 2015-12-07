@@ -35,29 +35,32 @@ public class TestAccumuloRecordSet {
         RecordSet recordSet = new AccumuloRecordSet(
                 new AccumuloSplit("test", "schema", "table"),
                 ImmutableList.of(
-                        new AccumuloColumnHandle("test", "cf1__cq1", VARCHAR,
-                                0),
-                        new AccumuloColumnHandle("test", "cf2__cq2", BIGINT,
-                                1)));
+                        new AccumuloColumnHandle("test", "col_a", "cf1", "cq1",
+                                VARCHAR, 0),
+                        new AccumuloColumnHandle("test", "col_b", "cf2", "cq2",
+                                BIGINT, 1)));
         assertEquals(recordSet.getColumnTypes(),
                 ImmutableList.of(VARCHAR, BIGINT));
 
         recordSet = new AccumuloRecordSet(
                 new AccumuloSplit("test", "foo", "table"),
                 ImmutableList.of(
-                        new AccumuloColumnHandle("test", "cf2__cq2", BIGINT, 1),
-                        new AccumuloColumnHandle("test", "cf1__cq1", VARCHAR,
-                                0)));
+                        new AccumuloColumnHandle("test", "col_b", "cf2", "cq2",
+                                BIGINT, 1),
+                        new AccumuloColumnHandle("test", "col_a", "cf1", "cq1",
+                                VARCHAR, 0)));
         assertEquals(recordSet.getColumnTypes(),
                 ImmutableList.of(BIGINT, VARCHAR));
 
         recordSet = new AccumuloRecordSet(
                 new AccumuloSplit("test", "foo", "table"),
                 ImmutableList.of(
-                        new AccumuloColumnHandle("test", "cf2__cq2", BIGINT, 1),
-                        new AccumuloColumnHandle("test", "cf2__cq2", BIGINT, 1),
-                        new AccumuloColumnHandle("test", "cf1__cq1", VARCHAR,
-                                0)));
+                        new AccumuloColumnHandle("test", "col_b", "cf2", "cq2",
+                                BIGINT, 1),
+                        new AccumuloColumnHandle("test", "col_b", "cf2", "cq2",
+                                BIGINT, 1),
+                        new AccumuloColumnHandle("test", "col_a", "cf1", "cq1",
+                                VARCHAR, 0)));
         assertEquals(recordSet.getColumnTypes(),
                 ImmutableList.of(BIGINT, BIGINT, VARCHAR));
 
@@ -71,8 +74,8 @@ public class TestAccumuloRecordSet {
     public void testCursorSimple() throws Exception {
         RecordSet recordSet = new AccumuloRecordSet(
                 new AccumuloSplit("test", "foo", "table"),
-                ImmutableList.of(new AccumuloColumnHandle("test", "cf1__cq1",
-                        VARCHAR, 0)));
+                ImmutableList.of(new AccumuloColumnHandle("test", "col_a",
+                        "cf1", "cq1", VARCHAR, 0)));
         RecordCursor cursor = recordSet.cursor();
 
         assertEquals(cursor.getType(0), VARCHAR);

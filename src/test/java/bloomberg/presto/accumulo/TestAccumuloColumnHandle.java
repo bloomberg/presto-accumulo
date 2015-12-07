@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 
 public class TestAccumuloColumnHandle {
     private final AccumuloColumnHandle columnHandle = new AccumuloColumnHandle(
-            "connectorId", "cf1__cq1", VARCHAR, 0);
+            "connectorId", "col_a", "cf1", "cq1", VARCHAR, 0);
 
     @Test(enabled = false)
     public void testJsonRoundTrip() {
@@ -36,31 +36,32 @@ public class TestAccumuloColumnHandle {
     public void testEquivalence() {
         EquivalenceTester.equivalenceTester()
                 .addEquivalentGroup(
-                        new AccumuloColumnHandle("connectorId", "cf1__cfq1",
-                                VARCHAR, 0),
-                        new AccumuloColumnHandle("connectorId", "cf1__cfq1",
-                                VARCHAR, 0),
-                new AccumuloColumnHandle("connectorId", "cf1__cfq1", BIGINT, 0),
-                new AccumuloColumnHandle("connectorId", "cf1__cfq1", VARCHAR,
-                        1))
+                        new AccumuloColumnHandle("connectorId", "col_a", "cf1",
+                                "cfq1", VARCHAR, 0),
+                        new AccumuloColumnHandle("connectorId", "col_a", "cf1",
+                                "cfq1", VARCHAR, 0),
+                new AccumuloColumnHandle("connectorId", "col_a", "cf1", "cfq1",
+                        BIGINT, 0),
+                new AccumuloColumnHandle("connectorId", "col_a", "cf1", "cfq1",
+                        VARCHAR, 1))
                 .addEquivalentGroup(
-                        new AccumuloColumnHandle("connectorIdX", "cf1__cfq1",
-                                VARCHAR, 0),
-                        new AccumuloColumnHandle("connectorIdX", "cf1__cfq1",
-                                VARCHAR, 0),
-                        new AccumuloColumnHandle("connectorIdX", "cf1__cfq1",
-                                BIGINT, 0),
-                        new AccumuloColumnHandle("connectorIdX", "cf1__cfq1",
-                                VARCHAR, 1))
+                        new AccumuloColumnHandle("connectorIdX", "col_a", "cf1",
+                                "cfq1", VARCHAR, 0),
+                        new AccumuloColumnHandle("connectorIdX", "col_a", "cf1",
+                                "cfq1", VARCHAR, 0),
+                        new AccumuloColumnHandle("connectorIdX", "col_a", "cf1",
+                                "cfq1", BIGINT, 0),
+                        new AccumuloColumnHandle("connectorIdX", "col_a", "cf1",
+                                "cfq1", VARCHAR, 1))
                 .addEquivalentGroup(
-                        new AccumuloColumnHandle("connectorId", "cf2__cfq2",
-                                VARCHAR, 0),
-                        new AccumuloColumnHandle("connectorId", "cf2__cfq2",
-                                VARCHAR, 0),
-                        new AccumuloColumnHandle("connectorId", "cf2__cfq2",
-                                BIGINT, 0),
-                        new AccumuloColumnHandle("connectorId", "cf2__cfq2",
-                                VARCHAR, 1))
+                        new AccumuloColumnHandle("connectorId", "col_b", "cf2",
+                                "cfq2", VARCHAR, 0),
+                        new AccumuloColumnHandle("connectorId", "col_b", "cf2",
+                                "cfq2", VARCHAR, 0),
+                        new AccumuloColumnHandle("connectorId", "col_b", "cf2",
+                                "cfq2", BIGINT, 0),
+                        new AccumuloColumnHandle("connectorId", "col_b", "cf2",
+                                "cfq2", VARCHAR, 1))
                 .check();
     }
 }

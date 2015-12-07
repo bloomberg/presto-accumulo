@@ -24,24 +24,29 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class AccumuloColumn {
+    private final String name;
     private final String family;
     private final String qualifier;
     private final Type type;
 
     @JsonCreator
-    public AccumuloColumn(@JsonProperty("family") String family,
+    public AccumuloColumn(@JsonProperty("name") String name,
+            @JsonProperty("family") String family,
             @JsonProperty("qualifier") String qualifier,
             @JsonProperty("type") Type type) {
+        checkArgument(!isNullOrEmpty(name), "name is null or is empty");
         checkArgument(!isNullOrEmpty(family), "family is null or is empty");
         checkArgument(!isNullOrEmpty(qualifier),
                 "qualifier is null or is empty");
+        this.name = name;
         this.family = family;
         this.qualifier = qualifier;
         this.type = requireNonNull(type, "type is null");
     }
 
+    @JsonProperty
     public String getName() {
-        return family + "__" + qualifier;
+        return name;
     }
 
     @JsonProperty

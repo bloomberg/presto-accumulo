@@ -142,25 +142,29 @@ public class AccumuloMetadata implements ConnectorMetadata {
     @Override
     public Map<String, ColumnHandle> getColumnHandles(ConnectorSession session,
             ConnectorTableHandle tableHandle) {
-        AccumuloTableHandle exampleTableHandle = checkType(tableHandle,
+        AccumuloTableHandle tHandle = checkType(tableHandle,
                 AccumuloTableHandle.class, "tableHandle");
-        checkArgument(exampleTableHandle.getConnectorId().equals(connectorId),
+        checkArgument(tHandle.getConnectorId().equals(connectorId),
                 "tableHandle is not for this connector");
 
-        AccumuloTable table = client.getTable(
-                exampleTableHandle.getSchemaName(),
-                exampleTableHandle.getTableName());
+        AccumuloTable table = client.getTable(tHandle.getSchemaName(),
+                tHandle.getTableName());
         if (table == null) {
-            throw new TableNotFoundException(
-                    exampleTableHandle.toSchemaTableName());
+            throw new TableNotFoundException(tHandle.toSchemaTableName());
         }
 
         ImmutableMap.Builder<String, ColumnHandle> columnHandles = ImmutableMap
                 .builder();
         int index = 0;
         for (ColumnMetadata column : table.getColumnsMetadata()) {
-            columnHandles.put(column.getName(), new AccumuloColumnHandle(
-                    connectorId, column.getName(), column.getType(), index));
+
+            AccumuloColumn metadata = client.getColumnMetadata(
+                    tHandle.getSchemaName(), tHandle.getTableName(), column);
+
+            columnHandles.put(column.getName(),
+                    new AccumuloColumnHandle(connectorId, column.getName(),
+                            metadata.getFamily(), metadata.getQualifier(),
+                            column.getType(), index));
             index++;
         }
         return columnHandles.build();

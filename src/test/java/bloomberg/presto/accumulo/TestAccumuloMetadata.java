@@ -65,8 +65,8 @@ public class TestAccumuloMetadata {
     public void testGetColumnHandles() {
         // known table
         assertEquals(metadata.getColumnHandles(SESSION, TEST_TABLE_HANDLE),
-                ImmutableMap.of("cf1__cq1", new AccumuloColumnHandle(
-                        CONNECTOR_ID, "cf1__cq1", VARCHAR, 0)));
+                ImmutableMap.of("col_a", "cf1", "cq1", new AccumuloColumnHandle(
+                        CONNECTOR_ID, "col_a", "cf1", "cq1", VARCHAR, 0)));
 
         // unknown table
         try {
@@ -90,8 +90,8 @@ public class TestAccumuloMetadata {
                 .getTableMetadata(SESSION, TEST_TABLE_HANDLE);
         assertEquals(tableMetadata.getTable(),
                 new SchemaTableName("default", "foo"));
-        assertEquals(tableMetadata.getColumns(), ImmutableList
-                .of(new ColumnMetadata("cf1__cq1", VARCHAR, false)));
+        assertEquals(tableMetadata.getColumns(),
+                ImmutableList.of(new ColumnMetadata("col_a", VARCHAR, false)));
 
         // unknown tables should produce null
         assertNull(metadata.getTableMetadata(SESSION,
@@ -123,9 +123,9 @@ public class TestAccumuloMetadata {
     public void getColumnMetadata() {
         assertEquals(
                 metadata.getColumnMetadata(SESSION, TEST_TABLE_HANDLE,
-                        new AccumuloColumnHandle(CONNECTOR_ID, "cf1__cq1",
-                                VARCHAR, 0)),
-                new ColumnMetadata("cf1__cq1", VARCHAR, false));
+                        new AccumuloColumnHandle(CONNECTOR_ID, "col_a", "cf1",
+                                "cq1", VARCHAR, 0)),
+                new ColumnMetadata("col_a", VARCHAR, false));
 
         // example connector assumes that the table handle and column handle are
         // properly formed, so it will return a metadata object for any

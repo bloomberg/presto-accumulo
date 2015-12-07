@@ -19,6 +19,8 @@
         <air.check.skip-all>true</air.check.skip-all>
         <air.check.skip-checkstyle>true</air.check.skip-checkstyle>
         <air.check.fail-dependency-version-check>false</air.check.fail-dependency-version-check>
+        <curator.version>2.9.1</curator.version>
+        <zookeeper.version>3.4.6</zookeeper.version>
     </properties>
 
     <dependencies>
@@ -101,13 +103,30 @@
             <version>${accumulo.version}</version>
         </dependency>
 
-        <!-- for testing -->
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-framework</artifactId>
+            <version>${curator.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-client</artifactId>
+            <version>${curator.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>${zookeeper.version}</version><!--$NO-MVN-MAN-VER$ -->
+        </dependency>
+
         <dependency>
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-main</artifactId>
-            <scope>test</scope>
         </dependency>
 
+        <!-- for testing -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>

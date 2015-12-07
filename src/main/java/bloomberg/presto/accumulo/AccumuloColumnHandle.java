@@ -35,16 +35,18 @@ public final class AccumuloColumnHandle implements ColumnHandle {
     @JsonCreator
     public AccumuloColumnHandle(@JsonProperty("connectorId") String connectorId,
             @JsonProperty("columnName") String columnName,
+            @JsonProperty("columnFamily") String columnFamily,
+            @JsonProperty("columnQualifier") String columnQualifier,
             @JsonProperty("columnType") Type columnType,
             @JsonProperty("ordinalPosition") int ordinalPosition) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.columnName = requireNonNull(columnName, "columnName is null");
+        this.columnFamily = requireNonNull(columnFamily,
+                "columnFamily is null");
+        this.columnQualifier = requireNonNull(columnQualifier,
+                "columnQualifier is null");
         this.columnType = requireNonNull(columnType, "columnType is null");
         this.ordinalPosition = ordinalPosition;
-
-        int idx = columnName.indexOf("__");
-        this.columnFamily = columnName.substring(0, idx);
-        this.columnQualifier = columnName.substring(idx + 2);
     }
 
     @JsonProperty
@@ -57,10 +59,12 @@ public final class AccumuloColumnHandle implements ColumnHandle {
         return columnName;
     }
 
+    @JsonProperty
     public String getColumnFamily() {
         return columnFamily;
     }
 
+    @JsonProperty
     public String getColumnQualifier() {
         return columnQualifier;
     }
@@ -101,7 +105,9 @@ public final class AccumuloColumnHandle implements ColumnHandle {
     @Override
     public String toString() {
         return toStringHelper(this).add("connectorId", connectorId)
-                .add("columnName", columnName).add("columnType", columnType)
+                .add("columnName", columnName).add("columnFamily", columnFamily)
+                .add("columnQualifier", columnQualifier)
+                .add("columnType", columnType)
                 .add("ordinalPosition", ordinalPosition).toString();
     }
 }

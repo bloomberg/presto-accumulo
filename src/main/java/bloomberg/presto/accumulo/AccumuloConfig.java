@@ -22,6 +22,7 @@ public class AccumuloConfig {
     private String zooKeepers;
     private String username;
     private String password;
+    private String zkMetadataRoot;
 
     @NotNull
     public String getInstance() {
@@ -65,5 +66,15 @@ public class AccumuloConfig {
     public AccumuloConfig setPassword(String password) {
         this.password = password;
         return this;
+    }
+
+    @NotNull
+    public String getZkMetadataRoot() {
+        return zkMetadataRoot == null ? "/presto-accumulo" : zkMetadataRoot;
+    }
+
+    @Config("zookeeper.metadata.root")
+    public void setZkMetadataRoot(String zkMetadataRoot) {
+        this.zkMetadataRoot = zkMetadataRoot;
     }
 }

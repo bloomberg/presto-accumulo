@@ -37,7 +37,7 @@ public class TestAccumuloRecordSetProvider {
                 new AccumuloConnectorId("test"));
         RecordSet recordSet = recordSetProvider.getRecordSet(SESSION,
                 new AccumuloSplit("test", "foo", "bar"),
-                ImmutableList.of(new AccumuloColumnHandle("test", "cf1__cq1",
+                ImmutableList.of(new AccumuloColumnHandle("test", "col_a", "cf1", "cq1",
                         VARCHAR, 0)));
         assertNotNull(recordSet, "recordSet is null");
 
