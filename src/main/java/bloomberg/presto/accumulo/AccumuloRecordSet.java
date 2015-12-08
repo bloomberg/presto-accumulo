@@ -17,6 +17,10 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.List;
 
+import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.Scanner;
+import org.apache.accumulo.core.data.Range;
+
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.RecordSet;
 import com.facebook.presto.spi.type.Type;
@@ -25,9 +29,10 @@ import com.google.common.collect.ImmutableList;
 public class AccumuloRecordSet implements RecordSet {
     private final List<AccumuloColumnHandle> columnHandles;
     private final List<Type> columnTypes;
+    private final Scanner scan;
 
-    public AccumuloRecordSet(AccumuloSplit split,
-            List<AccumuloColumnHandle> columnHandles) {
+    public AccumuloRecordSet(AccumuloConfig config, AccumuloSplit split,
+            List<AccumuloColumnHandle> columnHandles, Connector conn) {
         requireNonNull(split, "split is null");
 
         this.columnHandles = requireNonNull(columnHandles,
@@ -37,6 +42,18 @@ public class AccumuloRecordSet implements RecordSet {
             types.add(column.getColumnType());
         }
         this.columnTypes = types.build();
+
+        try {
+            scan = conn.createScanner(
+                    (split.getSchemaName().equals("default") ? ""
+                            : split.getSchemaName() + ".")
+                            + split.getTableName(),
+                    conn.securityOperations()
+                            .getUserAuthorizations(config.getUsername()));
+            scan.setRange(new Range());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -46,6 +63,6 @@ public class AccumuloRecordSet implements RecordSet {
 
     @Override
     public RecordCursor cursor() {
-        return new AccumuloRecordCursor(columnHandles);
+        return new AccumuloRecordCursor(columnHandles, scan);
     }
 }

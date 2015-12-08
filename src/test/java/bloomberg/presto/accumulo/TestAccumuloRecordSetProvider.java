@@ -34,7 +34,7 @@ public class TestAccumuloRecordSetProvider {
     @Test(enabled = false)
     public void testGetRecordSet() throws Exception {
         AccumuloRecordSetProvider recordSetProvider = new AccumuloRecordSetProvider(
-                new AccumuloConnectorId("test"));
+                new AccumuloConnectorId("test"), null);
         RecordSet recordSet = recordSetProvider.getRecordSet(SESSION,
                 new AccumuloSplit("test", "foo", "bar"),
                 ImmutableList.of(new AccumuloColumnHandle("test", "col_a", "cf1", "cq1",

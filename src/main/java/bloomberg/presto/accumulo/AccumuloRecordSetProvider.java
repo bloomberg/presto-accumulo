@@ -21,6 +21,10 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.ZooKeeperInstance;
+import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.ConnectorSession;
@@ -30,11 +34,24 @@ import com.google.common.collect.ImmutableList;
 
 public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
     private final String connectorId;
+    private final AccumuloConfig config;
+    private final Connector conn;
 
     @Inject
-    public AccumuloRecordSetProvider(AccumuloConnectorId connectorId) {
+    public AccumuloRecordSetProvider(AccumuloConnectorId connectorId,
+            AccumuloConfig config) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null")
                 .toString();
+        this.config = requireNonNull(config, "config is null");
+
+        ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(),
+                config.getZooKeepers());
+        try {
+            conn = inst.getConnector(config.getUsername(),
+                    new PasswordToken(config.getPassword().getBytes()));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -53,6 +70,7 @@ public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
                     checkType(handle, AccumuloColumnHandle.class, "handle"));
         }
 
-        return new AccumuloRecordSet(exampleSplit, handles.build());
+        return new AccumuloRecordSet(config, exampleSplit, handles.build(),
+                conn);
     }
 }
