@@ -29,6 +29,6 @@ cp $PRESTO_HOME/lib/jackson-annotations-2.4.4.jar $ACCUMULO_HOME/lib/
 # An example column name, use --help for details
 accumulo jar ~/gitrepos/presto-accumulo/target/presto-accumulo-0.128.jar \
 bloomberg.presto.accumulo.metadata.ZooKeeperMetadataCreator \
--z localhost:2181 -n default -t mytable -f cfa -q cb -c col_a -p INTEGER
+-z localhost:2181 -n default -t mytable -f cfa -q cb -c col_a -p BIGINT
 ```
 
