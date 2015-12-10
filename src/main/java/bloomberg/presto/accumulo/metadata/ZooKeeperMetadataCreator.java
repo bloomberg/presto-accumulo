@@ -13,6 +13,8 @@
  */
 package bloomberg.presto.accumulo.metadata;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.security.InvalidParameterException;
 
 import org.apache.commons.cli.CommandLine;
@@ -89,7 +91,7 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
             client.delete().forPath(path);
         }
 
-        client.create().forPath(path, data);
+        client.create().creatingParentsIfNeeded().forPath(path, data);
     }
 
     public String getColumnFamily() {
@@ -285,9 +287,25 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
         try {
             if (checkRoot.checkExists()
                     .forPath(this.getMetadataRoot()) == null) {
-                throw new Exception(
-                        String.format("ZK metadata root %s does not exist",
-                                this.getMetadataRoot()));
+                boolean created = false;
+                BufferedReader rdr = new BufferedReader(
+                        new InputStreamReader(System.in));
+                do {
+                    System.out.println(String.format(
+                            "ZK metadata root %s does not exist, create it? (y/n)",
+                            this.getMetadataRoot()));
+
+                    String line = rdr.readLine();
+                    if (line.toLowerCase().equals("y")) {
+                        checkRoot.create().creatingParentsIfNeeded()
+                                .forPath(this.getMetadataRoot());
+                        created = true;
+                    } else if (line.toLowerCase().equals("n")) {
+                        System.exit(0);
+                    } else {
+                        System.out.println("Please enter 'y' or 'n'");
+                    }
+                } while (!created);
             }
         } catch (Exception e) {
             throw new RuntimeException(
