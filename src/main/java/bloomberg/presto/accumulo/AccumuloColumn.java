@@ -35,8 +35,13 @@ public final class AccumuloColumn {
             @JsonProperty("qualifier") String qualifier,
             @JsonProperty("type") Type type) {
         checkArgument(!isNullOrEmpty(name), "name is null or is empty");
-        checkArgument(!isNullOrEmpty(family), "family is null or is empty");
-        checkArgument(!isNullOrEmpty(qualifier),
+        checkArgument(
+                name.equals(AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)
+                        ? true : !isNullOrEmpty(family),
+                "family is null or is empty");
+        checkArgument(
+                name.equals(AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)
+                        ? true : !isNullOrEmpty(qualifier),
                 "qualifier is null or is empty");
         this.name = name;
         this.family = family;

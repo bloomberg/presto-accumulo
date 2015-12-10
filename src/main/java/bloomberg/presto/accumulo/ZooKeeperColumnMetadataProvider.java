@@ -84,6 +84,8 @@ public class ZooKeeperColumnMetadataProvider
             String tablePath = schemaPath + '/' + table;
             List<AccumuloColumn> columns = new ArrayList<>();
 
+            columns.add(super.getRowIdColumn());
+
             if (client.checkExists().forPath(schemaPath) != null) {
                 if (client.checkExists().forPath(tablePath) != null) {
                     for (String colName : client.getChildren()
@@ -112,8 +114,13 @@ public class ZooKeeperColumnMetadataProvider
     public AccumuloColumn getAccumuloColumn(String schema, String table,
             String colName) {
         try {
-            String path = String.format("/%s/%s/%s", schema, table, colName);
-            return toAccumuloColumn(client.getData().forPath(path));
+            if (colName.equals(
+                    AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)) {
+                return super.getRowIdColumn();
+            } else {
+                return toAccumuloColumn(client.getData().forPath(
+                        String.format("/%s/%s/%s", schema, table, colName)));
+            }
         } catch (Exception e) {
             throw new RuntimeException("Error fetching metadata", e);
         }

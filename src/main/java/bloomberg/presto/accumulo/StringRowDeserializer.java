@@ -17,10 +17,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
 
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.core.iterators.user.WholeColumnFamilyIterator;
+import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
 import com.google.common.collect.ImmutableMap;
@@ -34,7 +35,8 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
     private static final Logger LOG = Logger.get(StringRowDeserializer.class);
     private Map<String, Map<String, String>> f2q2pc = new HashMap<>();
     private Map<String, Object> columnValues = new HashMap<>();
-    private Text cf = new Text(), cq = new Text(), value = new Text();
+    private Text rowId = new Text(), cf = new Text(), cq = new Text(),
+            value = new Text();
 
     @Override
     public void setMapping(String name, String fam, String qual) {
@@ -47,8 +49,14 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
     public void deserialize(Entry<Key, Value> row) throws IOException {
         columnValues.clear();
 
-        for (Entry<Key, Value> kvp : WholeColumnFamilyIterator
-                .decodeColumnFamily(row.getKey(), row.getValue()).entrySet()) {
+        SortedMap<Key, Value> decodedRow = WholeRowIterator
+                .decodeRow(row.getKey(), row.getValue());
+
+        decodedRow.entrySet().iterator().next().getKey().getRow(rowId);
+        columnValues.put(AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME,
+                rowId.toString());
+
+        for (Entry<Key, Value> kvp : decodedRow.entrySet()) {
             kvp.getKey().getColumnFamily(cf);
             kvp.getKey().getColumnQualifier(cq);
             value.set(kvp.getValue().get());

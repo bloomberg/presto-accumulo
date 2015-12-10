@@ -41,10 +41,13 @@ public final class AccumuloColumnHandle implements ColumnHandle {
             @JsonProperty("ordinalPosition") int ordinalPosition) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.columnName = requireNonNull(columnName, "columnName is null");
-        this.columnFamily = requireNonNull(columnFamily,
-                "columnFamily is null");
-        this.columnQualifier = requireNonNull(columnQualifier,
-                "columnQualifier is null");
+        this.columnFamily = columnName.equals(
+                AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME) ? null
+                        : requireNonNull(columnFamily, "columnFamily is null");
+        this.columnQualifier = columnName.equals(
+                AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME) ? null
+                        : requireNonNull(columnQualifier,
+                                "columnQualifier is null");
         this.columnType = requireNonNull(columnType, "columnType is null");
         this.ordinalPosition = ordinalPosition;
     }

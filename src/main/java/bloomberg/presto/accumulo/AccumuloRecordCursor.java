@@ -28,7 +28,7 @@ import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.core.iterators.user.WholeColumnFamilyIterator;
+import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.RecordCursor;
@@ -57,8 +57,8 @@ public class AccumuloRecordCursor implements RecordCursor {
         this.scan = scan;
         deserializer = AccumuloRowDeserializer.getDefault();
 
-        IteratorSetting cfg = new IteratorSetting(1, "whole-key-value-iterator",
-                WholeColumnFamilyIterator.class);
+        IteratorSetting cfg = new IteratorSetting(1, "whole-row-iterator",
+                WholeRowIterator.class);
         this.scan.addScanIterator(cfg);
 
         fieldToColumnName = new String[cHandles.size()];
@@ -67,14 +67,22 @@ public class AccumuloRecordCursor implements RecordCursor {
             AccumuloColumnHandle cHandle = cHandles.get(i);
             fieldToColumnName[i] = cHandle.getColumnName();
 
-            deserializer.setMapping(cHandle.getColumnName(),
-                    cHandle.getColumnFamily(), cHandle.getColumnQualifier());
+            if (!cHandle.getColumnName().equals(
+                    AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)) {
+                deserializer.setMapping(cHandle.getColumnName(),
+                        cHandle.getColumnFamily(),
+                        cHandle.getColumnQualifier());
 
-            fam.set(cHandle.getColumnFamily());
-            qual.set(cHandle.getColumnQualifier());
-            this.scan.fetchColumn(fam, qual);
-            LOG.debug(String.format("Column %s maps to Accumulo column %s:%s",
-                    cHandle.getColumnName(), fam, qual));
+                fam.set(cHandle.getColumnFamily());
+                qual.set(cHandle.getColumnQualifier());
+                this.scan.fetchColumn(fam, qual);
+                LOG.debug(
+                        String.format("Column %s maps to Accumulo column %s:%s",
+                                cHandle.getColumnName(), fam, qual));
+            } else {
+                LOG.debug(String.format("Column %s maps to Accumulo row ID",
+                        cHandle.getColumnName()));
+            }
         }
 
         iterator = this.scan.iterator();

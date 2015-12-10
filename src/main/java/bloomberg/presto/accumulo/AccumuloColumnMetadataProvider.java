@@ -15,7 +15,13 @@ package bloomberg.presto.accumulo;
 
 import java.util.List;
 
+import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.VarcharType;
+
 public abstract class AccumuloColumnMetadataProvider {
+
+    public static final String ROW_ID_COLUMN_NAME = "recordkey";
+    public static final Type ROW_ID_COLUMN_TYPE = VarcharType.VARCHAR;
 
     public static AccumuloColumnMetadataProvider getDefault(
             AccumuloConfig config) {
@@ -28,4 +34,8 @@ public abstract class AccumuloColumnMetadataProvider {
     public abstract AccumuloColumn getAccumuloColumn(String schema,
             String table, String name);
 
+    public AccumuloColumn getRowIdColumn() {
+        return new AccumuloColumn(ROW_ID_COLUMN_NAME, null, null,
+                ROW_ID_COLUMN_TYPE);
+    }
 }
