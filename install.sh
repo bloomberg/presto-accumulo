@@ -25,6 +25,7 @@ echo "Copying plugin and dependencies..."
 sudo cp target/presto-accumulo-0.*/* $PRESTO_HOME/plugin/accumulo/
 check_exit_code
 
+sudo mkdir -p $PRESTO_HOME/etc/catalog
 sudo cp etc/catalog/accumulo.properties $PRESTO_HOME/etc/catalog/
 check_exit_code
 
