@@ -58,9 +58,8 @@ public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
     public RecordSet getRecordSet(ConnectorSession session,
             ConnectorSplit split, List<? extends ColumnHandle> columns) {
         requireNonNull(split, "partitionChunk is null");
-        AccumuloSplit exampleSplit = checkType(split, AccumuloSplit.class,
-                "split");
-        checkArgument(exampleSplit.getConnectorId().equals(connectorId),
+        AccumuloSplit accSplit = checkType(split, AccumuloSplit.class, "split");
+        checkArgument(accSplit.getConnectorId().equals(connectorId),
                 "split is not for this connector");
 
         ImmutableList.Builder<AccumuloColumnHandle> handles = ImmutableList
@@ -70,7 +69,6 @@ public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
                     checkType(handle, AccumuloColumnHandle.class, "handle"));
         }
 
-        return new AccumuloRecordSet(config, exampleSplit, handles.build(),
-                conn);
+        return new AccumuloRecordSet(config, accSplit, handles.build(), conn);
     }
 }

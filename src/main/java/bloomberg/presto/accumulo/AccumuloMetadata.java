@@ -48,10 +48,10 @@ public class AccumuloMetadata implements ConnectorMetadata {
 
     @Inject
     public AccumuloMetadata(AccumuloConnectorId connectorId,
-            AccumuloClient exampleClient) {
+            AccumuloClient client) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null")
                 .toString();
-        this.client = requireNonNull(exampleClient, "client is null");
+        this.client = requireNonNull(client, "client is null");
     }
 
     @Override
@@ -108,13 +108,12 @@ public class AccumuloMetadata implements ConnectorMetadata {
     @Override
     public ConnectorTableMetadata getTableMetadata(ConnectorSession session,
             ConnectorTableHandle table) {
-        AccumuloTableHandle exampleTableHandle = checkType(table,
+        AccumuloTableHandle tHandle = checkType(table,
                 AccumuloTableHandle.class, "table");
-        checkArgument(exampleTableHandle.getConnectorId().equals(connectorId),
+        checkArgument(tHandle.getConnectorId().equals(connectorId),
                 "tableHandle is not for this connector");
-        SchemaTableName tableName = new SchemaTableName(
-                exampleTableHandle.getSchemaName(),
-                exampleTableHandle.getTableName());
+        SchemaTableName tableName = new SchemaTableName(tHandle.getSchemaName(),
+                tHandle.getTableName());
 
         return getTableMetadata(tableName);
     }

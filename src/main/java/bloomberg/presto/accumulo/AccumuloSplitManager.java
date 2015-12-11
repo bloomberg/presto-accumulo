@@ -14,7 +14,6 @@
 package bloomberg.presto.accumulo;
 
 import static bloomberg.presto.accumulo.Types.checkType;
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
