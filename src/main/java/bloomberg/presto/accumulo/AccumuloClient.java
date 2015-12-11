@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -27,11 +28,17 @@ import javax.inject.Inject;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.Scanner;
+import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Range;
+import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.ColumnMetadata;
+import com.facebook.presto.spi.HostAddress;
 
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
@@ -42,6 +49,7 @@ public class AccumuloClient {
      */
     private static final Logger LOG = Logger.get(AccumuloClient.class);
     private ZooKeeperInstance inst = null;
+    private AccumuloConfig conf = null;
     private Connector conn = null;
     private AccumuloColumnMetadataProvider colMetaProvider = null;
 
@@ -51,7 +59,7 @@ public class AccumuloClient {
                     throws IOException, AccumuloException,
                     AccumuloSecurityException {
         LOG.debug("constructor");
-        requireNonNull(config, "config is null");
+        conf = requireNonNull(config, "config is null");
         requireNonNull(catalogCodec, "catalogCodec is null");
 
         inst = new ZooKeeperInstance(config.getInstance(),
@@ -121,8 +129,7 @@ public class AccumuloClient {
         requireNonNull(schema, "schema is null");
         requireNonNull(tableName, "tableName is null");
         return new AccumuloTable(tableName,
-                colMetaProvider.getColumnMetadata(schema, tableName),
-                this.getTabletSplits(schema, tableName));
+                colMetaProvider.getColumnMetadata(schema, tableName));
     }
 
     public AccumuloColumn getColumnMetadata(String schema, String table,
@@ -131,17 +138,82 @@ public class AccumuloClient {
                 column.getName());
     }
 
-    public List<String> getTabletSplits(String schemaName, String tableName) {
+    public List<TabletSplitMetadata> getTabletSplits(String schemaName,
+            String tableName) {
+        String fulltable = schemaName.equals("default") ? tableName
+                : schemaName + '.' + tableName;
         try {
-            List<String> tabletSplits = new ArrayList<>();
-            for (Text split : conn.tableOperations()
-                    .listSplits(schemaName.equals("default") ? tableName
-                            : schemaName + '.' + tableName)) {
-                tabletSplits.add(split.toString());
+            List<TabletSplitMetadata> tabletSplits = new ArrayList<>();
+            String prevSplit = null;
+            for (Text tSplit : conn.tableOperations().listSplits(fulltable)) {
+                String split = tSplit.toString();
+
+                String loc = this.getTabletLocation(fulltable, split);
+                String host = HostAddress.fromString(loc).getHostText();
+                int port = HostAddress.fromString(loc).getPort();
+
+                RangeHandle rHandle = prevSplit == null
+                        ? new RangeHandle(null, true, split, true)
+                        : new RangeHandle(prevSplit, false, split, true);
+
+                prevSplit = split;
+
+                tabletSplits.add(new TabletSplitMetadata(split.toString(), host,
+                        port, rHandle));
             }
+
+            // last range from prevSplit to infinity
+            String loc = this.getTabletLocation(fulltable, null);
+            String host = HostAddress.fromString(loc).getHostText();
+            int port = HostAddress.fromString(loc).getPort();
+
+            tabletSplits.add(new TabletSplitMetadata(null, host, port,
+                    new RangeHandle(prevSplit, false, null, true)));
+
             return tabletSplits;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Scans Accumulo's metadata table to retrieve the
+     * 
+     * @param fulltable
+     *            The full table name &lt;namespace&gt;.&lt;tablename&gt;, or
+     *            &lt;tablename&gt; if default namespace
+     * @param split
+     *            The split (end-row), or null for the default split (last split
+     *            in the sequence)
+     * @return The hostname:port pair where the split is located
+     * @throws AccumuloSecurityException
+     * @throws AccumuloException
+     * @throws TableNotFoundException
+     */
+    public String getTabletLocation(String fulltable, String split)
+            throws TableNotFoundException, AccumuloException,
+            AccumuloSecurityException {
+        String tableId = conn.tableOperations().tableIdMap().get(fulltable);
+        Scanner scan = conn.createScanner("accumulo.metadata",
+                conn.securityOperations()
+                        .getUserAuthorizations(conf.getUsername()));
+
+        if (split != null) {
+            scan.setRange(new Range(tableId + ';' + split));
+        } else {
+            scan.setRange(new Range(tableId + '<'));
+        }
+
+        scan.fetchColumnFamily(new Text("loc"));
+
+        String location = null;
+        for (Entry<Key, Value> kvp : scan) {
+            assert location == null;
+            location = kvp.getValue().toString();
+        }
+
+        LOG.debug(String.format("Location of split %s for table %s is %s",
+                split, fulltable, location));
+        return location;
     }
 }

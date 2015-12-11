@@ -53,31 +53,19 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
 
         String schemaName = tableHandle.getSchemaName();
         String tableName = tableHandle.getTableName();
-        List<String> tSplits = client.getTable(schemaName, tableName)
-                .getTabletSplits();
+        List<TabletSplitMetadata> tSplits = client.getTabletSplits(schemaName,
+                tableName);
 
         List<ConnectorSplit> cSplits = new ArrayList<>();
         if (tSplits.size() > 0) {
-            String prevSplit = null;
-            for (String split : tSplits) {
-                RangeHandle rHandle = prevSplit == null
-                        ? new RangeHandle(null, true, split, true)
-                        : new RangeHandle(prevSplit, false, split, true);
+            for (TabletSplitMetadata smd : tSplits) {
 
                 AccumuloSplit accSplit = new AccumuloSplit(connectorId,
                         tableHandle.getSchemaName(), tableHandle.getTableName(),
-                        rHandle);
+                        smd.getRangeHandle());
                 cSplits.add(accSplit);
                 LOG.debug("Added split " + accSplit);
-                prevSplit = split;
             }
-
-            // last range from prevSplit to infinity
-            AccumuloSplit accSplit = new AccumuloSplit(connectorId,
-                    tableHandle.getSchemaName(), tableHandle.getTableName(),
-                    new RangeHandle(prevSplit, false, null, true));
-            cSplits.add(accSplit);
-            LOG.debug("Added split " + accSplit);
         } else {
             AccumuloSplit accSplit = new AccumuloSplit(connectorId,
                     tableHandle.getSchemaName(), tableHandle.getTableName(),

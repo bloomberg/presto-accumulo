@@ -28,18 +28,14 @@ public class AccumuloTable {
     private final String name;
     private final List<AccumuloColumn> columns;
     private final List<ColumnMetadata> columnsMetadata;
-    private final List<String> tabletSplits;
 
     @JsonCreator
     public AccumuloTable(@JsonProperty("name") String name,
-            @JsonProperty("columns") List<AccumuloColumn> columns,
-            @JsonProperty("tabletSplits") List<String> tabletSplits) {
+            @JsonProperty("columns") List<AccumuloColumn> columns) {
         checkArgument(!isNullOrEmpty(name), "table name is null or is empty");
         this.name = requireNonNull(name, "table name is null");
         this.columns = ImmutableList
                 .copyOf(requireNonNull(columns, "table columns are null"));
-        this.tabletSplits = ImmutableList
-                .copyOf(requireNonNull(tabletSplits, "table columns are null"));
 
         ImmutableList.Builder<ColumnMetadata> columnsMetadata = ImmutableList
                 .builder();
@@ -58,11 +54,6 @@ public class AccumuloTable {
     @JsonProperty
     public List<AccumuloColumn> getColumns() {
         return columns;
-    }
-
-    @JsonProperty
-    public List<String> getTabletSplits() {
-        return tabletSplits;
     }
 
     public List<ColumnMetadata> getColumnsMetadata() {
