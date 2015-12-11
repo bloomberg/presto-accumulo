@@ -28,6 +28,7 @@ import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
@@ -36,6 +37,7 @@ import com.facebook.presto.spi.type.Type;
 
 import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
+import io.airlift.slice.Slices;
 
 public class AccumuloRecordCursor implements RecordCursor {
 
@@ -47,46 +49,57 @@ public class AccumuloRecordCursor implements RecordCursor {
     private final long totalBytes = fieldValue.getBytes().length;
     private Scanner scan = null;
     private Iterator<Entry<Key, Value>> iterator = null;
-    private long start, end;
     private AccumuloRowDeserializer deserializer;
 
     public AccumuloRecordCursor(List<AccumuloColumnHandle> cHandles,
             Scanner scan) {
-        LOG.debug("Constructor");
         this.columnHandles = cHandles;
         this.scan = scan;
-        deserializer = AccumuloRowDeserializer.getDefault();
 
-        IteratorSetting cfg = new IteratorSetting(1, "whole-row-iterator",
-                WholeRowIterator.class);
-        this.scan.addScanIterator(cfg);
+        LOG.debug("Number of column handles is " + cHandles.size());
 
-        fieldToColumnName = new String[cHandles.size()];
-        Text fam = new Text(), qual = new Text();
-        for (int i = 0; i < cHandles.size(); i++) {
-            AccumuloColumnHandle cHandle = cHandles.get(i);
-            fieldToColumnName[i] = cHandle.getColumnName();
+        // if there are no columns, or the only column is the row ID, then
+        // configure a scan iterator/deserializer to only return the row IDs
+        if (cHandles.size() == 0 || (cHandles.size() == 1
+                && cHandles.get(0).getColumnName().equals(
+                        AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME))) {
+            this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter",
+                    FirstEntryInRowIterator.class));
+            deserializer = new RowOnlyDeserializer();
+            fieldToColumnName = new String[1];
+            fieldToColumnName[0] = AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME;
+        } else {
+            Text fam = new Text(), qual = new Text();
+            deserializer = AccumuloRowDeserializer.getDefault();
+            this.scan.addScanIterator(new IteratorSetting(1,
+                    "whole-row-iterator", WholeRowIterator.class));
+            fieldToColumnName = new String[cHandles.size()];
 
-            if (!cHandle.getColumnName().equals(
-                    AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)) {
-                deserializer.setMapping(cHandle.getColumnName(),
-                        cHandle.getColumnFamily(),
-                        cHandle.getColumnQualifier());
+            for (int i = 0; i < cHandles.size(); ++i) {
+                AccumuloColumnHandle cHandle = cHandles.get(i);
+                fieldToColumnName[i] = cHandle.getColumnName();
 
-                fam.set(cHandle.getColumnFamily());
-                qual.set(cHandle.getColumnQualifier());
-                this.scan.fetchColumn(fam, qual);
-                LOG.debug(
-                        String.format("Column %s maps to Accumulo column %s:%s",
-                                cHandle.getColumnName(), fam, qual));
-            } else {
-                LOG.debug(String.format("Column %s maps to Accumulo row ID",
-                        cHandle.getColumnName()));
+                if (!cHandle.getColumnName().equals(
+                        AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)) {
+                    LOG.debug(String.format("Set column mapping %s", cHandle));
+                    deserializer.setMapping(cHandle.getColumnName(),
+                            cHandle.getColumnFamily(),
+                            cHandle.getColumnQualifier());
+
+                    fam.set(cHandle.getColumnFamily());
+                    qual.set(cHandle.getColumnQualifier());
+                    this.scan.fetchColumn(fam, qual);
+                    LOG.debug(String.format(
+                            "Column %s maps to Accumulo column %s:%s",
+                            cHandle.getColumnName(), fam, qual));
+                } else {
+                    LOG.debug(String.format("Column %s maps to Accumulo row ID",
+                            cHandle.getColumnName()));
+                }
             }
         }
 
         iterator = this.scan.iterator();
-        start = System.nanoTime();
     }
 
     @Override
@@ -101,7 +114,7 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     @Override
     public long getReadTimeNanos() {
-        return end - start;
+        return 0;
     }
 
     @Override
@@ -117,7 +130,6 @@ public class AccumuloRecordCursor implements RecordCursor {
                 deserializer.deserialize(iterator.next());
                 return true;
             } else {
-                end = System.nanoTime();
                 return false;
             }
         } catch (IOException e) {
@@ -170,5 +182,51 @@ public class AccumuloRecordCursor implements RecordCursor {
         checkArgument(actual.equals(expected),
                 "Expected field %s to be type %s but is %s", field, expected,
                 actual);
+    }
+
+    private static class RowOnlyDeserializer
+            implements AccumuloRowDeserializer {
+        private Text r = new Text();
+
+        @Override
+        public void setMapping(String name, String fam, String qual) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void deserialize(Entry<Key, Value> row) throws IOException {
+            row.getKey().getRow(r);
+        }
+
+        @Override
+        public Slice getSlice(String name) {
+            return Slices.utf8Slice(r.toString());
+        }
+
+        @Override
+        public boolean isNull(String name) {
+            return false;
+        }
+
+        @Override
+        public boolean getBoolean(String name) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public double getDouble(String name) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getLong(String name) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object getObject(String name) {
+            throw new UnsupportedOperationException();
+        }
+
     }
 }
