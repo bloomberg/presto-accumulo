@@ -19,14 +19,16 @@ import java.util.List;
 
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Scanner;
-import org.apache.accumulo.core.data.Range;
 
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.RecordSet;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
 
+import io.airlift.log.Logger;
+
 public class AccumuloRecordSet implements RecordSet {
+    private static final Logger LOG = Logger.get(AccumuloRecordSet.class);
     private final List<AccumuloColumnHandle> columnHandles;
     private final List<Type> columnTypes;
     private final Scanner scan;
@@ -50,7 +52,10 @@ public class AccumuloRecordSet implements RecordSet {
                             + split.getTableName(),
                     conn.securityOperations()
                             .getUserAuthorizations(config.getUsername()));
-            scan.setRange(new Range());
+
+            LOG.debug(String.format("Adding range %s",
+                    split.getRangeHandle().getRange()));
+            scan.setRange(split.getRangeHandle().getRange());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

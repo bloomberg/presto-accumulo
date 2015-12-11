@@ -30,7 +30,10 @@ import com.facebook.presto.spi.ConnectorSplitSource;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.FixedSplitSource;
 
+import io.airlift.log.Logger;
+
 public class AccumuloSplitManager implements ConnectorSplitManager {
+    private static final Logger LOG = Logger.get(AccumuloSplitManager.class);
     private final String connectorId;
     private final AccumuloClient client;
 
@@ -48,17 +51,44 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         AccumuloTableLayoutHandle layoutHandle = checkType(layout,
                 AccumuloTableLayoutHandle.class, "layout");
         AccumuloTableHandle tableHandle = layoutHandle.getTable();
-        AccumuloTable table = client.getTable(tableHandle.getSchemaName(),
-                tableHandle.getTableName());
-        // this can happen if table is removed during a query
-        checkState(table != null, "Table %s.%s no longer exists",
-                tableHandle.getSchemaName(), tableHandle.getTableName());
 
-        List<ConnectorSplit> splits = new ArrayList<>();
-        splits.add(new AccumuloSplit(connectorId, tableHandle.getSchemaName(),
-                tableHandle.getTableName()));
-        Collections.shuffle(splits);
+        String schemaName = tableHandle.getSchemaName();
+        String tableName = tableHandle.getTableName();
+        List<String> tSplits = client.getTable(schemaName, tableName)
+                .getTabletSplits();
 
-        return new FixedSplitSource(connectorId, splits);
+        List<ConnectorSplit> cSplits = new ArrayList<>();
+        if (tSplits.size() > 0) {
+            String prevSplit = null;
+            for (String split : tSplits) {
+                RangeHandle rHandle = prevSplit == null
+                        ? new RangeHandle(null, true, split, true)
+                        : new RangeHandle(prevSplit, false, split, true);
+
+                AccumuloSplit accSplit = new AccumuloSplit(connectorId,
+                        tableHandle.getSchemaName(), tableHandle.getTableName(),
+                        rHandle);
+                cSplits.add(accSplit);
+                LOG.debug("Added split " + accSplit);
+                prevSplit = split;
+            }
+
+            // last range from prevSplit to infinity
+            AccumuloSplit accSplit = new AccumuloSplit(connectorId,
+                    tableHandle.getSchemaName(), tableHandle.getTableName(),
+                    new RangeHandle(prevSplit, false, null, true));
+            cSplits.add(accSplit);
+            LOG.debug("Added split " + accSplit);
+        } else {
+            AccumuloSplit accSplit = new AccumuloSplit(connectorId,
+                    tableHandle.getSchemaName(), tableHandle.getTableName(),
+                    new RangeHandle(null, true, null, true));
+            cSplits.add(accSplit);
+            LOG.debug("Added split " + accSplit);
+        }
+
+        Collections.shuffle(cSplits);
+
+        return new FixedSplitSource(connectorId, cSplits);
     }
 }

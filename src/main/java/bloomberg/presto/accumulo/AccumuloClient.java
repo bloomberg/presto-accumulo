@@ -16,6 +16,7 @@ package bloomberg.presto.accumulo;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.ColumnMetadata;
 
@@ -41,7 +43,7 @@ public class AccumuloClient {
     private static final Logger LOG = Logger.get(AccumuloClient.class);
     private ZooKeeperInstance inst = null;
     private Connector conn = null;
-    private AccumuloColumnMetadataProvider columnMetadata = null;
+    private AccumuloColumnMetadataProvider colMetaProvider = null;
 
     @Inject
     public AccumuloClient(AccumuloConfig config,
@@ -57,7 +59,7 @@ public class AccumuloClient {
         conn = inst.getConnector(config.getUsername(),
                 new PasswordToken(config.getPassword().getBytes()));
 
-        columnMetadata = AccumuloColumnMetadataProvider.getDefault(config);
+        colMetaProvider = AccumuloColumnMetadataProvider.getDefault(config);
     }
 
     public Set<String> getSchemaNames() {
@@ -119,12 +121,27 @@ public class AccumuloClient {
         requireNonNull(schema, "schema is null");
         requireNonNull(tableName, "tableName is null");
         return new AccumuloTable(tableName,
-                columnMetadata.getColumnMetadata(schema, tableName));
+                colMetaProvider.getColumnMetadata(schema, tableName),
+                this.getTabletSplits(schema, tableName));
     }
 
     public AccumuloColumn getColumnMetadata(String schema, String table,
             ColumnMetadata column) {
-        return columnMetadata.getAccumuloColumn(schema, table,
+        return colMetaProvider.getAccumuloColumn(schema, table,
                 column.getName());
+    }
+
+    public List<String> getTabletSplits(String schemaName, String tableName) {
+        try {
+            List<String> tabletSplits = new ArrayList<>();
+            for (Text split : conn.tableOperations()
+                    .listSplits(schemaName.equals("default") ? tableName
+                            : schemaName + '.' + tableName)) {
+                tabletSplits.add(split.toString());
+            }
+            return tabletSplits;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
