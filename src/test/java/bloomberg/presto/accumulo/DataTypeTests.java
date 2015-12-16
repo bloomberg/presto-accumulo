@@ -14,8 +14,8 @@ public class DataTypeTests {
 
     @Test
     public void testSelectBigInt() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", PrestoType.BIGINT);
 
@@ -32,8 +32,8 @@ public class DataTypeTests {
 
     @Test
     public void testSelectBoolean() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "male", PrestoType.BOOLEAN);
 
@@ -50,11 +50,11 @@ public class DataTypeTests {
 
     @Test
     public void testSelectDate() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "start_date", PrestoType.DATE);
-        
+
         Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
                 .addField(new Date(new GregorianCalendar(2015, 12, 14).getTime()
                         .getTime()), PrestoType.DATE);
@@ -70,8 +70,8 @@ public class DataTypeTests {
 
     @Test
     public void testSelectDouble() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", PrestoType.DOUBLE);
 
@@ -89,25 +89,9 @@ public class DataTypeTests {
 
     @Test
     @Ignore
-    public void testSelectHyperLogLog() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", PrestoType.HYPER_LOG_LOG);
-
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Long(28), PrestoType.HYPER_LOG_LOG);
-
-        harness.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
-    }
-
-    @Test
-    @Ignore
     public void testSelectIntervalDayToSecond() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", PrestoType.INTERVAL_DAY_TO_SECOND);
 
@@ -122,8 +106,8 @@ public class DataTypeTests {
     @Test
     @Ignore
     public void testSelectIntervalYearToMonth() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", PrestoType.INTERVAL_YEAR_TO_MONTH);
 
@@ -138,8 +122,8 @@ public class DataTypeTests {
     @Test
     @Ignore
     public void testSelectTime() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", PrestoType.TIME);
 
@@ -154,8 +138,8 @@ public class DataTypeTests {
     @Test
     @Ignore
     public void testSelectTimeWithTimeZone() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", PrestoType.TIME_WITH_TIME_ZONE);
 
@@ -170,8 +154,8 @@ public class DataTypeTests {
     @Test
     @Ignore
     public void testSelectTimestamp() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", PrestoType.TIMESTAMP);
 
@@ -186,8 +170,8 @@ public class DataTypeTests {
     @Test
     @Ignore
     public void testSelectTimestampWithTimeZone() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", PrestoType.TIMESTAMP_WITH_TIME_ZONE);
 
@@ -202,8 +186,8 @@ public class DataTypeTests {
     @Test
     @Ignore
     public void testSelectVarbinary() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", PrestoType.VARBINARY);
 
@@ -217,8 +201,8 @@ public class DataTypeTests {
 
     @Test
     public void testSelectVarchar() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181", "root",
-                "secret");
+        QueryDriver harness = new QueryDriver("default", "localhost:2181",
+                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "name", PrestoType.VARCHAR);
 

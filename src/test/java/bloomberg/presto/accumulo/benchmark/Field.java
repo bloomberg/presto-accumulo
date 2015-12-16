@@ -43,10 +43,6 @@ public class Field {
         return (Double) value;
     }
 
-    public Object getHyperLogLog() {
-        throw new UnsupportedOperationException();
-    }
-
     public Object getIntervalDatToSecond() {
         throw new UnsupportedOperationException();
     }

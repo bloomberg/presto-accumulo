@@ -9,8 +9,8 @@ import com.facebook.presto.spi.type.StandardTypes;
 public enum PrestoType {
 
     BIGINT(StandardTypes.BIGINT), BOOLEAN(StandardTypes.BOOLEAN), DATE(
-            StandardTypes.DATE), DOUBLE(StandardTypes.DOUBLE), HYPER_LOG_LOG(
-                    StandardTypes.HYPER_LOG_LOG), INTERVAL_DAY_TO_SECOND(
+            StandardTypes.DATE), DOUBLE(
+                    StandardTypes.DOUBLE), INTERVAL_DAY_TO_SECOND(
                             StandardTypes.INTERVAL_DAY_TO_SECOND), INTERVAL_YEAR_TO_MONTH(
                                     StandardTypes.INTERVAL_YEAR_TO_MONTH), TIME(
                                             StandardTypes.TIME), TIME_WITH_TIME_ZONE(

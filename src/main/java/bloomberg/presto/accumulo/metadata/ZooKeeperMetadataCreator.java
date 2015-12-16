@@ -35,7 +35,6 @@ import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.DateType;
 import com.facebook.presto.spi.type.DoubleType;
-import com.facebook.presto.spi.type.HyperLogLogType;
 import com.facebook.presto.spi.type.IntervalDayTimeType;
 import com.facebook.presto.spi.type.IntervalYearMonthType;
 import com.facebook.presto.spi.type.StandardTypes;
@@ -176,8 +175,6 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
             return DateType.DATE;
         case StandardTypes.DOUBLE:
             return DoubleType.DOUBLE;
-        case StandardTypes.HYPER_LOG_LOG:
-            return HyperLogLogType.HYPER_LOG_LOG;
         case StandardTypes.INTERVAL_DAY_TO_SECOND:
             return IntervalDayTimeType.INTERVAL_DAY_TIME;
         case StandardTypes.INTERVAL_YEAR_TO_MONTH:
