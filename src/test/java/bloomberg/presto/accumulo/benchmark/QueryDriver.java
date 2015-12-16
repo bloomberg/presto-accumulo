@@ -24,6 +24,7 @@ import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Mutation;
+import org.apache.accumulo.core.data.Value;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -207,6 +208,10 @@ public class QueryDriver {
                                 Long.toString(row.getField(i).getTimestamp()
                                         .getTime()));
                         break;
+                    case VARBINARY:
+                        m.put(c.getColumnFamily(), c.getColumnQualifier(),
+                                new Value(row.getField(i).getVarBinary()));
+                        break;
                     default:
                         m.put(c.getColumnFamily(), c.getColumnQualifier(),
                                 row.getField(i).getValue().toString());
@@ -279,11 +284,8 @@ public class QueryDriver {
                 case Types.TIMESTAMP:
                     orow.addField(rs.getTimestamp(j), PrestoType.TIMESTAMP);
                     break;
-                case Types.VARBINARY:
-                    orow.addField(
-                            rs.getBlob(j).getBytes(1,
-                                    (int) rs.getBlob(j).length()),
-                            PrestoType.VARBINARY);
+                case Types.LONGVARBINARY:
+                    orow.addField(rs.getBytes(j), PrestoType.VARBINARY);
                     break;
                 case Types.LONGNVARCHAR:
                     orow.addField(rs.getString(j), PrestoType.VARCHAR);

@@ -3,6 +3,7 @@ package bloomberg.presto.accumulo.benchmark;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Calendar;
 
 import bloomberg.presto.accumulo.PrestoType;
@@ -93,13 +94,21 @@ public class Field {
 
     @Override
     public boolean equals(Object obj) {
+        boolean retval = false;
         if (obj instanceof Field) {
             Field f = (Field) obj;
-            return this.getType().equals(f.getType())
-                    && this.getValue().equals(f.getValue());
-        } else {
-            return false;
+            if (type.equals(f.getType())) {
+                if (type.equals(PrestoType.VARBINARY)) {
+                    // special case for byte arrays
+                    // aren't they so fancy
+                    retval = Arrays.equals((byte[]) value,
+                            (byte[]) f.getValue());
+                } else {
+                    retval = value.equals(f.getValue());
+                }
+            }
         }
+        return retval;
     }
 
     @Override

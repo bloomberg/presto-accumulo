@@ -20,6 +20,7 @@ import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.TimeType.TIME;
 import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.io.IOException;
@@ -172,7 +173,7 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     @Override
     public Slice getSlice(int field) {
-        checkFieldType(field, VARCHAR);
+        checkFieldType(field, VARCHAR, VARBINARY);
         return deserializer.getSlice(fieldToColumnName[field]);
     }
 

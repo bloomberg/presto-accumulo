@@ -6,7 +6,6 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import bloomberg.presto.accumulo.benchmark.QueryDriver;
@@ -135,7 +134,6 @@ public class DataTypeTests {
     }
 
     @Test
-    @Ignore
     public void testSelectVarbinary() throws Exception {
         QueryDriver harness = new QueryDriver("default", "localhost:2181",
                 "root", "secret");
@@ -143,11 +141,17 @@ public class DataTypeTests {
                 "metadata", "bytes", PrestoType.VARBINARY);
 
         Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Long(28), PrestoType.VARBINARY);
+                .addField("Check out all this data!".getBytes(),
+                        PrestoType.VARBINARY);
+
+        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
+                .addField("Check out all this other data!".getBytes(),
+                        PrestoType.VARBINARY);
 
         harness.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withOutput(r1).withOutput(r2).runTest();
     }
 
     @Test
