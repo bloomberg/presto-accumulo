@@ -89,38 +89,6 @@ public class DataTypeTests {
 
     @Test
     @Ignore
-    public void testSelectIntervalDayToSecond() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", PrestoType.INTERVAL_DAY_TO_SECOND);
-
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Long(28), PrestoType.INTERVAL_DAY_TO_SECOND);
-
-        harness.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
-    }
-
-    @Test
-    @Ignore
-    public void testSelectIntervalYearToMonth() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", PrestoType.INTERVAL_YEAR_TO_MONTH);
-
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Long(28), PrestoType.INTERVAL_YEAR_TO_MONTH);
-
-        harness.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
-    }
-
-    @Test
-    @Ignore
     public void testSelectTime() throws Exception {
         QueryDriver harness = new QueryDriver("default", "localhost:2181",
                 "root", "secret");

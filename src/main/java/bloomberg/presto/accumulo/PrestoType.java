@@ -6,8 +6,6 @@ import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.DateType;
 import com.facebook.presto.spi.type.DoubleType;
-import com.facebook.presto.spi.type.IntervalDayTimeType;
-import com.facebook.presto.spi.type.IntervalYearMonthType;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.TimeType;
 import com.facebook.presto.spi.type.TimeWithTimeZoneType;
@@ -24,16 +22,13 @@ import com.facebook.presto.spi.type.VarcharType;
 public enum PrestoType {
 
     BIGINT(StandardTypes.BIGINT), BOOLEAN(StandardTypes.BOOLEAN), DATE(
-            StandardTypes.DATE), DOUBLE(
-                    StandardTypes.DOUBLE), INTERVAL_DAY_TO_SECOND(
-                            StandardTypes.INTERVAL_DAY_TO_SECOND), INTERVAL_YEAR_TO_MONTH(
-                                    StandardTypes.INTERVAL_YEAR_TO_MONTH), TIME(
-                                            StandardTypes.TIME), TIME_WITH_TIME_ZONE(
-                                                    StandardTypes.TIME_WITH_TIME_ZONE), TIMESTAMP(
-                                                            StandardTypes.TIMESTAMP), TIMESTAMP_WITH_TIME_ZONE(
-                                                                    StandardTypes.TIMESTAMP_WITH_TIME_ZONE), VARBINARY(
-                                                                            StandardTypes.VARBINARY), VARCHAR(
-                                                                                    StandardTypes.VARCHAR);
+            StandardTypes.DATE), DOUBLE(StandardTypes.DOUBLE), TIME(
+                    StandardTypes.TIME), TIME_WITH_TIME_ZONE(
+                            StandardTypes.TIME_WITH_TIME_ZONE), TIMESTAMP(
+                                    StandardTypes.TIMESTAMP), TIMESTAMP_WITH_TIME_ZONE(
+                                            StandardTypes.TIMESTAMP_WITH_TIME_ZONE), VARBINARY(
+                                                    StandardTypes.VARBINARY), VARCHAR(
+                                                            StandardTypes.VARCHAR);
 
     private String str;
 
@@ -57,10 +52,7 @@ public enum PrestoType {
             return DATE;
         case StandardTypes.DOUBLE:
             return DOUBLE;
-        case StandardTypes.INTERVAL_DAY_TO_SECOND:
-            return INTERVAL_DAY_TO_SECOND;
-        case StandardTypes.INTERVAL_YEAR_TO_MONTH:
-            return INTERVAL_YEAR_TO_MONTH;
+
         case StandardTypes.TIMESTAMP:
             return TIMESTAMP;
         case StandardTypes.TIMESTAMP_WITH_TIME_ZONE:
@@ -88,10 +80,6 @@ public enum PrestoType {
             return DateType.DATE;
         case DOUBLE:
             return DoubleType.DOUBLE;
-        case INTERVAL_DAY_TO_SECOND:
-            return IntervalDayTimeType.INTERVAL_DAY_TIME;
-        case INTERVAL_YEAR_TO_MONTH:
-            return IntervalYearMonthType.INTERVAL_YEAR_MONTH;
         case TIMESTAMP:
             return TimestampType.TIMESTAMP;
         case TIMESTAMP_WITH_TIME_ZONE:
