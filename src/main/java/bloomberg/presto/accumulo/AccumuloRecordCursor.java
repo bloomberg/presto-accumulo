@@ -15,6 +15,7 @@ package bloomberg.presto.accumulo;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
+import static com.facebook.presto.spi.type.DateType.DATE;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -30,6 +31,7 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.RecordCursor;
@@ -157,7 +159,7 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     @Override
     public long getLong(int field) {
-        checkFieldType(field, BIGINT);
+        checkFieldType(field, BIGINT, DATE);
         return deserializer.getLong(fieldToColumnName[field]);
     }
 
@@ -177,11 +179,17 @@ public class AccumuloRecordCursor implements RecordCursor {
         scan.close();
     }
 
-    private void checkFieldType(int field, Type expected) {
+    private void checkFieldType(int field, Type... expected) {
         Type actual = getType(field);
-        checkArgument(actual.equals(expected),
-                "Expected field %s to be type %s but is %s", field, expected,
-                actual);
+
+        boolean equivalent = false;
+        for (Type t : expected) {
+            equivalent |= actual.equals(t);
+        }
+
+        checkArgument(equivalent,
+                "Expected field %s to be a type of %s but is %s", field,
+                StringUtils.join(expected, ","), actual);
     }
 
     private static class RowOnlyDeserializer
@@ -227,6 +235,5 @@ public class AccumuloRecordCursor implements RecordCursor {
         public Object getObject(String name) {
             throw new UnsupportedOperationException();
         }
-
     }
 }
