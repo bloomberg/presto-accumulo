@@ -267,16 +267,8 @@ public class QueryDriver {
                 case Types.TIME:
                     orow.addField(rs.getTime(j), PrestoType.TIME);
                     break;
-                case Types.TIME_WITH_TIMEZONE:
-                    orow.addField(rs.getTime(j),
-                            PrestoType.TIME_WITH_TIME_ZONE);
-                    break;
                 case Types.TIMESTAMP:
                     orow.addField(rs.getTimestamp(j), PrestoType.TIMESTAMP);
-                    break;
-                case Types.TIMESTAMP_WITH_TIMEZONE:
-                    orow.addField(rs.getTimestamp(j),
-                            PrestoType.TIMESTAMP_WITH_TIME_ZONE);
                     break;
                 case Types.VARBINARY:
                     orow.addField(

@@ -105,22 +105,6 @@ public class DataTypeTests {
 
     @Test
     @Ignore
-    public void testSelectTimeWithTimeZone() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", PrestoType.TIME_WITH_TIME_ZONE);
-
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Long(28), PrestoType.TIME_WITH_TIME_ZONE);
-
-        harness.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
-    }
-
-    @Test
-    @Ignore
     public void testSelectTimestamp() throws Exception {
         QueryDriver harness = new QueryDriver("default", "localhost:2181",
                 "root", "secret");
@@ -129,22 +113,6 @@ public class DataTypeTests {
 
         Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
                 .addField(new Long(28), PrestoType.TIMESTAMP);
-
-        harness.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
-    }
-
-    @Test
-    @Ignore
-    public void testSelectTimestampWithTimeZone() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", PrestoType.TIMESTAMP_WITH_TIME_ZONE);
-
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Long(28), PrestoType.TIMESTAMP_WITH_TIME_ZONE);
 
         harness.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
