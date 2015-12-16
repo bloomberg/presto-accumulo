@@ -198,6 +198,10 @@ public class QueryDriver {
                                 Long.toString(TimeUnit.MILLISECONDS.toDays(
                                         row.getField(i).getDate().getTime())));
                         break;
+                    case TIME:
+                        m.put(c.getColumnFamily(), c.getColumnQualifier(), Long
+                                .toString(row.getField(i).getTime().getTime()));
+                        break;
                     default:
                         m.put(c.getColumnFamily(), c.getColumnQualifier(),
                                 row.getField(i).getValue().toString());

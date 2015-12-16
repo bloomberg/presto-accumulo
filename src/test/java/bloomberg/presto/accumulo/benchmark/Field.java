@@ -3,6 +3,7 @@ package bloomberg.presto.accumulo.benchmark;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Calendar;
 
 import bloomberg.presto.accumulo.PrestoType;
 
@@ -11,7 +12,22 @@ public class Field {
     private PrestoType type;
 
     public Field(Object v, PrestoType t) {
-        this.value = v;
+        if (v instanceof Time) {
+            // Although the milliseconds are stored in Accumulo,
+            // JDBC results return the Time object with the year/month/day set
+            // to 1970-01-01
+            // We truncate the Time here so our tests will be successful, as
+            // Time.equals seems to compare the Dates as well as the times
+            Calendar cal = Calendar.getInstance();
+            cal.setTimeInMillis(((Time) v).getTime());
+            cal.set(Calendar.YEAR, 1970);
+            cal.set(Calendar.MONTH, 1);
+            cal.set(Calendar.DAY_OF_MONTH, 1);
+            this.value = new Time(cal.getTimeInMillis());
+        } else {
+            this.value = v;
+        }
+
         this.type = t;
     }
 

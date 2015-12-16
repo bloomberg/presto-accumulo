@@ -1,6 +1,8 @@
 package bloomberg.presto.accumulo;
 
 import java.sql.Date;
+import java.sql.Time;
+import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import org.junit.Ignore;
@@ -73,7 +75,7 @@ public class DataTypeTests {
         QueryDriver harness = new QueryDriver("default", "localhost:2181",
                 "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", PrestoType.DOUBLE);
+                "metadata", "rate", PrestoType.DOUBLE);
 
         Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
                 .addField(new Double(28.1234), PrestoType.DOUBLE);
@@ -88,19 +90,24 @@ public class DataTypeTests {
     }
 
     @Test
-    @Ignore
     public void testSelectTime() throws Exception {
         QueryDriver harness = new QueryDriver("default", "localhost:2181",
                 "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", PrestoType.TIME);
+                "metadata", "last_login", PrestoType.TIME);
 
+        Calendar cal = new GregorianCalendar();
         Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Long(28), PrestoType.TIME);
+                .addField(new Time(cal.getTimeInMillis()), PrestoType.TIME);
+
+        cal.add(Calendar.MINUTE, 5);
+        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
+                .addField(new Time(cal.getTimeInMillis()), PrestoType.TIME);
 
         harness.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withOutput(r1).withOutput(r2).runTest();
     }
 
     @Test
@@ -125,7 +132,7 @@ public class DataTypeTests {
         QueryDriver harness = new QueryDriver("default", "localhost:2181",
                 "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", PrestoType.VARBINARY);
+                "metadata", "bytes", PrestoType.VARBINARY);
 
         Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
                 .addField(new Long(28), PrestoType.VARBINARY);
