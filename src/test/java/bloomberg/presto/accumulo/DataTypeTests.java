@@ -2,6 +2,7 @@ package bloomberg.presto.accumulo;
 
 import java.sql.Date;
 import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
@@ -111,19 +112,26 @@ public class DataTypeTests {
     }
 
     @Test
-    @Ignore
     public void testSelectTimestamp() throws Exception {
         QueryDriver harness = new QueryDriver("default", "localhost:2181",
                 "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", PrestoType.TIMESTAMP);
+                "metadata", "last_login", PrestoType.TIMESTAMP);
 
+        Calendar cal = new GregorianCalendar();
         Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Long(28), PrestoType.TIMESTAMP);
+                .addField(new Timestamp(cal.getTimeInMillis()),
+                        PrestoType.TIMESTAMP);
+
+        cal.add(Calendar.MINUTE, 5);
+        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
+                .addField(new Timestamp(cal.getTimeInMillis()),
+                        PrestoType.TIMESTAMP);
 
         harness.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withOutput(r1).withOutput(r2).runTest();
     }
 
     @Test

@@ -202,6 +202,11 @@ public class QueryDriver {
                         m.put(c.getColumnFamily(), c.getColumnQualifier(), Long
                                 .toString(row.getField(i).getTime().getTime()));
                         break;
+                    case TIMESTAMP:
+                        m.put(c.getColumnFamily(), c.getColumnQualifier(),
+                                Long.toString(row.getField(i).getTimestamp()
+                                        .getTime()));
+                        break;
                     default:
                         m.put(c.getColumnFamily(), c.getColumnQualifier(),
                                 row.getField(i).getValue().toString());

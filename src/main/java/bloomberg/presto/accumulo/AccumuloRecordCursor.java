@@ -18,6 +18,7 @@ import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.DateType.DATE;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.TimeType.TIME;
+import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -160,7 +161,7 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     @Override
     public long getLong(int field) {
-        checkFieldType(field, BIGINT, DATE, TIME);
+        checkFieldType(field, BIGINT, DATE, TIME, TIMESTAMP);
         return deserializer.getLong(fieldToColumnName[field]);
     }
 
