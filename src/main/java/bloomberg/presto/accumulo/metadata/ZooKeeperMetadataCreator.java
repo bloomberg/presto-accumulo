@@ -15,7 +15,6 @@ package bloomberg.presto.accumulo.metadata;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.security.InvalidParameterException;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -31,23 +30,10 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import com.facebook.presto.spi.type.BigintType;
-import com.facebook.presto.spi.type.BooleanType;
-import com.facebook.presto.spi.type.DateType;
-import com.facebook.presto.spi.type.DoubleType;
-import com.facebook.presto.spi.type.IntervalDayTimeType;
-import com.facebook.presto.spi.type.IntervalYearMonthType;
-import com.facebook.presto.spi.type.StandardTypes;
-import com.facebook.presto.spi.type.TimeType;
-import com.facebook.presto.spi.type.TimeWithTimeZoneType;
-import com.facebook.presto.spi.type.TimestampType;
-import com.facebook.presto.spi.type.TimestampWithTimeZoneType;
-import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.VarbinaryType;
-import com.facebook.presto.spi.type.VarcharType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import bloomberg.presto.accumulo.AccumuloColumn;
+import bloomberg.presto.accumulo.PrestoType;
 
 public class ZooKeeperMetadataCreator extends Configured implements Tool {
 
@@ -81,7 +67,7 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
 
         AccumuloColumn col = new AccumuloColumn(this.getPrestoColumn(),
                 this.getColumnFamily(), this.getColumnQualifier(),
-                this.convertToPrestoType(this.getPrestoType()));
+                PrestoType.fromString(this.getPrestoType()).spiType());
 
         ObjectMapper mapper = new ObjectMapper();
         byte[] data = mapper.writeValueAsBytes(col);
@@ -163,37 +149,6 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
 
     public void setZooKeepers(String zooKeepers) {
         this.zooKeepers = zooKeepers;
-    }
-
-    private Type convertToPrestoType(String t) {
-        switch (t.toLowerCase()) {
-        case StandardTypes.BIGINT:
-            return BigintType.BIGINT;
-        case StandardTypes.BOOLEAN:
-            return BooleanType.BOOLEAN;
-        case StandardTypes.DATE:
-            return DateType.DATE;
-        case StandardTypes.DOUBLE:
-            return DoubleType.DOUBLE;
-        case StandardTypes.INTERVAL_DAY_TO_SECOND:
-            return IntervalDayTimeType.INTERVAL_DAY_TIME;
-        case StandardTypes.INTERVAL_YEAR_TO_MONTH:
-            return IntervalYearMonthType.INTERVAL_YEAR_MONTH;
-        case StandardTypes.TIMESTAMP:
-            return TimestampType.TIMESTAMP;
-        case StandardTypes.TIMESTAMP_WITH_TIME_ZONE:
-            return TimestampWithTimeZoneType.TIMESTAMP_WITH_TIME_ZONE;
-        case StandardTypes.TIME:
-            return TimeType.TIME;
-        case StandardTypes.TIME_WITH_TIME_ZONE:
-            return TimeWithTimeZoneType.TIME_WITH_TIME_ZONE;
-        case StandardTypes.VARBINARY:
-            return VarbinaryType.VARBINARY;
-        case StandardTypes.VARCHAR:
-            return VarcharType.VARCHAR;
-        default:
-            throw new InvalidParameterException("Unsupported type " + t);
-        }
     }
 
     @SuppressWarnings("static-access")
