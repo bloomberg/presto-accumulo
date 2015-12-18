@@ -39,7 +39,7 @@ public enum PrestoType {
 
     public static PrestoType fromString(String type) {
 
-        switch (type) {
+        switch (type.toLowerCase()) {
         case StandardTypes.BIGINT:
             return BIGINT;
         case StandardTypes.BOOLEAN:
