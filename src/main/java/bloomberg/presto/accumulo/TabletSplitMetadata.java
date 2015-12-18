@@ -69,12 +69,13 @@ public class TabletSplitMetadata {
         TabletSplitMetadata other = (TabletSplitMetadata) obj;
         return Objects.equals(this.split, other.split)
                 && Objects.equals(this.host, other.host)
-                && Objects.equals(this.port, other.port);
+                && Objects.equals(this.port, other.port)
+                && Objects.equals(this.rHandle, other.rHandle);
     }
 
     @Override
     public String toString() {
         return toStringHelper(this).add("split", split).add("host", host)
-                .add("port", port).toString();
+                .add("port", port).add("range", rHandle).toString();
     }
 }
