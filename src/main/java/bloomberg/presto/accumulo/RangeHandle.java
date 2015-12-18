@@ -52,7 +52,15 @@ public final class RangeHandle {
 
     @JsonIgnore
     public Range getRange() {
-        return new Range(startKey, startKeyInclusive, endKey, endKeyInclusive);
+        if (startKey == null && endKey == null) {
+            return new Range();
+        } else if (startKey != null && endKey != null
+                && startKey.equals(endKey)) {
+            return new Range(startKey);
+        } else {
+            return new Range(startKey, startKeyInclusive, endKey,
+                    endKeyInclusive);
+        }
     }
 
     @Override
