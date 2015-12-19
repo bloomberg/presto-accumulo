@@ -1,10 +1,17 @@
 package bloomberg.presto.accumulo.benchmark;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -420,5 +427,66 @@ public class QueryDriver {
             noErrors = false;
         }
         return noErrors;
+    }
+
+    public QueryDriver withInputFile(File input) throws IOException {
+        if (this.inputSchema == null) {
+            throw new RuntimeException(
+                    "Input schema must be set prior to using this method");
+        }
+
+        int eLength = inputSchema.getLength();
+        try (BufferedReader rdr = new BufferedReader(new FileReader(input))) {
+            String line;
+            while ((line = rdr.readLine()) != null) {
+                String[] tokens = line.split("\\|");
+
+                if (tokens.length != eLength) {
+                    throw new RuntimeException(String.format(
+                            "Record in file has %d tokens, expected %d, %s",
+                            tokens.length, eLength, line));
+                }
+
+                Row r = Row.newInstance();
+                for (int i = 0; i < tokens.length; ++i) {
+                    switch (inputSchema.getColumn(i).getType()) {
+                    case BIGINT:
+                        r.addField(Long.parseLong(tokens[i]),
+                                PrestoType.BIGINT);
+                        break;
+                    case BOOLEAN:
+                        r.addField(Boolean.parseBoolean(tokens[i]),
+                                PrestoType.BOOLEAN);
+                        break;
+                    case DATE:
+                        r.addField(new Date(Long.parseLong(tokens[i])),
+                                PrestoType.DATE);
+                        break;
+                    case DOUBLE:
+                        r.addField(Double.parseDouble(tokens[i]),
+                                PrestoType.DOUBLE);
+                        break;
+                    case TIME:
+                        r.addField(new Time(Long.parseLong(tokens[i])),
+                                PrestoType.TIME);
+                        break;
+                    case TIMESTAMP:
+                        r.addField(new Timestamp(Long.parseLong(tokens[i])),
+                                PrestoType.TIMESTAMP);
+                        break;
+                    case VARBINARY:
+                        r.addField(tokens[i].getBytes(), PrestoType.VARBINARY);
+                        break;
+                    case VARCHAR:
+                        r.addField(tokens[i], PrestoType.VARCHAR);
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                this.withInput(r);
+            }
+        }
+        return this;
     }
 }

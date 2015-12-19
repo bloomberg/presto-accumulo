@@ -45,4 +45,8 @@ public class RowSchema {
     public List<Column> getColumns() {
         return columns;
     }
+
+    public int getLength() {
+        return columns.size();
+    }
 }
