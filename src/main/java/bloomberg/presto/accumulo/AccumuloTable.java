@@ -40,8 +40,7 @@ public class AccumuloTable {
         ImmutableList.Builder<ColumnMetadata> columnsMetadata = ImmutableList
                 .builder();
         for (AccumuloColumnHandle column : this.columns) {
-            columnsMetadata.add(new ColumnMetadata(column.getName(),
-                    column.getType(), false));
+            columnsMetadata.add(column.getColumnMetadata());
         }
         this.columnsMetadata = columnsMetadata.build();
     }

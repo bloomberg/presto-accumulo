@@ -32,6 +32,7 @@ public final class AccumuloColumnHandle
     private final String columnQualifier;
     private final Type type;
     private final int ordinal;
+    private final String comment;
 
     @JsonCreator
     public AccumuloColumnHandle(@JsonProperty("connectorId") String connectorId,
@@ -39,8 +40,9 @@ public final class AccumuloColumnHandle
             @JsonProperty("columnFamily") String columnFamily,
             @JsonProperty("columnQualifier") String columnQualifier,
             @JsonProperty("type") Type type,
-            @JsonProperty("ordinal") int ordinal) {
-        this.connectorId = connectorId;
+            @JsonProperty("ordinal") int ordinal,
+            @JsonProperty("comment") String comment) {
+        this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.name = requireNonNull(name, "name is null");
         this.columnFamily = name
                 .equals(AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)
@@ -50,6 +52,7 @@ public final class AccumuloColumnHandle
                         : requireNonNull(columnQualifier, "qualifier is null");
         this.type = requireNonNull(type, "type is null");
         this.ordinal = requireNonNull(ordinal, "type is null");
+        this.comment = requireNonNull(comment, "comment is null");
     }
 
     @JsonProperty
@@ -82,14 +85,19 @@ public final class AccumuloColumnHandle
         return ordinal;
     }
 
+    @JsonProperty
+    public String getComment() {
+        return comment;
+    }
+
     public ColumnMetadata getColumnMetadata() {
-        return new ColumnMetadata(name, type, false);
+        return new ColumnMetadata(name, type, false, comment, false);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(connectorId, name, columnFamily, columnQualifier,
-                type, ordinal);
+                type, ordinal, comment);
     }
 
     @Override
@@ -107,7 +115,8 @@ public final class AccumuloColumnHandle
                 && Objects.equals(this.columnFamily, other.columnFamily)
                 && Objects.equals(this.columnQualifier, other.columnQualifier)
                 && Objects.equals(this.type, other.type)
-                && Objects.equals(this.ordinal, other.ordinal);
+                && Objects.equals(this.ordinal, other.ordinal)
+                && Objects.equals(this.comment, other.comment);
     }
 
     @Override
@@ -115,7 +124,7 @@ public final class AccumuloColumnHandle
         return toStringHelper(this).add("connectorId", connectorId)
                 .add("name", name).add("columnFamily", columnFamily)
                 .add("columnQualifier", columnQualifier).add("type", type)
-                .add("ordinal", ordinal).toString();
+                .add("ordinal", ordinal).add("comment", comment).toString();
     }
 
     @Override

@@ -45,9 +45,10 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
     private final char COLUMN_QUALIFIER_OPT = 'q';
     private final char PRESTO_COLUMN_NAME_OPT = 'c';
     private final char PRESTO_TYPE_OPT = 'p';
+    private final char DESCRIPTION_OPT = 'd';
     private final char HELP_OPT = 'h';
     private String zooKeepers, metadataRoot, namespace, table, columnFamily,
-            columnQualifier, prestoColumn, prestoType;
+            columnQualifier, prestoColumn, prestoType, comment = null;
     private boolean force;
     private CuratorFramework client = null;
 
@@ -73,10 +74,11 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
             ordinal += client.getChildren().forPath(tablePath).size();
         }
 
-        AccumuloColumnHandle col = new AccumuloColumnHandle(null,
+        AccumuloColumnHandle col = new AccumuloColumnHandle("accumulo",
                 this.getPrestoColumn(), this.getColumnFamily(),
                 this.getColumnQualifier(),
-                PrestoType.fromString(this.getPrestoType()).spiType(), ordinal);
+                PrestoType.fromString(this.getPrestoType()).spiType(), ordinal,
+                this.getComment());
 
         ObjectMapper mapper = new ObjectMapper();
         byte[] data = mapper.writeValueAsBytes(col);
@@ -102,6 +104,15 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
 
     public void setColumnQualifier(String columnQualifier) {
         this.columnQualifier = columnQualifier;
+    }
+
+    public String getComment() {
+        return comment == null ? String.format("Accumulo column %s:%s",
+                columnFamily, columnQualifier) : comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 
     public boolean getForce() {
@@ -201,6 +212,12 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
                 .withDescription("Presto type of the column").hasArg()
                 .isRequired().create(PRESTO_TYPE_OPT));
 
+        opts.addOption(
+                OptionBuilder.withLongOpt("description")
+                        .withDescription(
+                                "Comment for the column, default is none")
+                .hasArg().create(DESCRIPTION_OPT));
+
         opts.addOption(OptionBuilder.withLongOpt("force")
                 .withDescription(
                         "Force operation, i.e. delete existing ZK node if exists")
@@ -229,6 +246,7 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
 
         this.setColumnFamily(cli.getOptionValue(COLUMN_FAMILY_OPT));
         this.setColumnQualifier(cli.getOptionValue(COLUMN_QUALIFIER_OPT));
+        this.setComment(cli.getOptionValue(DESCRIPTION_OPT));
         this.setForce(cli.hasOption("--force"));
         this.setMetadataRoot(
                 cli.getOptionValue(METADATA_ROOT_OPT, "/presto-accumulo"));

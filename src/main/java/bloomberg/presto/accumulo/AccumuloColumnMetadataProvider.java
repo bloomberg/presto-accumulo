@@ -13,6 +13,8 @@
  */
 package bloomberg.presto.accumulo;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.List;
 
 import com.facebook.presto.spi.type.Type;
@@ -23,12 +25,17 @@ public abstract class AccumuloColumnMetadataProvider {
     public static final String ROW_ID_COLUMN_NAME = "recordkey";
     public static final Type ROW_ID_COLUMN_TYPE = VarcharType.VARCHAR;
 
-    protected String connectorId;
-    protected AccumuloConfig config;
+    protected final String connectorId;
+    protected final AccumuloConfig config;
+    protected final AccumuloColumnHandle ROW_ID_COLUMN;
 
     public AccumuloColumnMetadataProvider(String connectorId,
             AccumuloConfig config) {
-        this.config = config;
+        this.connectorId = requireNonNull(connectorId, "connectorId is null");
+        this.config = requireNonNull(config, "config is null");
+        this.ROW_ID_COLUMN = new AccumuloColumnHandle(connectorId,
+                ROW_ID_COLUMN_NAME, null, null, ROW_ID_COLUMN_TYPE, 0,
+                "Accumulo row ID");
     }
 
     public static AccumuloColumnMetadataProvider getDefault(String connectorId,
@@ -43,7 +50,6 @@ public abstract class AccumuloColumnMetadataProvider {
             String table, String name);
 
     public AccumuloColumnHandle getRowIdColumn() {
-        return new AccumuloColumnHandle(connectorId, ROW_ID_COLUMN_NAME, null, null,
-                ROW_ID_COLUMN_TYPE, 0);
+        return ROW_ID_COLUMN;
     }
 }
