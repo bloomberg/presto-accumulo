@@ -78,6 +78,10 @@ public class Field {
     }
 
     public static Object cleanObject(Object v, PrestoType t) {
+        if (v == null) {
+            return v;
+        }
+
         // Validate the object is the given type
         switch (t) {
         case BIGINT:
@@ -85,23 +89,28 @@ public class Field {
             if (v instanceof Integer)
                 return new Long((Integer) v);
             if (!(v instanceof Long))
-                throw new RuntimeException("Object is not a Long");
+                throw new RuntimeException(
+                        "Object is not a Long, but " + v.getClass());
             break;
         case BOOLEAN:
             if (!(v instanceof Boolean))
-                throw new RuntimeException("Object is not a Boolean");
+                throw new RuntimeException(
+                        "Object is not a Boolean, but " + v.getClass());
             break;
         case DATE:
             if (!(v instanceof Date))
-                throw new RuntimeException("Object is not a Date");
+                throw new RuntimeException(
+                        "Object is not a Date, but " + v.getClass());
             break;
         case DOUBLE:
             if (!(v instanceof Double))
-                throw new RuntimeException("Object is not a Double");
+                throw new RuntimeException(
+                        "Object is not a Double, but " + v.getClass());
             break;
         case TIME:
             if (!(v instanceof Time))
-                throw new RuntimeException("Object is not a Time");
+                throw new RuntimeException(
+                        "Object is not a Time, but " + v.getClass());
             // Although the milliseconds are stored in Accumulo,
             // JDBC results return the Time object with the year/month/day set
             // to 1970-01-01
@@ -115,15 +124,18 @@ public class Field {
             return new Time(cal.getTimeInMillis());
         case TIMESTAMP:
             if (!(v instanceof Timestamp))
-                throw new RuntimeException("Object is not a Timestamp");
+                throw new RuntimeException(
+                        "Object is not a Timestamp, but " + v.getClass());
             break;
         case VARBINARY:
             if (!(v instanceof byte[]))
-                throw new RuntimeException("Object is not a byte[]");
+                throw new RuntimeException(
+                        "Object is not a byte[], but " + v.getClass());
             break;
         case VARCHAR:
             if (!(v instanceof String))
-                throw new RuntimeException("Object is not a String");
+                throw new RuntimeException(
+                        "Object is not a String, but " + v.getClass());
             break;
         default:
             throw new RuntimeException("Unsupported PrestoType " + t);
@@ -153,6 +165,6 @@ public class Field {
 
     @Override
     public String toString() {
-        return value.toString();
+        return value == null ? "null" : value.toString();
     }
 }
