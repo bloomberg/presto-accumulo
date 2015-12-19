@@ -24,14 +24,11 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
-import com.google.common.collect.ImmutableMap;
-
 import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 
 public class StringRowDeserializer implements AccumuloRowDeserializer {
-
     private static final Logger LOG = Logger.get(StringRowDeserializer.class);
     private Map<String, Map<String, String>> f2q2pc = new HashMap<>();
     private Map<String, Object> columnValues = new HashMap<>();
@@ -41,8 +38,16 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
     @Override
     public void setMapping(String name, String fam, String qual) {
         columnValues.put(name, null);
-        f2q2pc.put(fam, ImmutableMap.<String, String> builder().put(qual, name)
-                .build());
+        Map<String, String> q2pc = f2q2pc.get(fam);
+        if (q2pc == null) {
+            q2pc = new HashMap<>();
+            f2q2pc.put(fam, q2pc);
+        }
+
+        q2pc.put(qual, name);
+        LOG.debug(String.format("Added mapping for presto col %s, %s:%s", name,
+                fam, qual));
+
     }
 
     @Override
@@ -60,12 +65,8 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
             kvp.getKey().getColumnFamily(cf);
             kvp.getKey().getColumnQualifier(cq);
             value.set(kvp.getValue().get());
-            String prestoColumn = f2q2pc.get(cf.toString()).get(cq.toString());
-            columnValues.put(prestoColumn, value.toString());
-            LOG.debug(String.format(
-                    "Put cf:cq %s:%s with value %s into presto column %s",
-                    cf.toString(), cq.toString(), value.toString(),
-                    prestoColumn));
+            columnValues.put(f2q2pc.get(cf.toString()).get(cq.toString()),
+                    value.toString());
         }
     }
 
