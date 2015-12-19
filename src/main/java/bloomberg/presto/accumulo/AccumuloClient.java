@@ -44,9 +44,6 @@ import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 
 public class AccumuloClient {
-    /**
-     * SchemaName -> (TableName -> TableMetadata)
-     */
     private static final Logger LOG = Logger.get(AccumuloClient.class);
     private ZooKeeperInstance inst = null;
     private AccumuloConfig conf = null;
@@ -54,11 +51,11 @@ public class AccumuloClient {
     private AccumuloColumnMetadataProvider colMetaProvider = null;
 
     @Inject
-    public AccumuloClient(AccumuloConfig config,
+    public AccumuloClient(AccumuloConnectorId connectorId,
+            AccumuloConfig config,
             JsonCodec<Map<String, List<AccumuloTable>>> catalogCodec)
                     throws IOException, AccumuloException,
                     AccumuloSecurityException {
-        LOG.debug("constructor");
         conf = requireNonNull(config, "config is null");
         requireNonNull(catalogCodec, "catalogCodec is null");
 
@@ -67,7 +64,8 @@ public class AccumuloClient {
         conn = inst.getConnector(config.getUsername(),
                 new PasswordToken(config.getPassword().getBytes()));
 
-        colMetaProvider = AccumuloColumnMetadataProvider.getDefault(config);
+        colMetaProvider = AccumuloColumnMetadataProvider
+                .getDefault(connectorId.toString(), config);
     }
 
     public Set<String> getSchemaNames() {
@@ -125,14 +123,13 @@ public class AccumuloClient {
     }
 
     public AccumuloTable getTable(String schema, String tableName) {
-        LOG.debug("getTable");
         requireNonNull(schema, "schema is null");
         requireNonNull(tableName, "tableName is null");
         return new AccumuloTable(tableName,
                 colMetaProvider.getColumnMetadata(schema, tableName));
     }
 
-    public AccumuloColumn getColumnMetadata(String schema, String table,
+    public AccumuloColumnHandle getColumnMetadata(String schema, String table,
             ColumnMetadata column) {
         return colMetaProvider.getAccumuloColumn(schema, table,
                 column.getName());

@@ -26,12 +26,12 @@ import com.google.common.collect.ImmutableList;
 
 public class AccumuloTable {
     private final String name;
-    private final List<AccumuloColumn> columns;
+    private final List<AccumuloColumnHandle> columns;
     private final List<ColumnMetadata> columnsMetadata;
 
     @JsonCreator
     public AccumuloTable(@JsonProperty("name") String name,
-            @JsonProperty("columns") List<AccumuloColumn> columns) {
+            @JsonProperty("columns") List<AccumuloColumnHandle> columns) {
         checkArgument(!isNullOrEmpty(name), "table name is null or is empty");
         this.name = requireNonNull(name, "table name is null");
         this.columns = ImmutableList
@@ -39,7 +39,7 @@ public class AccumuloTable {
 
         ImmutableList.Builder<ColumnMetadata> columnsMetadata = ImmutableList
                 .builder();
-        for (AccumuloColumn column : this.columns) {
+        for (AccumuloColumnHandle column : this.columns) {
             columnsMetadata.add(new ColumnMetadata(column.getName(),
                     column.getType(), false));
         }
@@ -52,7 +52,7 @@ public class AccumuloTable {
     }
 
     @JsonProperty
-    public List<AccumuloColumn> getColumns() {
+    public List<AccumuloColumnHandle> getColumns() {
         return columns;
     }
 

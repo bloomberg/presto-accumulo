@@ -41,7 +41,7 @@ public class AccumuloRecordSet implements RecordSet {
                 "column handles is null");
         ImmutableList.Builder<Type> types = ImmutableList.builder();
         for (AccumuloColumnHandle column : columnHandles) {
-            types.add(column.getColumnType());
+            types.add(column.getType());
         }
         this.columnTypes = types.build();
 

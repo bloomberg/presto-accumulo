@@ -24,32 +24,32 @@ import com.facebook.presto.spi.type.Type;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class AccumuloColumnHandle implements ColumnHandle {
+public final class AccumuloColumnHandle
+        implements ColumnHandle, Comparable<AccumuloColumnHandle> {
     private final String connectorId;
-    private final String columnName;
+    private final String name;
     private final String columnFamily;
     private final String columnQualifier;
-    private final Type columnType;
-    private final int ordinalPosition;
+    private final Type type;
+    private final int ordinal;
 
     @JsonCreator
     public AccumuloColumnHandle(@JsonProperty("connectorId") String connectorId,
-            @JsonProperty("columnName") String columnName,
+            @JsonProperty("name") String name,
             @JsonProperty("columnFamily") String columnFamily,
             @JsonProperty("columnQualifier") String columnQualifier,
-            @JsonProperty("columnType") Type columnType,
-            @JsonProperty("ordinalPosition") int ordinalPosition) {
-        this.connectorId = requireNonNull(connectorId, "connectorId is null");
-        this.columnName = requireNonNull(columnName, "columnName is null");
-        this.columnFamily = columnName.equals(
+            @JsonProperty("type") Type type,
+            @JsonProperty("ordinal") int ordinal) {
+        this.connectorId = connectorId;
+        this.name = requireNonNull(name, "name is null");
+        this.columnFamily = name
+                .equals(AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)
+                        ? null : requireNonNull(columnFamily, "family is null");
+        this.columnQualifier = name.equals(
                 AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME) ? null
-                        : requireNonNull(columnFamily, "columnFamily is null");
-        this.columnQualifier = columnName.equals(
-                AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME) ? null
-                        : requireNonNull(columnQualifier,
-                                "columnQualifier is null");
-        this.columnType = requireNonNull(columnType, "columnType is null");
-        this.ordinalPosition = ordinalPosition;
+                        : requireNonNull(columnQualifier, "qualifier is null");
+        this.type = requireNonNull(type, "type is null");
+        this.ordinal = requireNonNull(ordinal, "type is null");
     }
 
     @JsonProperty
@@ -58,8 +58,8 @@ public final class AccumuloColumnHandle implements ColumnHandle {
     }
 
     @JsonProperty
-    public String getColumnName() {
-        return columnName;
+    public String getName() {
+        return name;
     }
 
     @JsonProperty
@@ -73,22 +73,23 @@ public final class AccumuloColumnHandle implements ColumnHandle {
     }
 
     @JsonProperty
-    public Type getColumnType() {
-        return columnType;
+    public Type getType() {
+        return type;
     }
 
     @JsonProperty
-    public int getOrdinalPosition() {
-        return ordinalPosition;
+    public int getOrdinal() {
+        return ordinal;
     }
 
     public ColumnMetadata getColumnMetadata() {
-        return new ColumnMetadata(columnName, columnType, false);
+        return new ColumnMetadata(name, type, false);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(connectorId, columnName);
+        return Objects.hash(connectorId, name, columnFamily, columnQualifier,
+                type, ordinal);
     }
 
     @Override
@@ -102,15 +103,23 @@ public final class AccumuloColumnHandle implements ColumnHandle {
 
         AccumuloColumnHandle other = (AccumuloColumnHandle) obj;
         return Objects.equals(this.connectorId, other.connectorId)
-                && Objects.equals(this.columnName, other.columnName);
+                && Objects.equals(this.name, other.name)
+                && Objects.equals(this.columnFamily, other.columnFamily)
+                && Objects.equals(this.columnQualifier, other.columnQualifier)
+                && Objects.equals(this.type, other.type)
+                && Objects.equals(this.ordinal, other.ordinal);
     }
 
     @Override
     public String toString() {
         return toStringHelper(this).add("connectorId", connectorId)
-                .add("columnName", columnName).add("columnFamily", columnFamily)
-                .add("columnQualifier", columnQualifier)
-                .add("columnType", columnType)
-                .add("ordinalPosition", ordinalPosition).toString();
+                .add("name", name).add("columnFamily", columnFamily)
+                .add("columnQualifier", columnQualifier).add("type", type)
+                .add("ordinal", ordinal).toString();
+    }
+
+    @Override
+    public int compareTo(AccumuloColumnHandle o) {
+        return Integer.compare(this.getOrdinal(), o.getOrdinal());
     }
 }

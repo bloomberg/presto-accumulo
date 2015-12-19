@@ -13,10 +13,9 @@
  */
 package bloomberg.presto.accumulo;
 
-import static java.util.Objects.requireNonNull;
-
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.activity.InvalidActivityException;
@@ -45,9 +44,9 @@ public class ZooKeeperColumnMetadataProvider
     private final CuratorFramework client;
     private final ObjectMapper mapper;
 
-    public ZooKeeperColumnMetadataProvider(AccumuloConfig config) {
-        LOG.debug("constructor");
-        requireNonNull(config, "config is null");
+    public ZooKeeperColumnMetadataProvider(String connectorId,
+            AccumuloConfig config) {
+        super(connectorId, config);
         CuratorFramework checkRoot = CuratorFrameworkFactory.newClient(
                 config.getZooKeepers(), new ExponentialBackoffRetry(1000, 3));
         checkRoot.start();
@@ -78,11 +77,12 @@ public class ZooKeeperColumnMetadataProvider
     }
 
     @Override
-    public List<AccumuloColumn> getColumnMetadata(String schema, String table) {
+    public List<AccumuloColumnHandle> getColumnMetadata(String schema,
+            String table) {
         try {
             String schemaPath = "/" + schema;
             String tablePath = schemaPath + '/' + table;
-            List<AccumuloColumn> columns = new ArrayList<>();
+            List<AccumuloColumnHandle> columns = new ArrayList<>();
 
             columns.add(super.getRowIdColumn());
 
@@ -91,8 +91,10 @@ public class ZooKeeperColumnMetadataProvider
                     for (String colName : client.getChildren()
                             .forPath(tablePath)) {
                         String colPath = tablePath + "/" + colName;
-                        columns.add(toAccumuloColumn(
-                                client.getData().forPath(colPath)));
+                        AccumuloColumnHandle col = toAccumuloColumn(
+                                client.getData().forPath(colPath));
+                        columns.add(col);
+                        LOG.debug(col.toString());
                     }
                 } else {
                     throw new InvalidActivityException(String.format(
@@ -104,6 +106,8 @@ public class ZooKeeperColumnMetadataProvider
                         "No known metadata for schema " + schema);
             }
 
+            Collections.sort(columns);
+
             return columns;
         } catch (Exception e) {
             throw new RuntimeException("Error fetching metadata", e);
@@ -111,7 +115,7 @@ public class ZooKeeperColumnMetadataProvider
     }
 
     @Override
-    public AccumuloColumn getAccumuloColumn(String schema, String table,
+    public AccumuloColumnHandle getAccumuloColumn(String schema, String table,
             String colName) {
         try {
             if (colName.equals(
@@ -126,8 +130,8 @@ public class ZooKeeperColumnMetadataProvider
         }
     }
 
-    private AccumuloColumn toAccumuloColumn(byte[] data)
+    private AccumuloColumnHandle toAccumuloColumn(byte[] data)
             throws JsonParseException, JsonMappingException, IOException {
-        return mapper.readValue(new String(data), AccumuloColumn.class);
+        return mapper.readValue(new String(data), AccumuloColumnHandle.class);
     }
 }

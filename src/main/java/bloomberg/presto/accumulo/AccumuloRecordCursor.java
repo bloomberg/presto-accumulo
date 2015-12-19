@@ -56,8 +56,7 @@ public class AccumuloRecordCursor implements RecordCursor {
     private Iterator<Entry<Key, Value>> iterator = null;
     private AccumuloRowDeserializer deserializer;
 
-    public AccumuloRecordCursor(List<AccumuloColumnHandle> cHandles,
-            Scanner scan) {
+    public AccumuloRecordCursor(List<AccumuloColumnHandle> cHandles, Scanner scan) {
         this.columnHandles = cHandles;
         this.scan = scan;
 
@@ -65,8 +64,8 @@ public class AccumuloRecordCursor implements RecordCursor {
 
         // if there are no columns, or the only column is the row ID, then
         // configure a scan iterator/deserializer to only return the row IDs
-        if (cHandles.size() == 0 || (cHandles.size() == 1
-                && cHandles.get(0).getColumnName().equals(
+        if (cHandles.size() == 0
+                || (cHandles.size() == 1 && cHandles.get(0).getName().equals(
                         AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME))) {
             this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter",
                     FirstEntryInRowIterator.class));
@@ -82,12 +81,12 @@ public class AccumuloRecordCursor implements RecordCursor {
 
             for (int i = 0; i < cHandles.size(); ++i) {
                 AccumuloColumnHandle cHandle = cHandles.get(i);
-                fieldToColumnName[i] = cHandle.getColumnName();
+                fieldToColumnName[i] = cHandle.getName();
 
-                if (!cHandle.getColumnName().equals(
+                if (!cHandle.getName().equals(
                         AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)) {
                     LOG.debug(String.format("Set column mapping %s", cHandle));
-                    deserializer.setMapping(cHandle.getColumnName(),
+                    deserializer.setMapping(cHandle.getName(),
                             cHandle.getColumnFamily(),
                             cHandle.getColumnQualifier());
 
@@ -96,10 +95,10 @@ public class AccumuloRecordCursor implements RecordCursor {
                     this.scan.fetchColumn(fam, qual);
                     LOG.debug(String.format(
                             "Column %s maps to Accumulo column %s:%s",
-                            cHandle.getColumnName(), fam, qual));
+                            cHandle.getName(), fam, qual));
                 } else {
                     LOG.debug(String.format("Column %s maps to Accumulo row ID",
-                            cHandle.getColumnName()));
+                            cHandle.getName()));
                 }
             }
         }
@@ -125,7 +124,7 @@ public class AccumuloRecordCursor implements RecordCursor {
     @Override
     public Type getType(int field) {
         checkArgument(field < columnHandles.size(), "Invalid field index");
-        return columnHandles.get(field).getColumnType();
+        return columnHandles.get(field).getType();
     }
 
     @Override

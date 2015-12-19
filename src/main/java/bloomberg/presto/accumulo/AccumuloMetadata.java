@@ -157,13 +157,12 @@ public class AccumuloMetadata implements ConnectorMetadata {
         int index = 0;
         for (ColumnMetadata column : table.getColumnsMetadata()) {
 
-            AccumuloColumn metadata = client.getColumnMetadata(
+            AccumuloColumnHandle metadata = client.getColumnMetadata(
                     tHandle.getSchemaName(), tHandle.getTableName(), column);
 
-            columnHandles.put(column.getName(),
-                    new AccumuloColumnHandle(connectorId, column.getName(),
-                            metadata.getFamily(), metadata.getQualifier(),
-                            column.getType(), index));
+            columnHandles.put(column.getName(), new AccumuloColumnHandle(connectorId,
+                    column.getName(), metadata.getColumnFamily(),
+                    metadata.getColumnQualifier(), column.getType(), index));
             index++;
         }
         return columnHandles.build();
@@ -213,7 +212,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
     public ColumnMetadata getColumnMetadata(ConnectorSession session,
             ConnectorTableHandle tableHandle, ColumnHandle columnHandle) {
         checkType(tableHandle, AccumuloTableHandle.class, "tableHandle");
-        return checkType(columnHandle, AccumuloColumnHandle.class,
-                "columnHandle").getColumnMetadata();
+        return checkType(columnHandle, AccumuloColumnHandle.class, "columnHandle")
+                .getColumnMetadata();
     }
 }

@@ -32,7 +32,7 @@ import org.apache.hadoop.util.ToolRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import bloomberg.presto.accumulo.AccumuloColumn;
+import bloomberg.presto.accumulo.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.PrestoType;
 
 public class ZooKeeperMetadataCreator extends Configured implements Tool {
@@ -62,21 +62,30 @@ public class ZooKeeperMetadataCreator extends Configured implements Tool {
         if (client == null) {
             initCurator();
         }
-        String path = String.format("/%s/%s/%s", this.getNamespace(),
-                this.getTable(), this.getPrestoColumn());
+        String tablePath = String.format("/%s/%s", this.getNamespace(),
+                this.getTable());
+        String colPath = String.format("%s/%s", tablePath,
+                this.getPrestoColumn());
 
-        AccumuloColumn col = new AccumuloColumn(this.getPrestoColumn(),
-                this.getColumnFamily(), this.getColumnQualifier(),
-                PrestoType.fromString(this.getPrestoType()).spiType());
+        // Ordinal is number of children + 1 (for row ID)
+        int ordinal = 1;
+        if (client.checkExists().forPath(tablePath) != null) {
+            ordinal += client.getChildren().forPath(tablePath).size();
+        }
+
+        AccumuloColumnHandle col = new AccumuloColumnHandle(null,
+                this.getPrestoColumn(), this.getColumnFamily(),
+                this.getColumnQualifier(),
+                PrestoType.fromString(this.getPrestoType()).spiType(), ordinal);
 
         ObjectMapper mapper = new ObjectMapper();
         byte[] data = mapper.writeValueAsBytes(col);
 
-        if (force && client.checkExists().forPath(path) != null) {
-            client.delete().forPath(path);
+        if (force && client.checkExists().forPath(colPath) != null) {
+            client.delete().forPath(colPath);
         }
 
-        client.create().creatingParentsIfNeeded().forPath(path, data);
+        client.create().creatingParentsIfNeeded().forPath(colPath, data);
     }
 
     public String getColumnFamily() {
