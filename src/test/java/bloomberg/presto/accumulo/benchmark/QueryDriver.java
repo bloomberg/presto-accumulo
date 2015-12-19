@@ -145,11 +145,12 @@ public class QueryDriver {
     }
 
     public QueryDriver withOutputFile(File file) throws IOException {
-        if (this.inputSchema == null) {
+        if (this.outputSchema == null) {
             throw new RuntimeException(
                     "Input schema must be set prior to using this method");
         }
-
+        
+        this.expectedOutputs.clear();
         this.withOutput(loadRowsFromFile(outputSchema, file));
 
         return this;

@@ -4,7 +4,6 @@ import java.io.File;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import bloomberg.presto.accumulo.benchmark.QueryDriver;
@@ -63,7 +62,6 @@ public class LargeDataTests {
     }
 
     @Test
-    @Ignore
     public void testSelectWhereFirstNameIn() throws Exception {
 
         String query = "SELECT * FROM testmytable "
@@ -74,7 +72,6 @@ public class LargeDataTests {
     }
 
     @Test
-    @Ignore
     public void testSelectWhereFirstNameEquals() throws Exception {
 
         String query = "SELECT * FROM testmytable "
