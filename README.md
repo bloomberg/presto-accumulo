@@ -36,6 +36,8 @@ bloomberg.presto.accumulo.metadata.ZooKeeperMetadataCreator \
 
 Some test cases require generation of large files for testing.  This repository includes a file, datagen.py, that can be used to generate these large files.
 
+Dependent on faker which can be installed like so: `pip install fake-factory`
+
 ```bash
 # No arguments will print the usage and row header
 $ python datagen.py 
