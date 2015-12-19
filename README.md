@@ -41,11 +41,11 @@ Dependent on faker which can be installed like so: `pip install fake-factory`
 ```bash
 # No arguments will print the usage and row header
 $ python datagen.py 
-usage: python datagen.py <numrows>
+usage: python datagen.py <numrows> <outfile>
 uuid VARCHAR|first_name VARCHAR|last_name VARCHAR|address VARCHAR|city VARCHAR|state VARCHAR|zipcode BIGINT|birthday DATE|favorite_color VARCHAR
 
 # Pass it the number of rows to generate, which can be piped to src/test/resources/file_a.txt for that one test
-$ python datagen.py 4 > src/test/resources/file_a.txt
+$ python datagen.py 4 src/test/resources/file_a.txt
 $ cat src/test/resources/file_a.txt
 9db99016-9334-4d02-9f99-a362f904716d|Burleigh|Schamberger|88868 Marti Mountains Suite 257|Port Damarcusview|Florida|54459|517193378|fuchsia
 e5898627-0222-4e76-b33a-76d0c8a3076f|Audrina|Langosh|7008 Phil Lodge|Port Lydell|Wyoming|22723|344114593|silver

@@ -8,14 +8,14 @@ def get_header():
             "state VARCHAR", "zipcode BIGINT", "birthday DATE", "favorite_color VARCHAR"]
 
 
-if len(sys.argv) != 2:
-    print "usage: python datagen.py <numrows>"
+if len(sys.argv) != 3:
+    print "usage: python datagen.py <numrows> <outfile>"
     print '|'.join(get_header())
     sys.exit(1)
 
 fake = Factory.create()
 NUM_ROWS = int(sys.argv[1])
-
+FILE = sys.argv[2]
 
 def get_row():
     return [str(x) for x in
@@ -24,5 +24,7 @@ def get_row():
 
 
 if __name__ == "__main__":
+    of = open(FILE, 'w') if FILE != '-' else sys.stdout
     for i in range(0, NUM_ROWS):
-        print '|'.join(get_row())
+        of.write('|'.join(get_row()))
+        of.write('\n')
