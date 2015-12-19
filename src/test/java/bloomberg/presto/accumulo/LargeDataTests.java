@@ -1,6 +1,7 @@
 package bloomberg.presto.accumulo;
 
 import java.io.File;
+import java.sql.Date;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -79,5 +80,18 @@ public class LargeDataTests {
 
         HARNESS.withOutputSchema(INPUT_SCHEMA).withQuery(query)
                 .withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
+    }
+
+    @Test
+    public void testSelectCountMinMaxWhereFirstNameEquals() throws Exception {
+
+        Row r1 = Row.newInstance().addField(13L, PrestoType.BIGINT)
+                .addField(new Date(73859156), PrestoType.DATE)
+                .addField(new Date(1328445195), PrestoType.DATE);
+
+        String query = "SELECT COUNT(*) AS count, MIN(birthday), MAX(birthday) FROM testmytable "
+                + "WHERE first_name = 'Darla'";
+
+        HARNESS.withQuery(query).withOutput(r1).runTest();
     }
 }
