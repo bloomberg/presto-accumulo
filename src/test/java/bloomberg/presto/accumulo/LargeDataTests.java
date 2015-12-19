@@ -2,6 +2,9 @@ package bloomberg.presto.accumulo;
 
 import java.io.File;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import bloomberg.presto.accumulo.benchmark.QueryDriver;
@@ -10,8 +13,13 @@ import bloomberg.presto.accumulo.benchmark.RowSchema;
 
 public class LargeDataTests {
 
-    private File INPUT_FILE_A = new File("src/test/resources/file_a.txt");
-    private final RowSchema SCHEMA = RowSchema.newInstance().addRowId()
+    private static final File INPUT_FILE = new File(
+            "src/test/resources/datagen.txt.gz");
+    private static final File FIRST_NAME_SELECT_OUTPUT = new File(
+            "src/test/resources/first_name_select.txt.gz");
+
+    private static final RowSchema INPUT_SCHEMA = RowSchema.newInstance()
+            .addRowId()
             .addColumn("first_name", "metadata", "first_name",
                     PrestoType.VARCHAR)
             .addColumn("last_name", "metadata", "last_name", PrestoType.VARCHAR)
@@ -23,17 +31,56 @@ public class LargeDataTests {
             .addColumn("favorite_color", "metadata", "favorite_color",
                     PrestoType.VARCHAR);
 
+    private static final Integer NUM_RECORDS = 100000;
+    private static final QueryDriver HARNESS;
+
+    static {
+        try {
+            HARNESS = new QueryDriver("default", "localhost:2181", "root",
+                    "secret");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @BeforeClass
+    public static void setupClass() throws Exception {
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withInputSchema(INPUT_SCHEMA)
+                .withInputFile(INPUT_FILE).initialize();
+    }
+
+    @AfterClass
+    public static void cleanupClass() throws Exception {
+        HARNESS.cleanup();
+    }
+
     @Test
     public void testSelectCount() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
+        Row r1 = Row.newInstance().addField(NUM_RECORDS, PrestoType.BIGINT);
+        HARNESS.withQuery("SELECT COUNT(*) FROM testmytable").withOutput(r1)
+                .runTest();
+    }
 
-        Row r1 = Row.newInstance().addField(10000, PrestoType.BIGINT);
+    @Test
+    @Ignore
+    public void testSelectWhereFirstNameIn() throws Exception {
 
-        harness.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable")
-                .withQuery("SELECT COUNT(*) FROM testmytable")
-                .withInputSchema(SCHEMA).withInputFile(INPUT_FILE_A)
-                .withOutput(r1).runTest();
+        String query = "SELECT * FROM testmytable "
+                + "WHERE first_name in ('Darla')";
+
+        HARNESS.withOutputSchema(INPUT_SCHEMA).withQuery(query)
+                .withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
+    }
+
+    @Test
+    @Ignore
+    public void testSelectWhereFirstNameEquals() throws Exception {
+
+        String query = "SELECT * FROM testmytable "
+                + "WHERE first_name = 'Darla'";
+
+        HARNESS.withOutputSchema(INPUT_SCHEMA).withQuery(query)
+                .withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
     }
 }

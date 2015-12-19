@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
+import org.junit.After;
 import org.junit.Test;
 
 import bloomberg.presto.accumulo.benchmark.QueryDriver;
@@ -14,10 +15,24 @@ import bloomberg.presto.accumulo.benchmark.RowSchema;
 
 public class DataTypeTests {
 
+    public static final QueryDriver HARNESS;
+
+    static {
+        try {
+            HARNESS = new QueryDriver("default", "localhost:2181", "root",
+                    "secret");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @After
+    public void cleanup() throws Exception {
+        HARNESS.cleanup();
+    }
+
     @Test
     public void testSelectBigInt() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", PrestoType.BIGINT);
 
@@ -26,7 +41,7 @@ public class DataTypeTests {
         Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
                 .addField(new Long(0), PrestoType.BIGINT);
 
-        harness.withHost("localhost").withPort(8080).withSchema("default")
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
                 .withOutput(r1).withOutput(r2).runTest();
@@ -34,8 +49,6 @@ public class DataTypeTests {
 
     @Test
     public void testSelectBoolean() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "male", PrestoType.BOOLEAN);
 
@@ -44,7 +57,7 @@ public class DataTypeTests {
         Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
                 .addField(new Boolean(false), PrestoType.BOOLEAN);
 
-        harness.withHost("localhost").withPort(8080).withSchema("default")
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
                 .withOutput(r1).withOutput(r2).runTest();
@@ -52,8 +65,6 @@ public class DataTypeTests {
 
     @Test
     public void testSelectDate() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "start_date", PrestoType.DATE);
 
@@ -64,7 +75,7 @@ public class DataTypeTests {
                 .addField(new Date(new GregorianCalendar(2015, 12, 15).getTime()
                         .getTime()), PrestoType.DATE);
 
-        harness.withHost("localhost").withPort(8080).withSchema("default")
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
                 .withOutput(r1).withOutput(r2).runTest();
@@ -72,8 +83,6 @@ public class DataTypeTests {
 
     @Test
     public void testSelectDouble() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "rate", PrestoType.DOUBLE);
 
@@ -83,7 +92,7 @@ public class DataTypeTests {
         Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
                 .addField(new Double(-123.1234), PrestoType.DOUBLE);
 
-        harness.withHost("localhost").withPort(8080).withSchema("default")
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
                 .withOutput(r1).withOutput(r2).runTest();
@@ -91,8 +100,6 @@ public class DataTypeTests {
 
     @Test
     public void testSelectTime() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "last_login", PrestoType.TIME);
 
@@ -104,7 +111,7 @@ public class DataTypeTests {
         Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
                 .addField(new Time(cal.getTimeInMillis()), PrestoType.TIME);
 
-        harness.withHost("localhost").withPort(8080).withSchema("default")
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
                 .withOutput(r1).withOutput(r2).runTest();
@@ -112,8 +119,6 @@ public class DataTypeTests {
 
     @Test
     public void testSelectTimestamp() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "last_login", PrestoType.TIMESTAMP);
 
@@ -127,7 +132,7 @@ public class DataTypeTests {
                 .addField(new Timestamp(cal.getTimeInMillis()),
                         PrestoType.TIMESTAMP);
 
-        harness.withHost("localhost").withPort(8080).withSchema("default")
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
                 .withOutput(r1).withOutput(r2).runTest();
@@ -135,8 +140,6 @@ public class DataTypeTests {
 
     @Test
     public void testSelectVarbinary() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "bytes", PrestoType.VARBINARY);
 
@@ -148,7 +151,7 @@ public class DataTypeTests {
                 .addField("Check out all this other data!".getBytes(),
                         PrestoType.VARBINARY);
 
-        harness.withHost("localhost").withPort(8080).withSchema("default")
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
                 .withOutput(r1).withOutput(r2).runTest();
@@ -156,8 +159,6 @@ public class DataTypeTests {
 
     @Test
     public void testSelectVarchar() throws Exception {
-        QueryDriver harness = new QueryDriver("default", "localhost:2181",
-                "root", "secret");
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "name", PrestoType.VARCHAR);
 
@@ -168,7 +169,7 @@ public class DataTypeTests {
         Row r3 = Row.newInstance().addField("row3", PrestoType.VARCHAR)
                 .addField("Carol", PrestoType.VARCHAR);
 
-        harness.withHost("localhost").withPort(8080).withSchema("default")
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
                 .withInput(r3).withOutput(r1).withOutput(r2).withOutput(r3)
