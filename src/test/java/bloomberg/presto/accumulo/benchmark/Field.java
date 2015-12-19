@@ -13,6 +13,7 @@ public class Field {
     private PrestoType type;
 
     public Field(Object v, PrestoType t) {
+        v = Field.cleanObject(v, t);
         if (v instanceof Time) {
             // Although the milliseconds are stored in Accumulo,
             // JDBC results return the Time object with the year/month/day set
@@ -90,6 +91,51 @@ public class Field {
 
     public String getVarChar() {
         return (String) value;
+    }
+
+    public static Object cleanObject(Object v, PrestoType t) {
+        // Validate the object is the given type
+        switch (t) {
+        case BIGINT:
+            // Auto-convert integers to Longs
+            if (v instanceof Integer)
+                return new Long((Integer) v);
+            if (!(v instanceof Long))
+                throw new RuntimeException("Object is not a Long");
+            break;
+        case BOOLEAN:
+            if (!(v instanceof Boolean))
+                throw new RuntimeException("Object is not a Boolean");
+            break;
+        case DATE:
+            if (!(v instanceof Date))
+                throw new RuntimeException("Object is not a Date");
+            break;
+        case DOUBLE:
+            if (!(v instanceof Double))
+                throw new RuntimeException("Object is not a Double");
+            break;
+        case TIME:
+            if (!(v instanceof Time))
+                throw new RuntimeException("Object is not a Time");
+            break;
+        case TIMESTAMP:
+            if (!(v instanceof Timestamp))
+                throw new RuntimeException("Object is not a Timestamp");
+            break;
+        case VARBINARY:
+            if (!(v instanceof byte[]))
+                throw new RuntimeException("Object is not a byte[]");
+            break;
+        case VARCHAR:
+            if (!(v instanceof String))
+                throw new RuntimeException("Object is not a String");
+            break;
+        default:
+            throw new RuntimeException("Unsupported PrestoType " + t);
+        }
+
+        return v;
     }
 
     @Override
