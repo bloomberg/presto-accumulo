@@ -4,7 +4,6 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
-import java.util.Calendar;
 
 import bloomberg.presto.accumulo.PrestoType;
 
@@ -111,17 +110,7 @@ public class Field {
             if (!(v instanceof Time))
                 throw new RuntimeException(
                         "Object is not a Time, but " + v.getClass());
-            // Although the milliseconds are stored in Accumulo,
-            // JDBC results return the Time object with the year/month/day set
-            // to 1970-01-01
-            // We truncate the Time here so our tests will be successful, as
-            // Time.equals seems to compare the Dates as well as the times
-            Calendar cal = Calendar.getInstance();
-            cal.setTimeInMillis(((Time) v).getTime());
-            cal.set(Calendar.YEAR, 1970);
-            cal.set(Calendar.MONTH, 1);
-            cal.set(Calendar.DAY_OF_MONTH, 1);
-            return new Time(cal.getTimeInMillis());
+            break;
         case TIMESTAMP:
             if (!(v instanceof Timestamp))
                 throw new RuntimeException(
@@ -155,6 +144,10 @@ public class Field {
                     // aren't they so fancy
                     retval = Arrays.equals((byte[]) value,
                             (byte[]) f.getValue());
+                } else if (type.equals(PrestoType.DATE)
+                        || type.equals(PrestoType.TIME)
+                        || type.equals(PrestoType.TIMESTAMP)) {
+                    retval = value.toString().equals(f.getValue().toString());
                 } else {
                     retval = value.equals(f.getValue());
                 }
