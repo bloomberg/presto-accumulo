@@ -13,23 +13,7 @@ public class Field {
     private PrestoType type;
 
     public Field(Object v, PrestoType t) {
-        v = Field.cleanObject(v, t);
-        if (v instanceof Time) {
-            // Although the milliseconds are stored in Accumulo,
-            // JDBC results return the Time object with the year/month/day set
-            // to 1970-01-01
-            // We truncate the Time here so our tests will be successful, as
-            // Time.equals seems to compare the Dates as well as the times
-            Calendar cal = Calendar.getInstance();
-            cal.setTimeInMillis(((Time) v).getTime());
-            cal.set(Calendar.YEAR, 1970);
-            cal.set(Calendar.MONTH, 1);
-            cal.set(Calendar.DAY_OF_MONTH, 1);
-            this.value = new Time(cal.getTimeInMillis());
-        } else {
-            this.value = v;
-        }
-
+        this.value = Field.cleanObject(v, t);
         this.type = t;
     }
 
@@ -118,7 +102,17 @@ public class Field {
         case TIME:
             if (!(v instanceof Time))
                 throw new RuntimeException("Object is not a Time");
-            break;
+            // Although the milliseconds are stored in Accumulo,
+            // JDBC results return the Time object with the year/month/day set
+            // to 1970-01-01
+            // We truncate the Time here so our tests will be successful, as
+            // Time.equals seems to compare the Dates as well as the times
+            Calendar cal = Calendar.getInstance();
+            cal.setTimeInMillis(((Time) v).getTime());
+            cal.set(Calendar.YEAR, 1970);
+            cal.set(Calendar.MONTH, 1);
+            cal.set(Calendar.DAY_OF_MONTH, 1);
+            return new Time(cal.getTimeInMillis());
         case TIMESTAMP:
             if (!(v instanceof Timestamp))
                 throw new RuntimeException("Object is not a Timestamp");
