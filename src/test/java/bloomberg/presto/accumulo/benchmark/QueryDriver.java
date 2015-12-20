@@ -104,6 +104,7 @@ public class QueryDriver {
     }
 
     public QueryDriver withInput(List<Row> rows) {
+        this.inputs.clear();
         this.inputs.addAll(rows);
         return this;
     }
@@ -114,6 +115,7 @@ public class QueryDriver {
     }
 
     public QueryDriver withOutput(List<Row> rows) {
+        this.expectedOutputs.clear();
         this.expectedOutputs.addAll(rows);
         return this;
     }
@@ -227,10 +229,15 @@ public class QueryDriver {
     }
 
     public List<Row> run() throws Exception {
-        if (!initialized) {
-            initialize();
+        try {
+            if (!initialized) {
+                initialize();
+            }
+            return execQuery();
+        } finally {
+            inputs.clear();
+            expectedOutputs.clear();
         }
-        return execQuery();
     }
 
     public void runTest() throws Exception {
