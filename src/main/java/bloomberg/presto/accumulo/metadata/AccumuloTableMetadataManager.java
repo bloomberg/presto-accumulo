@@ -67,4 +67,6 @@ public abstract class AccumuloTableMetadataManager {
 
     public abstract void createTableMetadata(SchemaTableName stName,
             List<AccumuloColumnHandle> columns);
+
+    public abstract void deleteTableMetadata(SchemaTableName stName);
 }

@@ -233,6 +233,16 @@ public class ZooKeeperColumnMetadataProvider
         }
     }
 
+    @Override
+    public void deleteTableMetadata(SchemaTableName stName) {
+        try {
+            curator.delete().deletingChildrenIfNeeded()
+                    .forPath(getTablePath(stName));
+        } catch (Exception e) {
+            throw new RuntimeException("ZK error when deleting metatadata", e);
+        }
+    }
+
     private String getSchemaPath(SchemaTableName stName) {
         return "/" + stName.getSchemaName();
     }

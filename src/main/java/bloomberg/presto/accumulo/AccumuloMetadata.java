@@ -63,6 +63,14 @@ public class AccumuloMetadata implements ConnectorMetadata {
     }
 
     @Override
+    public void dropTable(ConnectorSession session,
+            ConnectorTableHandle tableHandle) {
+        AccumuloTableHandle th = checkType(tableHandle,
+                AccumuloTableHandle.class, "table");
+        client.dropTable(th.toSchemaTableName());
+    }
+
+    @Override
     public List<String> listSchemaNames(ConnectorSession session) {
         return listSchemaNames();
     }
