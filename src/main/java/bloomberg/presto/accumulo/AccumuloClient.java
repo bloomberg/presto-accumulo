@@ -159,17 +159,7 @@ public class AccumuloClient {
     }
 
     public void dropTable(SchemaTableName stName) {
-        try {
-            if (stName.getSchemaName().equals("default")) {
-                conn.tableOperations().delete(stName.getTableName());
-            } else {
-                conn.tableOperations().delete(stName.toString());
-            }
-
-            metaManager.deleteTableMetadata(stName);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to drop table", e);
-        }
+        metaManager.deleteTableMetadata(stName);
     }
 
     public Set<String> getSchemaNames() {
