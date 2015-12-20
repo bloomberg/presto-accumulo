@@ -17,6 +17,7 @@ import static bloomberg.presto.accumulo.Types.checkType;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +27,7 @@ import javax.inject.Inject;
 
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
+import com.facebook.presto.spi.ConnectorInsertTableHandle;
 import com.facebook.presto.spi.ConnectorMetadata;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorTableHandle;
@@ -42,9 +44,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-public class AccumuloMetadata implements ConnectorMetadata {
-    // private static final Logger LOG = Logger.get(AccumuloMetadata.class);
+import io.airlift.slice.Slice;
 
+public class AccumuloMetadata implements ConnectorMetadata {
     private final String connectorId;
     private final AccumuloClient client;
 
@@ -68,6 +70,26 @@ public class AccumuloMetadata implements ConnectorMetadata {
         AccumuloTableHandle th = checkType(tableHandle,
                 AccumuloTableHandle.class, "table");
         client.dropTable(th.toSchemaTableName());
+    }
+
+    @Override
+    public ConnectorInsertTableHandle beginInsert(ConnectorSession session,
+            ConnectorTableHandle tableHandle) {
+        // Unsure what to do here besides validate the type
+        // Seems like this is mostly metadata management
+        // The bulk of the work is done in the page sink for building out
+        // the pages (blocks of rows of data)
+        return checkType(tableHandle, AccumuloTableHandle.class, "table");
+    }
+
+    @Override
+    public void commitInsert(ConnectorSession session,
+            ConnectorInsertTableHandle insertHandle,
+            Collection<Slice> fragments) {
+        // Seems like most connectors just return metadata about the fragments
+        // Unsure if we can use this for an optimization?
+        // Priority is on reading though, so we can investigate this later
+        checkType(insertHandle, AccumuloTableHandle.class, "table");
     }
 
     @Override

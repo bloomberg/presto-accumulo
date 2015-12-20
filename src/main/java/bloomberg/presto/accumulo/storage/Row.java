@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo.benchmark;
+package bloomberg.presto.accumulo.storage;
 
 import java.util.ArrayList;
 import java.util.List;

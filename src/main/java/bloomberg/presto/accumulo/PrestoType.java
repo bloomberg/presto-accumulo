@@ -62,6 +62,29 @@ public enum PrestoType {
         }
     }
 
+    public static PrestoType fromSpiType(Type type) {
+        switch (type.toString().toLowerCase()) {
+        case StandardTypes.BIGINT:
+            return BIGINT;
+        case StandardTypes.BOOLEAN:
+            return BOOLEAN;
+        case StandardTypes.DATE:
+            return DATE;
+        case StandardTypes.DOUBLE:
+            return DOUBLE;
+        case StandardTypes.TIMESTAMP:
+            return TIMESTAMP;
+        case StandardTypes.TIME:
+            return TIME;
+        case StandardTypes.VARBINARY:
+            return VARBINARY;
+        case StandardTypes.VARCHAR:
+            return VARCHAR;
+        default:
+            throw new InvalidParameterException("Unsupported SPI type " + type);
+        }
+    }
+
     public Type spiType() {
         switch (this) {
         case BIGINT:

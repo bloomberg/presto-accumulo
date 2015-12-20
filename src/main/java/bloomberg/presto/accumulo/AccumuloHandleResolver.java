@@ -19,6 +19,8 @@ import javax.inject.Inject;
 
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorHandleResolver;
+import com.facebook.presto.spi.ConnectorInsertTableHandle;
+import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.ConnectorTableHandle;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
@@ -47,6 +49,20 @@ public class AccumuloHandleResolver implements ConnectorHandleResolver {
     }
 
     @Override
+    public boolean canHandle(ConnectorInsertTableHandle tableHandle) {
+        return tableHandle instanceof AccumuloTableHandle
+                && ((AccumuloTableHandle) tableHandle).getConnectorId()
+                        .equals(connectorId);
+    }
+
+    @Override
+    public boolean canHandle(ConnectorOutputTableHandle tableHandle) {
+        return tableHandle instanceof AccumuloTableHandle
+                && ((AccumuloTableHandle) tableHandle).getConnectorId()
+                        .equals(connectorId);
+    }
+
+    @Override
     public boolean canHandle(ConnectorSplit split) {
         return split instanceof AccumuloSplit
                 && ((AccumuloSplit) split).getConnectorId().equals(connectorId);
@@ -64,6 +80,16 @@ public class AccumuloHandleResolver implements ConnectorHandleResolver {
 
     @Override
     public Class<? extends ConnectorTableHandle> getTableHandleClass() {
+        return AccumuloTableHandle.class;
+    }
+
+    @Override
+    public Class<? extends ConnectorInsertTableHandle> getInsertTableHandleClass() {
+        return AccumuloTableHandle.class;
+    }
+
+    @Override
+    public Class<? extends ConnectorOutputTableHandle> getOutputTableHandleClass() {
         return AccumuloTableHandle.class;
     }
 

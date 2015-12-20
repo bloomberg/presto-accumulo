@@ -257,4 +257,8 @@ public class AccumuloClient {
     public static String getFullTableName(String schema, String table) {
         return schema.equals("default") ? table : schema + '.' + table;
     }
+
+    public static String getFullTableName(SchemaTableName stName) {
+        return getFullTableName(stName.getSchemaName(), stName.getTableName());
+    }
 }

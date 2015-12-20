@@ -42,6 +42,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import bloomberg.presto.accumulo.PrestoType;
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataCreator;
+import bloomberg.presto.accumulo.storage.Row;
 import io.airlift.log.Logger;
 
 public class QueryDriver {

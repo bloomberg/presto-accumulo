@@ -17,13 +17,16 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Objects;
 
+import com.facebook.presto.spi.ConnectorInsertTableHandle;
+import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorTableHandle;
 import com.facebook.presto.spi.SchemaTableName;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Joiner;
 
-public final class AccumuloTableHandle implements ConnectorTableHandle {
+public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
+        ConnectorOutputTableHandle, ConnectorTableHandle {
     private final String connectorId;
     private final String schemaName;
     private final String tableName;

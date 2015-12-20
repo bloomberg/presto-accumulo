@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
+import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloTable;
@@ -130,7 +131,8 @@ public class ZooKeeperColumnMetadataProvider
     public AccumuloTable getTable(SchemaTableName stName) {
         try {
             if (curator.checkExists().forPath(getTablePath(stName)) != null) {
-                return new AccumuloTable(stName.toString(),
+                return new AccumuloTable(
+                        AccumuloClient.getFullTableName(stName),
                         getColumnHandles(stName));
             } else {
                 return null;

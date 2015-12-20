@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo.benchmark;
+package bloomberg.presto.accumulo.storage;
 
 import java.sql.Date;
 import java.sql.Time;
@@ -97,6 +97,9 @@ public class Field {
                         "Object is not a Boolean, but " + v.getClass());
             break;
         case DATE:
+            if (v instanceof Long)
+                return new Date((Long) v);
+
             if (!(v instanceof Date))
                 throw new RuntimeException(
                         "Object is not a Date, but " + v.getClass());
@@ -107,11 +110,17 @@ public class Field {
                         "Object is not a Double, but " + v.getClass());
             break;
         case TIME:
+            if (v instanceof Long)
+                return new Time((Long) v);
+
             if (!(v instanceof Time))
                 throw new RuntimeException(
                         "Object is not a Time, but " + v.getClass());
             break;
         case TIMESTAMP:
+            if (v instanceof Long)
+                return new Timestamp((Long) v);
+
             if (!(v instanceof Timestamp))
                 throw new RuntimeException(
                         "Object is not a Timestamp, but " + v.getClass());

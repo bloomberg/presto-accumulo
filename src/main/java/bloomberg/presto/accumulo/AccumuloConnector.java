@@ -23,6 +23,7 @@ import javax.inject.Inject;
 import com.facebook.presto.spi.Connector;
 import com.facebook.presto.spi.ConnectorHandleResolver;
 import com.facebook.presto.spi.ConnectorMetadata;
+import com.facebook.presto.spi.ConnectorPageSinkProvider;
 import com.facebook.presto.spi.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.ConnectorSplitManager;
 import com.facebook.presto.spi.session.PropertyMetadata;
@@ -42,12 +43,14 @@ public class AccumuloConnector implements Connector {
     private final AccumuloSplitManager splitManager;
     private final AccumuloRecordSetProvider recordSetProvider;
     private final AccumuloHandleResolver handleResolver;
+    private final AccumuloPageSinkProvider pageSinkProvider;
 
     @Inject
     public AccumuloConnector(LifeCycleManager lifeCycleManager,
             AccumuloMetadata metadata, AccumuloSplitManager splitManager,
             AccumuloRecordSetProvider recordSetProvider,
-            AccumuloHandleResolver handleResolver) {
+            AccumuloHandleResolver handleResolver,
+            AccumuloPageSinkProvider pageSinkProvider) {
         this.lifeCycleManager = requireNonNull(lifeCycleManager,
                 "lifeCycleManager is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -57,6 +60,8 @@ public class AccumuloConnector implements Connector {
                 "recordSetProvider is null");
         this.handleResolver = requireNonNull(handleResolver,
                 "handleResolver is null");
+        this.pageSinkProvider = requireNonNull(pageSinkProvider,
+                "pageSinkProvider is null");
     }
 
     @Override
@@ -72,6 +77,11 @@ public class AccumuloConnector implements Connector {
     @Override
     public ConnectorRecordSetProvider getRecordSetProvider() {
         return recordSetProvider;
+    }
+
+    @Override
+    public ConnectorPageSinkProvider getPageSinkProvider() {
+        return pageSinkProvider;
     }
 
     @Override

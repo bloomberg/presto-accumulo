@@ -51,6 +51,7 @@ public class AccumuloModule implements Module {
         binder.bind(AccumuloClient.class).in(Scopes.SINGLETON);
         binder.bind(AccumuloSplitManager.class).in(Scopes.SINGLETON);
         binder.bind(AccumuloRecordSetProvider.class).in(Scopes.SINGLETON);
+        binder.bind(AccumuloPageSinkProvider.class).in(Scopes.SINGLETON);
         binder.bind(AccumuloHandleResolver.class).in(Scopes.SINGLETON);
         configBinder(binder).bindConfig(AccumuloConfig.class);
 
