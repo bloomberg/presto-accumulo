@@ -16,8 +16,9 @@ package bloomberg.presto.accumulo;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,11 +36,15 @@ import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.ColumnMetadata;
+import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.HostAddress;
+import com.facebook.presto.spi.SchemaTableName;
 
+import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 
@@ -48,7 +53,7 @@ public class AccumuloClient {
     private ZooKeeperInstance inst = null;
     private AccumuloConfig conf = null;
     private Connector conn = null;
-    private AccumuloColumnMetadataProvider colMetaProvider = null;
+    private AccumuloTableMetadataManager metaManager = null;
 
     @Inject
     public AccumuloClient(AccumuloConnectorId connectorId,
@@ -64,82 +69,113 @@ public class AccumuloClient {
         conn = inst.getConnector(config.getUsername(),
                 new PasswordToken(config.getPassword().getBytes()));
 
-        colMetaProvider = AccumuloColumnMetadataProvider
+        metaManager = AccumuloTableMetadataManager
                 .getDefault(connectorId.toString(), config);
     }
 
-    public Set<String> getSchemaNames() {
-        try {
-            Set<String> schemas = new HashSet<>();
-            schemas.add("default");
+    public void createTable(ConnectorTableMetadata meta) {
+        boolean metaOnly = (boolean) meta.getProperties()
+                .get(AccumuloConnector.PROP_METADATA_ONLY);
 
-            // add all non-accumulo reserved namespaces
-            for (String ns : conn.namespaceOperations().list()) {
-                if (!ns.equals("accumulo")) {
-                    schemas.add(ns);
-                }
-            }
-
-            return schemas;
-        } catch (AccumuloException | AccumuloSecurityException e) {
-            throw new RuntimeException(e);
+        // Validate first column is the accumulo row id
+        ColumnMetadata firstCol = meta.getColumns().get(0);
+        if (!firstCol.getName()
+                .equals(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)
+                || !firstCol.getType().equals(
+                        AccumuloTableMetadataManager.ROW_ID_COLUMN_TYPE)) {
+            throw new InvalidParameterException(
+                    String.format("First column must be '%s %s', not %s %s",
+                            AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME,
+                            AccumuloTableMetadataManager.ROW_ID_COLUMN_TYPE,
+                            firstCol.getName(), firstCol.getType()));
         }
+
+        if (meta.getColumns().size() == 1) {
+            throw new InvalidParameterException(
+                    "Must have at least one non-row ID column");
+        }
+
+        // parse the mapping configuration to get the accumulo fam/qual pair
+        String strMapping = (String) meta.getProperties()
+                .get(AccumuloConnector.PROP_COLUMN_MAPPING);
+        if (strMapping.isEmpty()) {
+            throw new InvalidParameterException(
+                    String.format("Must specify a property, WITH (%s = ...)",
+                            AccumuloConnector.PROP_COLUMN_MAPPING));
+        }
+
+        Map<String, Pair<String, String>> mapping = new HashMap<>();
+        for (String m : strMapping.split(",")) {
+            String[] tokens = m.split(":");
+
+            if (tokens.length == 3) {
+                mapping.put(tokens[0], Pair.of(tokens[1], tokens[2]));
+            } else {
+                throw new InvalidParameterException(String.format(
+                        "Mapping of %s contains %d tokens instead of 3", m,
+                        tokens.length));
+            }
+        }
+
+        // And now we parse the configured columns and create handles for the
+        // metadata manager, skipping the first row ID column
+        List<AccumuloColumnHandle> columns = new ArrayList<>();
+        for (int i = 1; i < meta.getColumns().size(); ++i) {
+            ColumnMetadata cm = meta.getColumns().get(i);
+            try {
+                Pair<String, String> famqual = mapping.get(cm.getName());
+                columns.add(new AccumuloColumnHandle("accumulo", cm.getName(),
+                        famqual.getLeft(), famqual.getRight(), cm.getType(), i,
+                        String.format("Accumulo column %s:%s",
+                                famqual.getLeft(), famqual.getRight())));
+            } catch (NullPointerException e) {
+                throw new InvalidParameterException(String.format(
+                        "Misconfigured mapping for presto column %s",
+                        cm.getName()));
+            }
+        }
+
+        // Create dat metadata
+        metaManager.createTableMetadata(meta.getTable(), columns);
+
+        if (!metaOnly) {
+            try {
+                if (meta.getTable().getSchemaName().equals("default")) {
+                    conn.tableOperations()
+                            .create(meta.getTable().getTableName());
+                } else {
+                    if (!conn.namespaceOperations()
+                            .exists(meta.getTable().getSchemaName())) {
+                        conn.namespaceOperations()
+                                .create(meta.getTable().getSchemaName());
+                    }
+
+                    conn.tableOperations().create(meta.getTable().toString());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public Set<String> getSchemaNames() {
+        return metaManager.getSchemaNames();
     }
 
     public Set<String> getTableNames(String schema) {
         requireNonNull(schema, "schema is null");
-
-        if (schema.equals("accumulo")) {
-            throw new RuntimeException("accumulo is a reserved schema");
-        }
-
-        Set<String> tableNames = new HashSet<>();
-
-        for (String accumuloTable : conn.tableOperations().list()) {
-            LOG.debug(String.format("Scanned table %s from Accumulo",
-                    accumuloTable));
-            if (accumuloTable.contains(".")) {
-                String[] tokens = accumuloTable.split("\\.");
-                if (tokens.length == 2) {
-                    if (tokens[0].equals(schema)) {
-                        LOG.debug(String.format("Added table %s", tokens[1]));
-                        tableNames.add(tokens[1]);
-                    }
-                } else {
-                    throw new RuntimeException(String.format(
-                            "Splits from %s is not of length two: %s",
-                            accumuloTable, tokens));
-                }
-            } else if (schema.equals("default")) {
-                // skip trace table
-                if (!accumuloTable.equals("trace")) {
-                    LOG.debug(String.format("Added table %s", accumuloTable));
-                    tableNames.add(accumuloTable);
-                }
-            }
-        }
-
-        return tableNames;
+        return metaManager.getTableNames(schema);
     }
 
-    public AccumuloTable getTable(String schema, String tableName) {
-        requireNonNull(schema, "schema is null");
-        requireNonNull(tableName, "tableName is null");
-        return new AccumuloTable(tableName,
-                colMetaProvider.getColumnMetadata(schema, tableName));
+    public AccumuloTable getTable(SchemaTableName table) {
+        requireNonNull(table, "schema table name is null");
+        return metaManager.getTable(table);
     }
 
-    public AccumuloColumnHandle getColumnMetadata(String schema, String table,
-            ColumnMetadata column) {
-        return colMetaProvider.getAccumuloColumn(schema, table,
-                column.getName());
-    }
-
-    public List<TabletSplitMetadata> getTabletSplits(String schemaName,
-            String tableName) {
-        String fulltable = schemaName.equals("default") ? tableName
-                : schemaName + '.' + tableName;
+    public List<TabletSplitMetadata> getTabletSplits(String schema,
+            String table) {
         try {
+            String fulltable = getFullTableName(schema, table);
             List<TabletSplitMetadata> tabletSplits = new ArrayList<>();
             String prevSplit = null;
             for (Text tSplit : conn.tableOperations().listSplits(fulltable)) {
@@ -212,5 +248,9 @@ public class AccumuloClient {
         LOG.debug(String.format("Location of split %s for table %s is %s",
                 split, fulltable, location));
         return location;
+    }
+
+    public static String getFullTableName(String schema, String table) {
+        return schema.equals("default") ? table : schema + '.' + table;
     }
 }

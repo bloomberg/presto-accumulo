@@ -11,16 +11,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package bloomberg.presto.accumulo;
+package bloomberg.presto.accumulo.metadata;
 
 import static java.util.Objects.requireNonNull;
 
 import java.util.List;
+import java.util.Set;
 
+import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarcharType;
 
-public abstract class AccumuloColumnMetadataProvider {
+import bloomberg.presto.accumulo.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.AccumuloConfig;
+import bloomberg.presto.accumulo.AccumuloTable;
+
+public abstract class AccumuloTableMetadataManager {
 
     public static final String ROW_ID_COLUMN_NAME = "recordkey";
     public static final Type ROW_ID_COLUMN_TYPE = VarcharType.VARCHAR;
@@ -29,7 +35,7 @@ public abstract class AccumuloColumnMetadataProvider {
     protected final AccumuloConfig config;
     protected final AccumuloColumnHandle ROW_ID_COLUMN;
 
-    public AccumuloColumnMetadataProvider(String connectorId,
+    public AccumuloTableMetadataManager(String connectorId,
             AccumuloConfig config) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.config = requireNonNull(config, "config is null");
@@ -38,18 +44,27 @@ public abstract class AccumuloColumnMetadataProvider {
                 "Accumulo row ID");
     }
 
-    public static AccumuloColumnMetadataProvider getDefault(String connectorId,
+    public static AccumuloTableMetadataManager getDefault(String connectorId,
             AccumuloConfig config) {
         return new ZooKeeperColumnMetadataProvider(connectorId, config);
     }
 
-    public abstract List<AccumuloColumnHandle> getColumnMetadata(String schema,
-            String table);
-
-    public abstract AccumuloColumnHandle getAccumuloColumn(String schema,
-            String table, String name);
-
     public AccumuloColumnHandle getRowIdColumn() {
         return ROW_ID_COLUMN;
     }
+
+    public abstract Set<String> getSchemaNames();
+
+    public abstract AccumuloTable getTable(SchemaTableName table);
+
+    public abstract Set<String> getTableNames(String schema);
+
+    public abstract List<AccumuloColumnHandle> getColumnHandles(
+            SchemaTableName table);
+
+    public abstract AccumuloColumnHandle getColumnHandle(SchemaTableName table,
+            String name);
+
+    public abstract void createTableMetadata(SchemaTableName stName,
+            List<AccumuloColumnHandle> columns);
 }

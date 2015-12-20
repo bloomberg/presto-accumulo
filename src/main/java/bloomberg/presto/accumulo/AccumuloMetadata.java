@@ -43,6 +43,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 public class AccumuloMetadata implements ConnectorMetadata {
+    // private static final Logger LOG = Logger.get(AccumuloMetadata.class);
+
     private final String connectorId;
     private final AccumuloClient client;
 
@@ -52,6 +54,12 @@ public class AccumuloMetadata implements ConnectorMetadata {
         this.connectorId = requireNonNull(connectorId, "connectorId is null")
                 .toString();
         this.client = requireNonNull(client, "client is null");
+    }
+
+    @Override
+    public void createTable(ConnectorSession session,
+            ConnectorTableMetadata tableMetadata) {
+        client.createTable(tableMetadata);
     }
 
     @Override
@@ -65,19 +73,18 @@ public class AccumuloMetadata implements ConnectorMetadata {
 
     @Override
     public AccumuloTableHandle getTableHandle(ConnectorSession session,
-            SchemaTableName tableName) {
-        if (!listSchemaNames(session).contains(tableName.getSchemaName())) {
+            SchemaTableName stName) {
+        if (!listSchemaNames(session).contains(stName.getSchemaName())) {
             return null;
         }
 
-        AccumuloTable table = client.getTable(tableName.getSchemaName(),
-                tableName.getTableName());
+        AccumuloTable table = client.getTable(stName);
         if (table == null) {
             return null;
         }
 
-        return new AccumuloTableHandle(connectorId, tableName.getSchemaName(),
-                tableName.getTableName());
+        return new AccumuloTableHandle(connectorId, stName.getSchemaName(),
+                stName.getTableName());
     }
 
     @Override
@@ -146,8 +153,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
         checkArgument(tHandle.getConnectorId().equals(connectorId),
                 "tableHandle is not for this connector");
 
-        AccumuloTable table = client.getTable(tHandle.getSchemaName(),
-                tHandle.getTableName());
+        AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
         if (table == null) {
             throw new TableNotFoundException(tHandle.toSchemaTableName());
         }
@@ -176,19 +182,17 @@ public class AccumuloMetadata implements ConnectorMetadata {
         return columns.build();
     }
 
-    private ConnectorTableMetadata getTableMetadata(SchemaTableName tableName) {
-        if (!listSchemaNames().contains(tableName.getSchemaName())) {
+    private ConnectorTableMetadata getTableMetadata(SchemaTableName stName) {
+        if (!listSchemaNames().contains(stName.getSchemaName())) {
             return null;
         }
 
-        AccumuloTable table = client.getTable(tableName.getSchemaName(),
-                tableName.getTableName());
+        AccumuloTable table = client.getTable(stName);
         if (table == null) {
             return null;
         }
 
-        return new ConnectorTableMetadata(tableName,
-                table.getColumnsMetadata());
+        return new ConnectorTableMetadata(stName, table.getColumnsMetadata());
     }
 
     private List<SchemaTableName> listTables(ConnectorSession session,

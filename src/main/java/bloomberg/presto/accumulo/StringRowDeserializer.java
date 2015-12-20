@@ -24,6 +24,7 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
+import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
@@ -58,7 +59,7 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
                 .decodeRow(row.getKey(), row.getValue());
 
         decodedRow.entrySet().iterator().next().getKey().getRow(rowId);
-        columnValues.put(AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME,
+        columnValues.put(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME,
                 rowId.toString());
 
         for (Entry<Key, Value> kvp : decodedRow.entrySet()) {

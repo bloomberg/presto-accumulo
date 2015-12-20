@@ -14,8 +14,9 @@
 package bloomberg.presto.accumulo;
 
 import static java.util.Objects.requireNonNull;
-import io.airlift.bootstrap.LifeCycleManager;
-import io.airlift.log.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -24,9 +25,17 @@ import com.facebook.presto.spi.ConnectorHandleResolver;
 import com.facebook.presto.spi.ConnectorMetadata;
 import com.facebook.presto.spi.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.ConnectorSplitManager;
+import com.facebook.presto.spi.session.PropertyMetadata;
+import com.facebook.presto.spi.type.BooleanType;
+import com.facebook.presto.spi.type.VarcharType;
+
+import io.airlift.bootstrap.LifeCycleManager;
+import io.airlift.log.Logger;
 
 public class AccumuloConnector implements Connector {
-    private static final Logger log = Logger.get(AccumuloConnector.class);
+    public static final String PROP_METADATA_ONLY = "metadata_only";
+    public static final String PROP_COLUMN_MAPPING = "column_mapping";
+    private static final Logger LOG = Logger.get(AccumuloConnector.class);
 
     private final LifeCycleManager lifeCycleManager;
     private final AccumuloMetadata metadata;
@@ -66,6 +75,21 @@ public class AccumuloConnector implements Connector {
     }
 
     @Override
+    public List<PropertyMetadata<?>> getTableProperties() {
+        List<PropertyMetadata<?>> properties = new ArrayList<>();
+
+        properties.add(new PropertyMetadata<String>(PROP_COLUMN_MAPPING,
+                "Comma-delimited list of column metadata: col_name:col_family:col_qualifier,[...]",
+                VarcharType.VARCHAR, String.class, null, false,
+                value -> ((String) value).toLowerCase()));
+
+        properties.add(new PropertyMetadata<Boolean>(PROP_METADATA_ONLY,
+                "True to only create metadata about the Accumulo table vs. actually creating the table",
+                BooleanType.BOOLEAN, Boolean.class, false, false));
+        return properties;
+    }
+
+    @Override
     public ConnectorHandleResolver getHandleResolver() {
         return handleResolver;
     }
@@ -75,7 +99,7 @@ public class AccumuloConnector implements Connector {
         try {
             lifeCycleManager.stop();
         } catch (Exception e) {
-            log.error(e, "Error shutting down connector");
+            LOG.error(e, "Error shutting down connector");
         }
     }
 }

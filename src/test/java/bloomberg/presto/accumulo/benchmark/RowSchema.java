@@ -3,8 +3,8 @@ package bloomberg.presto.accumulo.benchmark;
 import java.util.ArrayList;
 import java.util.List;
 
-import bloomberg.presto.accumulo.AccumuloColumnMetadataProvider;
 import bloomberg.presto.accumulo.PrestoType;
+import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 
 public class RowSchema {
 
@@ -15,9 +15,8 @@ public class RowSchema {
     }
 
     public RowSchema addRowId() {
-        columns.add(
-                new Column(AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME,
-                        null, null, PrestoType.VARCHAR, columns.size()));
+        columns.add(new Column(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME,
+                null, null, PrestoType.VARCHAR, columns.size()));
         return this;
     }
 

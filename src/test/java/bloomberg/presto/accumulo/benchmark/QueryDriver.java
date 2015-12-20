@@ -39,8 +39,8 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 
-import bloomberg.presto.accumulo.AccumuloColumnMetadataProvider;
 import bloomberg.presto.accumulo.PrestoType;
+import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataCreator;
 import io.airlift.log.Logger;
 
@@ -149,7 +149,7 @@ public class QueryDriver {
             throw new RuntimeException(
                     "Input schema must be set prior to using this method");
         }
-        
+
         this.expectedOutputs.clear();
         this.withOutput(loadRowsFromFile(outputSchema, file));
 
@@ -366,7 +366,7 @@ public class QueryDriver {
 
         // get the row id index from the schema
         int rowIdIdx = inputSchema
-                .getColumn(AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)
+                .getColumn(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)
                 .getOrdinal();
 
         for (Row row : inputs) {
@@ -378,7 +378,7 @@ public class QueryDriver {
             for (Column c : inputSchema.getColumns()) {
                 // if this column's name is not the row ID
                 if (!c.getPrestoName().equals(
-                        AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)) {
+                        AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
                     switch (c.getType()) {
                     case DATE:
                         m.put(c.getColumnFamily(), c.getColumnQualifier(),
@@ -422,8 +422,8 @@ public class QueryDriver {
         creator.setForce(true);
 
         for (Column c : inputSchema.getColumns()) {
-            if (!c.getPrestoName().equals(
-                    AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)) {
+            if (!c.getPrestoName()
+                    .equals(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
                 creator.setColumnFamily(c.getColumnFamily());
                 creator.setColumnQualifier(c.getColumnQualifier());
                 creator.setPrestoColumn(c.getPrestoName());

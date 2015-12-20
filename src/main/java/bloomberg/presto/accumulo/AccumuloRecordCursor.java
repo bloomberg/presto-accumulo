@@ -40,6 +40,7 @@ import org.apache.hadoop.io.Text;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.type.Type;
 
+import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
@@ -56,7 +57,8 @@ public class AccumuloRecordCursor implements RecordCursor {
     private Iterator<Entry<Key, Value>> iterator = null;
     private AccumuloRowDeserializer deserializer;
 
-    public AccumuloRecordCursor(List<AccumuloColumnHandle> cHandles, Scanner scan) {
+    public AccumuloRecordCursor(List<AccumuloColumnHandle> cHandles,
+            Scanner scan) {
         this.columnHandles = cHandles;
         this.scan = scan;
 
@@ -66,12 +68,12 @@ public class AccumuloRecordCursor implements RecordCursor {
         // configure a scan iterator/deserializer to only return the row IDs
         if (cHandles.size() == 0
                 || (cHandles.size() == 1 && cHandles.get(0).getName().equals(
-                        AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME))) {
+                        AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME))) {
             this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter",
                     FirstEntryInRowIterator.class));
             deserializer = new RowOnlyDeserializer();
             fieldToColumnName = new String[1];
-            fieldToColumnName[0] = AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME;
+            fieldToColumnName[0] = AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME;
         } else {
             Text fam = new Text(), qual = new Text();
             deserializer = AccumuloRowDeserializer.getDefault();
@@ -84,7 +86,7 @@ public class AccumuloRecordCursor implements RecordCursor {
                 fieldToColumnName[i] = cHandle.getName();
 
                 if (!cHandle.getName().equals(
-                        AccumuloColumnMetadataProvider.ROW_ID_COLUMN_NAME)) {
+                        AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
                     LOG.debug(String.format("Set column mapping %s", cHandle));
                     deserializer.setMapping(cHandle.getName(),
                             cHandle.getColumnFamily(),
