@@ -15,6 +15,8 @@ public class LargeDataTests {
 
     private static final File INPUT_FILE = new File(
             "src/test/resources/datagen.txt.gz");
+    private static final File OTHER_INPUT_FILE = new File(
+            "src/test/resources/datagen-other.txt.gz");
     private static final File FIRST_NAME_SELECT_OUTPUT = new File(
             "src/test/resources/first_name_select.txt.gz");
 
@@ -93,5 +95,30 @@ public class LargeDataTests {
                 + "WHERE first_name = 'Darla'";
 
         HARNESS.withQuery(query).withOutput(r1).runTest();
+    }
+
+    @Test
+    public void testJoin() throws Exception {
+        QueryDriver driver2 = null;
+        try {
+            driver2 = new QueryDriver("default", "localhost:2181", "root",
+                    "secret");
+            driver2.withHost("localhost").withPort(8080).withSchema("default")
+                    .withTable("testmyothertable").withInputSchema(INPUT_SCHEMA)
+                    .withInputFile(OTHER_INPUT_FILE).initialize();
+
+            Row r1 = Row.newInstance().addField(1L, PrestoType.BIGINT);
+
+            String query = "SELECT COUNT(*) AS count FROM testmytable tmt, testmyothertable tmot "
+                    + "WHERE tmt.zipcode = tmot.zipcode AND "
+                    + "tmt.birthday = tmot.birthday AND "
+                    + "tmt.first_name = tmot.first_name";
+
+            HARNESS.withQuery(query).withOutput(r1).runTest();
+        } finally {
+            if (driver2 != null) {
+                driver2.cleanup();
+            }
+        }
     }
 }
