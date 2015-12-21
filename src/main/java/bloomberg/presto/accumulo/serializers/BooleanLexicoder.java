@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo.io;
+package bloomberg.presto.accumulo.serializers;
 
 import org.apache.accumulo.core.client.lexicoder.Lexicoder;
 import org.apache.accumulo.core.iterators.ValueFormatException;

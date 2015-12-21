@@ -36,6 +36,7 @@ import io.airlift.log.Logger;
 public class AccumuloConnector implements Connector {
     public static final String PROP_METADATA_ONLY = "metadata_only";
     public static final String PROP_COLUMN_MAPPING = "column_mapping";
+    public static final String PROP_FORMAT = "format";
     private static final Logger LOG = Logger.get(AccumuloConnector.class);
 
     private final LifeCycleManager lifeCycleManager;
@@ -96,6 +97,12 @@ public class AccumuloConnector implements Connector {
         properties.add(new PropertyMetadata<Boolean>(PROP_METADATA_ONLY,
                 "True to only create metadata about the Accumulo table vs. actually creating the table",
                 BooleanType.BOOLEAN, Boolean.class, false, false));
+
+        properties.add(new PropertyMetadata<String>(PROP_FORMAT,
+                "True to only create metadata about the Accumulo table vs. actually creating the table",
+                VarcharType.VARCHAR, String.class, null, false,
+                value -> ((String) value).toLowerCase()));
+
         return properties;
     }
 

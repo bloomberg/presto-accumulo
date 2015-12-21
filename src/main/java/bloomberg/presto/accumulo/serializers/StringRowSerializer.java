@@ -1,17 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package bloomberg.presto.accumulo.io;
+package bloomberg.presto.accumulo.serializers;
 
 import java.io.IOException;
 import java.sql.Date;
@@ -19,8 +6,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.SortedMap;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
@@ -30,8 +18,8 @@ import org.apache.hadoop.io.Text;
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import io.airlift.log.Logger;
 
-public class StringRowDeserializer implements AccumuloRowDeserializer {
-    private static final Logger LOG = Logger.get(StringRowDeserializer.class);
+public class StringRowSerializer implements AccumuloRowSerializer {
+    private static final Logger LOG = Logger.get(StringRowSerializer.class);
     private Map<String, Map<String, String>> f2q2pc = new HashMap<>();
     private Map<String, Object> columnValues = new HashMap<>();
     private Text rowId = new Text(), cf = new Text(), cq = new Text(),
@@ -82,8 +70,19 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
     }
 
     @Override
+    public void setBoolean(Text text, Boolean value) {
+        text.set(value.toString().getBytes());
+    }
+
+    @Override
     public Date getDate(String name) {
         return new Date(Long.parseLong(getFieldValue(name)));
+    }
+
+    @Override
+    public void setDate(Text text, Date value) {
+        text.set(Long.toString(TimeUnit.MILLISECONDS.toDays(value.getTime()))
+                .getBytes());
     }
 
     @Override
@@ -92,13 +91,18 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
     }
 
     @Override
+    public void setDouble(Text text, Double value) {
+        text.set(value.toString().getBytes());
+    }
+
+    @Override
     public long getLong(String name) {
         return Long.parseLong(getFieldValue(name));
     }
 
     @Override
-    public Object getObject(String name) {
-        throw new UnsupportedOperationException();
+    public void setLong(Text text, Long value) {
+        text.set(value.toString().getBytes());
     }
 
     @Override
@@ -107,8 +111,18 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
     }
 
     @Override
+    public void setTime(Text text, Time value) {
+        text.set(Long.toString(value.getTime()).getBytes());
+    }
+
+    @Override
     public Timestamp getTimestamp(String name) {
         return new Timestamp(Long.parseLong(getFieldValue(name)));
+    }
+
+    @Override
+    public void setTimestamp(Text text, Timestamp value) {
+        text.set(Long.toString(value.getTime()).getBytes());
     }
 
     @Override
@@ -117,8 +131,18 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
     }
 
     @Override
+    public void setVarbinary(Text text, byte[] value) {
+        text.set(value);
+    }
+
+    @Override
     public String getVarchar(String name) {
         return getFieldValue(name);
+    }
+
+    @Override
+    public void setVarchar(Text text, String value) {
+        text.set(value.getBytes());
     }
 
     private String getFieldValue(String name) {

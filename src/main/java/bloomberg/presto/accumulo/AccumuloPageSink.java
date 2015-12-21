@@ -22,10 +22,10 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 
-import bloomberg.presto.accumulo.io.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Row;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 

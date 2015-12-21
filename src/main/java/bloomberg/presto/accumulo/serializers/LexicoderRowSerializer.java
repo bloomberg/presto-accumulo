@@ -1,17 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package bloomberg.presto.accumulo.io;
+package bloomberg.presto.accumulo.serializers;
 
 import java.io.IOException;
 import java.sql.Date;
@@ -21,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.accumulo.core.client.lexicoder.BytesLexicoder;
 import org.apache.accumulo.core.client.lexicoder.DoubleLexicoder;
@@ -36,14 +24,14 @@ import bloomberg.presto.accumulo.PrestoType;
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import io.airlift.log.Logger;
 
-public class LexicoderRowDeserializer implements AccumuloRowDeserializer {
-    private static final Logger LOG = Logger
-            .get(LexicoderRowDeserializer.class);
+@SuppressWarnings({ "rawtypes", "unchecked" })
+public class LexicoderRowSerializer implements AccumuloRowSerializer {
+    private static final Logger LOG = Logger.get(LexicoderRowSerializer.class);
     private Map<String, Map<String, String>> f2q2pc = new HashMap<>();
     private Map<String, byte[]> columnValues = new HashMap<>();
     private Text rowId = new Text(), cf = new Text(), cq = new Text(),
             value = new Text();
-    private static Map<PrestoType, Lexicoder<?>> lexicoderMap = null;
+    private static Map<PrestoType, Lexicoder> lexicoderMap = null;
 
     static {
         if (lexicoderMap == null) {
@@ -124,9 +112,20 @@ public class LexicoderRowDeserializer implements AccumuloRowDeserializer {
     }
 
     @Override
+    public void setBoolean(Text text, Boolean value) {
+        text.set(lexicoderMap.get(PrestoType.BOOLEAN).encode(value));
+    }
+
+    @Override
     public Date getDate(String name) {
         return new Date((Long) lexicoderMap.get(PrestoType.DATE)
                 .decode(getFieldValue(name)));
+    }
+
+    @Override
+    public void setDate(Text text, Date value) {
+        text.set(lexicoderMap.get(PrestoType.DATE)
+                .encode(TimeUnit.MILLISECONDS.toDays(value.getTime())));
     }
 
     @Override
@@ -136,14 +135,19 @@ public class LexicoderRowDeserializer implements AccumuloRowDeserializer {
     }
 
     @Override
+    public void setDouble(Text text, Double value) {
+        text.set(lexicoderMap.get(PrestoType.DOUBLE).encode(value));
+    }
+
+    @Override
     public long getLong(String name) {
         return (Long) lexicoderMap.get(PrestoType.BIGINT)
                 .decode(getFieldValue(name));
     }
 
     @Override
-    public Object getObject(String name) {
-        throw new UnsupportedOperationException();
+    public void setLong(Text text, Long value) {
+        text.set(lexicoderMap.get(PrestoType.BIGINT).encode(value));
     }
 
     @Override
@@ -153,9 +157,20 @@ public class LexicoderRowDeserializer implements AccumuloRowDeserializer {
     }
 
     @Override
+    public void setTime(Text text, Time value) {
+        text.set(lexicoderMap.get(PrestoType.TIME).encode(value.getTime()));
+    }
+
+    @Override
     public Timestamp getTimestamp(String name) {
         return new Timestamp((Long) lexicoderMap.get(PrestoType.TIMESTAMP)
                 .decode(getFieldValue(name)));
+    }
+
+    @Override
+    public void setTimestamp(Text text, Timestamp value) {
+        text.set(
+                lexicoderMap.get(PrestoType.TIMESTAMP).encode(value.getTime()));
     }
 
     @Override
@@ -165,9 +180,19 @@ public class LexicoderRowDeserializer implements AccumuloRowDeserializer {
     }
 
     @Override
+    public void setVarbinary(Text text, byte[] value) {
+        text.set(lexicoderMap.get(PrestoType.VARBINARY).encode(value));
+    }
+
+    @Override
     public String getVarchar(String name) {
         return (String) lexicoderMap.get(PrestoType.VARCHAR)
                 .decode(getFieldValue(name));
+    }
+
+    @Override
+    public void setVarchar(Text text, String value) {
+        text.set(lexicoderMap.get(PrestoType.VARCHAR).encode(value));
     }
 
     private byte[] getFieldValue(String name) {

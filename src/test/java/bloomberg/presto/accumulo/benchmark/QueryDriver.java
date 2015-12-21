@@ -38,12 +38,12 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 
 import bloomberg.presto.accumulo.AccumuloPageSink;
 import bloomberg.presto.accumulo.PrestoType;
-import bloomberg.presto.accumulo.io.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataCreator;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.log.Logger;
 
 public class QueryDriver {

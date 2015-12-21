@@ -43,9 +43,9 @@ import org.apache.hadoop.io.Text;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.type.Type;
 
-import bloomberg.presto.accumulo.io.AccumuloRowDeserializer;
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
@@ -60,7 +60,7 @@ public class AccumuloRecordCursor implements RecordCursor {
     private final long totalBytes = fieldValue.getBytes().length;
     private Scanner scan = null;
     private Iterator<Entry<Key, Value>> iterator = null;
-    private AccumuloRowDeserializer deserializer;
+    private AccumuloRowSerializer serializer;
 
     public AccumuloRecordCursor(AccumuloConfig config,
             List<AccumuloColumnHandle> cHandles, Scanner scan) {
@@ -70,18 +70,18 @@ public class AccumuloRecordCursor implements RecordCursor {
         LOG.debug("Number of column handles is " + cHandles.size());
 
         // if there are no columns, or the only column is the row ID, then
-        // configure a scan iterator/deserializer to only return the row IDs
+        // configure a scan iterator/serializer to only return the row IDs
         if (cHandles.size() == 0
                 || (cHandles.size() == 1 && cHandles.get(0).getName().equals(
                         AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME))) {
             this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter",
                     FirstEntryInRowIterator.class));
-            deserializer = new RowOnlyDeserializer();
+            serializer = new RowOnlySerializer();
             fieldToColumnName = new String[1];
             fieldToColumnName[0] = AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME;
         } else {
             Text fam = new Text(), qual = new Text();
-            deserializer = config.getAccumuloRowDeserializer();
+            serializer = config.getAccumuloRowSerializer();
             this.scan.addScanIterator(new IteratorSetting(1,
                     "whole-row-iterator", WholeRowIterator.class));
             fieldToColumnName = new String[cHandles.size()];
@@ -93,7 +93,7 @@ public class AccumuloRecordCursor implements RecordCursor {
                 if (!cHandle.getName().equals(
                         AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
                     LOG.debug(String.format("Set column mapping %s", cHandle));
-                    deserializer.setMapping(cHandle.getName(),
+                    serializer.setMapping(cHandle.getName(),
                             cHandle.getColumnFamily(),
                             cHandle.getColumnQualifier());
 
@@ -138,7 +138,7 @@ public class AccumuloRecordCursor implements RecordCursor {
     public boolean advanceNextPosition() {
         try {
             if (iterator.hasNext()) {
-                deserializer.deserialize(iterator.next());
+                serializer.deserialize(iterator.next());
                 return true;
             } else {
                 return false;
@@ -151,19 +151,19 @@ public class AccumuloRecordCursor implements RecordCursor {
     @Override
     public boolean isNull(int field) {
         checkArgument(field < columnHandles.size(), "Invalid field index");
-        return deserializer.isNull(fieldToColumnName[field]);
+        return serializer.isNull(fieldToColumnName[field]);
     }
 
     @Override
     public boolean getBoolean(int field) {
         checkFieldType(field, BOOLEAN);
-        return deserializer.getBoolean(fieldToColumnName[field]);
+        return serializer.getBoolean(fieldToColumnName[field]);
     }
 
     @Override
     public double getDouble(int field) {
         checkFieldType(field, DOUBLE);
-        return deserializer.getDouble(fieldToColumnName[field]);
+        return serializer.getDouble(fieldToColumnName[field]);
     }
 
     @Override
@@ -171,14 +171,13 @@ public class AccumuloRecordCursor implements RecordCursor {
         checkFieldType(field, BIGINT, DATE, TIME, TIMESTAMP);
         switch (PrestoType.fromSpiType(getType(field))) {
         case BIGINT:
-            return deserializer.getLong(fieldToColumnName[field]);
+            return serializer.getLong(fieldToColumnName[field]);
         case DATE:
-            return deserializer.getDate(fieldToColumnName[field]).getTime();
+            return serializer.getDate(fieldToColumnName[field]).getTime();
         case TIME:
-            return deserializer.getTime(fieldToColumnName[field]).getTime();
+            return serializer.getTime(fieldToColumnName[field]).getTime();
         case TIMESTAMP:
-            return deserializer.getTimestamp(fieldToColumnName[field])
-                    .getTime();
+            return serializer.getTimestamp(fieldToColumnName[field]).getTime();
         default:
             throw new RuntimeException("Unsupported type "
                     + PrestoType.fromSpiType(getType(field)));
@@ -187,7 +186,8 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     @Override
     public Object getObject(int field) {
-        return deserializer.getObject(fieldToColumnName[field]);
+        throw new UnsupportedOperationException(
+                "Unsure when this method gets called... perhaps for the complex types?");
     }
 
     @Override
@@ -196,10 +196,10 @@ public class AccumuloRecordCursor implements RecordCursor {
         switch (PrestoType.fromSpiType(getType(field))) {
         case VARBINARY:
             return Slices.wrappedBuffer(
-                    deserializer.getVarbinary(fieldToColumnName[field]));
+                    serializer.getVarbinary(fieldToColumnName[field]));
         case VARCHAR:
-            return Slices.utf8Slice(
-                    deserializer.getVarchar(fieldToColumnName[field]));
+            return Slices
+                    .utf8Slice(serializer.getVarchar(fieldToColumnName[field]));
         default:
             throw new RuntimeException("Unsupported type "
                     + PrestoType.fromSpiType(getType(field)));
@@ -224,8 +224,7 @@ public class AccumuloRecordCursor implements RecordCursor {
                 StringUtils.join(expected, ","), actual);
     }
 
-    private static class RowOnlyDeserializer
-            implements AccumuloRowDeserializer {
+    private static class RowOnlySerializer implements AccumuloRowSerializer {
         private Text r = new Text();
 
         @Override
@@ -264,11 +263,6 @@ public class AccumuloRecordCursor implements RecordCursor {
         }
 
         @Override
-        public Object getObject(String name) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Time getTime(String string) {
             throw new UnsupportedOperationException();
         }
@@ -286,6 +280,46 @@ public class AccumuloRecordCursor implements RecordCursor {
         @Override
         public String getVarchar(String string) {
             return r.toString();
+        }
+
+        @Override
+        public void setBoolean(Text text, Boolean value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setDate(Text text, Date value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setDouble(Text text, Double value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setLong(Text text, Long value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setTime(Text text, Time value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setTimestamp(Text text, Timestamp value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setVarbinary(Text text, byte[] value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setVarchar(Text text, String value) {
+            throw new UnsupportedOperationException();
         }
     }
 }
