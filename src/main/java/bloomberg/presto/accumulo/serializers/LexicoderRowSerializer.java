@@ -17,6 +17,7 @@ import org.apache.accumulo.core.client.lexicoder.LongLexicoder;
 import org.apache.accumulo.core.client.lexicoder.StringLexicoder;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.iterators.ValueFormatException;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
@@ -197,5 +198,18 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     private byte[] getFieldValue(String name) {
         return columnValues.get(name);
+    }
+
+    public static class BooleanLexicoder implements Lexicoder<Boolean> {
+
+        @Override
+        public byte[] encode(Boolean v) {
+            return v ? new byte[] { 1 } : new byte[] { 0 };
+        }
+
+        @Override
+        public Boolean decode(byte[] b) throws ValueFormatException {
+            return b[0] == 0 ? false : true;
+        }
     }
 }
