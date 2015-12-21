@@ -22,9 +22,9 @@ import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarcharType;
 
-import bloomberg.presto.accumulo.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloTable;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 
 public abstract class AccumuloTableMetadataManager {
 

@@ -25,6 +25,8 @@ import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.ConnectorTableHandle;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+
 public class AccumuloHandleResolver implements ConnectorHandleResolver {
     private final String connectorId;
 

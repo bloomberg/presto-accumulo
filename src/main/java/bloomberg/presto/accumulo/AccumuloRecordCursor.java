@@ -43,7 +43,9 @@ import org.apache.hadoop.io.Text;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.type.Type;
 
+import bloomberg.presto.accumulo.io.AccumuloRowDeserializer;
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;

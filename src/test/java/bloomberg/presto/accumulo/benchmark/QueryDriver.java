@@ -36,14 +36,14 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 
-import bloomberg.presto.accumulo.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.AccumuloPageSink;
-import bloomberg.presto.accumulo.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.PrestoType;
+import bloomberg.presto.accumulo.io.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataCreator;
-import bloomberg.presto.accumulo.storage.Row;
-import bloomberg.presto.accumulo.storage.RowSchema;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.model.Row;
+import bloomberg.presto.accumulo.model.RowSchema;
 import io.airlift.log.Logger;
 
 public class QueryDriver {

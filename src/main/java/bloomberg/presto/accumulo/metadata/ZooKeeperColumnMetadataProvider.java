@@ -37,9 +37,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 import bloomberg.presto.accumulo.AccumuloClient;
-import bloomberg.presto.accumulo.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloTable;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import io.airlift.json.ObjectMapperProvider;
 import io.airlift.log.Logger;
 

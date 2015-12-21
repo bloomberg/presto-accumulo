@@ -44,6 +44,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import io.airlift.slice.Slice;
 
 public class AccumuloMetadata implements ConnectorMetadata {

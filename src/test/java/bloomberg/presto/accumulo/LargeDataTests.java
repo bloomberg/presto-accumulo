@@ -8,8 +8,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import bloomberg.presto.accumulo.benchmark.QueryDriver;
-import bloomberg.presto.accumulo.storage.Row;
-import bloomberg.presto.accumulo.storage.RowSchema;
+import bloomberg.presto.accumulo.model.Row;
+import bloomberg.presto.accumulo.model.RowSchema;
 
 public class LargeDataTests {
 

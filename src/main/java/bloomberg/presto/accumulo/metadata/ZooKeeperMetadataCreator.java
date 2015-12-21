@@ -32,8 +32,8 @@ import org.apache.hadoop.util.ToolRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import bloomberg.presto.accumulo.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.PrestoType;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 
 public class ZooKeeperMetadataCreator extends Configured implements Tool {
 

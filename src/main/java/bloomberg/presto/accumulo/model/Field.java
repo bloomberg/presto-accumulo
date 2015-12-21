@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo.storage;
+package bloomberg.presto.accumulo.model;
 
 import java.sql.Date;
 import java.sql.Time;

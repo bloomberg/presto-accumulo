@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo.storage;
+package bloomberg.presto.accumulo.model;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -45,6 +45,7 @@ import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.SchemaTableName;
 
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 

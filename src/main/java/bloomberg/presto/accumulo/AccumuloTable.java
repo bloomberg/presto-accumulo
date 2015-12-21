@@ -24,6 +24,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+
 public class AccumuloTable {
     private final String name;
     private final List<AccumuloColumnHandle> columns;

@@ -32,6 +32,8 @@ import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.RecordSet;
 import com.google.common.collect.ImmutableList;
 
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+
 public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
     private final String connectorId;
     private final AccumuloConfig config;

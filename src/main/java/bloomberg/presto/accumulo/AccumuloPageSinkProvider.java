@@ -28,6 +28,7 @@ import com.facebook.presto.spi.ConnectorPageSink;
 import com.facebook.presto.spi.ConnectorPageSinkProvider;
 import com.facebook.presto.spi.ConnectorSession;
 
+import bloomberg.presto.accumulo.io.AccumuloRowSerializer;
 import io.airlift.log.Logger;
 
 public class AccumuloPageSinkProvider implements ConnectorPageSinkProvider {

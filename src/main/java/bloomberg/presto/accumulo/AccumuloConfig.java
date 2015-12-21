@@ -15,6 +15,7 @@ package bloomberg.presto.accumulo;
 
 import javax.validation.constraints.NotNull;
 
+import bloomberg.presto.accumulo.io.AccumuloRowSerializer;
 import io.airlift.configuration.Config;
 
 public class AccumuloConfig {

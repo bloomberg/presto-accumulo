@@ -1,9 +1,8 @@
-package bloomberg.presto.accumulo.storage;
+package bloomberg.presto.accumulo.model;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import bloomberg.presto.accumulo.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.PrestoType;
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 
