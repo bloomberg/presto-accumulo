@@ -28,28 +28,54 @@ Simply begin using SQL to create a new table in Accumulo to begin working with d
 When creating a table using SQL, you __must__ specify a ```column_mapping``` table property.  The value of this property is a comma-delimited list of triples -- presto column __:__ accumulo column family __:__ accumulo column qualifier.  This sets the mapping of the presto column name to the corresponding Accumulo column family and column qualifier.  See below for an example
 
 ```SQL
-CREATE TABLE myschema.mytable (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
+CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
 WITH (column_mapping = 'name:metadata:name,age:metadata:age,birthday:metadata:date');
 ```
 If the Accumulo table already exists, you can also set the ```metadata_only``` table property (which defaults to ```false```) in order to skip creating the Accumulo table and just create the metadata for the table.  This is the easiest way of creating the metadata for existing Accumulo tables.
 ```SQL
-CREATE TABLE myschema.myexistingtable (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
+CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
 WITH (
     metadata_only = true, 
     column_mapping = 'name:metadata:name,age:metadata:age,birthday:metadata:date'
 );
 USE myschema;
 SHOW TABLES;
-      Table      
------------------
- myexistingtable 
- mytable         
+   Table    
+------------
+ scientists 
+(1 row)
+```
+You can then issue INSERT statements to put data into Accumulo.  Note that this functionality is experimental.
+```SQL
+INSERT INTO myschema.scientists VALUES
+('row1', 'Grace Hopper', 109, DATE '1906-12-09' ),
+('row2', 'Alan Turing', 103, DATE '1912-06-23' );
+
+SELECT * FROM myschema.scientists;
+ recordkey |     name     | age |  birthday  
+-----------+--------------+-----+------------
+ row1      | Grace Hopper | 109 | 1906-12-09 
+ row2      | Alan Turing  | 103 | 1912-06-23 
 (2 rows)
+```
+As you'd expect, rows inserted into Accumulo via the shell or programatically will also show up when queried. (The Accumulo shell thinks "-5321" is an option and not a number... so we'll just make TBL a little younger.)
+```SQL
+root@default> table myschema.scientists
+root@default myschema.scientists> insert row3 metadata name "Tim Berners-Lee"
+root@default myschema.scientists> insert row3 metadata age 60
+root@default myschema.scientists> insert row3 metadata date 5321
+
+presto:default> SELECT * FROM myschema.scientists;
+ recordkey |      name       | age |  birthday  
+-----------+-----------------+-----+------------
+ row1      | Grace Hopper    | 109 | 1906-12-09 
+ row2      | Alan Turing     | 103 | 1912-06-23 
+ row3      | Tim Berners-Lee |  60 | 1984-07-27 
+(3 rows)
 ```
 You can also drop tables using the DROP command.  This command drops __metadata only__.  Dropping your Accumulo table seems wildly unsafe.  You'll have to do that in the Accumulo shell.
 ```SQL
-DROP TABLE myschema.mytable;
-DROP TABLE myschema.myexistingtable;
+DROP TABLE myschema.scientists;
 ```
 ### Metadata Management
 
@@ -101,4 +127,4 @@ $ cat src/test/resources/file_a.txt
 e5898627-0222-4e76-b33a-76d0c8a3076f|Audrina|Langosh|7008 Phil Lodge|Port Lydell|Wyoming|22723|344114593|silver
 4fc6a5bb-27f5-4ea9-98aa-26a885f174c2|Alonso|Smith|448 Kautzer Prairie Apt. 876|West Corettabury|Arkansas|02464|248053641|gray
 02832cb9-1a9e-43d6-81d2-3d155df2d88c|Clara|Bailey|30272 Justin Forest|Shareemouth|Wyoming|90367|522550149|white
-
+```
