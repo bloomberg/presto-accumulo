@@ -10,8 +10,8 @@ import org.junit.After;
 import org.junit.Test;
 
 import bloomberg.presto.accumulo.benchmark.QueryDriver;
-import bloomberg.presto.accumulo.benchmark.RowSchema;
 import bloomberg.presto.accumulo.storage.Row;
+import bloomberg.presto.accumulo.storage.RowSchema;
 
 public class DataTypeTests {
 

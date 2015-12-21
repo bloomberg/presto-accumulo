@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.accumulo.core.client.AccumuloException;
@@ -33,16 +32,18 @@ import org.apache.accumulo.core.client.TableExistsException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
-import org.apache.accumulo.core.data.Mutation;
-import org.apache.accumulo.core.data.Value;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 
+import bloomberg.presto.accumulo.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.AccumuloPageSink;
+import bloomberg.presto.accumulo.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.PrestoType;
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataCreator;
 import bloomberg.presto.accumulo.storage.Row;
+import bloomberg.presto.accumulo.storage.RowSchema;
 import io.airlift.log.Logger;
 
 public class QueryDriver {
@@ -60,6 +61,7 @@ public class QueryDriver {
     private List<Row> inputs = new ArrayList<>(),
             expectedOutputs = new ArrayList<>();
     private RowSchema inputSchema, outputSchema;
+    private AccumuloRowSerializer serializer;
 
     static {
         try {
@@ -72,10 +74,18 @@ public class QueryDriver {
     public QueryDriver(String instanceName, String zookeepers, String user,
             String password)
                     throws AccumuloException, AccumuloSecurityException {
+        this(instanceName, zookeepers, user, password,
+                AccumuloRowSerializer.getDefault());
+    }
+
+    public QueryDriver(String instanceName, String zookeepers, String user,
+            String password, AccumuloRowSerializer serializer)
+                    throws AccumuloException, AccumuloSecurityException {
         this.instanceName = instanceName;
         this.zooKeepers = zookeepers;
         this.user = user;
         this.password = password;
+        this.serializer = serializer;
         initAccumulo();
     }
 
@@ -184,7 +194,8 @@ public class QueryDriver {
                 Row r = Row.newInstance();
                 list.add(r);
                 for (int i = 0; i < tokens.length; ++i) {
-                    switch (rSchema.getColumn(i).getType()) {
+                    switch (PrestoType
+                            .fromSpiType(rSchema.getColumn(i).getType())) {
                     case BIGINT:
                         r.addField(Long.parseLong(tokens[i]),
                                 PrestoType.BIGINT);
@@ -366,56 +377,12 @@ public class QueryDriver {
 
     protected void pushInput()
             throws TableNotFoundException, MutationsRejectedException {
-        BatchWriterConfig conf = new BatchWriterConfig();
-        conf.setMaxLatency(120, TimeUnit.SECONDS);
-        conf.setMaxMemory(50 * 1024 * 1024);
-        conf.setMaxWriteThreads(10);
-        BatchWriter wrtr = conn.createBatchWriter(tableName, conf);
-
-        // get the row id index from the schema
-        int rowIdIdx = inputSchema
-                .getColumn(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)
-                .getOrdinal();
+        BatchWriter wrtr = conn.createBatchWriter(tableName,
+                new BatchWriterConfig());
 
         for (Row row : inputs) {
-            int i = 0;
-            // make a new mutation, passing in the row ID
-            Mutation m = new Mutation(
-                    row.getField(rowIdIdx).getValue().toString());
-            // for each column in the input schema
-            for (Column c : inputSchema.getColumns()) {
-                // if this column's name is not the row ID
-                if (!c.getPrestoName().equals(
-                        AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
-                    switch (c.getType()) {
-                    case DATE:
-                        m.put(c.getColumnFamily(), c.getColumnQualifier(),
-                                Long.toString(TimeUnit.MILLISECONDS.toDays(
-                                        row.getField(i).getDate().getTime())));
-                        break;
-                    case TIME:
-                        m.put(c.getColumnFamily(), c.getColumnQualifier(), Long
-                                .toString(row.getField(i).getTime().getTime()));
-                        break;
-                    case TIMESTAMP:
-                        m.put(c.getColumnFamily(), c.getColumnQualifier(),
-                                Long.toString(row.getField(i).getTimestamp()
-                                        .getTime()));
-                        break;
-                    case VARBINARY:
-                        m.put(c.getColumnFamily(), c.getColumnQualifier(),
-                                new Value(row.getField(i).getVarBinary()));
-                        break;
-                    default:
-                        m.put(c.getColumnFamily(), c.getColumnQualifier(),
-                                row.getField(i).getValue().toString());
-                        break;
-                    }
-                }
-                ++i;
-            }
-
-            wrtr.addMutation(m);
+            wrtr.addMutation(AccumuloPageSink.toMutation(row,
+                    inputSchema.getColumns(), serializer));
         }
 
         wrtr.close();
@@ -429,12 +396,12 @@ public class QueryDriver {
         creator.setMetadataRoot(ZK_METADATA_ROOT);
         creator.setForce(true);
 
-        for (Column c : inputSchema.getColumns()) {
-            if (!c.getPrestoName()
+        for (AccumuloColumnHandle c : inputSchema.getColumns()) {
+            if (!c.getName()
                     .equals(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
                 creator.setColumnFamily(c.getColumnFamily());
                 creator.setColumnQualifier(c.getColumnQualifier());
-                creator.setPrestoColumn(c.getPrestoName());
+                creator.setPrestoColumn(c.getName());
                 creator.setPrestoType(c.getType().toString());
                 creator.createMetadata();
             }

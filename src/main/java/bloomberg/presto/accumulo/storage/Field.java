@@ -68,11 +68,11 @@ public class Field {
         throw new UnsupportedOperationException();
     }
 
-    public byte[] getVarBinary() {
+    public byte[] getVarbinary() {
         return (byte[]) value;
     }
 
-    public String getVarChar() {
+    public String getVarchar() {
         return (String) value;
     }
 

@@ -14,6 +14,9 @@
 package bloomberg.presto.accumulo;
 
 import java.io.IOException;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -26,8 +29,6 @@ import org.apache.hadoop.io.Text;
 
 import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
 import io.airlift.log.Logger;
-import io.airlift.slice.Slice;
-import io.airlift.slice.Slices;
 
 public class StringRowDeserializer implements AccumuloRowDeserializer {
     private static final Logger LOG = Logger.get(StringRowDeserializer.class);
@@ -48,7 +49,6 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
         q2pc.put(qual, name);
         LOG.debug(String.format("Added mapping for presto col %s, %s:%s", name,
                 fam, qual));
-
     }
 
     @Override
@@ -82,6 +82,11 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
     }
 
     @Override
+    public Date getDate(String name) {
+        return new Date(Long.parseLong(getFieldValue(name)));
+    }
+
+    @Override
     public double getDouble(String name) {
         return Double.parseDouble(getFieldValue(name));
     }
@@ -97,8 +102,23 @@ public class StringRowDeserializer implements AccumuloRowDeserializer {
     }
 
     @Override
-    public Slice getSlice(String name) {
-        return Slices.utf8Slice(getFieldValue(name));
+    public Time getTime(String name) {
+        return new Time(Long.parseLong(getFieldValue(name)));
+    }
+
+    @Override
+    public Timestamp getTimestamp(String name) {
+        return new Timestamp(Long.parseLong(getFieldValue(name)));
+    }
+
+    @Override
+    public byte[] getVarbinary(String name) {
+        return getFieldValue(name).getBytes();
+    }
+
+    @Override
+    public String getVarchar(String name) {
+        return getFieldValue(name);
     }
 
     private String getFieldValue(String name) {

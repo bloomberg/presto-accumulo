@@ -30,18 +30,17 @@ public abstract class AccumuloTableMetadataManager {
 
     public static final String ROW_ID_COLUMN_NAME = "recordkey";
     public static final Type ROW_ID_COLUMN_TYPE = VarcharType.VARCHAR;
+    private static final AccumuloColumnHandle ROW_ID_COLUMN = new AccumuloColumnHandle(
+            "accumulo", ROW_ID_COLUMN_NAME, null, null, ROW_ID_COLUMN_TYPE, 0,
+            "Accumulo row ID");
 
     protected final String connectorId;
     protected final AccumuloConfig config;
-    protected final AccumuloColumnHandle ROW_ID_COLUMN;
 
     public AccumuloTableMetadataManager(String connectorId,
             AccumuloConfig config) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.config = requireNonNull(config, "config is null");
-        this.ROW_ID_COLUMN = new AccumuloColumnHandle(connectorId,
-                ROW_ID_COLUMN_NAME, null, null, ROW_ID_COLUMN_TYPE, 0,
-                "Accumulo row ID");
     }
 
     public static AccumuloTableMetadataManager getDefault(String connectorId,
@@ -49,7 +48,7 @@ public abstract class AccumuloTableMetadataManager {
         return new ZooKeeperColumnMetadataProvider(connectorId, config);
     }
 
-    public AccumuloColumnHandle getRowIdColumn() {
+    public static AccumuloColumnHandle getRowIdColumn() {
         return ROW_ID_COLUMN;
     }
 

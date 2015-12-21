@@ -14,12 +14,13 @@
 package bloomberg.presto.accumulo;
 
 import java.io.IOException;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Map.Entry;
 
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
-
-import io.airlift.slice.Slice;
 
 public interface AccumuloRowDeserializer {
 
@@ -35,12 +36,19 @@ public interface AccumuloRowDeserializer {
 
     public boolean getBoolean(String name);
 
+    public Date getDate(String name);
+
     public double getDouble(String name);
 
     public long getLong(String name);
 
     public Object getObject(String name);
 
-    public Slice getSlice(String name);
+    public Time getTime(String name);
 
+    public Timestamp getTimestamp(String name);
+
+    public byte[] getVarbinary(String name);
+
+    public String getVarchar(String name);
 }

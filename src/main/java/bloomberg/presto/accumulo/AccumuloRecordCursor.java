@@ -19,11 +19,14 @@ import static com.facebook.presto.spi.type.DateType.DATE;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.TimeType.TIME;
 import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
-import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
+import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.io.IOException;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -164,7 +167,20 @@ public class AccumuloRecordCursor implements RecordCursor {
     @Override
     public long getLong(int field) {
         checkFieldType(field, BIGINT, DATE, TIME, TIMESTAMP);
-        return deserializer.getLong(fieldToColumnName[field]);
+        switch (PrestoType.fromSpiType(getType(field))) {
+        case BIGINT:
+            return deserializer.getLong(fieldToColumnName[field]);
+        case DATE:
+            return deserializer.getDate(fieldToColumnName[field]).getTime();
+        case TIME:
+            return deserializer.getTime(fieldToColumnName[field]).getTime();
+        case TIMESTAMP:
+            return deserializer.getTimestamp(fieldToColumnName[field])
+                    .getTime();
+        default:
+            throw new RuntimeException("Unsupported type "
+                    + PrestoType.fromSpiType(getType(field)));
+        }
     }
 
     @Override
@@ -174,8 +190,18 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     @Override
     public Slice getSlice(int field) {
-        checkFieldType(field, VARCHAR, VARBINARY);
-        return deserializer.getSlice(fieldToColumnName[field]);
+        checkFieldType(field, VARBINARY, VARCHAR);
+        switch (PrestoType.fromSpiType(getType(field))) {
+        case VARBINARY:
+            return Slices.wrappedBuffer(
+                    deserializer.getVarbinary(fieldToColumnName[field]));
+        case VARCHAR:
+            return Slices.utf8Slice(
+                    deserializer.getVarchar(fieldToColumnName[field]));
+        default:
+            throw new RuntimeException("Unsupported type "
+                    + PrestoType.fromSpiType(getType(field)));
+        }
     }
 
     @Override
@@ -211,17 +237,17 @@ public class AccumuloRecordCursor implements RecordCursor {
         }
 
         @Override
-        public Slice getSlice(String name) {
-            return Slices.utf8Slice(r.toString());
-        }
-
-        @Override
         public boolean isNull(String name) {
             return false;
         }
 
         @Override
         public boolean getBoolean(String name) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Date getDate(String string) {
             throw new UnsupportedOperationException();
         }
 
@@ -238,6 +264,26 @@ public class AccumuloRecordCursor implements RecordCursor {
         @Override
         public Object getObject(String name) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Time getTime(String string) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Timestamp getTimestamp(String string) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public byte[] getVarbinary(String string) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getVarchar(String string) {
+            return r.toString();
         }
     }
 }

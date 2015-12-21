@@ -13,6 +13,7 @@ import org.apache.accumulo.core.client.MutationsRejectedException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
+import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.ConnectorPageSink;
 import com.facebook.presto.spi.Page;
@@ -32,10 +33,13 @@ public class AccumuloPageSink implements ConnectorPageSink {
     private final BatchWriter wrtr;
     private final List<Row> rows = new ArrayList<>();
     private final List<AccumuloColumnHandle> types;
+    private final AccumuloRowSerializer serializer;
 
-    public AccumuloPageSink(Connector conn, AccumuloTable table) {
+    public AccumuloPageSink(Connector conn, AccumuloTable table,
+            AccumuloRowSerializer serializer) {
         requireNonNull(conn, "conn is null");
         requireNonNull(table, "tHandle is null");
+        this.serializer = requireNonNull(serializer, "serializer is null");
         this.types = table.getColumns();
 
         try {
@@ -86,7 +90,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
 
         try {
             for (Row row : rows) {
-                wrtr.addMutation(toMutation(row, types));
+                wrtr.addMutation(toMutation(row, types, serializer));
             }
             wrtr.close();
         } catch (MutationsRejectedException e) {
@@ -95,11 +99,18 @@ public class AccumuloPageSink implements ConnectorPageSink {
         return ImmutableList.of();
     }
 
+    @Override
+    public void rollback() {
+        LOG.debug("rollback");
+    }
+
     public static Mutation toMutation(Row row,
-            List<AccumuloColumnHandle> columns) {
+            List<AccumuloColumnHandle> columns,
+            AccumuloRowSerializer serializer) {
         // make a new mutation, passing in the row ID
         Mutation m = new Mutation(row.getField(0).getValue().toString());
-
+    
+        Text cf = new Text(), cq = new Text(), value = new Text();
         // for each column in the input schema
         for (int i = 1; i < columns.size(); ++i) {
             AccumuloColumnHandle ach = columns.get(i);
@@ -107,36 +118,43 @@ public class AccumuloPageSink implements ConnectorPageSink {
             if (!ach.getName()
                     .equals(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
                 switch (PrestoType.fromSpiType(ach.getType())) {
+                case BIGINT:
+                    serializer.setLong(value, row.getField(i).getBigInt());
+                    break;
+                case BOOLEAN:
+                    serializer.setBoolean(value, row.getField(i).getBoolean());
+                    break;
                 case DATE:
-                    m.put(ach.getColumnFamily(), ach.getColumnQualifier(),
-                            Long.toString(row.getField(i).getDate().getTime()));
+                    serializer.setDate(value, row.getField(i).getDate());
+                    break;
+                case DOUBLE:
+                    serializer.setDouble(value, row.getField(i).getDouble());
                     break;
                 case TIME:
-                    m.put(ach.getColumnFamily(), ach.getColumnQualifier(),
-                            Long.toString(row.getField(i).getTime().getTime()));
+                    serializer.setTime(value, row.getField(i).getTime());
                     break;
                 case TIMESTAMP:
-                    m.put(ach.getColumnFamily(), ach.getColumnQualifier(),
-                            Long.toString(
-                                    row.getField(i).getTimestamp().getTime()));
+                    serializer.setTimestamp(value,
+                            row.getField(i).getTimestamp());
                     break;
                 case VARBINARY:
-                    m.put(ach.getColumnFamily(), ach.getColumnQualifier(),
-                            new Value(row.getField(i).getVarBinary()));
+                    serializer.setVarbinary(value,
+                            row.getField(i).getVarbinary());
+                    break;
+                case VARCHAR:
+                    serializer.setVarchar(value, row.getField(i).getVarchar());
                     break;
                 default:
-                    m.put(ach.getColumnFamily(), ach.getColumnQualifier(),
-                            row.getField(i).getValue().toString());
-                    break;
+                    throw new UnsupportedOperationException(
+                            "Unsupported type " + ach.getType());
                 }
+    
+                cf.set(ach.getColumnFamily());
+                cq.set(ach.getColumnQualifier());
+                m.put(cf, cq, new Value(value.copyBytes()));
             }
         }
-
+    
         return m;
-    }
-
-    @Override
-    public void rollback() {
-        LOG.debug("rollback");
     }
 }
