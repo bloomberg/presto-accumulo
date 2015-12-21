@@ -15,6 +15,7 @@ package bloomberg.presto.accumulo;
 
 import javax.validation.constraints.NotNull;
 
+import bloomberg.presto.accumulo.io.AccumuloRowDeserializer;
 import bloomberg.presto.accumulo.io.AccumuloRowSerializer;
 import io.airlift.configuration.Config;
 
@@ -25,6 +26,7 @@ public class AccumuloConfig {
     private String password;
     private String zkMetadataRoot;
     private String serializer;
+    private String deserializer;
 
     @NotNull
     public String getInstance() {
@@ -94,5 +96,21 @@ public class AccumuloConfig {
     @Config("accumulo.row.serializer")
     public void setAccumuloRowSerializer(String serializer) {
         this.serializer = serializer;
+    }
+
+    @NotNull
+    public AccumuloRowDeserializer getAccumuloRowDeserializer() {
+        try {
+            return serializer == null ? AccumuloRowDeserializer.getDefault()
+                    : (AccumuloRowDeserializer) Class.forName(deserializer)
+                            .newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Error when factorying deserializer", e);
+        }
+    }
+
+    @Config("accumulo.row.deserializer")
+    public void setAccumuloRowDeserializer(String deserializer) {
+        this.deserializer = deserializer;
     }
 }

@@ -33,9 +33,11 @@ public class AccumuloRecordSet implements RecordSet {
     private final List<AccumuloColumnHandle> columnHandles;
     private final List<Type> columnTypes;
     private final Scanner scan;
+    private final AccumuloConfig config;
 
     public AccumuloRecordSet(AccumuloConfig config, AccumuloSplit split,
             List<AccumuloColumnHandle> columnHandles, Connector conn) {
+        this.config = requireNonNull(config, "config is null");
         requireNonNull(split, "split is null");
 
         this.columnHandles = requireNonNull(columnHandles,
@@ -69,6 +71,6 @@ public class AccumuloRecordSet implements RecordSet {
 
     @Override
     public RecordCursor cursor() {
-        return new AccumuloRecordCursor(columnHandles, scan);
+        return new AccumuloRecordCursor(config, columnHandles, scan);
     }
 }

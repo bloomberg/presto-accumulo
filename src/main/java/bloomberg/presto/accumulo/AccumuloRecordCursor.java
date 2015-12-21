@@ -62,8 +62,8 @@ public class AccumuloRecordCursor implements RecordCursor {
     private Iterator<Entry<Key, Value>> iterator = null;
     private AccumuloRowDeserializer deserializer;
 
-    public AccumuloRecordCursor(List<AccumuloColumnHandle> cHandles,
-            Scanner scan) {
+    public AccumuloRecordCursor(AccumuloConfig config,
+            List<AccumuloColumnHandle> cHandles, Scanner scan) {
         this.columnHandles = cHandles;
         this.scan = scan;
 
@@ -81,7 +81,7 @@ public class AccumuloRecordCursor implements RecordCursor {
             fieldToColumnName[0] = AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME;
         } else {
             Text fam = new Text(), qual = new Text();
-            deserializer = AccumuloRowDeserializer.getDefault();
+            deserializer = config.getAccumuloRowDeserializer();
             this.scan.addScanIterator(new IteratorSetting(1,
                     "whole-row-iterator", WholeRowIterator.class));
             fieldToColumnName = new String[cHandles.size()];
