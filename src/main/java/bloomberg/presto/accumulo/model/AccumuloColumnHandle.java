@@ -47,10 +47,10 @@ public final class AccumuloColumnHandle
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.name = requireNonNull(name, "name is null");
         this.columnFamily = name
-                .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)
-                        ? null : requireNonNull(columnFamily, "family is null");
-        this.columnQualifier = name.equals(
-                AccumuloMetadataManager.ROW_ID_COLUMN_NAME) ? null
+                .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME) ? null
+                        : requireNonNull(columnFamily, "family is null");
+        this.columnQualifier = name
+                .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME) ? null
                         : requireNonNull(columnQualifier, "qualifier is null");
         this.type = requireNonNull(type, "type is null");
         this.ordinal = requireNonNull(ordinal, "type is null");

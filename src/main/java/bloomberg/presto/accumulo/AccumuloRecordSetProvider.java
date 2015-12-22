@@ -64,9 +64,11 @@ public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
         checkArgument(accSplit.getConnectorId().equals(connectorId),
                 "split is not for this connector");
 
-        ImmutableList.Builder<AccumuloColumnHandle> handles = ImmutableList.builder();
+        ImmutableList.Builder<AccumuloColumnHandle> handles = ImmutableList
+                .builder();
         for (ColumnHandle handle : columns) {
-            handles.add(checkType(handle, AccumuloColumnHandle.class, "handle"));
+            handles.add(
+                    checkType(handle, AccumuloColumnHandle.class, "handle"));
         }
 
         return new AccumuloRecordSet(config, accSplit, handles.build(), conn);

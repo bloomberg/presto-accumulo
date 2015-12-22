@@ -70,8 +70,8 @@ public class AccumuloClient {
         conn = inst.getConnector(config.getUsername(),
                 new PasswordToken(config.getPassword().getBytes()));
 
-        metaManager = AccumuloMetadataManager
-                .getDefault(connectorId.toString(), config);
+        metaManager = AccumuloMetadataManager.getDefault(connectorId.toString(),
+                config);
     }
 
     public void createTable(ConnectorTableMetadata meta) {
@@ -82,8 +82,8 @@ public class AccumuloClient {
         ColumnMetadata firstCol = meta.getColumns().get(0);
         if (!firstCol.getName()
                 .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)
-                || !firstCol.getType().equals(
-                        AccumuloMetadataManager.ROW_ID_COLUMN_TYPE)) {
+                || !firstCol.getType()
+                        .equals(AccumuloMetadataManager.ROW_ID_COLUMN_TYPE)) {
             throw new InvalidParameterException(
                     String.format("First column must be '%s %s', not %s %s",
                             AccumuloMetadataManager.ROW_ID_COLUMN_NAME,
@@ -139,8 +139,9 @@ public class AccumuloClient {
         }
 
         AccumuloTable table = new AccumuloTable(meta.getTable().getSchemaName(),
-                meta.getTable().getTableName(), columns, (String) meta
-                        .getProperties().get(AccumuloConnector.PROP_SERIALIZER));
+                meta.getTable().getTableName(), columns,
+                (String) meta.getProperties()
+                        .get(AccumuloConnector.PROP_SERIALIZER));
 
         // Create dat metadata
         metaManager.createTableMetadata(table);

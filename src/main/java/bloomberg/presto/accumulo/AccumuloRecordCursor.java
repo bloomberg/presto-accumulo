@@ -73,8 +73,8 @@ public class AccumuloRecordCursor implements RecordCursor {
         // if there are no columns, or the only column is the row ID, then
         // configure a scan iterator/serializer to only return the row IDs
         if (cHandles.size() == 0
-                || (cHandles.size() == 1 && cHandles.get(0).getName().equals(
-                        AccumuloMetadataManager.ROW_ID_COLUMN_NAME))) {
+                || (cHandles.size() == 1 && cHandles.get(0).getName()
+                        .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME))) {
             this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter",
                     FirstEntryInRowIterator.class));
             this.serializer = new RowOnlySerializer();
@@ -92,8 +92,8 @@ public class AccumuloRecordCursor implements RecordCursor {
                 AccumuloColumnHandle cHandle = cHandles.get(i);
                 fieldToColumnName[i] = cHandle.getName();
 
-                if (!cHandle.getName().equals(
-                        AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
+                if (!cHandle.getName()
+                        .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
                     LOG.debug(String.format("Set column mapping %s", cHandle));
                     serializer.setMapping(cHandle.getName(),
                             cHandle.getColumnFamily(),

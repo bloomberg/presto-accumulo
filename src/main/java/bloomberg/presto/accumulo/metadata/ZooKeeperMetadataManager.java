@@ -38,8 +38,7 @@ import bloomberg.presto.accumulo.AccumuloTable;
 import io.airlift.json.ObjectMapperProvider;
 import io.airlift.log.Logger;
 
-public class ZooKeeperMetadataManager
-        extends AccumuloMetadataManager {
+public class ZooKeeperMetadataManager extends AccumuloMetadataManager {
 
     private static final String DEFAULT_SCHEMA = "default";
     private static final Logger LOG = Logger
@@ -50,8 +49,7 @@ public class ZooKeeperMetadataManager
     private final String zkMetadataRoot;
     private final String zookeepers;
 
-    public ZooKeeperMetadataManager(String connectorId,
-            AccumuloConfig config) {
+    public ZooKeeperMetadataManager(String connectorId, AccumuloConfig config) {
         super(connectorId, config);
         zkMetadataRoot = config.getZkMetadataRoot();
         zookeepers = config.getZooKeepers();

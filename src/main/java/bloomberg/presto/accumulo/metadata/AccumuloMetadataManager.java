@@ -36,8 +36,7 @@ public abstract class AccumuloMetadataManager {
     protected final String connectorId;
     protected final AccumuloConfig config;
 
-    public AccumuloMetadataManager(String connectorId,
-            AccumuloConfig config) {
+    public AccumuloMetadataManager(String connectorId, AccumuloConfig config) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.config = requireNonNull(config, "config is null");
     }
