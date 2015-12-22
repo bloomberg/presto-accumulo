@@ -59,13 +59,14 @@ SELECT * FROM myschema.scientists;
 (2 rows)
 ```
 As you'd expect, rows inserted into Accumulo via the shell or programatically will also show up when queried. (The Accumulo shell thinks "-5321" is an option and not a number... so we'll just make TBL a little younger.)
-```SQL
+```
 root@default> table myschema.scientists
 root@default myschema.scientists> insert row3 metadata name "Tim Berners-Lee"
 root@default myschema.scientists> insert row3 metadata age 60
 root@default myschema.scientists> insert row3 metadata date 5321
-
-presto:default> SELECT * FROM myschema.scientists;
+```
+```SQL
+SELECT * FROM myschema.scientists;
  recordkey |      name       | age |  birthday  
 -----------+-----------------+-----+------------
  row1      | Grace Hopper    | 109 | 1906-12-09 
@@ -77,36 +78,43 @@ You can also drop tables using the DROP command.  This command drops __metadata 
 ```SQL
 DROP TABLE myschema.scientists;
 ```
+### Serializers
+The Presto connector for Accumulo has a pluggable serializer framework for handling I/O between Presto and Accumulo.  This enables end-users the ability to programatically serialized and deserialize their special data formats within Accumulo, while abstracting away the complexity of the connector itself.
+
+There are two types of serializers currently available; a ```String``` serializer and a serializer that uses Accumulo's various lexicoders.  The default serializer expects the values in your Accumulo table to be stored as a Java ```String```, that is instead of storing four bytes of an integer, the number is stored as a String.
+
+You can change the serializer by specifying the ```serializer``` table property, using either ```string``` or ```lexicoder``` for the built-in types, or you could provide the fully qualified Java class name.
+
+```SQL
+CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
+WITH (
+    column_mapping = 'name:metadata:name,age:metadata:age,birthday:metadata:date',
+    serializer = 'string'
+);
+
+CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
+WITH (
+    column_mapping = 'name:metadata:name,age:metadata:age,birthday:metadata:date',
+    serializer = 'lexicoder'
+);
+
+CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
+WITH (
+    column_mapping = 'name:metadata:name,age:metadata:age,birthday:metadata:date',
+    serializer = 'my.serializer.package.MySerializer'
+);
+```
 ### Metadata Management
 
-The column metadata for the Accumulo tables is pluggable, and an initial implementation is provided for metadata stored in ZooKeeper.  You can (and should) issue SQL statements in Presto to create and drop tables.  This is the easiest method of creating the metadata required to make the connector work.  The details of how metadata is managed in ZooKeeper is not necessary to use the connector, but here are the details anyway.
+Metadata management for the Accumulo tables is pluggable, with an initial implementation storing the data in ZooKeeper.  You can (and should) issue SQL statements in Presto to create and drop tables.  This is the easiest method of creating the metadata required to make the connector work.  It is best to not mess with the metadata, but here are the details of how it is stored.  Information is power.
 
 A root node in ZooKeeper holds all the mappings, and the format is as follows:
 ```bash
-/<metadata-root>/<schema>/<table>/<presto-col>
+/<metadata-root>/<schema>/<table>
 ```
-Where `<metadata-root` is the value of `zookeeper.metadata.root` in the config file (default is `/presto-accumulo`), `<schema>` is the Presto schema (which is identical to the Accumulo schema name), `<table>` is the Presto table name (again, identical to Accumulo name), and `presto-col` is the name of the presto column.  The data of this ZK node is a JSON string of the following format.  This contains the metadata mappings for transforming values stored in an Accumulo table to a presto table.
+Where `<metadata-root` is the value of `zookeeper.metadata.root` in the config file (default is `/presto-accumulo`), `<schema>` is the Presto schema (which is identical to the Accumulo namespace name), and `<table>` is the Presto table name (again, identical to Accumulo name).  The data of the ```<table>``` ZooKeeper node is a serialized ```AccumuloTable``` Java object (which resides in the connector code).  This table contains the schema (namespace) name, table name, column definitions, and the serializer to use for the table. 
 
-```json
-{"name":"cola","family":"cf1","qualifier":"cq1","type":"varchar"}
-```
-
-There is a Java class and a command-line wrapper for assisting in creating this mapping in ZooKeeper.
-
-```bash
-# Copy presto dependencies to the accumulo lib directory
-cp $PRESTO_HOME/lib/presto-spi-0.128.jar $ACCUMULO_HOME/lib/
-cp $PRESTO_HOME/lib/slice-0.15.jar $ACCUMULO_HOME/lib/
-cp $PRESTO_HOME/lib/jackson-databind-2.4.4.jar $ACCUMULO_HOME.lib/
-cp $PRESTO_HOME/lib/jackson-core-2.4.4.jar $ACCUMULO_HOME/lib/
-cp $PRESTO_HOME/lib/jackson-annotations-2.4.4.jar $ACCUMULO_HOME/lib/
-
-# An example column name, use --help for details
-accumulo jar ~/gitrepos/presto-accumulo/target/presto-accumulo-0.128.jar \
-bloomberg.presto.accumulo.metadata.ZooKeeperMetadataCreator \
--z localhost:2181 -n default -t mytable -f cfa -q cb -c col_a -p BIGINT
-```
-If you have a need to programmatically manipulate the ZooKeeper metadata for Accumulo, take a look at ```bloomberg.presto.accumulo.metadata.ZooKeeperMetadataCreator``` for some Java code to simplify the process.
+If you have a need to programmatically manipulate the ZooKeeper metadata for Accumulo, take a look at ```bloomberg.presto.accumulo.metadata.ZooKeeperMetadataManager``` for some Java code to simplify the process.
 
 ### Test Data Generation
 
