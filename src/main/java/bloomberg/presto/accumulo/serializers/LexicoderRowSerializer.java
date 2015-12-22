@@ -16,7 +16,6 @@ import org.apache.accumulo.core.client.lexicoder.LongLexicoder;
 import org.apache.accumulo.core.client.lexicoder.StringLexicoder;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.core.iterators.ValueFormatException;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
@@ -26,7 +25,10 @@ import io.airlift.log.Logger;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class LexicoderRowSerializer implements AccumuloRowSerializer {
+    public static final byte[] TRUE = new byte[] { 1 };
+    public static final byte[] FALSE = new byte[] { 0 };
     private static final Logger LOG = Logger.get(LexicoderRowSerializer.class);
+
     private Map<String, Map<String, String>> f2q2pc = new HashMap<>();
     private Map<String, byte[]> columnValues = new HashMap<>();
     private Text rowId = new Text(), cf = new Text(), cq = new Text(),
@@ -47,7 +49,7 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
                     lexicoderMap.put(t, new LongLexicoder());
                     break;
                 case BOOLEAN:
-                    lexicoderMap.put(t, new BooleanLexicoder());
+                    lexicoderMap.put(t, new BytesLexicoder());
                     break;
                 case DOUBLE:
                     lexicoderMap.put(t, new DoubleLexicoder());
@@ -107,13 +109,13 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public boolean getBoolean(String name) {
-        return (Boolean) lexicoderMap.get(PrestoType.BOOLEAN)
-                .decode(getFieldValue(name));
+        return getFieldValue(name)[0] == TRUE[0] ? true : false;
     }
 
     @Override
     public void setBoolean(Text text, Boolean value) {
-        text.set(lexicoderMap.get(PrestoType.BOOLEAN).encode(value));
+        text.set(lexicoderMap.get(PrestoType.BOOLEAN)
+                .encode(value ? TRUE : FALSE));
     }
 
     @Override
@@ -196,18 +198,5 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     private byte[] getFieldValue(String name) {
         return columnValues.get(name);
-    }
-
-    public static class BooleanLexicoder implements Lexicoder<Boolean> {
-
-        @Override
-        public byte[] encode(Boolean v) {
-            return v ? new byte[] { 1 } : new byte[] { 0 };
-        }
-
-        @Override
-        public Boolean decode(byte[] b) throws ValueFormatException {
-            return b[0] == 0 ? false : true;
-        }
     }
 }
