@@ -21,7 +21,7 @@ import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
 import bloomberg.presto.accumulo.PrestoType;
-import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
+import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import io.airlift.log.Logger;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -88,7 +88,7 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
                 .decodeRow(row.getKey(), row.getValue());
 
         decodedRow.entrySet().iterator().next().getKey().getRow(rowId);
-        columnValues.put(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME,
+        columnValues.put(AccumuloMetadataManager.ROW_ID_COLUMN_NAME,
                 rowId.copyBytes());
 
         for (Entry<Key, Value> kvp : decodedRow.entrySet()) {

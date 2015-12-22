@@ -25,7 +25,7 @@ import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 
-public abstract class AccumuloTableMetadataManager {
+public abstract class AccumuloMetadataManager {
 
     public static final String ROW_ID_COLUMN_NAME = "recordkey";
     public static final Type ROW_ID_COLUMN_TYPE = VarcharType.VARCHAR;
@@ -36,15 +36,15 @@ public abstract class AccumuloTableMetadataManager {
     protected final String connectorId;
     protected final AccumuloConfig config;
 
-    public AccumuloTableMetadataManager(String connectorId,
+    public AccumuloMetadataManager(String connectorId,
             AccumuloConfig config) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.config = requireNonNull(config, "config is null");
     }
 
-    public static AccumuloTableMetadataManager getDefault(String connectorId,
+    public static AccumuloMetadataManager getDefault(String connectorId,
             AccumuloConfig config) {
-        return new ZooKeeperColumnMetadataProvider(connectorId, config);
+        return new ZooKeeperMetadataManager(connectorId, config);
     }
 
     public static AccumuloColumnHandle getRowIdColumn() {

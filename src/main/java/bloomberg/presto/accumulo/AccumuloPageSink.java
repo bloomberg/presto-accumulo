@@ -22,7 +22,7 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 
-import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
+import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
@@ -103,7 +103,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
             AccumuloColumnHandle ach = columns.get(i);
             // if this column's name is not the row ID
             if (!ach.getName()
-                    .equals(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
+                    .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
                 switch (PrestoType.fromSpiType(ach.getType())) {
                 case BIGINT:
                     serializer.setLong(value, row.getField(i).getBigInt());

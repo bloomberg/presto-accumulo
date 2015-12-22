@@ -24,7 +24,7 @@ import com.facebook.presto.spi.type.Type;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
+import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 
 public final class AccumuloColumnHandle
         implements ColumnHandle, Comparable<AccumuloColumnHandle> {
@@ -47,10 +47,10 @@ public final class AccumuloColumnHandle
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.name = requireNonNull(name, "name is null");
         this.columnFamily = name
-                .equals(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)
+                .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)
                         ? null : requireNonNull(columnFamily, "family is null");
         this.columnQualifier = name.equals(
-                AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME) ? null
+                AccumuloMetadataManager.ROW_ID_COLUMN_NAME) ? null
                         : requireNonNull(columnQualifier, "qualifier is null");
         this.type = requireNonNull(type, "type is null");
         this.ordinal = requireNonNull(ordinal, "type is null");

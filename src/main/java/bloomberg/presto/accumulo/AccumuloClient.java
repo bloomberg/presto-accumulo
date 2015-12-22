@@ -44,7 +44,7 @@ import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.SchemaTableName;
 
-import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
+import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
@@ -54,7 +54,7 @@ public class AccumuloClient {
     private ZooKeeperInstance inst = null;
     private AccumuloConfig conf = null;
     private Connector conn = null;
-    private AccumuloTableMetadataManager metaManager = null;
+    private AccumuloMetadataManager metaManager = null;
 
     @Inject
     public AccumuloClient(AccumuloConnectorId connectorId,
@@ -70,7 +70,7 @@ public class AccumuloClient {
         conn = inst.getConnector(config.getUsername(),
                 new PasswordToken(config.getPassword().getBytes()));
 
-        metaManager = AccumuloTableMetadataManager
+        metaManager = AccumuloMetadataManager
                 .getDefault(connectorId.toString(), config);
     }
 
@@ -81,13 +81,13 @@ public class AccumuloClient {
         // Validate first column is the accumulo row id
         ColumnMetadata firstCol = meta.getColumns().get(0);
         if (!firstCol.getName()
-                .equals(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)
+                .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)
                 || !firstCol.getType().equals(
-                        AccumuloTableMetadataManager.ROW_ID_COLUMN_TYPE)) {
+                        AccumuloMetadataManager.ROW_ID_COLUMN_TYPE)) {
             throw new InvalidParameterException(
                     String.format("First column must be '%s %s', not %s %s",
-                            AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME,
-                            AccumuloTableMetadataManager.ROW_ID_COLUMN_TYPE,
+                            AccumuloMetadataManager.ROW_ID_COLUMN_NAME,
+                            AccumuloMetadataManager.ROW_ID_COLUMN_TYPE,
                             firstCol.getName(), firstCol.getType()));
         }
 
@@ -121,7 +121,7 @@ public class AccumuloClient {
         // And now we parse the configured columns and create handles for the
         // metadata manager, adding the special row ID column first
         List<AccumuloColumnHandle> columns = new ArrayList<>();
-        columns.add(AccumuloTableMetadataManager.getRowIdColumn());
+        columns.add(AccumuloMetadataManager.getRowIdColumn());
 
         for (int i = 1; i < meta.getColumns().size(); ++i) {
             ColumnMetadata cm = meta.getColumns().get(i);

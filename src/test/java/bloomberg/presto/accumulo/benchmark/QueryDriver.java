@@ -41,7 +41,7 @@ import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloPageSink;
 import bloomberg.presto.accumulo.AccumuloTable;
 import bloomberg.presto.accumulo.PrestoType;
-import bloomberg.presto.accumulo.metadata.ZooKeeperColumnMetadataProvider;
+import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
@@ -62,7 +62,7 @@ public class QueryDriver {
             expectedOutputs = new ArrayList<>();
     private RowSchema inputSchema, outputSchema;
     private AccumuloRowSerializer serializer;
-    private ZooKeeperColumnMetadataProvider metaManager;
+    private ZooKeeperMetadataManager metaManager;
 
     static {
         try {
@@ -359,7 +359,7 @@ public class QueryDriver {
                 config.getZooKeepers());
         this.conn = inst.getConnector(config.getUsername(),
                 new PasswordToken(config.getPassword()));
-        metaManager = new ZooKeeperColumnMetadataProvider(CATALOG, config);
+        metaManager = new ZooKeeperMetadataManager(CATALOG, config);
     }
 
     protected void createTable() throws AccumuloException,

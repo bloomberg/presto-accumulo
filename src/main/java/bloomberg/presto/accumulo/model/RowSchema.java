@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import bloomberg.presto.accumulo.PrestoType;
-import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
+import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 
 public class RowSchema {
 
@@ -19,7 +19,7 @@ public class RowSchema {
             throw new RuntimeException("Row ID must be the first column");
         }
 
-        columns.add(AccumuloTableMetadataManager.getRowIdColumn());
+        columns.add(AccumuloMetadataManager.getRowIdColumn());
         return this;
     }
 

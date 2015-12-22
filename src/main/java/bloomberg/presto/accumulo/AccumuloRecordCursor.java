@@ -44,7 +44,7 @@ import org.apache.hadoop.io.Text;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.type.Type;
 
-import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
+import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.log.Logger;
@@ -74,12 +74,12 @@ public class AccumuloRecordCursor implements RecordCursor {
         // configure a scan iterator/serializer to only return the row IDs
         if (cHandles.size() == 0
                 || (cHandles.size() == 1 && cHandles.get(0).getName().equals(
-                        AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME))) {
+                        AccumuloMetadataManager.ROW_ID_COLUMN_NAME))) {
             this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter",
                     FirstEntryInRowIterator.class));
             this.serializer = new RowOnlySerializer();
             fieldToColumnName = new String[1];
-            fieldToColumnName[0] = AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME;
+            fieldToColumnName[0] = AccumuloMetadataManager.ROW_ID_COLUMN_NAME;
         } else {
             this.serializer = requireNonNull(serializer, "serializer is null");
 
@@ -93,7 +93,7 @@ public class AccumuloRecordCursor implements RecordCursor {
                 fieldToColumnName[i] = cHandle.getName();
 
                 if (!cHandle.getName().equals(
-                        AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
+                        AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
                     LOG.debug(String.format("Set column mapping %s", cHandle));
                     serializer.setMapping(cHandle.getName(),
                             cHandle.getColumnFamily(),
