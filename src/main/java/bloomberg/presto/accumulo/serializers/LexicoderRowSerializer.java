@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.accumulo.core.client.lexicoder.BytesLexicoder;
 import org.apache.accumulo.core.client.lexicoder.DoubleLexicoder;
@@ -125,8 +124,7 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void setDate(Text text, Date value) {
-        text.set(lexicoderMap.get(PrestoType.DATE)
-                .encode(TimeUnit.MILLISECONDS.toDays(value.getTime())));
+        text.set(lexicoderMap.get(PrestoType.DATE).encode(value.getTime()));
     }
 
     @Override

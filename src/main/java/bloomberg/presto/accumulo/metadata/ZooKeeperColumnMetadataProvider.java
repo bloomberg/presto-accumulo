@@ -14,10 +14,7 @@
 package bloomberg.presto.accumulo.metadata;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import javax.activity.InvalidActivityException;
@@ -36,10 +33,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
-import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloTable;
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import io.airlift.json.ObjectMapperProvider;
 import io.airlift.log.Logger;
 
@@ -131,10 +126,12 @@ public class ZooKeeperColumnMetadataProvider
     public AccumuloTable getTable(SchemaTableName stName) {
         try {
             if (curator.checkExists().forPath(getTablePath(stName)) != null) {
-                return new AccumuloTable(
-                        AccumuloClient.getFullTableName(stName),
-                        getColumnHandles(stName));
+                LOG.debug("getTable " + toAccumuloTable(
+                        curator.getData().forPath(getTablePath(stName))));
+                return toAccumuloTable(
+                        curator.getData().forPath(getTablePath(stName)));
             } else {
+                LOG.debug("No metadata for table " + stName);
                 return null;
             }
         } catch (Exception e) {
@@ -143,101 +140,36 @@ public class ZooKeeperColumnMetadataProvider
     }
 
     @Override
-    public List<AccumuloColumnHandle> getColumnHandles(SchemaTableName stName) {
+    public void createTableMetadata(AccumuloTable table) {
+        String tablePath = getTablePath(table.toSchemaTableName());
+
         try {
-            String schemaPath = getSchemaPath(stName);
-            String tablePath = getTablePath(stName);
-            List<AccumuloColumnHandle> columns = new ArrayList<>();
-
-            columns.add(super.getRowIdColumn());
-
-            if (curator.checkExists().forPath(schemaPath) != null) {
-                if (curator.checkExists().forPath(tablePath) != null) {
-                    for (String colName : curator.getChildren()
-                            .forPath(tablePath)) {
-                        String colPath = tablePath + "/" + colName;
-                        AccumuloColumnHandle col = toAccumuloColumn(
-                                curator.getData().forPath(colPath));
-                        columns.add(col);
-                        LOG.debug(col.toString());
-                    }
-                } else {
-                    throw new InvalidActivityException(
-                            String.format("No known metadata for %s ", stName));
-                }
-            } else {
+            if (curator.checkExists().forPath(tablePath) != null) {
                 throw new InvalidActivityException(
-                        String.format("No known metadata for schema %s ",
-                                stName.getSchemaName()));
+                        String.format("Metadata for table %s already exists",
+                                table.toSchemaTableName()));
+
             }
-
-            Collections.sort(columns);
-
-            return columns;
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching metadata", e);
-        }
-    }
-
-    @Override
-    public AccumuloColumnHandle getColumnHandle(SchemaTableName stName,
-            String name) {
-        try {
-            if (name.equals(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
-                return super.getRowIdColumn();
-            } else {
-                return toAccumuloColumn(curator.getData().forPath(
-                        String.format("%s/%s", getTablePath(stName), name)));
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching metadata", e);
-        }
-    }
-
-    @Override
-    public void createTableMetadata(SchemaTableName stName,
-            List<AccumuloColumnHandle> columns) {
-        String tablePath = getTablePath(stName);
-
-        boolean exists;
-        try {
-            exists = curator.checkExists().forPath(tablePath) != null;
         } catch (Exception e) {
             throw new RuntimeException(
                     "ZK error when checking if table already exists", e);
         }
 
         try {
-            if (!exists) {
-                ZooKeeperMetadataCreator creator = new ZooKeeperMetadataCreator();
-                creator.setZooKeepers(zookeepers);
-                creator.setNamespace(stName.getSchemaName());
-                creator.setTable(stName.getTableName());
-                creator.setMetadataRoot(zkMetadataRoot);
-
-                for (AccumuloColumnHandle c : columns) {
-                    if (!c.getName().equals(
-                            AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
-                        LOG.debug("Creating " + c);
-                        creator.setColumnFamily(c.getColumnFamily());
-                        creator.setColumnQualifier(c.getColumnQualifier());
-                        creator.setPrestoColumn(c.getName());
-                        creator.setPrestoType(c.getType().toString());
-                        creator.createMetadata();
-                    }
-                }
-            } else {
-                throw new InvalidActivityException(String.format(
-                        "Metadata for table %s already exists", stName));
-            }
+            byte[] data = toJsonBytes(table);
+            curator.create().creatingParentsIfNeeded().forPath(tablePath,
+                    toJsonBytes(table));
+            LOG.debug("createTableMetadata " + new String(data));
         } catch (Exception e) {
-            throw new RuntimeException("ZK error when creating metatadata", e);
+            throw new RuntimeException("Error creating table node in ZooKeeper",
+                    e);
         }
     }
 
     @Override
     public void deleteTableMetadata(SchemaTableName stName) {
         try {
+            LOG.debug("deleteTableMetadata for " + stName);
             curator.delete().deletingChildrenIfNeeded()
                     .forPath(getTablePath(stName));
         } catch (Exception e) {
@@ -253,8 +185,13 @@ public class ZooKeeperColumnMetadataProvider
         return getSchemaPath(stName) + '/' + stName.getTableName();
     }
 
-    private AccumuloColumnHandle toAccumuloColumn(byte[] data)
+    private AccumuloTable toAccumuloTable(byte[] data)
             throws JsonParseException, JsonMappingException, IOException {
-        return mapper.readValue(new String(data), AccumuloColumnHandle.class);
+        return mapper.readValue(new String(data), AccumuloTable.class);
+    }
+
+    private byte[] toJsonBytes(AccumuloTable t)
+            throws JsonParseException, JsonMappingException, IOException {
+        return mapper.writeValueAsBytes(t);
     }
 }

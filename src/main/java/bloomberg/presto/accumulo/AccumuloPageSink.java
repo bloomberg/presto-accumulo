@@ -37,15 +37,19 @@ public class AccumuloPageSink implements ConnectorPageSink {
     private final List<AccumuloColumnHandle> types;
     private final AccumuloRowSerializer serializer;
 
-    public AccumuloPageSink(Connector conn, AccumuloTable table,
-            AccumuloRowSerializer serializer) {
+    public AccumuloPageSink(Connector conn, AccumuloTable table) {
         requireNonNull(conn, "conn is null");
         requireNonNull(table, "tHandle is null");
-        this.serializer = requireNonNull(serializer, "serializer is null");
+        try {
+            this.serializer = table.getSerializerClass().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to factory serializer class", e);
+        }
+
         this.types = table.getColumns();
 
         try {
-            wrtr = conn.createBatchWriter(table.getName(),
+            wrtr = conn.createBatchWriter(table.getFullTableName(),
                     new BatchWriterConfig());
         } catch (TableNotFoundException e) {
             throw new RuntimeException(e);
@@ -65,25 +69,6 @@ public class AccumuloPageSink implements ConnectorPageSink {
                         position), PrestoType.fromSpiType(type));
             }
             rows.add(r);
-        }
-    }
-
-    private static Object getNativeContainerValue(Type type, Block block,
-            int position) {
-        if (block.isNull(position)) {
-            return null;
-        } else if (type.getJavaType() == boolean.class) {
-            return type.getBoolean(block, position);
-        } else if (type.getJavaType() == long.class) {
-            return type.getLong(block, position);
-        } else if (type.getJavaType() == double.class) {
-            return type.getDouble(block, position);
-        } else if (type.getJavaType() == Slice.class) {
-            Slice slice = (Slice) type.getSlice(block, position);
-            return type.equals(VarcharType.VARCHAR) ? slice.toStringUtf8()
-                    : slice.getBytes();
-        } else {
-            throw new AssertionError("Unimplemented type: " + type);
         }
     }
 
@@ -111,7 +96,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
             AccumuloRowSerializer serializer) {
         // make a new mutation, passing in the row ID
         Mutation m = new Mutation(row.getField(0).getValue().toString());
-    
+
         Text cf = new Text(), cq = new Text(), value = new Text();
         // for each column in the input schema
         for (int i = 1; i < columns.size(); ++i) {
@@ -150,13 +135,32 @@ public class AccumuloPageSink implements ConnectorPageSink {
                     throw new UnsupportedOperationException(
                             "Unsupported type " + ach.getType());
                 }
-    
+
                 cf.set(ach.getColumnFamily());
                 cq.set(ach.getColumnQualifier());
                 m.put(cf, cq, new Value(value.copyBytes()));
             }
         }
-    
+
         return m;
+    }
+
+    private static Object getNativeContainerValue(Type type, Block block,
+            int position) {
+        if (block.isNull(position)) {
+            return null;
+        } else if (type.getJavaType() == boolean.class) {
+            return type.getBoolean(block, position);
+        } else if (type.getJavaType() == long.class) {
+            return type.getLong(block, position);
+        } else if (type.getJavaType() == double.class) {
+            return type.getDouble(block, position);
+        } else if (type.getJavaType() == Slice.class) {
+            Slice slice = (Slice) type.getSlice(block, position);
+            return type.equals(VarcharType.VARCHAR) ? slice.toStringUtf8()
+                    : slice.getBytes();
+        } else {
+            throw new AssertionError("Unimplemented type: " + type);
+        }
     }
 }

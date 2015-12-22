@@ -6,9 +6,8 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
+import java.util.SortedMap;
 
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
@@ -81,8 +80,7 @@ public class StringRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void setDate(Text text, Date value) {
-        text.set(Long.toString(TimeUnit.MILLISECONDS.toDays(value.getTime()))
-                .getBytes());
+        text.set(Long.toString(value.getTime()).getBytes());
     }
 
     @Override

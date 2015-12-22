@@ -15,7 +15,6 @@ package bloomberg.presto.accumulo;
 
 import javax.validation.constraints.NotNull;
 
-import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.configuration.Config;
 
 public class AccumuloConfig {
@@ -24,7 +23,6 @@ public class AccumuloConfig {
     private String username;
     private String password;
     private String zkMetadataRoot;
-    private String serializer;
 
     @NotNull
     public String getInstance() {
@@ -78,21 +76,5 @@ public class AccumuloConfig {
     @Config("zookeeper.metadata.root")
     public void setZkMetadataRoot(String zkMetadataRoot) {
         this.zkMetadataRoot = zkMetadataRoot;
-    }
-
-    @NotNull
-    public AccumuloRowSerializer getAccumuloRowSerializer() {
-        try {
-            return serializer == null ? AccumuloRowSerializer.getDefault()
-                    : (AccumuloRowSerializer) Class.forName(serializer)
-                            .newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException("Error when factorying serializer", e);
-        }
-    }
-
-    @Config("accumulo.row.serializer")
-    public void setAccumuloRowSerializer(String serializer) {
-        this.serializer = serializer;
     }
 }

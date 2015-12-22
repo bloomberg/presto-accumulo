@@ -28,7 +28,6 @@ import com.facebook.presto.spi.ConnectorPageSink;
 import com.facebook.presto.spi.ConnectorPageSinkProvider;
 import com.facebook.presto.spi.ConnectorSession;
 
-import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.log.Logger;
 
 public class AccumuloPageSinkProvider implements ConnectorPageSinkProvider {
@@ -36,7 +35,6 @@ public class AccumuloPageSinkProvider implements ConnectorPageSinkProvider {
             .get(AccumuloPageSinkProvider.class);
     private final AccumuloClient client;
     private final Connector conn;
-    private final AccumuloRowSerializer serializer;
 
     @Inject
     public AccumuloPageSinkProvider(AccumuloConfig config,
@@ -44,7 +42,6 @@ public class AccumuloPageSinkProvider implements ConnectorPageSinkProvider {
         LOG.debug("constructor");
         this.client = requireNonNull(client, "client is null");
         requireNonNull(config, "config is null");
-        this.serializer = config.getAccumuloRowSerializer();
 
         ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(),
                 config.getZooKeepers());
@@ -62,7 +59,7 @@ public class AccumuloPageSinkProvider implements ConnectorPageSinkProvider {
         AccumuloTableHandle tHandle = checkType(outputTableHandle,
                 AccumuloTableHandle.class, "table");
         AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
-        return new AccumuloPageSink(conn, table, serializer);
+        return new AccumuloPageSink(conn, table);
     }
 
     @Override
@@ -71,6 +68,6 @@ public class AccumuloPageSinkProvider implements ConnectorPageSinkProvider {
         AccumuloTableHandle tHandle = checkType(insertTableHandle,
                 AccumuloTableHandle.class, "table");
         AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
-        return new AccumuloPageSink(conn, table, serializer);
+        return new AccumuloPageSink(conn, table);
     }
 }

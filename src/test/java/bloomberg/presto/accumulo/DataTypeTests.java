@@ -19,8 +19,12 @@ public class DataTypeTests {
 
     static {
         try {
-            HARNESS = new QueryDriver("default", "localhost:2181", "root",
-                    "secret");
+            AccumuloConfig config = new AccumuloConfig();
+            config.setInstance("default");
+            config.setZooKeepers("localhost:2181");
+            config.setUsername("root");
+            config.setPassword("secret");
+            HARNESS = new QueryDriver(config);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -59,9 +59,9 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         List<ConnectorSplit> cSplits = new ArrayList<>();
         if (tSplits.size() > 0) {
             for (TabletSplitMetadata smd : tSplits) {
-
                 AccumuloSplit accSplit = new AccumuloSplit(connectorId,
                         tableHandle.getSchemaName(), tableHandle.getTableName(),
+                        tableHandle.getSerializerClassName(),
                         smd.getRangeHandle());
                 cSplits.add(accSplit);
                 LOG.debug("Added split " + accSplit);
@@ -69,6 +69,7 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         } else {
             AccumuloSplit accSplit = new AccumuloSplit(connectorId,
                     tableHandle.getSchemaName(), tableHandle.getTableName(),
+                    tableHandle.getSerializerClassName(),
                     new RangeHandle(null, true, null, true));
             cSplits.add(accSplit);
             LOG.debug("Added split " + accSplit);

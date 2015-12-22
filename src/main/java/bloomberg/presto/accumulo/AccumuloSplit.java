@@ -22,9 +22,12 @@ import java.util.List;
 import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.HostAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.log.Logger;
 
 public class AccumuloSplit implements ConnectorSplit {
@@ -32,6 +35,7 @@ public class AccumuloSplit implements ConnectorSplit {
     private final String connectorId;
     private final String schemaName;
     private final String tableName;
+    private String serializerClassName;
     private final boolean remotelyAccessible;
     private final List<HostAddress> addresses;
     private RangeHandle rHandle;
@@ -40,10 +44,12 @@ public class AccumuloSplit implements ConnectorSplit {
     public AccumuloSplit(@JsonProperty("connectorId") String connectorId,
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
+            @JsonProperty("serializerClassName") String serializerClassName,
             @JsonProperty("rHandle") RangeHandle rHandle) {
         this.connectorId = requireNonNull(connectorId, "connector id is null");
         this.schemaName = requireNonNull(schemaName, "schema name is null");
         this.tableName = requireNonNull(tableName, "table name is null");
+        this.serializerClassName = serializerClassName;
 
         // do not "requireNotNull" this field, jackson parses and sets
         // AccumuloSplit, then parses the nested RangeHandle object and will
@@ -69,6 +75,11 @@ public class AccumuloSplit implements ConnectorSplit {
         return tableName;
     }
 
+    @JsonGetter
+    public String getSerializerClassName() {
+        return this.serializerClassName;
+    }
+
     @JsonProperty
     public RangeHandle getRangeHandle() {
         return rHandle;
@@ -79,6 +90,17 @@ public class AccumuloSplit implements ConnectorSplit {
         LOG.debug(String.format("%s %s %s %s", connectorId, schemaName,
                 tableName, rHandle));
         this.rHandle = rhandle;
+    }
+
+    @SuppressWarnings("unchecked")
+    @JsonIgnore
+    public Class<? extends AccumuloRowSerializer> getSerializerClass() {
+        try {
+            return (Class<? extends AccumuloRowSerializer>) Class
+                    .forName(serializerClassName);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -100,6 +122,7 @@ public class AccumuloSplit implements ConnectorSplit {
     public String toString() {
         return toStringHelper(this).add("connectorId", connectorId)
                 .add("schemaName", schemaName).add("tableName", tableName)
+                .add("serializerClassName", serializerClassName)
                 .add("remotelyAccessible", remotelyAccessible)
                 .add("addresses", addresses).add("rHandle", rHandle).toString();
     }

@@ -16,6 +16,39 @@ public class Field {
         this.type = t;
     }
 
+    public Field(Field f) {
+        this.type = f.type;
+        switch (type) {
+        case BIGINT:
+            this.value = new Long(f.getBigInt());
+            break;
+        case BOOLEAN:
+            this.value = new Boolean(f.getBoolean());
+            break;
+        case DATE:
+            this.value = new Date(f.getDate().getTime());
+            break;
+        case DOUBLE:
+            this.value = new Double(f.getDouble());
+            break;
+        case TIME:
+            this.value = new Time(f.getTime().getTime());
+            break;
+        case TIMESTAMP:
+            this.value = new Timestamp(f.getTimestamp().getTime());
+            break;
+        case VARBINARY:
+            this.value = Arrays.copyOf(f.getVarbinary(),
+                    f.getVarbinary().length);
+            break;
+        case VARCHAR:
+            this.value = new String(f.getVarchar());
+            break;
+        default:
+            throw new UnsupportedOperationException("Unsupported type " + type);
+        }
+    }
+
     public PrestoType getType() {
         return type;
     }
@@ -38,6 +71,10 @@ public class Field {
 
     public Date getDate() {
         return (Date) value;
+    }
+
+    public void setDate(long value) {
+        ((Date) this.value).setTime(value);
     }
 
     public Double getDouble() {

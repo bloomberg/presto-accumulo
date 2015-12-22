@@ -30,13 +30,16 @@ import com.facebook.presto.spi.session.PropertyMetadata;
 import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.VarcharType;
 
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
+import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
+import bloomberg.presto.accumulo.serializers.StringRowSerializer;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.log.Logger;
 
 public class AccumuloConnector implements Connector {
     public static final String PROP_METADATA_ONLY = "metadata_only";
     public static final String PROP_COLUMN_MAPPING = "column_mapping";
-    public static final String PROP_FORMAT = "format";
+    public static final String PROP_SERIALIZER = "serializer";
     private static final Logger LOG = Logger.get(AccumuloConnector.class);
 
     private final LifeCycleManager lifeCycleManager;
@@ -98,10 +101,18 @@ public class AccumuloConnector implements Connector {
                 "True to only create metadata about the Accumulo table vs. actually creating the table",
                 BooleanType.BOOLEAN, Boolean.class, false, false));
 
-        properties.add(new PropertyMetadata<String>(PROP_FORMAT,
+        properties.add(new PropertyMetadata<String>(PROP_SERIALIZER,
                 "True to only create metadata about the Accumulo table vs. actually creating the table",
-                VarcharType.VARCHAR, String.class, null, false,
-                value -> ((String) value).toLowerCase()));
+                VarcharType.VARCHAR, String.class,
+                AccumuloRowSerializer.getDefault().getClass().getName(), false,
+                x -> x.equals("default")
+                        ? AccumuloRowSerializer.getDefault().getClass()
+                                .getName()
+                        : (x.equals("string")
+                                ? StringRowSerializer.class.getName()
+                                : (x.equals("lexicoder")
+                                        ? LexicoderRowSerializer.class.getName()
+                                        : (String) x))));
 
         return properties;
     }

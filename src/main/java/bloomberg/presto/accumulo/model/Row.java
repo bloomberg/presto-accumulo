@@ -8,6 +8,16 @@ import bloomberg.presto.accumulo.PrestoType;
 public class Row implements Comparable<Row> {
     private List<Field> fields = new ArrayList<>();
 
+    public Row() {
+
+    }
+
+    public Row(Row row) {
+        for (Field f : row.fields) {
+            fields.add(new Field(f));
+        }
+    }
+
     public static Row newInstance() {
         return new Row();
     }

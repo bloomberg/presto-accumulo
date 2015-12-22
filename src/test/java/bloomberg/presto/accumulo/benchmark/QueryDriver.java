@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.accumulo.core.client.AccumuloException;
@@ -36,11 +37,11 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 
+import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloPageSink;
+import bloomberg.presto.accumulo.AccumuloTable;
 import bloomberg.presto.accumulo.PrestoType;
-import bloomberg.presto.accumulo.metadata.AccumuloTableMetadataManager;
-import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataCreator;
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.metadata.ZooKeeperColumnMetadataProvider;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
@@ -51,17 +52,17 @@ public class QueryDriver {
     public static final String JDBC_DRIVER = "com.facebook.presto.jdbc.PrestoDriver";
     public static final String SCHEME = "jdbc:presto://";
     public static final String CATALOG = "accumulo";
-    public static final String ZK_METADATA_ROOT = "/presto-accumulo";
 
     private boolean initialized = false, orderMatters = false;
     private int port = 8080;
-    private String host = "localhost", schema, query, instanceName, zooKeepers,
-            user, password, tableName;
+    private final AccumuloConfig config;
+    private String host = "localhost", schema, query, tableName;
     private Connector conn;
     private List<Row> inputs = new ArrayList<>(),
             expectedOutputs = new ArrayList<>();
     private RowSchema inputSchema, outputSchema;
     private AccumuloRowSerializer serializer;
+    private ZooKeeperColumnMetadataProvider metaManager;
 
     static {
         try {
@@ -71,20 +72,14 @@ public class QueryDriver {
         }
     }
 
-    public QueryDriver(String instanceName, String zookeepers, String user,
-            String password)
-                    throws AccumuloException, AccumuloSecurityException {
-        this(instanceName, zookeepers, user, password,
-                AccumuloRowSerializer.getDefault());
+    public QueryDriver(AccumuloConfig config)
+            throws AccumuloException, AccumuloSecurityException {
+        this(config, AccumuloRowSerializer.getDefault());
     }
 
-    public QueryDriver(String instanceName, String zookeepers, String user,
-            String password, AccumuloRowSerializer serializer)
-                    throws AccumuloException, AccumuloSecurityException {
-        this.instanceName = instanceName;
-        this.zooKeepers = zookeepers;
-        this.user = user;
-        this.password = password;
+    public QueryDriver(AccumuloConfig config, AccumuloRowSerializer serializer)
+            throws AccumuloException, AccumuloSecurityException {
+        this.config = config;
         this.serializer = serializer;
         initAccumulo();
     }
@@ -308,14 +303,14 @@ public class QueryDriver {
         }
 
         // cleanup metadata folder
-        CuratorFramework zkclient = CuratorFrameworkFactory
-                .newClient(zooKeepers, new ExponentialBackoffRetry(1000, 3));
+        CuratorFramework zkclient = CuratorFrameworkFactory.newClient(
+                config.getZooKeepers(), new ExponentialBackoffRetry(1000, 3));
         zkclient.start();
 
-        String schemaPath = String.format("%s/%s/%s", ZK_METADATA_ROOT, schema,
-                tableName);
-        String tablePath = String.format("%s/%s/%s", ZK_METADATA_ROOT, schema,
-                tableName);
+        String schemaPath = String.format("%s/%s/%s",
+                config.getZkMetadataRoot(), schema, tableName);
+        String tablePath = String.format("%s/%s/%s", config.getZkMetadataRoot(),
+                schema, tableName);
 
         if (zkclient.checkExists().forPath(tablePath) != null) {
             zkclient.delete().deletingChildrenIfNeeded().forPath(tablePath);
@@ -360,9 +355,11 @@ public class QueryDriver {
 
     protected void initAccumulo()
             throws AccumuloException, AccumuloSecurityException {
-        ZooKeeperInstance inst = new ZooKeeperInstance(instanceName,
-                zooKeepers);
-        this.conn = inst.getConnector(user, new PasswordToken(password));
+        ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(),
+                config.getZooKeepers());
+        this.conn = inst.getConnector(config.getUsername(),
+                new PasswordToken(config.getPassword()));
+        metaManager = new ZooKeeperColumnMetadataProvider(CATALOG, config);
     }
 
     protected void createTable() throws AccumuloException,
@@ -381,7 +378,22 @@ public class QueryDriver {
                 new BatchWriterConfig());
 
         for (Row row : inputs) {
-            wrtr.addMutation(AccumuloPageSink.toMutation(row,
+            // So... the deal here is we are converting the Date objects,
+            // specified by the user, to the number of days because that is what
+            // Presto wants
+
+            // Chose to just do this here instead of putting the burden on the
+            // programmer using this library for converting the Date types to #
+            // of days
+
+            // Maybe I will regret this later, but for now, check out this cool
+            // stream stuff
+            Row toMutate = new Row(row);
+            toMutate.getFields().stream()
+                    .filter(x -> x.getType().equals(PrestoType.DATE))
+                    .forEach(x -> x.setDate(TimeUnit.MILLISECONDS
+                            .toDays(x.getDate().getTime())));
+            wrtr.addMutation(AccumuloPageSink.toMutation(toMutate,
                     inputSchema.getColumns(), serializer));
         }
 
@@ -389,23 +401,9 @@ public class QueryDriver {
     }
 
     protected void pushPrestoMetadata() throws Exception {
-        ZooKeeperMetadataCreator creator = new ZooKeeperMetadataCreator();
-        creator.setZooKeepers(zooKeepers);
-        creator.setNamespace(getSchema());
-        creator.setTable(getAccumuloTable());
-        creator.setMetadataRoot(ZK_METADATA_ROOT);
-        creator.setForce(true);
-
-        for (AccumuloColumnHandle c : inputSchema.getColumns()) {
-            if (!c.getName()
-                    .equals(AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME)) {
-                creator.setColumnFamily(c.getColumnFamily());
-                creator.setColumnQualifier(c.getColumnQualifier());
-                creator.setPrestoColumn(c.getName());
-                creator.setPrestoType(c.getType().toString());
-                creator.createMetadata();
-            }
-        }
+        metaManager.createTableMetadata(new AccumuloTable(getSchema(),
+                getAccumuloTable(), inputSchema.getColumns(),
+                this.serializer.getClass().getName()));
     }
 
     protected List<Row> execQuery() throws SQLException {

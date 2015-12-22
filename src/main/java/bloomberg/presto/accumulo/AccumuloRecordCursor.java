@@ -22,6 +22,7 @@ import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.sql.Date;
@@ -53,19 +54,19 @@ import io.airlift.slice.Slices;
 public class AccumuloRecordCursor implements RecordCursor {
 
     private static final Logger LOG = Logger.get(AccumuloRecordCursor.class);
-    private final List<AccumuloColumnHandle> columnHandles;
+    private final List<AccumuloColumnHandle> cHandles;
     private final String[] fieldToColumnName;
 
     private final String fieldValue = "value";
     private final long totalBytes = fieldValue.getBytes().length;
-    private Scanner scan = null;
-    private Iterator<Entry<Key, Value>> iterator = null;
-    private AccumuloRowSerializer serializer;
+    private final Scanner scan;
+    private final Iterator<Entry<Key, Value>> iterator;
+    private final AccumuloRowSerializer serializer;
 
-    public AccumuloRecordCursor(AccumuloConfig config,
+    public AccumuloRecordCursor(AccumuloRowSerializer serializer,
             List<AccumuloColumnHandle> cHandles, Scanner scan) {
-        this.columnHandles = cHandles;
-        this.scan = scan;
+        this.cHandles = requireNonNull(cHandles, "cHandles is null");
+        this.scan = requireNonNull(scan, "scan is null");
 
         LOG.debug("Number of column handles is " + cHandles.size());
 
@@ -76,12 +77,13 @@ public class AccumuloRecordCursor implements RecordCursor {
                         AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME))) {
             this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter",
                     FirstEntryInRowIterator.class));
-            serializer = new RowOnlySerializer();
+            this.serializer = new RowOnlySerializer();
             fieldToColumnName = new String[1];
             fieldToColumnName[0] = AccumuloTableMetadataManager.ROW_ID_COLUMN_NAME;
         } else {
+            this.serializer = requireNonNull(serializer, "serializer is null");
+
             Text fam = new Text(), qual = new Text();
-            serializer = config.getAccumuloRowSerializer();
             this.scan.addScanIterator(new IteratorSetting(1,
                     "whole-row-iterator", WholeRowIterator.class));
             fieldToColumnName = new String[cHandles.size()];
@@ -130,8 +132,8 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     @Override
     public Type getType(int field) {
-        checkArgument(field < columnHandles.size(), "Invalid field index");
-        return columnHandles.get(field).getType();
+        checkArgument(field < cHandles.size(), "Invalid field index");
+        return cHandles.get(field).getType();
     }
 
     @Override
@@ -150,7 +152,7 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     @Override
     public boolean isNull(int field) {
-        checkArgument(field < columnHandles.size(), "Invalid field index");
+        checkArgument(field < cHandles.size(), "Invalid field index");
         return serializer.isNull(fieldToColumnName[field]);
     }
 

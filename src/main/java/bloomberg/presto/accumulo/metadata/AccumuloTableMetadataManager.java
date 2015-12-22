@@ -15,7 +15,6 @@ package bloomberg.presto.accumulo.metadata;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.List;
 import java.util.Set;
 
 import com.facebook.presto.spi.SchemaTableName;
@@ -54,18 +53,11 @@ public abstract class AccumuloTableMetadataManager {
 
     public abstract Set<String> getSchemaNames();
 
-    public abstract AccumuloTable getTable(SchemaTableName table);
-
     public abstract Set<String> getTableNames(String schema);
 
-    public abstract List<AccumuloColumnHandle> getColumnHandles(
-            SchemaTableName table);
+    public abstract AccumuloTable getTable(SchemaTableName table);
 
-    public abstract AccumuloColumnHandle getColumnHandle(SchemaTableName table,
-            String name);
-
-    public abstract void createTableMetadata(SchemaTableName stName,
-            List<AccumuloColumnHandle> columns);
+    public abstract void createTableMetadata(AccumuloTable table);
 
     public abstract void deleteTableMetadata(SchemaTableName stName);
 }

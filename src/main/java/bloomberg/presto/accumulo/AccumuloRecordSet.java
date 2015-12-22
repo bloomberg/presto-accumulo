@@ -26,6 +26,7 @@ import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
 
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.log.Logger;
 
 public class AccumuloRecordSet implements RecordSet {
@@ -33,12 +34,18 @@ public class AccumuloRecordSet implements RecordSet {
     private final List<AccumuloColumnHandle> columnHandles;
     private final List<Type> columnTypes;
     private final Scanner scan;
-    private final AccumuloConfig config;
+    private final AccumuloRowSerializer serializer;
 
     public AccumuloRecordSet(AccumuloConfig config, AccumuloSplit split,
             List<AccumuloColumnHandle> columnHandles, Connector conn) {
-        this.config = requireNonNull(config, "config is null");
+        requireNonNull(config, "config is null");
         requireNonNull(split, "split is null");
+
+        try {
+            this.serializer = split.getSerializerClass().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to factory serializer class", e);
+        }
 
         this.columnHandles = requireNonNull(columnHandles,
                 "column handles is null");
@@ -71,6 +78,6 @@ public class AccumuloRecordSet implements RecordSet {
 
     @Override
     public RecordCursor cursor() {
-        return new AccumuloRecordCursor(config, columnHandles, scan);
+        return new AccumuloRecordCursor(serializer, columnHandles, scan);
     }
 }

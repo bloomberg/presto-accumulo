@@ -115,7 +115,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
         }
 
         return new AccumuloTableHandle(connectorId, stName.getSchemaName(),
-                stName.getTableName());
+                stName.getTableName(), table.getSerializerClass().getName());
     }
 
     @Override
@@ -125,6 +125,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
             Optional<Set<ColumnHandle>> desiredColumns) {
         AccumuloTableHandle tableHandle = checkType(table,
                 AccumuloTableHandle.class, "table");
+
         ConnectorTableLayout layout = new ConnectorTableLayout(
                 new AccumuloTableLayoutHandle(tableHandle), Optional.empty(),
                 TupleDomain.<ColumnHandle> all(), Optional.empty(),
@@ -138,6 +139,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
             ConnectorTableLayoutHandle handle) {
         AccumuloTableLayoutHandle layout = checkType(handle,
                 AccumuloTableLayoutHandle.class, "layout");
+
         return new ConnectorTableLayout(layout, Optional.empty(),
                 TupleDomain.<ColumnHandle> all(), Optional.empty(),
                 Optional.empty(), ImmutableList.of());
@@ -213,6 +215,14 @@ public class AccumuloMetadata implements ConnectorMetadata {
         return columns.build();
     }
 
+    @Override
+    public ColumnMetadata getColumnMetadata(ConnectorSession session,
+            ConnectorTableHandle tableHandle, ColumnHandle columnHandle) {
+        checkType(tableHandle, AccumuloTableHandle.class, "tableHandle");
+        return checkType(columnHandle, AccumuloColumnHandle.class,
+                "columnHandle").getColumnMetadata();
+    }
+
     private ConnectorTableMetadata getTableMetadata(SchemaTableName stName) {
         if (!listSchemaNames().contains(stName.getSchemaName())) {
             return null;
@@ -233,13 +243,5 @@ public class AccumuloMetadata implements ConnectorMetadata {
         }
         return ImmutableList.of(new SchemaTableName(prefix.getSchemaName(),
                 prefix.getTableName()));
-    }
-
-    @Override
-    public ColumnMetadata getColumnMetadata(ConnectorSession session,
-            ConnectorTableHandle tableHandle, ColumnHandle columnHandle) {
-        checkType(tableHandle, AccumuloTableHandle.class, "tableHandle");
-        return checkType(columnHandle, AccumuloColumnHandle.class,
-                "columnHandle").getColumnMetadata();
     }
 }

@@ -99,10 +99,10 @@ public class AccumuloClient {
         // parse the mapping configuration to get the accumulo fam/qual pair
         String strMapping = (String) meta.getProperties()
                 .get(AccumuloConnector.PROP_COLUMN_MAPPING);
-        if (strMapping.isEmpty()) {
-            throw new InvalidParameterException(
-                    String.format("Must specify a property, WITH (%s = ...)",
-                            AccumuloConnector.PROP_COLUMN_MAPPING));
+        if (strMapping == null || strMapping.isEmpty()) {
+            throw new InvalidParameterException(String.format(
+                    "Must specify mapping property in WITH (%s = ...)",
+                    AccumuloConnector.PROP_COLUMN_MAPPING));
         }
 
         Map<String, Pair<String, String>> mapping = new HashMap<>();
@@ -119,8 +119,10 @@ public class AccumuloClient {
         }
 
         // And now we parse the configured columns and create handles for the
-        // metadata manager, skipping the first row ID column
+        // metadata manager, adding the special row ID column first
         List<AccumuloColumnHandle> columns = new ArrayList<>();
+        columns.add(AccumuloTableMetadataManager.getRowIdColumn());
+
         for (int i = 1; i < meta.getColumns().size(); ++i) {
             ColumnMetadata cm = meta.getColumns().get(i);
             try {
@@ -136,8 +138,12 @@ public class AccumuloClient {
             }
         }
 
+        AccumuloTable table = new AccumuloTable(meta.getTable().getSchemaName(),
+                meta.getTable().getTableName(), columns, (String) meta
+                        .getProperties().get(AccumuloConnector.PROP_SERIALIZER));
+
         // Create dat metadata
-        metaManager.createTableMetadata(meta.getTable(), columns);
+        metaManager.createTableMetadata(table);
 
         if (!metaOnly) {
             try {

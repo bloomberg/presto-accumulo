@@ -36,10 +36,15 @@ public class LargeDataTests {
     private static final Integer NUM_RECORDS = 100000;
     private static final QueryDriver HARNESS;
 
+    private static final AccumuloConfig ACCUMULO_CONFIG = new AccumuloConfig();
+
     static {
         try {
-            HARNESS = new QueryDriver("default", "localhost:2181", "root",
-                    "secret");
+            ACCUMULO_CONFIG.setInstance("default");
+            ACCUMULO_CONFIG.setZooKeepers("localhost:2181");
+            ACCUMULO_CONFIG.setUsername("root");
+            ACCUMULO_CONFIG.setPassword("secret");
+            HARNESS = new QueryDriver(ACCUMULO_CONFIG);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -101,8 +106,8 @@ public class LargeDataTests {
     public void testJoin() throws Exception {
         QueryDriver driver2 = null;
         try {
-            driver2 = new QueryDriver("default", "localhost:2181", "root",
-                    "secret");
+            driver2 = new QueryDriver(ACCUMULO_CONFIG);
+
             driver2.withHost("localhost").withPort(8080).withSchema("default")
                     .withTable("testmyothertable").withInputSchema(INPUT_SCHEMA)
                     .withInputFile(OTHER_INPUT_FILE).initialize();
