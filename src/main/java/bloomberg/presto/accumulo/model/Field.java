@@ -5,43 +5,48 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
 
-import bloomberg.presto.accumulo.PrestoType;
+import com.facebook.presto.spi.type.DateType;
+import com.facebook.presto.spi.type.StandardTypes;
+import com.facebook.presto.spi.type.TimeType;
+import com.facebook.presto.spi.type.TimestampType;
+import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.VarbinaryType;
 
 public class Field {
     private Object value;
-    private PrestoType type;
+    private Type type;
 
-    public Field(Object v, PrestoType t) {
+    public Field(Object v, Type t) {
         this.value = Field.cleanObject(v, t);
         this.type = t;
     }
 
     public Field(Field f) {
         this.type = f.type;
-        switch (type) {
-        case BIGINT:
+        switch (type.getDisplayName()) {
+        case StandardTypes.BIGINT:
             this.value = new Long(f.getBigInt());
             break;
-        case BOOLEAN:
+        case StandardTypes.BOOLEAN:
             this.value = new Boolean(f.getBoolean());
             break;
-        case DATE:
+        case StandardTypes.DATE:
             this.value = new Date(f.getDate().getTime());
             break;
-        case DOUBLE:
+        case StandardTypes.DOUBLE:
             this.value = new Double(f.getDouble());
             break;
-        case TIME:
+        case StandardTypes.TIME:
             this.value = new Time(f.getTime().getTime());
             break;
-        case TIMESTAMP:
+        case StandardTypes.TIMESTAMP:
             this.value = new Timestamp(f.getTimestamp().getTime());
             break;
-        case VARBINARY:
+        case StandardTypes.VARBINARY:
             this.value = Arrays.copyOf(f.getVarbinary(),
                     f.getVarbinary().length);
             break;
-        case VARCHAR:
+        case StandardTypes.VARCHAR:
             this.value = new String(f.getVarchar());
             break;
         default:
@@ -49,7 +54,7 @@ public class Field {
         }
     }
 
-    public PrestoType getType() {
+    public Type getType() {
         return type;
     }
 
@@ -113,14 +118,14 @@ public class Field {
         return (String) value;
     }
 
-    public static Object cleanObject(Object v, PrestoType t) {
+    public static Object cleanObject(Object v, Type t) {
         if (v == null) {
             return v;
         }
 
         // Validate the object is the given type
-        switch (t) {
-        case BIGINT:
+        switch (t.getDisplayName()) {
+        case StandardTypes.BIGINT:
             // Auto-convert integers to Longs
             if (v instanceof Integer)
                 return new Long((Integer) v);
@@ -128,12 +133,12 @@ public class Field {
                 throw new RuntimeException(
                         "Object is not a Long, but " + v.getClass());
             break;
-        case BOOLEAN:
+        case StandardTypes.BOOLEAN:
             if (!(v instanceof Boolean))
                 throw new RuntimeException(
                         "Object is not a Boolean, but " + v.getClass());
             break;
-        case DATE:
+        case StandardTypes.DATE:
             if (v instanceof Long)
                 return new Date((Long) v);
 
@@ -141,12 +146,12 @@ public class Field {
                 throw new RuntimeException(
                         "Object is not a Date, but " + v.getClass());
             break;
-        case DOUBLE:
+        case StandardTypes.DOUBLE:
             if (!(v instanceof Double))
                 throw new RuntimeException(
                         "Object is not a Double, but " + v.getClass());
             break;
-        case TIME:
+        case StandardTypes.TIME:
             if (v instanceof Long)
                 return new Time((Long) v);
 
@@ -154,7 +159,7 @@ public class Field {
                 throw new RuntimeException(
                         "Object is not a Time, but " + v.getClass());
             break;
-        case TIMESTAMP:
+        case StandardTypes.TIMESTAMP:
             if (v instanceof Long)
                 return new Timestamp((Long) v);
 
@@ -162,12 +167,12 @@ public class Field {
                 throw new RuntimeException(
                         "Object is not a Timestamp, but " + v.getClass());
             break;
-        case VARBINARY:
+        case StandardTypes.VARBINARY:
             if (!(v instanceof byte[]))
                 throw new RuntimeException(
                         "Object is not a byte[], but " + v.getClass());
             break;
-        case VARCHAR:
+        case StandardTypes.VARCHAR:
             if (!(v instanceof String))
                 throw new RuntimeException(
                         "Object is not a String, but " + v.getClass());
@@ -185,14 +190,14 @@ public class Field {
         if (obj instanceof Field) {
             Field f = (Field) obj;
             if (type.equals(f.getType())) {
-                if (type.equals(PrestoType.VARBINARY)) {
+                if (type.equals(VarbinaryType.VARBINARY)) {
                     // special case for byte arrays
                     // aren't they so fancy
                     retval = Arrays.equals((byte[]) value,
                             (byte[]) f.getValue());
-                } else if (type.equals(PrestoType.DATE)
-                        || type.equals(PrestoType.TIME)
-                        || type.equals(PrestoType.TIMESTAMP)) {
+                } else if (type.equals(DateType.DATE)
+                        || type.equals(TimeType.TIME)
+                        || type.equals(TimestampType.TIMESTAMP)) {
                     retval = value.toString().equals(f.getValue().toString());
                 } else {
                     retval = value.equals(f.getValue());

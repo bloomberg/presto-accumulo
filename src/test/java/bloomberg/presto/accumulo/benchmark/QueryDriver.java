@@ -37,10 +37,19 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 
+import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.BooleanType;
+import com.facebook.presto.spi.type.DateType;
+import com.facebook.presto.spi.type.DoubleType;
+import com.facebook.presto.spi.type.StandardTypes;
+import com.facebook.presto.spi.type.TimeType;
+import com.facebook.presto.spi.type.TimestampType;
+import com.facebook.presto.spi.type.VarbinaryType;
+import com.facebook.presto.spi.type.VarcharType;
+
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloPageSink;
 import bloomberg.presto.accumulo.AccumuloTable;
-import bloomberg.presto.accumulo.PrestoType;
 import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
@@ -189,37 +198,37 @@ public class QueryDriver {
                 Row r = Row.newInstance();
                 list.add(r);
                 for (int i = 0; i < tokens.length; ++i) {
-                    switch (PrestoType
-                            .fromSpiType(rSchema.getColumn(i).getType())) {
-                    case BIGINT:
+                    switch (rSchema.getColumn(i).getType().getDisplayName()) {
+                    case StandardTypes.BIGINT:
                         r.addField(Long.parseLong(tokens[i]),
-                                PrestoType.BIGINT);
+                                BigintType.BIGINT);
                         break;
-                    case BOOLEAN:
+                    case StandardTypes.BOOLEAN:
                         r.addField(Boolean.parseBoolean(tokens[i]),
-                                PrestoType.BOOLEAN);
+                                BooleanType.BOOLEAN);
                         break;
-                    case DATE:
+                    case StandardTypes.DATE:
                         r.addField(new Date(Long.parseLong(tokens[i])),
-                                PrestoType.DATE);
+                                DateType.DATE);
                         break;
-                    case DOUBLE:
+                    case StandardTypes.DOUBLE:
                         r.addField(Double.parseDouble(tokens[i]),
-                                PrestoType.DOUBLE);
+                                DoubleType.DOUBLE);
                         break;
-                    case TIME:
+                    case StandardTypes.TIME:
                         r.addField(new Time(Long.parseLong(tokens[i])),
-                                PrestoType.TIME);
+                                TimeType.TIME);
                         break;
-                    case TIMESTAMP:
+                    case StandardTypes.TIMESTAMP:
                         r.addField(new Timestamp(Long.parseLong(tokens[i])),
-                                PrestoType.TIMESTAMP);
+                                TimestampType.TIMESTAMP);
                         break;
-                    case VARBINARY:
-                        r.addField(tokens[i].getBytes(), PrestoType.VARBINARY);
+                    case StandardTypes.VARBINARY:
+                        r.addField(tokens[i].getBytes(),
+                                VarbinaryType.VARBINARY);
                         break;
-                    case VARCHAR:
-                        r.addField(tokens[i], PrestoType.VARCHAR);
+                    case StandardTypes.VARCHAR:
+                        r.addField(tokens[i], VarcharType.VARCHAR);
                         break;
                     default:
                         break;
@@ -390,7 +399,7 @@ public class QueryDriver {
             // stream stuff
             Row toMutate = new Row(row);
             toMutate.getFields().stream()
-                    .filter(x -> x.getType().equals(PrestoType.DATE))
+                    .filter(x -> x.getType().equals(DateType.DATE))
                     .forEach(x -> x.setDate(TimeUnit.MILLISECONDS
                             .toDays(x.getDate().getTime())));
             wrtr.addMutation(AccumuloPageSink.toMutation(toMutate,
@@ -430,28 +439,28 @@ public class QueryDriver {
             for (int j = 1; j <= rs.getMetaData().getColumnCount(); ++j) {
                 switch (rs.getMetaData().getColumnType(j)) {
                 case Types.BIGINT:
-                    orow.addField(rs.getLong(j), PrestoType.BIGINT);
+                    orow.addField(rs.getLong(j), BigintType.BIGINT);
                     break;
                 case Types.BOOLEAN:
-                    orow.addField(rs.getBoolean(j), PrestoType.BOOLEAN);
+                    orow.addField(rs.getBoolean(j), BooleanType.BOOLEAN);
                     break;
                 case Types.DATE:
-                    orow.addField(rs.getDate(j), PrestoType.DATE);
+                    orow.addField(rs.getDate(j), DateType.DATE);
                     break;
                 case Types.DOUBLE:
-                    orow.addField(rs.getDouble(j), PrestoType.DOUBLE);
+                    orow.addField(rs.getDouble(j), DoubleType.DOUBLE);
                     break;
                 case Types.TIME:
-                    orow.addField(rs.getTime(j), PrestoType.TIME);
+                    orow.addField(rs.getTime(j), TimeType.TIME);
                     break;
                 case Types.TIMESTAMP:
-                    orow.addField(rs.getTimestamp(j), PrestoType.TIMESTAMP);
+                    orow.addField(rs.getTimestamp(j), TimestampType.TIMESTAMP);
                     break;
                 case Types.LONGVARBINARY:
-                    orow.addField(rs.getBytes(j), PrestoType.VARBINARY);
+                    orow.addField(rs.getBytes(j), VarbinaryType.VARBINARY);
                     break;
                 case Types.LONGNVARCHAR:
-                    orow.addField(rs.getString(j), PrestoType.VARCHAR);
+                    orow.addField(rs.getString(j), VarcharType.VARCHAR);
                     break;
                 default:
                     throw new RuntimeException("Unknown SQL type "

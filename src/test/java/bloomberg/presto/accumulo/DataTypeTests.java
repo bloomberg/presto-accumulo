@@ -9,6 +9,15 @@ import java.util.GregorianCalendar;
 import org.junit.After;
 import org.junit.Test;
 
+import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.BooleanType;
+import com.facebook.presto.spi.type.DateType;
+import com.facebook.presto.spi.type.DoubleType;
+import com.facebook.presto.spi.type.TimeType;
+import com.facebook.presto.spi.type.TimestampType;
+import com.facebook.presto.spi.type.VarbinaryType;
+import com.facebook.presto.spi.type.VarcharType;
+
 import bloomberg.presto.accumulo.benchmark.QueryDriver;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
@@ -38,12 +47,12 @@ public class DataTypeTests {
     @Test
     public void testSelectBigInt() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", PrestoType.BIGINT);
+                "metadata", "age", BigintType.BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Long(28), PrestoType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
-                .addField(new Long(0), PrestoType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(28), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -54,12 +63,12 @@ public class DataTypeTests {
     @Test
     public void testSelectBoolean() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "male", PrestoType.BOOLEAN);
+                "metadata", "male", BooleanType.BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Boolean(true), PrestoType.BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
-                .addField(new Boolean(false), PrestoType.BOOLEAN);
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Boolean(true), BooleanType.BOOLEAN);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Boolean(false), BooleanType.BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -70,14 +79,14 @@ public class DataTypeTests {
     @Test
     public void testSelectDate() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "start_date", PrestoType.DATE);
+                "metadata", "start_date", DateType.DATE);
 
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
                 .addField(new Date(new GregorianCalendar(2015, 12, 14).getTime()
-                        .getTime()), PrestoType.DATE);
-        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
+                        .getTime()), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
                 .addField(new Date(new GregorianCalendar(2015, 12, 15).getTime()
-                        .getTime()), PrestoType.DATE);
+                        .getTime()), DateType.DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -88,13 +97,13 @@ public class DataTypeTests {
     @Test
     public void testSelectDouble() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "rate", PrestoType.DOUBLE);
+                "metadata", "rate", DoubleType.DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Double(28.1234), PrestoType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Double(28.1234), DoubleType.DOUBLE);
 
-        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
-                .addField(new Double(-123.1234), PrestoType.DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Double(-123.1234), DoubleType.DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -105,15 +114,15 @@ public class DataTypeTests {
     @Test
     public void testSelectTime() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "last_login", PrestoType.TIME);
+                "metadata", "last_login", TimeType.TIME);
 
         Calendar cal = new GregorianCalendar();
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField(new Time(cal.getTimeInMillis()), PrestoType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Time(cal.getTimeInMillis()), TimeType.TIME);
 
         cal.add(Calendar.MINUTE, 5);
-        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
-                .addField(new Time(cal.getTimeInMillis()), PrestoType.TIME);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Time(cal.getTimeInMillis()), TimeType.TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -124,17 +133,17 @@ public class DataTypeTests {
     @Test
     public void testSelectTimestamp() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "last_login", PrestoType.TIMESTAMP);
+                "metadata", "last_login", TimestampType.TIMESTAMP);
 
         Calendar cal = new GregorianCalendar();
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
                 .addField(new Timestamp(cal.getTimeInMillis()),
-                        PrestoType.TIMESTAMP);
+                        TimestampType.TIMESTAMP);
 
         cal.add(Calendar.MINUTE, 5);
-        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
                 .addField(new Timestamp(cal.getTimeInMillis()),
-                        PrestoType.TIMESTAMP);
+                        TimestampType.TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -145,15 +154,15 @@ public class DataTypeTests {
     @Test
     public void testSelectVarbinary() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "bytes", PrestoType.VARBINARY);
+                "metadata", "bytes", VarbinaryType.VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
                 .addField("Check out all this data!".getBytes(),
-                        PrestoType.VARBINARY);
+                        VarbinaryType.VARBINARY);
 
-        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
                 .addField("Check out all this other data!".getBytes(),
-                        PrestoType.VARBINARY);
+                        VarbinaryType.VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -164,14 +173,14 @@ public class DataTypeTests {
     @Test
     public void testSelectVarchar() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "name", PrestoType.VARCHAR);
+                "metadata", "name", VarcharType.VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", PrestoType.VARCHAR)
-                .addField("Alice", PrestoType.VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", PrestoType.VARCHAR)
-                .addField("Bob", PrestoType.VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", PrestoType.VARCHAR)
-                .addField("Carol", PrestoType.VARCHAR);
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField("Alice", VarcharType.VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField("Bob", VarcharType.VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField("Carol", VarcharType.VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")

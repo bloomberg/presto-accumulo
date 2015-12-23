@@ -3,7 +3,8 @@ package bloomberg.presto.accumulo.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import bloomberg.presto.accumulo.PrestoType;
+import com.facebook.presto.spi.type.Type;
+
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 
 public class RowSchema {
@@ -24,9 +25,9 @@ public class RowSchema {
     }
 
     public RowSchema addColumn(String prestoName, String columnFamily,
-            String columnQualifier, PrestoType type) {
+            String columnQualifier, Type type) {
         columns.add(new AccumuloColumnHandle("accumulo", prestoName,
-                columnFamily, columnQualifier, type.spiType(), columns.size(),
+                columnFamily, columnQualifier, type, columns.size(),
                 "Accumulo column " + columnFamily + ":" + columnQualifier));
         return this;
     }

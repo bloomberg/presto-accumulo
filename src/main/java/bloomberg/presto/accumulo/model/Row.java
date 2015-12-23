@@ -3,7 +3,7 @@ package bloomberg.presto.accumulo.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import bloomberg.presto.accumulo.PrestoType;
+import com.facebook.presto.spi.type.Type;
 
 public class Row implements Comparable<Row> {
     private List<Field> fields = new ArrayList<>();
@@ -27,7 +27,7 @@ public class Row implements Comparable<Row> {
         return this;
     }
 
-    public Row addField(Object v, PrestoType t) {
+    public Row addField(Object v, Type t) {
         fields.add(new Field(v, t));
         return this;
     }

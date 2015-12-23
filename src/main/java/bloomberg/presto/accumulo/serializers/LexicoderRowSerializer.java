@@ -19,7 +19,16 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
-import bloomberg.presto.accumulo.PrestoType;
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.StandardErrorCode;
+import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.BooleanType;
+import com.facebook.presto.spi.type.DateType;
+import com.facebook.presto.spi.type.DoubleType;
+import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.VarbinaryType;
+import com.facebook.presto.spi.type.VarcharType;
+
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import io.airlift.log.Logger;
 
@@ -33,37 +42,16 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
     private Map<String, byte[]> columnValues = new HashMap<>();
     private Text rowId = new Text(), cf = new Text(), cq = new Text(),
             value = new Text();
-    private static Map<PrestoType, Lexicoder> lexicoderMap = null;
+    private static Map<Type, Lexicoder> lexicoderMap = null;
 
     static {
         if (lexicoderMap == null) {
             lexicoderMap = new HashMap<>();
-
-            // This for loop is here so a lexicoder for a type isn't missed
-            for (PrestoType t : PrestoType.values()) {
-                switch (t) {
-                case BIGINT:
-                case DATE:
-                case TIME:
-                case TIMESTAMP:
-                    lexicoderMap.put(t, new LongLexicoder());
-                    break;
-                case BOOLEAN:
-                    lexicoderMap.put(t, new BytesLexicoder());
-                    break;
-                case DOUBLE:
-                    lexicoderMap.put(t, new DoubleLexicoder());
-                    break;
-                case VARBINARY:
-                    lexicoderMap.put(t, new BytesLexicoder());
-                    break;
-                case VARCHAR:
-                    lexicoderMap.put(t, new StringLexicoder());
-                    break;
-                default:
-                    throw new RuntimeException("No lexicoder for type " + t);
-                }
-            }
+            lexicoderMap.put(BigintType.BIGINT, new LongLexicoder());
+            lexicoderMap.put(BooleanType.BOOLEAN, new BytesLexicoder());
+            lexicoderMap.put(DoubleType.DOUBLE, new DoubleLexicoder());
+            lexicoderMap.put(VarbinaryType.VARBINARY, new BytesLexicoder());
+            lexicoderMap.put(VarcharType.VARCHAR, new StringLexicoder());
         }
     }
 
@@ -114,86 +102,94 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void setBoolean(Text text, Boolean value) {
-        text.set(lexicoderMap.get(PrestoType.BOOLEAN)
-                .encode(value ? TRUE : FALSE));
+        text.set(
+                getLexicoder(BooleanType.BOOLEAN).encode(value ? TRUE : FALSE));
     }
 
     @Override
     public Date getDate(String name) {
-        return new Date((Long) lexicoderMap.get(PrestoType.DATE)
-                .decode(getFieldValue(name)));
+        return new Date((Long) (getLexicoder(DateType.DATE)
+                .decode(getFieldValue(name))));
+    }
+
+    private Lexicoder getLexicoder(Type type) {
+        Lexicoder l = lexicoderMap.get(type);
+        if (l == null) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "No lexicoder for type " + type);
+        }
+        return l;
     }
 
     @Override
     public void setDate(Text text, Date value) {
-        text.set(lexicoderMap.get(PrestoType.DATE).encode(value.getTime()));
+        text.set(getLexicoder(DateType.DATE).encode(value.getTime()));
     }
 
     @Override
     public double getDouble(String name) {
-        return (Double) lexicoderMap.get(PrestoType.DOUBLE)
+        return (Double) getLexicoder(DoubleType.DOUBLE)
                 .decode(getFieldValue(name));
     }
 
     @Override
     public void setDouble(Text text, Double value) {
-        text.set(lexicoderMap.get(PrestoType.DOUBLE).encode(value));
+        text.set(getLexicoder(DoubleType.DOUBLE).encode(value));
     }
 
     @Override
     public long getLong(String name) {
-        return (Long) lexicoderMap.get(PrestoType.BIGINT)
+        return (Long) getLexicoder(BigintType.BIGINT)
                 .decode(getFieldValue(name));
     }
 
     @Override
     public void setLong(Text text, Long value) {
-        text.set(lexicoderMap.get(PrestoType.BIGINT).encode(value));
+        text.set(getLexicoder(BigintType.BIGINT).encode(value));
     }
 
     @Override
     public Time getTime(String name) {
-        return new Time((Long) lexicoderMap.get(PrestoType.TIME)
+        return new Time((Long) getLexicoder(BigintType.BIGINT)
                 .decode(getFieldValue(name)));
     }
 
     @Override
     public void setTime(Text text, Time value) {
-        text.set(lexicoderMap.get(PrestoType.TIME).encode(value.getTime()));
+        text.set(getLexicoder(BigintType.BIGINT).encode(value.getTime()));
     }
 
     @Override
     public Timestamp getTimestamp(String name) {
-        return new Timestamp((Long) lexicoderMap.get(PrestoType.TIMESTAMP)
+        return new Timestamp((Long) getLexicoder(BigintType.BIGINT)
                 .decode(getFieldValue(name)));
     }
 
     @Override
     public void setTimestamp(Text text, Timestamp value) {
-        text.set(
-                lexicoderMap.get(PrestoType.TIMESTAMP).encode(value.getTime()));
+        text.set(getLexicoder(BigintType.BIGINT).encode(value.getTime()));
     }
 
     @Override
     public byte[] getVarbinary(String name) {
-        return (byte[]) lexicoderMap.get(PrestoType.VARBINARY)
+        return (byte[]) getLexicoder(VarbinaryType.VARBINARY)
                 .decode(getFieldValue(name));
     }
 
     @Override
     public void setVarbinary(Text text, byte[] value) {
-        text.set(lexicoderMap.get(PrestoType.VARBINARY).encode(value));
+        text.set(getLexicoder(VarbinaryType.VARBINARY).encode(value));
     }
 
     @Override
     public String getVarchar(String name) {
-        return (String) lexicoderMap.get(PrestoType.VARCHAR)
+        return (String) getLexicoder(VarcharType.VARCHAR)
                 .decode(getFieldValue(name));
     }
 
     @Override
     public void setVarchar(Text text, String value) {
-        text.set(lexicoderMap.get(PrestoType.VARCHAR).encode(value));
+        text.set(getLexicoder(VarcharType.VARCHAR).encode(value));
     }
 
     private byte[] getFieldValue(String name) {

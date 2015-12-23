@@ -42,6 +42,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.RecordCursor;
+import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
@@ -171,18 +172,17 @@ public class AccumuloRecordCursor implements RecordCursor {
     @Override
     public long getLong(int field) {
         checkFieldType(field, BIGINT, DATE, TIME, TIMESTAMP);
-        switch (PrestoType.fromSpiType(getType(field))) {
-        case BIGINT:
+        switch (getType(field).getDisplayName()) {
+        case StandardTypes.BIGINT:
             return serializer.getLong(fieldToColumnName[field]);
-        case DATE:
+        case StandardTypes.DATE:
             return serializer.getDate(fieldToColumnName[field]).getTime();
-        case TIME:
+        case StandardTypes.TIME:
             return serializer.getTime(fieldToColumnName[field]).getTime();
-        case TIMESTAMP:
+        case StandardTypes.TIMESTAMP:
             return serializer.getTimestamp(fieldToColumnName[field]).getTime();
         default:
-            throw new RuntimeException("Unsupported type "
-                    + PrestoType.fromSpiType(getType(field)));
+            throw new RuntimeException("Unsupported type " + getType(field));
         }
     }
 
@@ -195,16 +195,15 @@ public class AccumuloRecordCursor implements RecordCursor {
     @Override
     public Slice getSlice(int field) {
         checkFieldType(field, VARBINARY, VARCHAR);
-        switch (PrestoType.fromSpiType(getType(field))) {
-        case VARBINARY:
+        switch (getType(field).getDisplayName()) {
+        case StandardTypes.VARBINARY:
             return Slices.wrappedBuffer(
                     serializer.getVarbinary(fieldToColumnName[field]));
-        case VARCHAR:
+        case StandardTypes.VARCHAR:
             return Slices
                     .utf8Slice(serializer.getVarchar(fieldToColumnName[field]));
         default:
-            throw new RuntimeException("Unsupported type "
-                    + PrestoType.fromSpiType(getType(field)));
+            throw new RuntimeException("Unsupported type " + getType(field));
         }
     }
 

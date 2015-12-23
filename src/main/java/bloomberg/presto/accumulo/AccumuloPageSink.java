@@ -18,6 +18,7 @@ import org.apache.hadoop.io.Text;
 import com.facebook.presto.spi.ConnectorPageSink;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.block.Block;
+import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
@@ -66,7 +67,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
             for (int channel = 0; channel < page.getChannelCount(); ++channel) {
                 Type type = types.get(channel).getType();
                 r.addField(getNativeContainerValue(type, page.getBlock(channel),
-                        position), PrestoType.fromSpiType(type));
+                        position), type);
             }
             rows.add(r);
         }
@@ -104,31 +105,31 @@ public class AccumuloPageSink implements ConnectorPageSink {
             // if this column's name is not the row ID
             if (!ach.getName()
                     .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
-                switch (PrestoType.fromSpiType(ach.getType())) {
-                case BIGINT:
+                switch (ach.getType().getDisplayName()) {
+                case StandardTypes.BIGINT:
                     serializer.setLong(value, row.getField(i).getBigInt());
                     break;
-                case BOOLEAN:
+                case StandardTypes.BOOLEAN:
                     serializer.setBoolean(value, row.getField(i).getBoolean());
                     break;
-                case DATE:
+                case StandardTypes.DATE:
                     serializer.setDate(value, row.getField(i).getDate());
                     break;
-                case DOUBLE:
+                case StandardTypes.DOUBLE:
                     serializer.setDouble(value, row.getField(i).getDouble());
                     break;
-                case TIME:
+                case StandardTypes.TIME:
                     serializer.setTime(value, row.getField(i).getTime());
                     break;
-                case TIMESTAMP:
+                case StandardTypes.TIMESTAMP:
                     serializer.setTimestamp(value,
                             row.getField(i).getTimestamp());
                     break;
-                case VARBINARY:
+                case StandardTypes.VARBINARY:
                     serializer.setVarbinary(value,
                             row.getField(i).getVarbinary());
                     break;
-                case VARCHAR:
+                case StandardTypes.VARCHAR:
                     serializer.setVarchar(value, row.getField(i).getVarchar());
                     break;
                 default:

@@ -7,6 +7,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.DateType;
+import com.facebook.presto.spi.type.VarcharType;
+
 import bloomberg.presto.accumulo.benchmark.QueryDriver;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
@@ -23,15 +27,16 @@ public class LargeDataTests {
     private static final RowSchema INPUT_SCHEMA = RowSchema.newInstance()
             .addRowId()
             .addColumn("first_name", "metadata", "first_name",
-                    PrestoType.VARCHAR)
-            .addColumn("last_name", "metadata", "last_name", PrestoType.VARCHAR)
-            .addColumn("address", "metadata", "address", PrestoType.VARCHAR)
-            .addColumn("city", "metadata", "city", PrestoType.VARCHAR)
-            .addColumn("state", "metadata", "state", PrestoType.VARCHAR)
-            .addColumn("zipcode", "metadata", "zipcode", PrestoType.BIGINT)
-            .addColumn("birthday", "metadata", "birthday", PrestoType.DATE)
+                    VarcharType.VARCHAR)
+            .addColumn("last_name", "metadata", "last_name",
+                    VarcharType.VARCHAR)
+            .addColumn("address", "metadata", "address", VarcharType.VARCHAR)
+            .addColumn("city", "metadata", "city", VarcharType.VARCHAR)
+            .addColumn("state", "metadata", "state", VarcharType.VARCHAR)
+            .addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT)
+            .addColumn("birthday", "metadata", "birthday", DateType.DATE)
             .addColumn("favorite_color", "metadata", "favorite_color",
-                    PrestoType.VARCHAR);
+                    VarcharType.VARCHAR);
 
     private static final Integer NUM_RECORDS = 100000;
     private static final QueryDriver HARNESS;
@@ -64,7 +69,7 @@ public class LargeDataTests {
 
     @Test
     public void testSelectCount() throws Exception {
-        Row r1 = Row.newInstance().addField(NUM_RECORDS, PrestoType.BIGINT);
+        Row r1 = Row.newInstance().addField(NUM_RECORDS, BigintType.BIGINT);
         HARNESS.withQuery("SELECT COUNT(*) FROM testmytable").withOutput(r1)
                 .runTest();
     }
@@ -92,9 +97,9 @@ public class LargeDataTests {
     @Test
     public void testSelectCountMinMaxWhereFirstNameEquals() throws Exception {
 
-        Row r1 = Row.newInstance().addField(13L, PrestoType.BIGINT)
-                .addField(new Date(73859156), PrestoType.DATE)
-                .addField(new Date(1328445195), PrestoType.DATE);
+        Row r1 = Row.newInstance().addField(13L, BigintType.BIGINT)
+                .addField(new Date(73859156), DateType.DATE)
+                .addField(new Date(1328445195), DateType.DATE);
 
         String query = "SELECT COUNT(*) AS count, MIN(birthday), MAX(birthday) FROM testmytable "
                 + "WHERE first_name = 'Darla'";
@@ -112,7 +117,7 @@ public class LargeDataTests {
                     .withTable("testmyothertable").withInputSchema(INPUT_SCHEMA)
                     .withInputFile(OTHER_INPUT_FILE).initialize();
 
-            Row r1 = Row.newInstance().addField(1L, PrestoType.BIGINT);
+            Row r1 = Row.newInstance().addField(1L, BigintType.BIGINT);
 
             String query = "SELECT COUNT(*) AS count FROM testmytable tmt, testmyothertable tmot "
                     + "WHERE tmt.zipcode = tmot.zipcode AND "
