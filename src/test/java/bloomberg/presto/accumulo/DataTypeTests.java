@@ -15,6 +15,7 @@ import com.facebook.presto.spi.type.DateType;
 import com.facebook.presto.spi.type.DoubleType;
 import com.facebook.presto.spi.type.TimeType;
 import com.facebook.presto.spi.type.TimestampType;
+import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarbinaryType;
 import com.facebook.presto.spi.type.VarcharType;
 import com.facebook.presto.type.ArrayType;
@@ -49,17 +50,46 @@ public class DataTypeTests {
 
     @Test
     public void testSelectArray() throws Exception {
-        ArrayType arrayType = new ArrayType(VarcharType.VARCHAR);
+        Type elementType = VarcharType.VARCHAR;
+        ArrayType arrayType = new ArrayType(elementType);
         RowSchema schema = RowSchema.newInstance().addRowId()
                 .addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(AccumuloRowSerializer.getBlockFromArray(
-                        VarcharType.VARCHAR, ImmutableList.of("a", "b", "c")),
+                .addField(AccumuloRowSerializer.getBlockFromArray(elementType,
+                        ImmutableList.of("a", "b", "c")), arrayType);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(AccumuloRowSerializer.getBlockFromArray(elementType,
+                        ImmutableList.of("d", "e", "f")), arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withOutput(r1).withOutput(r2).runTest();
+    }
+
+    @Test
+    public void testSelectNestedArray() throws Exception {
+        ArrayType nestedArrayType = new ArrayType(VarcharType.VARCHAR);
+        ArrayType arrayType = new ArrayType(nestedArrayType);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
+                                ImmutableList.of(
+                                        ImmutableList.of("a", "b", "c"),
+                                        ImmutableList.of("d", "e", "f"),
+                                        ImmutableList.of("g", "h", "i"))),
                         arrayType);
         Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(AccumuloRowSerializer.getBlockFromArray(
-                        VarcharType.VARCHAR, ImmutableList.of("d", "e", "f")),
+                .addField(
+                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
+                                ImmutableList.of(
+                                        ImmutableList.of("j", "k", "l"),
+                                        ImmutableList.of("m", "n", "o"),
+                                        ImmutableList.of("p", "q", "r"))),
                         arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")

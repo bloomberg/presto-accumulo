@@ -48,9 +48,11 @@ import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.TimeType;
 import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.TypeSignature;
 import com.facebook.presto.spi.type.VarbinaryType;
 import com.facebook.presto.spi.type.VarcharType;
 import com.facebook.presto.type.ArrayType;
+import com.facebook.presto.type.TypeRegistry;
 
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloPageSink;
@@ -446,7 +448,7 @@ public class QueryDriver {
                 Type type = getType(rs, rs.getMetaData(), j);
                 if (bloomberg.presto.accumulo.Types.isArrayType(type)) {
                     Array array = rs.getArray(j);
-                    Type elementType = getType(array.getBaseType());
+                    Type elementType = getType(array.getBaseTypeName());
                     Object[] elements = (Object[]) array.getArray();
                     orow.addField(
                             AccumuloRowSerializer.getBlockFromArray(elementType,
@@ -497,11 +499,15 @@ public class QueryDriver {
         return outputRows;
     }
 
+    TypeRegistry typeManager = new TypeRegistry();
+
     private Type getType(ResultSet rs, ResultSetMetaData rsmd, int column)
             throws SQLException {
         switch (rsmd.getColumnType(column)) {
         case Types.ARRAY:
-            return new ArrayType(getType(rs.getArray(column).getBaseType()));
+            Type t = typeManager.getType(TypeSignature
+                    .parseTypeSignature(rs.getArray(column).getBaseTypeName()));
+            return new ArrayType(t);
         case Types.BIGINT:
             return BigintType.BIGINT;
         case Types.BOOLEAN:
@@ -524,27 +530,8 @@ public class QueryDriver {
         }
     }
 
-    private Type getType(int sqlType) throws SQLException {
-        switch (sqlType) {
-        case Types.BIGINT:
-            return BigintType.BIGINT;
-        case Types.BOOLEAN:
-            return BooleanType.BOOLEAN;
-        case Types.DATE:
-            return DateType.DATE;
-        case Types.DOUBLE:
-            return DoubleType.DOUBLE;
-        case Types.TIME:
-            return TimeType.TIME;
-        case Types.TIMESTAMP:
-            return TimestampType.TIMESTAMP;
-        case Types.LONGVARBINARY:
-            return VarbinaryType.VARBINARY;
-        case Types.LONGNVARCHAR:
-            return VarcharType.VARCHAR;
-        default:
-            throw new RuntimeException("Unknown SQL type " + sqlType);
-        }
+    private Type getType(String name) throws SQLException {
+        return typeManager.getType(TypeSignature.parseTypeSignature(name));
     }
 
     protected static boolean validateWithoutOrder(final List<Row> actualOutputs,

@@ -5,6 +5,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
@@ -30,6 +31,7 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarbinaryType;
 import com.facebook.presto.spi.type.VarcharType;
 
+import bloomberg.presto.accumulo.Types;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import io.airlift.log.Logger;
 
@@ -99,16 +101,19 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public Block getArray(String name, Type type) {
-        Type elementType = type.getTypeParameters().get(0);
+        Type elementType = Types.getElementType(type);
         return AccumuloRowSerializer.getBlockFromArray(elementType,
                 getListLexicoder(elementType).decode(getFieldValue(name)));
     }
 
     @Override
     public void setArray(Text text, Type type, Block block) {
-        Type elementType = type.getTypeParameters().get(0);
-        text.set(getListLexicoder(elementType).encode(
-                AccumuloRowSerializer.getArrayFromBlock(elementType, block)));
+        Type elementType = Types.getElementType(type);
+
+        List array = AccumuloRowSerializer.getArrayFromBlock(elementType,
+                block);
+
+        text.set(getListLexicoder(elementType).encode(array));
     }
 
     @Override
@@ -216,7 +221,12 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
         ListLexicoder<?> listLexicoder = listLexicoders
                 .get(type.getDisplayName());
         if (listLexicoder == null) {
-            listLexicoder = new ListLexicoder(lexicoderMap.get(type));
+            if (Types.isArrayType(type)) {
+                listLexicoder = new ListLexicoder(
+                        getListLexicoder(Types.getElementType(type)));
+            } else {
+                listLexicoder = new ListLexicoder(lexicoderMap.get(type));
+            }
             listLexicoders.put(type.getDisplayName(), listLexicoder);
         }
         return listLexicoder;

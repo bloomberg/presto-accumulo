@@ -36,4 +36,8 @@ public final class Types {
     public static boolean isArrayType(Type type) {
         return type.getTypeSignature().getBase().equals(StandardTypes.ARRAY);
     }
+
+    public static Type getElementType(Type type) {
+        return type.getTypeParameters().get(0);
+    }
 }

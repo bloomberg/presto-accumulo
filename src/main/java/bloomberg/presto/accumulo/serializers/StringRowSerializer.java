@@ -14,8 +14,8 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
-import com.facebook.presto.jdbc.internal.spi.PrestoException;
-import com.facebook.presto.jdbc.internal.spi.StandardErrorCode;
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.Type;
 
