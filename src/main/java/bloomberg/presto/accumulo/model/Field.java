@@ -5,12 +5,15 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
 
+import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.DateType;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.TimeType;
 import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarbinaryType;
+
+import bloomberg.presto.accumulo.Types;
 
 public class Field {
     private Object value;
@@ -23,6 +26,12 @@ public class Field {
 
     public Field(Field f) {
         this.type = f.type;
+
+        if (Types.isArrayType(this.type)) {
+            this.value = f.value;
+            return;
+        }
+
         switch (type.getDisplayName()) {
         case StandardTypes.BIGINT:
             this.value = new Long(f.getBigInt());
@@ -58,16 +67,16 @@ public class Field {
         return type;
     }
 
-    public Object getValue() {
-        return value;
-    }
-
-    public String getString() {
-        return value.toString();
+    public Block getArray() {
+        return (Block) value;
     }
 
     public Long getBigInt() {
         return (Long) value;
+    }
+
+    public Block getBlock() {
+        return (Block) value;
     }
 
     public Boolean getBoolean() {
@@ -92,6 +101,10 @@ public class Field {
 
     public Object getIntervalYearToMonth() {
         throw new UnsupportedOperationException();
+    }
+
+    public Object getObject() {
+        return value;
     }
 
     public Timestamp getTimestamp() {
@@ -123,8 +136,16 @@ public class Field {
             return v;
         }
 
+        if (Types.isArrayType(t)) {
+            if (!(v instanceof Block))
+                throw new RuntimeException(
+                        "Object is not a Block, but " + v.getClass());
+            return v;
+        }
+
         // Validate the object is the given type
         switch (t.getDisplayName()) {
+
         case StandardTypes.BIGINT:
             // Auto-convert integers to Longs
             if (v instanceof Integer)
@@ -186,7 +207,7 @@ public class Field {
 
     @Override
     public boolean equals(Object obj) {
-        boolean retval = false;
+        boolean retval = true;
         if (obj instanceof Field) {
             Field f = (Field) obj;
             if (type.equals(f.getType())) {
@@ -194,13 +215,24 @@ public class Field {
                     // special case for byte arrays
                     // aren't they so fancy
                     retval = Arrays.equals((byte[]) value,
-                            (byte[]) f.getValue());
+                            (byte[]) f.getObject());
                 } else if (type.equals(DateType.DATE)
                         || type.equals(TimeType.TIME)
                         || type.equals(TimestampType.TIMESTAMP)) {
-                    retval = value.toString().equals(f.getValue().toString());
+                    retval = value.toString().equals(f.getObject().toString());
                 } else {
-                    retval = value.equals(f.getValue());
+                    if (value instanceof Block) {
+                        Block b1 = (Block) value;
+                        Block b2 = (Block) f.getObject();
+                        retval = b1.getPositionCount() == b2.getPositionCount();
+                        for (int i = 0; i < b1.getPositionCount()
+                                && retval; ++i) {
+                            retval = b1.compareTo(i, 0, b1.getLength(i), b2, i,
+                                    0, b2.getLength(i)) == 0;
+                        }
+                    } else {
+                        retval = value.equals(f.getObject());
+                    }
                 }
             }
         }

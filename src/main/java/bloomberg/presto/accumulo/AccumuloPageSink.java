@@ -20,7 +20,6 @@ import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
@@ -66,8 +65,8 @@ public class AccumuloPageSink implements ConnectorPageSink {
             Row r = Row.newInstance();
             for (int channel = 0; channel < page.getChannelCount(); ++channel) {
                 Type type = types.get(channel).getType();
-                r.addField(getNativeContainerValue(type, page.getBlock(channel),
-                        position), type);
+                r.addField(AccumuloRowSerializer.getNativeContainerValue(type,
+                        page.getBlock(channel), position), type);
             }
             rows.add(r);
         }
@@ -96,7 +95,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
             List<AccumuloColumnHandle> columns,
             AccumuloRowSerializer serializer) {
         // make a new mutation, passing in the row ID
-        Mutation m = new Mutation(row.getField(0).getValue().toString());
+        Mutation m = new Mutation(row.getField(0).getObject().toString());
 
         Text cf = new Text(), cq = new Text(), value = new Text();
         // for each column in the input schema
@@ -105,36 +104,45 @@ public class AccumuloPageSink implements ConnectorPageSink {
             // if this column's name is not the row ID
             if (!ach.getName()
                     .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
-                switch (ach.getType().getDisplayName()) {
-                case StandardTypes.BIGINT:
-                    serializer.setLong(value, row.getField(i).getBigInt());
-                    break;
-                case StandardTypes.BOOLEAN:
-                    serializer.setBoolean(value, row.getField(i).getBoolean());
-                    break;
-                case StandardTypes.DATE:
-                    serializer.setDate(value, row.getField(i).getDate());
-                    break;
-                case StandardTypes.DOUBLE:
-                    serializer.setDouble(value, row.getField(i).getDouble());
-                    break;
-                case StandardTypes.TIME:
-                    serializer.setTime(value, row.getField(i).getTime());
-                    break;
-                case StandardTypes.TIMESTAMP:
-                    serializer.setTimestamp(value,
-                            row.getField(i).getTimestamp());
-                    break;
-                case StandardTypes.VARBINARY:
-                    serializer.setVarbinary(value,
-                            row.getField(i).getVarbinary());
-                    break;
-                case StandardTypes.VARCHAR:
-                    serializer.setVarchar(value, row.getField(i).getVarchar());
-                    break;
-                default:
-                    throw new UnsupportedOperationException(
-                            "Unsupported type " + ach.getType());
+
+                if (Types.isArrayType(ach.getType())) {
+                    serializer.setArray(value, ach.getType(),
+                            row.getField(i).getBlock());
+                } else {
+                    switch (ach.getType().getDisplayName()) {
+                    case StandardTypes.BIGINT:
+                        serializer.setLong(value, row.getField(i).getBigInt());
+                        break;
+                    case StandardTypes.BOOLEAN:
+                        serializer.setBoolean(value,
+                                row.getField(i).getBoolean());
+                        break;
+                    case StandardTypes.DATE:
+                        serializer.setDate(value, row.getField(i).getDate());
+                        break;
+                    case StandardTypes.DOUBLE:
+                        serializer.setDouble(value,
+                                row.getField(i).getDouble());
+                        break;
+                    case StandardTypes.TIME:
+                        serializer.setTime(value, row.getField(i).getTime());
+                        break;
+                    case StandardTypes.TIMESTAMP:
+                        serializer.setTimestamp(value,
+                                row.getField(i).getTimestamp());
+                        break;
+                    case StandardTypes.VARBINARY:
+                        serializer.setVarbinary(value,
+                                row.getField(i).getVarbinary());
+                        break;
+                    case StandardTypes.VARCHAR:
+                        serializer.setVarchar(value,
+                                row.getField(i).getVarchar());
+                        break;
+                    default:
+                        throw new UnsupportedOperationException(
+                                "Unsupported type " + ach.getType());
+                    }
                 }
 
                 cf.set(ach.getColumnFamily());
@@ -144,24 +152,5 @@ public class AccumuloPageSink implements ConnectorPageSink {
         }
 
         return m;
-    }
-
-    private static Object getNativeContainerValue(Type type, Block block,
-            int position) {
-        if (block.isNull(position)) {
-            return null;
-        } else if (type.getJavaType() == boolean.class) {
-            return type.getBoolean(block, position);
-        } else if (type.getJavaType() == long.class) {
-            return type.getLong(block, position);
-        } else if (type.getJavaType() == double.class) {
-            return type.getDouble(block, position);
-        } else if (type.getJavaType() == Slice.class) {
-            Slice slice = (Slice) type.getSlice(block, position);
-            return type.equals(VarcharType.VARCHAR) ? slice.toStringUtf8()
-                    : slice.getBytes();
-        } else {
-            throw new AssertionError("Unimplemented type: " + type);
-        }
     }
 }

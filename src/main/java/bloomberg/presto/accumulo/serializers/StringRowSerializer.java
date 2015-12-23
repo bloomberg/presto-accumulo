@@ -14,6 +14,11 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
+import com.facebook.presto.jdbc.internal.spi.PrestoException;
+import com.facebook.presto.jdbc.internal.spi.StandardErrorCode;
+import com.facebook.presto.spi.block.Block;
+import com.facebook.presto.spi.type.Type;
+
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import io.airlift.log.Logger;
 
@@ -61,6 +66,18 @@ public class StringRowSerializer implements AccumuloRowSerializer {
     @Override
     public boolean isNull(String name) {
         return columnValues.get(name) == null;
+    }
+
+    @Override
+    public Block getArray(String name, Type type) {
+        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                "arrays are not (yet?) supported for StringRowSerializer");
+    }
+
+    @Override
+    public void setArray(Text text, Type type, Block block) {
+        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                "arrays are not (yet?) supported for StringRowSerializer");
     }
 
     @Override

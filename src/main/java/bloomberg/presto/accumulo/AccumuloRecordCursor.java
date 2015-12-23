@@ -42,6 +42,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.RecordCursor;
+import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 
@@ -188,8 +189,13 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     @Override
     public Object getObject(int field) {
-        throw new UnsupportedOperationException(
-                "Unsure when this method gets called... perhaps for the complex types?");
+        Type type = getType(field);
+
+        checkArgument(Types.isArrayType(type),
+                "Expected field %s to be a type of array but is %s", field,
+                type);
+
+        return serializer.getArray(fieldToColumnName[field], type);
     }
 
     @Override
@@ -241,6 +247,16 @@ public class AccumuloRecordCursor implements RecordCursor {
         @Override
         public boolean isNull(String name) {
             return false;
+        }
+
+        @Override
+        public Block getArray(String name, Type type) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setArray(Text value, Type type, Block block) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

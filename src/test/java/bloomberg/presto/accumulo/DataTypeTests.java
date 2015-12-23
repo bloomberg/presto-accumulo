@@ -17,10 +17,13 @@ import com.facebook.presto.spi.type.TimeType;
 import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.VarbinaryType;
 import com.facebook.presto.spi.type.VarcharType;
+import com.facebook.presto.type.ArrayType;
+import com.google.common.collect.ImmutableList;
 
 import bloomberg.presto.accumulo.benchmark.QueryDriver;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 
 public class DataTypeTests {
 
@@ -42,6 +45,27 @@ public class DataTypeTests {
     @After
     public void cleanup() throws Exception {
         HARNESS.cleanup();
+    }
+
+    @Test
+    public void testSelectArray() throws Exception {
+        ArrayType arrayType = new ArrayType(VarcharType.VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(AccumuloRowSerializer.getBlockFromArray(
+                        VarcharType.VARCHAR, ImmutableList.of("a", "b", "c")),
+                        arrayType);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(AccumuloRowSerializer.getBlockFromArray(
+                        VarcharType.VARCHAR, ImmutableList.of("d", "e", "f")),
+                        arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withOutput(r1).withOutput(r2).runTest();
     }
 
     @Test

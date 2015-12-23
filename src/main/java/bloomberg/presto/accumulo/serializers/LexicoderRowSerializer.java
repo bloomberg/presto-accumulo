@@ -12,6 +12,7 @@ import java.util.SortedMap;
 import org.apache.accumulo.core.client.lexicoder.BytesLexicoder;
 import org.apache.accumulo.core.client.lexicoder.DoubleLexicoder;
 import org.apache.accumulo.core.client.lexicoder.Lexicoder;
+import org.apache.accumulo.core.client.lexicoder.ListLexicoder;
 import org.apache.accumulo.core.client.lexicoder.LongLexicoder;
 import org.apache.accumulo.core.client.lexicoder.StringLexicoder;
 import org.apache.accumulo.core.data.Key;
@@ -21,9 +22,9 @@ import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
+import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
-import com.facebook.presto.spi.type.DateType;
 import com.facebook.presto.spi.type.DoubleType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarbinaryType;
@@ -37,12 +38,13 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
     public static final byte[] TRUE = new byte[] { 1 };
     public static final byte[] FALSE = new byte[] { 0 };
     private static final Logger LOG = Logger.get(LexicoderRowSerializer.class);
+    private static Map<Type, Lexicoder> lexicoderMap = null;
+    private static Map<String, ListLexicoder<?>> listLexicoders = new HashMap<>();
 
     private Map<String, Map<String, String>> f2q2pc = new HashMap<>();
     private Map<String, byte[]> columnValues = new HashMap<>();
     private Text rowId = new Text(), cf = new Text(), cq = new Text(),
             value = new Text();
-    private static Map<Type, Lexicoder> lexicoderMap = null;
 
     static {
         if (lexicoderMap == null) {
@@ -96,6 +98,20 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
     }
 
     @Override
+    public Block getArray(String name, Type type) {
+        Type elementType = type.getTypeParameters().get(0);
+        return AccumuloRowSerializer.getBlockFromArray(elementType,
+                getListLexicoder(elementType).decode(getFieldValue(name)));
+    }
+
+    @Override
+    public void setArray(Text text, Type type, Block block) {
+        Type elementType = type.getTypeParameters().get(0);
+        text.set(getListLexicoder(elementType).encode(
+                AccumuloRowSerializer.getArrayFromBlock(elementType, block)));
+    }
+
+    @Override
     public boolean getBoolean(String name) {
         return getFieldValue(name)[0] == TRUE[0] ? true : false;
     }
@@ -108,22 +124,13 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public Date getDate(String name) {
-        return new Date((Long) (getLexicoder(DateType.DATE)
+        return new Date((Long) (getLexicoder(BigintType.BIGINT)
                 .decode(getFieldValue(name))));
-    }
-
-    private Lexicoder getLexicoder(Type type) {
-        Lexicoder l = lexicoderMap.get(type);
-        if (l == null) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                    "No lexicoder for type " + type);
-        }
-        return l;
     }
 
     @Override
     public void setDate(Text text, Date value) {
-        text.set(getLexicoder(DateType.DATE).encode(value.getTime()));
+        text.set(getLexicoder(BigintType.BIGINT).encode(value.getTime()));
     }
 
     @Override
@@ -195,4 +202,24 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
     private byte[] getFieldValue(String name) {
         return columnValues.get(name);
     }
+
+    private Lexicoder getLexicoder(Type type) {
+        Lexicoder l = lexicoderMap.get(type);
+        if (l == null) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "No lexicoder for type " + type);
+        }
+        return l;
+    }
+
+    private ListLexicoder getListLexicoder(Type type) {
+        ListLexicoder<?> listLexicoder = listLexicoders
+                .get(type.getDisplayName());
+        if (listLexicoder == null) {
+            listLexicoder = new ListLexicoder(lexicoderMap.get(type));
+            listLexicoders.put(type.getDisplayName(), listLexicoder);
+        }
+        return listLexicoder;
+    }
+
 }

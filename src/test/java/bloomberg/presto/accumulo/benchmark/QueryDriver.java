@@ -6,16 +6,19 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -44,8 +47,10 @@ import com.facebook.presto.spi.type.DoubleType;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.TimeType;
 import com.facebook.presto.spi.type.TimestampType;
+import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarbinaryType;
 import com.facebook.presto.spi.type.VarcharType;
+import com.facebook.presto.type.ArrayType;
 
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloPageSink;
@@ -437,34 +442,47 @@ public class QueryDriver {
             Row orow = new Row();
             outputRows.add(orow);
             for (int j = 1; j <= rs.getMetaData().getColumnCount(); ++j) {
-                switch (rs.getMetaData().getColumnType(j)) {
-                case Types.BIGINT:
-                    orow.addField(rs.getLong(j), BigintType.BIGINT);
-                    break;
-                case Types.BOOLEAN:
-                    orow.addField(rs.getBoolean(j), BooleanType.BOOLEAN);
-                    break;
-                case Types.DATE:
-                    orow.addField(rs.getDate(j), DateType.DATE);
-                    break;
-                case Types.DOUBLE:
-                    orow.addField(rs.getDouble(j), DoubleType.DOUBLE);
-                    break;
-                case Types.TIME:
-                    orow.addField(rs.getTime(j), TimeType.TIME);
-                    break;
-                case Types.TIMESTAMP:
-                    orow.addField(rs.getTimestamp(j), TimestampType.TIMESTAMP);
-                    break;
-                case Types.LONGVARBINARY:
-                    orow.addField(rs.getBytes(j), VarbinaryType.VARBINARY);
-                    break;
-                case Types.LONGNVARCHAR:
-                    orow.addField(rs.getString(j), VarcharType.VARCHAR);
-                    break;
-                default:
-                    throw new RuntimeException("Unknown SQL type "
-                            + rs.getMetaData().getColumnType(j));
+
+                Type type = getType(rs, rs.getMetaData(), j);
+                if (bloomberg.presto.accumulo.Types.isArrayType(type)) {
+                    Array array = rs.getArray(j);
+                    Type elementType = getType(array.getBaseType());
+                    Object[] elements = (Object[]) array.getArray();
+                    orow.addField(
+                            AccumuloRowSerializer.getBlockFromArray(elementType,
+                                    Arrays.asList(elements)),
+                            new ArrayType(elementType));
+                } else {
+                    switch (type.getDisplayName()) {
+                    case StandardTypes.BIGINT:
+                        orow.addField(rs.getLong(j), BigintType.BIGINT);
+                        break;
+                    case StandardTypes.BOOLEAN:
+                        orow.addField(rs.getBoolean(j), BooleanType.BOOLEAN);
+                        break;
+                    case StandardTypes.DATE:
+                        orow.addField(rs.getDate(j), DateType.DATE);
+                        break;
+                    case StandardTypes.DOUBLE:
+                        orow.addField(rs.getDouble(j), DoubleType.DOUBLE);
+                        break;
+                    case StandardTypes.TIME:
+                        orow.addField(rs.getTime(j), TimeType.TIME);
+                        break;
+                    case StandardTypes.TIMESTAMP:
+                        orow.addField(rs.getTimestamp(j),
+                                TimestampType.TIMESTAMP);
+                        break;
+                    case StandardTypes.VARBINARY:
+                        orow.addField(rs.getBytes(j), VarbinaryType.VARBINARY);
+                        break;
+                    case StandardTypes.VARCHAR:
+                        orow.addField(rs.getString(j), VarcharType.VARCHAR);
+                        break;
+                    default:
+                        throw new RuntimeException("Unknown SQL type "
+                                + rs.getMetaData().getColumnType(j));
+                    }
                 }
             }
         }
@@ -477,6 +495,56 @@ public class QueryDriver {
         LOG.info(String.format("Done.  Received %d rows in %d ms", numrows,
                 end - start));
         return outputRows;
+    }
+
+    private Type getType(ResultSet rs, ResultSetMetaData rsmd, int column)
+            throws SQLException {
+        switch (rsmd.getColumnType(column)) {
+        case Types.ARRAY:
+            return new ArrayType(getType(rs.getArray(column).getBaseType()));
+        case Types.BIGINT:
+            return BigintType.BIGINT;
+        case Types.BOOLEAN:
+            return BooleanType.BOOLEAN;
+        case Types.DATE:
+            return DateType.DATE;
+        case Types.DOUBLE:
+            return DoubleType.DOUBLE;
+        case Types.TIME:
+            return TimeType.TIME;
+        case Types.TIMESTAMP:
+            return TimestampType.TIMESTAMP;
+        case Types.LONGVARBINARY:
+            return VarbinaryType.VARBINARY;
+        case Types.LONGNVARCHAR:
+            return VarcharType.VARCHAR;
+        default:
+            throw new RuntimeException(
+                    "Unknown SQL type " + rsmd.getColumnType(column));
+        }
+    }
+
+    private Type getType(int sqlType) throws SQLException {
+        switch (sqlType) {
+        case Types.BIGINT:
+            return BigintType.BIGINT;
+        case Types.BOOLEAN:
+            return BooleanType.BOOLEAN;
+        case Types.DATE:
+            return DateType.DATE;
+        case Types.DOUBLE:
+            return DoubleType.DOUBLE;
+        case Types.TIME:
+            return TimeType.TIME;
+        case Types.TIMESTAMP:
+            return TimestampType.TIMESTAMP;
+        case Types.LONGVARBINARY:
+            return VarbinaryType.VARBINARY;
+        case Types.LONGNVARCHAR:
+            return VarcharType.VARCHAR;
+        default:
+            throw new RuntimeException("Unknown SQL type " + sqlType);
+        }
     }
 
     protected static boolean validateWithoutOrder(final List<Row> actualOutputs,

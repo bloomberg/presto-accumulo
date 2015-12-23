@@ -16,7 +16,10 @@ package bloomberg.presto.accumulo;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 
-final class Types {
+import com.facebook.presto.spi.type.StandardTypes;
+import com.facebook.presto.spi.type.Type;
+
+public final class Types {
     private Types() {
     }
 
@@ -28,5 +31,9 @@ final class Types {
         checkArgument(target.isInstance(value), "%s must be of type %s, not %s",
                 name, target.getName(), value.getClass().getName());
         return target.cast(value);
+    }
+
+    public static boolean isArrayType(Type type) {
+        return type.getTypeSignature().getBase().equals(StandardTypes.ARRAY);
     }
 }
