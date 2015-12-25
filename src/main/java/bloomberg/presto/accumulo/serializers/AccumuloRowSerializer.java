@@ -103,7 +103,7 @@ public interface AccumuloRowSerializer {
 
     @SuppressWarnings("rawtypes")
     public static List getArrayFromBlock(Type elementType, Block block) {
-        List list = new ArrayList();
+        List list = new ArrayList(block.getPositionCount());
         getArrayFromBlock(elementType, block, list);
         return list;
     }
@@ -112,16 +112,10 @@ public interface AccumuloRowSerializer {
     public static void getArrayFromBlock(Type elementType, Block block,
             List array) {
         if (Types.isArrayType(elementType)) {
-
             Type nestedElementType = Types.getElementType(elementType);
             for (int i = 0; i < block.getPositionCount(); ++i) {
-                Block arrayBlock = block.getObject(i, Block.class);
-                List values = new ArrayList<>(arrayBlock.getPositionCount());
-                for (int j = 0; j < arrayBlock.getPositionCount(); ++j) {
-                    values.add(getNativeContainerValue(nestedElementType,
-                            arrayBlock, j));
-                }
-                array.add(values);
+                array.add(getArrayFromBlock(nestedElementType,
+                        block.getObject(i, Block.class)));
             }
         } else {
             for (int i = 0; i < block.getPositionCount(); i++) {

@@ -99,6 +99,102 @@ public class DataTypeTests {
     }
 
     @Test
+    public void testSelectVeryNestedArray() throws Exception {
+        ArrayType veryNestedArrayType = new ArrayType(VarcharType.VARCHAR);
+        ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
+        ArrayType arrayType = new ArrayType(nestedArrayType);
+
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        // @formatter:off
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
+                        		ImmutableList.of(
+                                    ImmutableList.of(
+                                            ImmutableList.of("a", "b", "c"),
+                                            ImmutableList.of("d", "e", "f"),
+                                            ImmutableList.of("g", "h", "i")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("j", "k", "l"),
+                                            ImmutableList.of("m", "n", "o"),
+                                            ImmutableList.of("p", "q", "r")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("s", "t", "u"),
+                                            ImmutableList.of("v", "w", "x"),
+                                            ImmutableList.of("y", "z", "aa")))),
+                        arrayType);
+        // @formatter:on
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
+    }
+
+    @Test
+    public void testSelectUberNestedArray() throws Exception {
+        ArrayType uberNestedArrayType = new ArrayType(VarcharType.VARCHAR);
+        ArrayType veryNestedArrayType = new ArrayType(uberNestedArrayType);
+        ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
+        ArrayType arrayType = new ArrayType(nestedArrayType);
+
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        // @formatter:off
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
+                            ImmutableList.of(
+                                ImmutableList.of(
+                                    ImmutableList.of(
+                                            ImmutableList.of("a", "b", "c"),
+                                            ImmutableList.of("d", "e", "f"),
+                                            ImmutableList.of("g", "h", "i")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("j", "k", "l"),
+                                            ImmutableList.of("m", "n", "o"),
+                                            ImmutableList.of("p", "q", "r")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("s", "t", "u"),
+                                            ImmutableList.of("v", "w", "x"),
+                                            ImmutableList.of("y", "z", "aa"))),
+                                ImmutableList.of(
+                                    ImmutableList.of(
+                                            ImmutableList.of("a", "b", "c"),
+                                            ImmutableList.of("d", "e", "f"),
+                                            ImmutableList.of("g", "h", "i")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("j", "k", "l"),
+                                            ImmutableList.of("m", "n", "o"),
+                                            ImmutableList.of("p", "q", "r")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("s", "t", "u"),
+                                            ImmutableList.of("v", "w", "x"),
+                                            ImmutableList.of("y", "z", "aa"))),
+                                ImmutableList.of(
+                                    ImmutableList.of(
+                                            ImmutableList.of("a", "b", "c"),
+                                            ImmutableList.of("d", "e", "f"),
+                                            ImmutableList.of("g", "h", "i")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("j", "k", "l"),
+                                            ImmutableList.of("m", "n", "o"),
+                                            ImmutableList.of("p", "q", "r")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("s", "t", "u"),
+                                            ImmutableList.of("v", "w", "x"),
+                                            ImmutableList.of("y", "z", "aa"))))),
+                        arrayType);
+        // @formatter:on
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
+    }
+
+    @Test
     public void testSelectBigInt() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", BigintType.BIGINT);

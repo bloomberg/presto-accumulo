@@ -222,16 +222,7 @@ public class Field {
                         || type.equals(TimestampType.TIMESTAMP)) {
                     retval = value.toString().equals(f.getObject().toString());
                 } else {
-                    if (value instanceof ArrayBlock) {
-                        ArrayBlock b1 = (ArrayBlock) value;
-                        ArrayBlock b2 = (ArrayBlock) f.getObject();
-                        retval = b1.getPositionCount() == b2.getPositionCount();
-                        for (int i = 0; i < b1.getPositionCount()
-                                && retval; ++i) {
-                            retval = equals(b1.getObject(i, Block.class),
-                                    b2.getObject(i, Block.class));
-                        }
-                    } else if (value instanceof Block) {
+                    if (value instanceof Block) {
                         retval = equals((Block) value, (Block) f.getObject());
                     } else {
                         retval = value.equals(f.getObject());
@@ -245,8 +236,13 @@ public class Field {
     private boolean equals(Block b1, Block b2) {
         boolean retval = b1.getPositionCount() == b2.getPositionCount();
         for (int i = 0; i < b1.getPositionCount() && retval; ++i) {
-            retval = b1.compareTo(i, 0, b1.getLength(i), b2, i, 0,
-                    b2.getLength(i)) == 0;
+            if (b1 instanceof ArrayBlock && b2 instanceof ArrayBlock) {
+                retval = equals(b1.getObject(i, Block.class),
+                        b2.getObject(i, Block.class));
+            } else {
+                retval = b1.compareTo(i, 0, b1.getLength(i), b2, i, 0,
+                        b2.getLength(i)) == 0;
+            }
         }
         return retval;
     }
