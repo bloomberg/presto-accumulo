@@ -18,6 +18,8 @@ import static java.util.Objects.requireNonNull;
 
 import javax.inject.Inject;
 
+import org.apache.accumulo.core.client.AccumuloException;
+import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
@@ -27,6 +29,8 @@ import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorPageSink;
 import com.facebook.presto.spi.ConnectorPageSinkProvider;
 import com.facebook.presto.spi.ConnectorSession;
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.StandardErrorCode;
 
 import io.airlift.log.Logger;
 
@@ -48,8 +52,8 @@ public class AccumuloPageSinkProvider implements ConnectorPageSinkProvider {
         try {
             conn = inst.getConnector(config.getUsername(),
                     new PasswordToken(config.getPassword().getBytes()));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (AccumuloException | AccumuloSecurityException e) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
 

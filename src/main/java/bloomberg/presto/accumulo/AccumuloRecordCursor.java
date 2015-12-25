@@ -41,7 +41,9 @@ import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
 
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordCursor;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
@@ -148,7 +150,7 @@ public class AccumuloRecordCursor implements RecordCursor {
                 return false;
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
 

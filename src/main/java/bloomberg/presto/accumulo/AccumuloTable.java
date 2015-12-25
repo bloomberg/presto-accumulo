@@ -21,7 +21,9 @@ import static java.util.Objects.requireNonNull;
 import java.util.List;
 
 import com.facebook.presto.spi.ColumnMetadata;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -100,7 +102,8 @@ public class AccumuloTable {
             return (Class<? extends AccumuloRowSerializer>) Class
                     .forName(serializerClassName);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            throw new PrestoException(StandardErrorCode.USER_ERROR,
+                    "Configured serializer class not found", e);
         }
     }
 

@@ -97,7 +97,8 @@ public interface AccumuloRowSerializer {
         } else if (type.getJavaType() == Block.class) {
             return block;
         } else {
-            throw new AssertionError("Unimplemented type: " + type);
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                    "Unimplemented type: " + type);
         }
     }
 

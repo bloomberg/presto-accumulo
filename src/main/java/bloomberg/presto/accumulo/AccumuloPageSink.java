@@ -17,6 +17,8 @@ import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.ConnectorPageSink;
 import com.facebook.presto.spi.Page;
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
@@ -52,7 +54,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
             wrtr = conn.createBatchWriter(table.getFullTableName(),
                     new BatchWriterConfig());
         } catch (TableNotFoundException e) {
-            throw new RuntimeException(e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
 
@@ -81,7 +83,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
             }
             wrtr.close();
         } catch (MutationsRejectedException e) {
-            throw new RuntimeException(e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
         return ImmutableList.of();
     }

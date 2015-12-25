@@ -29,7 +29,9 @@ import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorSplit;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordSet;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.google.common.collect.ImmutableList;
 
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
@@ -52,7 +54,7 @@ public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
             conn = inst.getConnector(config.getUsername(),
                     new PasswordToken(config.getPassword().getBytes()));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
 

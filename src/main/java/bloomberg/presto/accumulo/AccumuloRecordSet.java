@@ -20,8 +20,10 @@ import java.util.List;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Scanner;
 
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.RecordSet;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
 
@@ -67,7 +69,7 @@ public class AccumuloRecordSet implements RecordSet {
                     split.getRangeHandle().getRange()));
             scan.setRange(split.getRangeHandle().getRange());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
 

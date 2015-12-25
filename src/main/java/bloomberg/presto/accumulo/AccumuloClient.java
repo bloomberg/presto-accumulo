@@ -42,7 +42,9 @@ import org.apache.hadoop.io.Text;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.HostAddress;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
+import com.facebook.presto.spi.StandardErrorCode;
 
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
@@ -161,7 +163,8 @@ public class AccumuloClient {
                     conn.tableOperations().create(meta.getTable().toString());
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Accumulo error when creating table", e);
             }
         }
     }
@@ -217,7 +220,8 @@ public class AccumuloClient {
 
             return tabletSplits;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "Accumulo error when getting splits", e);
         }
     }
 
