@@ -27,6 +27,7 @@ import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
 
+import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.log.Logger;
@@ -34,6 +35,7 @@ import io.airlift.log.Logger;
 public class AccumuloRecordSet implements RecordSet {
     private static final Logger LOG = Logger.get(AccumuloRecordSet.class);
     private final List<AccumuloColumnHandle> columnHandles;
+    private final List<AccumuloColumnConstraint> constraints;
     private final List<Type> columnTypes;
     private final Scanner scan;
     private final AccumuloRowSerializer serializer;
@@ -42,6 +44,8 @@ public class AccumuloRecordSet implements RecordSet {
             List<AccumuloColumnHandle> columnHandles, Connector conn) {
         requireNonNull(config, "config is null");
         requireNonNull(split, "split is null");
+        constraints = requireNonNull(split.getConstraints(),
+                "constraints is null");
 
         try {
             this.serializer = split.getSerializerClass().newInstance();
@@ -80,6 +84,7 @@ public class AccumuloRecordSet implements RecordSet {
 
     @Override
     public RecordCursor cursor() {
-        return new AccumuloRecordCursor(serializer, columnHandles, scan);
+        return new AccumuloRecordCursor(serializer, scan, columnHandles,
+                constraints);
     }
 }

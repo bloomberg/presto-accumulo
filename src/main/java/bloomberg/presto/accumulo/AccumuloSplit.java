@@ -29,11 +29,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 
+import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
-import io.airlift.log.Logger;
 
 public class AccumuloSplit implements ConnectorSplit {
-    private static final Logger LOG = Logger.get(AccumuloSplit.class);
     private final String connectorId;
     private final String schemaName;
     private final String tableName;
@@ -41,17 +40,20 @@ public class AccumuloSplit implements ConnectorSplit {
     private final boolean remotelyAccessible;
     private final List<HostAddress> addresses;
     private RangeHandle rHandle;
+    private List<AccumuloColumnConstraint> constraints;
 
     @JsonCreator
     public AccumuloSplit(@JsonProperty("connectorId") String connectorId,
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
             @JsonProperty("serializerClassName") String serializerClassName,
-            @JsonProperty("rHandle") RangeHandle rHandle) {
+            @JsonProperty("rHandle") RangeHandle rHandle,
+            @JsonProperty("constraints") List<AccumuloColumnConstraint> constraints) {
         this.connectorId = requireNonNull(connectorId, "connector id is null");
         this.schemaName = requireNonNull(schemaName, "schema name is null");
         this.tableName = requireNonNull(tableName, "table name is null");
         this.serializerClassName = serializerClassName;
+        this.constraints = requireNonNull(constraints, "constraints is null");
 
         // do not "requireNotNull" this field, jackson parses and sets
         // AccumuloSplit, then parses the nested RangeHandle object and will
@@ -89,9 +91,12 @@ public class AccumuloSplit implements ConnectorSplit {
 
     @JsonSetter
     public void setRangeHandle(RangeHandle rhandle) {
-        LOG.debug(String.format("%s %s %s %s", connectorId, schemaName,
-                tableName, rHandle));
         this.rHandle = rhandle;
+    }
+
+    @JsonProperty
+    public List<AccumuloColumnConstraint> getConstraints() {
+        return constraints;
     }
 
     @SuppressWarnings("unchecked")
@@ -127,6 +132,7 @@ public class AccumuloSplit implements ConnectorSplit {
                 .add("schemaName", schemaName).add("tableName", tableName)
                 .add("serializerClassName", serializerClassName)
                 .add("remotelyAccessible", remotelyAccessible)
-                .add("addresses", addresses).add("rHandle", rHandle).toString();
+                .add("addresses", addresses).add("rHandle", rHandle)
+                .add("constraints", constraints).toString();
     }
 }

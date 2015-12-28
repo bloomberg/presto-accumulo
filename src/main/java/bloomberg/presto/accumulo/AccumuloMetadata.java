@@ -39,7 +39,6 @@ import com.facebook.presto.spi.Constraint;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SchemaTablePrefix;
 import com.facebook.presto.spi.TableNotFoundException;
-import com.facebook.presto.spi.predicate.TupleDomain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -127,9 +126,9 @@ public class AccumuloMetadata implements ConnectorMetadata {
                 AccumuloTableHandle.class, "table");
 
         ConnectorTableLayout layout = new ConnectorTableLayout(
-                new AccumuloTableLayoutHandle(tableHandle), Optional.empty(),
-                TupleDomain.<ColumnHandle> all(), Optional.empty(),
-                Optional.empty(), ImmutableList.of());
+                new AccumuloTableLayoutHandle(tableHandle,
+                        constraint.getSummary()));
+
         return ImmutableList.of(new ConnectorTableLayoutResult(layout,
                 constraint.getSummary()));
     }
@@ -139,10 +138,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
             ConnectorTableLayoutHandle handle) {
         AccumuloTableLayoutHandle layout = checkType(handle,
                 AccumuloTableLayoutHandle.class, "layout");
-
-        return new ConnectorTableLayout(layout, Optional.empty(),
-                TupleDomain.<ColumnHandle> all(), Optional.empty(),
-                Optional.empty(), ImmutableList.of());
+        return new ConnectorTableLayout(layout);
     }
 
     @Override

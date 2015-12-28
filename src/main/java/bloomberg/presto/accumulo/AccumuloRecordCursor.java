@@ -45,10 +45,12 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
+import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
+import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.log.Logger;
@@ -67,8 +69,9 @@ public class AccumuloRecordCursor implements RecordCursor {
     private final Iterator<Entry<Key, Value>> iterator;
     private final AccumuloRowSerializer serializer;
 
-    public AccumuloRecordCursor(AccumuloRowSerializer serializer,
-            List<AccumuloColumnHandle> cHandles, Scanner scan) {
+    public AccumuloRecordCursor(AccumuloRowSerializer serializer, Scanner scan,
+            List<AccumuloColumnHandle> cHandles,
+            List<AccumuloColumnConstraint> constraints) {
         this.cHandles = requireNonNull(cHandles, "cHandles is null");
         this.scan = requireNonNull(scan, "scan is null");
 
@@ -113,6 +116,34 @@ public class AccumuloRecordCursor implements RecordCursor {
                     LOG.debug(String.format("Column %s maps to Accumulo row ID",
                             cHandle.getName()));
                 }
+            }
+        }
+
+        for (AccumuloColumnConstraint col : constraints) {
+            Logger.get(getClass()).debug("COLUMN: " + col.getName());
+            Domain dom = col.getDomain();
+
+            if (dom.isAll()) {
+                Logger.get(getClass()).debug(
+                        String.format("COLUMN %s IS ALL", col.getName()));
+            } else if (dom.isNone()) {
+                Logger.get(getClass()).debug(
+                        String.format("COLUMN %s IS NONE", col.getName()));
+            } else if (dom.isNullableSingleValue()) {
+                Logger.get(getClass()).debug(String.format(
+                        "COLUMN %s IS NULLABLE SINGLE VALUE", col.getName()));
+            } else if (dom.isNullAllowed()) {
+                Logger.get(getClass()).debug(String
+                        .format("COLUMN %s IS NULL ALLOWED", col.getName()));
+            } else if (dom.isOnlyNull()) {
+                Logger.get(getClass()).debug(
+                        String.format("COLUMN %s IS ONLY NULL", col.getName()));
+            } else if (dom.isSingleValue()) {
+                Logger.get(getClass()).debug(String
+                        .format("COLUMN %s IS SINGLE VALUE", col.getName()));
+            } else {
+                Logger.get(getClass()).debug(
+                        String.format("COLUMN %s IS UNKNOWN", col.getName()));
             }
         }
 

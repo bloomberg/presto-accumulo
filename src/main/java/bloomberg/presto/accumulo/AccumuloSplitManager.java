@@ -22,13 +22,18 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.ConnectorSplitManager;
 import com.facebook.presto.spi.ConnectorSplitSource;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.FixedSplitSource;
+import com.facebook.presto.spi.predicate.TupleDomain;
+import com.facebook.presto.spi.predicate.TupleDomain.ColumnDomain;
 
+import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import io.airlift.log.Logger;
 
 public class AccumuloSplitManager implements ConnectorSplitManager {
@@ -62,7 +67,8 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
                 AccumuloSplit accSplit = new AccumuloSplit(connectorId,
                         tableHandle.getSchemaName(), tableHandle.getTableName(),
                         tableHandle.getSerializerClassName(),
-                        smd.getRangeHandle());
+                        smd.getRangeHandle(),
+                        getColumnConstraints(layoutHandle.getConstraint()));
                 cSplits.add(accSplit);
                 LOG.debug("Added split " + accSplit);
             }
@@ -70,7 +76,8 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
             AccumuloSplit accSplit = new AccumuloSplit(connectorId,
                     tableHandle.getSchemaName(), tableHandle.getTableName(),
                     tableHandle.getSerializerClassName(),
-                    new RangeHandle(null, true, null, true));
+                    new RangeHandle(null, true, null, true),
+                    getColumnConstraints(layoutHandle.getConstraint()));
             cSplits.add(accSplit);
             LOG.debug("Added split " + accSplit);
         }
@@ -78,5 +85,18 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         Collections.shuffle(cSplits);
 
         return new FixedSplitSource(connectorId, cSplits);
+    }
+
+    private List<AccumuloColumnConstraint> getColumnConstraints(
+            TupleDomain<ColumnHandle> constraint) {
+        List<AccumuloColumnConstraint> acc = new ArrayList<>();
+        for (ColumnDomain<ColumnHandle> o : constraint.getColumnDomains()
+                .get()) {
+            AccumuloColumnHandle col = checkType(o.getColumn(),
+                    AccumuloColumnHandle.class, "column handle");
+            acc.add(new AccumuloColumnConstraint(col.getName(), o.getDomain()));
+        }
+
+        return acc;
     }
 }
