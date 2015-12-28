@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -175,8 +176,8 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void setMap(Text text, Type type, Block block) {
-        text.set(getMapLexicoder(type).encode(
-                AccumuloRowSerializer.getPairListFromBlock(type, block)));
+        text.set(getMapLexicoder(type).encode(toPairList(type,
+                AccumuloRowSerializer.getMapFromBlock(type, block))));
     }
 
     @Override
@@ -284,5 +285,36 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
             mapLexicoders.put(type.getDisplayName(), mapLexicoder);
         }
         return mapLexicoder;
+    }
+
+    private ComparableList<ComparablePair> toPairList(Type type,
+            Map<Object, Object> map) {
+        ComparableList<ComparablePair> pairs = new ComparableList<>();
+
+        Type kt = Types.getKeyType(type);
+        Type vt = Types.getKeyType(type);
+        for (Entry<Object, Object> e : map.entrySet()) {
+            if (Types.isMapType(kt) || Types.isMapType(vt)
+                    || Types.isArrayType(kt) || Types.isArrayType(vt)) {
+                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                        "Key/value types of a map pairs must be plain types");
+            }
+
+            Comparable key = (Comparable) e.getKey();
+            Comparable value = (Comparable) e.getValue();
+            pairs.add(new ComparablePair(key, value));
+        }
+
+        return pairs;
+    }
+
+    private class ComparableList<T> extends ArrayList
+            implements Comparable<Comparable> {
+        private static final long serialVersionUID = -7950290764571415125L;
+
+        @Override
+        public int compareTo(Comparable o) {
+            return 0;
+        }
     }
 }

@@ -5,13 +5,13 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.core.util.ComparablePair;
 import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.block.Block;
@@ -88,16 +88,12 @@ public interface AccumuloRowSerializer {
         return array;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static List<ComparablePair> getPairListFromBlock(Type type,
-            Block block) {
-        List<ComparablePair> map = new ArrayList<>(
-                block.getPositionCount() / 2);
+    public static Map<Object, Object> getMapFromBlock(Type type, Block block) {
+        Map<Object, Object> map = new HashMap<>(block.getPositionCount() / 2);
         Type kt = Types.getKeyType(type);
         Type vt = Types.getValueType(type);
         for (int i = 0; i < block.getPositionCount(); i += 2) {
-            map.add(new ComparablePair((Comparable) readObject(kt, block, i),
-                    (Comparable) readObject(vt, block, i + 1)));
+            map.put(readObject(kt, block, i), readObject(vt, block, i + 1));
         }
         return map;
     }
@@ -155,8 +151,7 @@ public interface AccumuloRowSerializer {
             return getArrayFromBlock(elementType,
                     block.getObject(position, Block.class));
         } else if (Types.isMapType(type)) {
-            Type elementType = Types.getElementType(type);
-            return getPairListFromBlock(elementType,
+            return getMapFromBlock(type,
                     block.getObject(position, Block.class));
         } else {
             if (type.getJavaType() == Slice.class) {

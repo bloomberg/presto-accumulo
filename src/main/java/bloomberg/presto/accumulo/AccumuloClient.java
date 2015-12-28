@@ -98,6 +98,20 @@ public class AccumuloClient {
                     "Must have at least one non-row ID column");
         }
 
+        // protection against map of complex types
+        for (ColumnMetadata column : meta.getColumns()) {
+            if (Types.isMapType(column.getType())) {
+                if (Types.isMapType(Types.getKeyType(column.getType()))
+                        || Types.isMapType(Types.getValueType(column.getType()))
+                        || Types.isArrayType(Types.getKeyType(column.getType()))
+                        || Types.isArrayType(
+                                Types.getValueType(column.getType()))) {
+                    throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                            "Key/value types of a map pairs must be plain types");
+                }
+            }
+        }
+
         // parse the mapping configuration to get the accumulo fam/qual pair
         String strMapping = (String) meta.getProperties()
                 .get(AccumuloConnector.PROP_COLUMN_MAPPING);

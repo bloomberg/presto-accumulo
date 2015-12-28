@@ -1,6 +1,7 @@
 package bloomberg.presto.accumulo;
 
 import java.sql.Date;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
@@ -269,7 +270,7 @@ public class DataTypeTests {
         Type valueType = BigintType.BIGINT;
         MapType mapType = new MapType(keyType, valueType);
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("senders", "metadata", "peopleages", mapType);
+                .addColumn("peopleages", "metadata", "peopleages", mapType);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
                 .addField(
@@ -281,6 +282,75 @@ public class DataTypeTests {
                         AccumuloRowSerializer.getBlockFromMap(mapType,
                                 ImmutableMap.of("d", 4, "e", 5, "f", 6)),
                         mapType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withOutput(r1).withOutput(r2).runTest();
+    }
+
+    @Test(expected = SQLException.class)
+    public void testSelectMapOfArrays() throws Exception {
+        Type elementType = BigintType.BIGINT;
+        Type keyMapType = new ArrayType(elementType);
+        Type valueMapType = new ArrayType(elementType);
+        MapType mapType = new MapType(keyMapType, valueMapType);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo",
+                "metadata", "foo", mapType);
+
+        // @formatter:off
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of(
+                                        ImmutableList.of(1, 2, 3),
+                                        ImmutableList.of(1, 2, 3))
+                                ),
+                        mapType);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of(
+                                        ImmutableList.of(4, 5, 6),
+                                        ImmutableList.of(4, 5, 6))
+                                ),
+                        mapType);
+        // @formatter:on
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withOutput(r1).withOutput(r2).runTest();
+    }
+
+    @Test(expected = SQLException.class)
+    public void testSelectMapOfMaps() throws Exception {
+        Type keyType = VarcharType.VARCHAR;
+        Type valueType = BigintType.BIGINT;
+        Type keyMapType = new MapType(keyType, valueType);
+        Type valueMapType = new MapType(keyType, valueType);
+        MapType mapType = new MapType(keyMapType, valueMapType);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo",
+                "metadata", "foo", mapType);
+
+        // @formatter:off
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of(
+                                        ImmutableMap.of("a", 1, "b", 2, "c", 3),
+                                        ImmutableMap.of("a", 1, "b", 2, "c", 3))
+                                ),
+                        mapType);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of(
+                                        ImmutableMap.of("d", 4, "e", 5, "f", 6),
+                                        ImmutableMap.of("d", 4, "e", 5, "f", 6))
+                                ),
+                        mapType);
+        // @formatter:on
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")

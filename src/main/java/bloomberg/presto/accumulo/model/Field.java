@@ -6,8 +6,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.accumulo.core.util.ComparablePair;
+import java.util.Map.Entry;
 
 import com.facebook.presto.spi.block.ArrayBlock;
 import com.facebook.presto.spi.block.Block;
@@ -272,7 +271,6 @@ public class Field {
         return retval;
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
     public String toString() {
         if (value == null) {
@@ -305,33 +303,35 @@ public class Field {
             StringBuilder bldr = new StringBuilder("MAP(");
             StringBuilder keys = new StringBuilder("ARRAY [");
             StringBuilder values = new StringBuilder("ARRAY [");
-            for (ComparablePair cp : AccumuloRowSerializer
-                    .getPairListFromBlock(type, this.getMap())) {
+            for (Entry<Object, Object> e : AccumuloRowSerializer
+                    .getMapFromBlock(type, this.getMap()).entrySet()) {
 
                 Type kt = Types.getKeyType(type);
                 if (Types.isArrayType(kt)) {
                     keys.append(new Field(AccumuloRowSerializer
-                            .getBlockFromArray(kt, (List<?>) cp.getFirst()),
+                            .getBlockFromArray(Types.getElementType(kt),
+                                    (List<?>) e.getKey()),
                             kt)).append(',');
                 } else if (Types.isMapType(kt)) {
-                    keys.append(new Field(AccumuloRowSerializer.getBlockFromMap(
-                            kt, (Map<?, ?>) cp.getFirst()), kt)).append(',');
+                    keys.append(new Field(AccumuloRowSerializer
+                            .getBlockFromMap(kt, (Map<?, ?>) e.getKey()), kt))
+                            .append(',');
                 } else {
-                    keys.append(new Field(cp.getFirst(), kt)).append(',');
+                    keys.append(new Field(e.getKey(), kt)).append(',');
                 }
 
                 Type vt = Types.getValueType(type);
                 if (Types.isArrayType(vt)) {
                     values.append(new Field(AccumuloRowSerializer
-                            .getBlockFromArray(vt, (List<?>) cp.getSecond()),
+                            .getBlockFromArray(Types.getElementType(vt),
+                                    (List<?>) e.getValue()),
                             vt)).append(',');
                 } else if (Types.isMapType(vt)) {
-                    values.append(
-                            new Field(AccumuloRowSerializer.getBlockFromMap(vt,
-                                    (Map<?, ?>) cp.getSecond()), vt))
+                    values.append(new Field(AccumuloRowSerializer
+                            .getBlockFromMap(vt, (Map<?, ?>) e.getValue()), vt))
                             .append(',');
                 } else {
-                    values.append(new Field(cp.getSecond(), vt)).append(',');
+                    values.append(new Field(e.getValue(), vt)).append(',');
                 }
             }
 
