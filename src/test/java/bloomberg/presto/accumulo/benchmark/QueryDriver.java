@@ -210,7 +210,7 @@ public class QueryDriver {
                                 BooleanType.BOOLEAN);
                         break;
                     case StandardTypes.DATE:
-                        r.addField(new Date(Long.parseLong(tokens[i])),
+                        r.addField(new Date(Long.parseLong(tokens[i]) * 1000),
                                 DateType.DATE);
                         break;
                     case StandardTypes.DOUBLE:
@@ -218,11 +218,12 @@ public class QueryDriver {
                                 DoubleType.DOUBLE);
                         break;
                     case StandardTypes.TIME:
-                        r.addField(new Time(Long.parseLong(tokens[i])),
+                        r.addField(new Time(Long.parseLong(tokens[i]) * 1000),
                                 TimeType.TIME);
                         break;
                     case StandardTypes.TIMESTAMP:
-                        r.addField(new Timestamp(Long.parseLong(tokens[i])),
+                        r.addField(
+                                new Timestamp(Long.parseLong(tokens[i]) * 1000),
                                 TimestampType.TIMESTAMP);
                         break;
                     case StandardTypes.VARBINARY:
@@ -390,24 +391,36 @@ public class QueryDriver {
         props.setProperty("user", "root");
         Connection conn = DriverManager.getConnection(this.getDbUrl(), props);
 
-        StringBuilder bldr = new StringBuilder(
-                "INSERT INTO "
-                        + (this.getSchema().equals("default")
-                                ? this.getAccumuloTable()
-                                : this.getSchema() + '.'
-                                        + this.getAccumuloTable())
-                        + " VALUES ");
+        String insertInto = "INSERT INTO "
+                + (this.getSchema().equals("default") ? this.getAccumuloTable()
+                        : this.getSchema() + '.' + this.getAccumuloTable())
+                + " VALUES ";
+        StringBuilder bldr = new StringBuilder(insertInto);
 
+        int i = 0;
         for (Row row : inputs) {
             bldr.append(row).append(',');
-        }
-        bldr.deleteCharAt(bldr.length() - 1);
 
-        LOG.info("Creating statement...");
-        Statement stmt = conn.createStatement();
-        LOG.info("Executing " + bldr);
-        int rows = stmt.executeUpdate(bldr.toString());
-        LOG.info("Inserted " + rows + " rows");
+            if (++i % 1000 == 0) {
+                bldr.deleteCharAt(bldr.length() - 1);
+                Statement stmt = conn.createStatement();
+                LOG.info("Executing " + (bldr.length() < 1024 ? bldr
+                        : bldr.substring(0, 1024)));
+                int rows = stmt.executeUpdate(bldr.toString());
+                LOG.info("Inserted " + rows + " rows");
+                bldr = new StringBuilder(insertInto);
+                i = 0;
+            }
+        }
+
+        if (i > 0) {
+            bldr.deleteCharAt(bldr.length() - 1);
+            Statement stmt = conn.createStatement();
+            LOG.info("Executing "
+                    + (bldr.length() < 1024 ? bldr : bldr.substring(0, 1024)));
+            int rows = stmt.executeUpdate(bldr.toString());
+            LOG.info("Inserted " + rows + " rows");
+        }
     }
 
     protected void pushPrestoMetadata() throws Exception {

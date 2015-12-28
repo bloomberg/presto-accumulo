@@ -39,7 +39,7 @@ public class LargeDataTests {
                     VarcharType.VARCHAR);
 
     private static final Integer NUM_RECORDS = 100000;
-    private static final QueryDriver HARNESS;
+    private static final QueryDriver DRIVER, DRIVER2;
 
     private static final AccumuloConfig ACCUMULO_CONFIG = new AccumuloConfig();
 
@@ -49,7 +49,8 @@ public class LargeDataTests {
             ACCUMULO_CONFIG.setZooKeepers("localhost:2181");
             ACCUMULO_CONFIG.setUsername("root");
             ACCUMULO_CONFIG.setPassword("secret");
-            HARNESS = new QueryDriver(ACCUMULO_CONFIG);
+            DRIVER = new QueryDriver(ACCUMULO_CONFIG);
+            DRIVER2 = new QueryDriver(ACCUMULO_CONFIG);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -57,20 +58,25 @@ public class LargeDataTests {
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+        DRIVER.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withInputSchema(INPUT_SCHEMA)
                 .withInputFile(INPUT_FILE).initialize();
+
+        DRIVER2.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmyothertable").withInputSchema(INPUT_SCHEMA)
+                .withInputFile(OTHER_INPUT_FILE).initialize();
     }
 
     @AfterClass
     public static void cleanupClass() throws Exception {
-        HARNESS.cleanup();
+        DRIVER.cleanup();
+        DRIVER2.cleanup();
     }
 
     @Test
     public void testSelectCount() throws Exception {
         Row r1 = Row.newInstance().addField(NUM_RECORDS, BigintType.BIGINT);
-        HARNESS.withQuery("SELECT COUNT(*) FROM testmytable").withOutput(r1)
+        DRIVER.withQuery("SELECT COUNT(*) FROM testmytable").withOutput(r1)
                 .runTest();
     }
 
@@ -80,7 +86,7 @@ public class LargeDataTests {
         String query = "SELECT * FROM testmytable "
                 + "WHERE first_name in ('Darla')";
 
-        HARNESS.withOutputSchema(INPUT_SCHEMA).withQuery(query)
+        DRIVER.withOutputSchema(INPUT_SCHEMA).withQuery(query)
                 .withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
     }
 
@@ -90,7 +96,7 @@ public class LargeDataTests {
         String query = "SELECT * FROM testmytable "
                 + "WHERE first_name = 'Darla'";
 
-        HARNESS.withOutputSchema(INPUT_SCHEMA).withQuery(query)
+        DRIVER.withOutputSchema(INPUT_SCHEMA).withQuery(query)
                 .withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
     }
 
@@ -98,37 +104,23 @@ public class LargeDataTests {
     public void testSelectCountMinMaxWhereFirstNameEquals() throws Exception {
 
         Row r1 = Row.newInstance().addField(13L, BigintType.BIGINT)
-                .addField(new Date(73859156), DateType.DATE)
-                .addField(new Date(1328445195), DateType.DATE);
+                .addField(new Date(73859156000L), DateType.DATE)
+                .addField(new Date(1328445195000L), DateType.DATE);
 
         String query = "SELECT COUNT(*) AS count, MIN(birthday), MAX(birthday) FROM testmytable "
                 + "WHERE first_name = 'Darla'";
 
-        HARNESS.withQuery(query).withOutput(r1).runTest();
+        DRIVER.withQuery(query).withOutput(r1).runTest();
     }
 
     @Test
     public void testJoin() throws Exception {
-        QueryDriver driver2 = null;
-        try {
-            driver2 = new QueryDriver(ACCUMULO_CONFIG);
+        Row r1 = Row.newInstance().addField(6L, BigintType.BIGINT);
 
-            driver2.withHost("localhost").withPort(8080).withSchema("default")
-                    .withTable("testmyothertable").withInputSchema(INPUT_SCHEMA)
-                    .withInputFile(OTHER_INPUT_FILE).initialize();
+        String query = "SELECT COUNT(*) AS count FROM testmytable tmt, testmyothertable tmot "
+                + "WHERE tmt.zipcode = tmot.zipcode AND "
+                + "tmt.birthday = tmot.birthday";
 
-            Row r1 = Row.newInstance().addField(1L, BigintType.BIGINT);
-
-            String query = "SELECT COUNT(*) AS count FROM testmytable tmt, testmyothertable tmot "
-                    + "WHERE tmt.zipcode = tmot.zipcode AND "
-                    + "tmt.birthday = tmot.birthday AND "
-                    + "tmt.first_name = tmot.first_name";
-
-            HARNESS.withQuery(query).withOutput(r1).runTest();
-        } finally {
-            if (driver2 != null) {
-                driver2.cleanup();
-            }
-        }
+        DRIVER.withQuery(query).withOutput(r1).runTest();
     }
 }

@@ -356,7 +356,7 @@ public class Field {
         case StandardTypes.VARBINARY:
             return "CAST('" + new String((byte[]) value) + "' AS VARBINARY)";
         case StandardTypes.VARCHAR:
-            return "'" + value + "'";
+            return "'" + value.toString().replaceAll("'", "''") + "'";
         default:
             throw new RuntimeException("Unsupported PrestoType " + type);
         }
