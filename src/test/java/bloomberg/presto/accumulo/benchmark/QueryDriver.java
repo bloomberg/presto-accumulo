@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
@@ -447,6 +448,9 @@ public class QueryDriver {
                             AccumuloRowSerializer.getBlockFromArray(elementType,
                                     Arrays.asList(elements)),
                             new ArrayType(elementType));
+                } else if (bloomberg.presto.accumulo.Types.isMapType(type)) {
+                    orow.addField(AccumuloRowSerializer.getBlockFromMap(type,
+                            (Map<?, ?>) rs.getObject(j)), type);
                 } else {
                     switch (type.getDisplayName()) {
                     case StandardTypes.BIGINT:
@@ -509,6 +513,9 @@ public class QueryDriver {
             return DateType.DATE;
         case Types.DOUBLE:
             return DoubleType.DOUBLE;
+        case Types.JAVA_OBJECT:
+            return typeManager.getType(TypeSignature
+                    .parseTypeSignature(rsmd.getColumnTypeName(column)));
         case Types.TIME:
             return TimeType.TIME;
         case Types.TIMESTAMP:

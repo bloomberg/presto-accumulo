@@ -19,7 +19,9 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarbinaryType;
 import com.facebook.presto.spi.type.VarcharType;
 import com.facebook.presto.type.ArrayType;
+import com.facebook.presto.type.MapType;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import bloomberg.presto.accumulo.benchmark.QueryDriver;
 import bloomberg.presto.accumulo.model.Row;
@@ -254,6 +256,31 @@ public class DataTypeTests {
 
         Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
                 .addField(new Double(-123.1234), DoubleType.DOUBLE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withOutput(r1).withOutput(r2).runTest();
+    }
+
+    @Test
+    public void testSelectMap() throws Exception {
+        Type keyType = VarcharType.VARCHAR;
+        Type valueType = BigintType.BIGINT;
+        MapType mapType = new MapType(keyType, valueType);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "peopleages", mapType);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of("a", 1, "b", 2, "c", 3)),
+                        mapType);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of("d", 4, "e", 5, "f", 6)),
+                        mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")

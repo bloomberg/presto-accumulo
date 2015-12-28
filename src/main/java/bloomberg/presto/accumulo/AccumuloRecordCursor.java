@@ -192,12 +192,15 @@ public class AccumuloRecordCursor implements RecordCursor {
     @Override
     public Object getObject(int field) {
         Type type = getType(field);
+        checkArgument(Types.isArrayType(type) || Types.isMapType(type),
+                "Expected field %s to be a type of array or map but is %s",
+                field, type);
 
-        checkArgument(Types.isArrayType(type),
-                "Expected field %s to be a type of array but is %s", field,
-                type);
-
-        return serializer.getArray(fieldToColumnName[field], type);
+        if (Types.isArrayType(type)) {
+            return serializer.getArray(fieldToColumnName[field], type);
+        } else {
+            return serializer.getMap(fieldToColumnName[field], type);
+        }
     }
 
     @Override
@@ -267,42 +270,12 @@ public class AccumuloRecordCursor implements RecordCursor {
         }
 
         @Override
-        public Date getDate(String string) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public double getDouble(String name) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long getLong(String name) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Time getTime(String string) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Timestamp getTimestamp(String string) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public byte[] getVarbinary(String string) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String getVarchar(String string) {
-            return r.toString();
-        }
-
-        @Override
         public void setBoolean(Text text, Boolean value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Date getDate(String string) {
             throw new UnsupportedOperationException();
         }
 
@@ -312,7 +285,17 @@ public class AccumuloRecordCursor implements RecordCursor {
         }
 
         @Override
+        public double getDouble(String name) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void setDouble(Text text, Double value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getLong(String name) {
             throw new UnsupportedOperationException();
         }
 
@@ -322,7 +305,27 @@ public class AccumuloRecordCursor implements RecordCursor {
         }
 
         @Override
+        public Block getMap(String name, Type type) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setMap(Text text, Type type, Block block) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Time getTime(String string) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void setTime(Text text, Time value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Timestamp getTimestamp(String string) {
             throw new UnsupportedOperationException();
         }
 
@@ -332,8 +335,18 @@ public class AccumuloRecordCursor implements RecordCursor {
         }
 
         @Override
+        public byte[] getVarbinary(String string) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void setVarbinary(Text text, byte[] value) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getVarchar(String string) {
+            return r.toString();
         }
 
         @Override

@@ -6,31 +6,26 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.util.ComparablePair;
 import org.apache.hadoop.io.Text;
 
-import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.block.BlockBuilder;
 import com.facebook.presto.spi.block.BlockBuilderStatus;
-import com.facebook.presto.spi.type.BigintType;
-import com.facebook.presto.spi.type.BooleanType;
-import com.facebook.presto.spi.type.DateType;
-import com.facebook.presto.spi.type.DoubleType;
-import com.facebook.presto.spi.type.StandardTypes;
-import com.facebook.presto.spi.type.TimeType;
-import com.facebook.presto.spi.type.TimestampType;
+import com.facebook.presto.spi.block.InterleavedBlockBuilder;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.VarbinaryType;
+import com.facebook.presto.spi.type.TypeUtils;
 import com.facebook.presto.spi.type.VarcharType;
+import com.facebook.presto.type.MapType;
+import com.google.common.collect.ImmutableList;
 
 import bloomberg.presto.accumulo.Types;
 import io.airlift.slice.Slice;
-import io.airlift.slice.Slices;
 
 public interface AccumuloRowSerializer {
 
@@ -62,6 +57,10 @@ public interface AccumuloRowSerializer {
 
     public long getLong(String name);
 
+    public Block getMap(String name, Type type);
+
+    public void setMap(Text text, Type type, Block block);
+
     public void setLong(Text text, Long value);
 
     public Time getTime(String name);
@@ -80,99 +79,93 @@ public interface AccumuloRowSerializer {
 
     public void setVarchar(Text text, String value);
 
-    public static Object getNativeContainerValue(Type type, Block block,
-            int position) {
-        if (block.isNull(position)) {
-            return null;
-        } else if (type.getJavaType() == boolean.class) {
-            return type.getBoolean(block, position);
-        } else if (type.getJavaType() == long.class) {
-            return type.getLong(block, position);
-        } else if (type.getJavaType() == double.class) {
-            return type.getDouble(block, position);
-        } else if (type.getJavaType() == Slice.class) {
-            Slice slice = (Slice) type.getSlice(block, position);
-            return type.equals(VarcharType.VARCHAR) ? slice.toStringUtf8()
-                    : slice.getBytes();
-        } else if (type.getJavaType() == Block.class) {
-            return block;
-        } else {
-            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
-                    "Unimplemented type: " + type);
-        }
-    }
-
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public static List getArrayFromBlock(Type elementType, Block block) {
-        List list = new ArrayList(block.getPositionCount());
-        getArrayFromBlock(elementType, block, list);
-        return list;
+        List array = new ArrayList(block.getPositionCount());
+        for (int i = 0; i < block.getPositionCount(); ++i) {
+            array.add(readObject(elementType, block, i));
+        }
+        return array;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static void getArrayFromBlock(Type elementType, Block block,
-            List array) {
-        if (Types.isArrayType(elementType)) {
-            Type nestedElementType = Types.getElementType(elementType);
-            for (int i = 0; i < block.getPositionCount(); ++i) {
-                array.add(getArrayFromBlock(nestedElementType,
-                        block.getObject(i, Block.class)));
-            }
-        } else {
-            for (int i = 0; i < block.getPositionCount(); i++) {
-                array.add(getNativeContainerValue(elementType, block, i));
-            }
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static List<ComparablePair> getPairListFromBlock(Type type,
+            Block block) {
+        List<ComparablePair> map = new ArrayList<>(
+                block.getPositionCount() / 2);
+        Type kt = Types.getKeyType(type);
+        Type vt = Types.getValueType(type);
+        for (int i = 0; i < block.getPositionCount(); i += 2) {
+            map.add(new ComparablePair((Comparable) readObject(kt, block, i),
+                    (Comparable) readObject(vt, block, i + 1)));
         }
+        return map;
     }
 
     public static Block getBlockFromArray(Type elementType, List<?> array) {
         BlockBuilder bldr = elementType
                 .createBlockBuilder(new BlockBuilderStatus(), array.size());
-        appendArrayElements(bldr, elementType, array);
+        for (Object item : (List<?>) array) {
+            writeObject(bldr, elementType, item);
+        }
         return bldr.build();
     }
 
-    public static void appendArrayElements(BlockBuilder bldr, Type elementType,
-            List<?> array) {
-        for (Object o : array) {
-            if (Types.isArrayType(elementType)) {
-                BlockBuilder arrayBldr = bldr.beginBlockEntry();
-                appendArrayElements(arrayBldr,
-                        Types.getElementType(elementType), (List<?>) o);
-                bldr.closeEntry();
+    public static Block getBlockFromMap(Type mapType, Map<?, ?> map) {
+        Type keyType = mapType.getTypeParameters().get(0);
+        Type valueType = mapType.getTypeParameters().get(1);
+
+        BlockBuilder bldr = new InterleavedBlockBuilder(
+                ImmutableList.of(keyType, valueType), new BlockBuilderStatus(),
+                map.size() * 2);
+
+        for (Entry<?, ?> entry : map.entrySet()) {
+            writeObject(bldr, keyType, entry.getKey());
+            writeObject(bldr, valueType, entry.getValue());
+        }
+        return bldr.build();
+    }
+
+    public static void writeObject(BlockBuilder bldr, Type elementType,
+            Object o) {
+        if (Types.isArrayType(elementType)) {
+            BlockBuilder arrayBldr = bldr.beginBlockEntry();
+            Type itemType = Types.getElementType(elementType);
+            for (Object item : (List<?>) o) {
+                writeObject(arrayBldr, itemType, item);
+            }
+            bldr.closeEntry();
+        } else if (Types.isMapType(elementType)) {
+            Type kt = ((MapType) elementType).getKeyType();
+            Type vt = ((MapType) elementType).getValueType();
+            BlockBuilder mapBlockBuilder = bldr.beginBlockEntry();
+            for (Entry<?, ?> entry : ((Map<?, ?>) o).entrySet()) {
+                writeObject(mapBlockBuilder, kt, entry.getKey());
+                writeObject(mapBlockBuilder, vt, entry.getValue());
+            }
+            bldr.closeEntry();
+        } else {
+            TypeUtils.writeNativeValue(elementType, bldr, o);
+        }
+    }
+
+    public static Object readObject(Type type, Block block, int position) {
+        if (Types.isArrayType(type)) {
+            Type elementType = Types.getElementType(type);
+            return getArrayFromBlock(elementType,
+                    block.getObject(position, Block.class));
+        } else if (Types.isMapType(type)) {
+            Type elementType = Types.getElementType(type);
+            return getPairListFromBlock(elementType,
+                    block.getObject(position, Block.class));
+        } else {
+            if (type.getJavaType() == Slice.class) {
+                Slice slice = (Slice) TypeUtils.readNativeValue(type, block,
+                        position);
+                return type.equals(VarcharType.VARCHAR) ? slice.toStringUtf8()
+                        : slice.getBytes();
             } else {
-                switch (elementType.getDisplayName()) {
-                case StandardTypes.BIGINT:
-                    BigintType.BIGINT.writeLong(bldr, (Long) o);
-                    break;
-                case StandardTypes.BOOLEAN:
-                    BooleanType.BOOLEAN.writeBoolean(bldr, (Boolean) o);
-                    break;
-                case StandardTypes.DATE:
-                    DateType.DATE.writeLong(bldr, ((Date) o).getTime());
-                    break;
-                case StandardTypes.DOUBLE:
-                    DoubleType.DOUBLE.writeDouble(bldr, (Double) o);
-                    break;
-                case StandardTypes.TIME:
-                    TimeType.TIME.writeLong(bldr, ((Time) o).getTime());
-                    break;
-                case StandardTypes.TIMESTAMP:
-                    TimestampType.TIMESTAMP.writeLong(bldr,
-                            ((Timestamp) o).getTime());
-                    break;
-                case StandardTypes.VARBINARY:
-                    VarbinaryType.VARBINARY.writeSlice(bldr,
-                            Slices.wrappedBuffer((byte[]) o));
-                    break;
-                case StandardTypes.VARCHAR:
-                    VarcharType.VARCHAR.writeSlice(bldr,
-                            Slices.utf8Slice((String) o));
-                    break;
-                default:
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                            "Unsupported type " + elementType);
-                }
+                return TypeUtils.readNativeValue(type, block, position);
             }
         }
     }

@@ -22,6 +22,7 @@ import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.TypeUtils;
 import com.google.common.collect.ImmutableList;
 
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
@@ -67,7 +68,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
             Row r = Row.newInstance();
             for (int channel = 0; channel < page.getChannelCount(); ++channel) {
                 Type type = types.get(channel).getType();
-                r.addField(AccumuloRowSerializer.getNativeContainerValue(type,
+                r.addField(TypeUtils.readNativeValue(type,
                         page.getBlock(channel), position), type);
             }
             rows.add(r);
@@ -109,6 +110,9 @@ public class AccumuloPageSink implements ConnectorPageSink {
 
                 if (Types.isArrayType(ach.getType())) {
                     serializer.setArray(value, ach.getType(),
+                            row.getField(i).getBlock());
+                } else if (Types.isMapType(ach.getType())) {
+                    serializer.setMap(value, ach.getType(),
                             row.getField(i).getBlock());
                 } else {
                     switch (ach.getType().getDisplayName()) {

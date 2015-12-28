@@ -37,7 +37,19 @@ public final class Types {
         return type.getTypeSignature().getBase().equals(StandardTypes.ARRAY);
     }
 
+    public static boolean isMapType(Type type) {
+        return type.getTypeSignature().getBase().equals(StandardTypes.MAP);
+    }
+
     public static Type getElementType(Type type) {
         return type.getTypeParameters().get(0);
+    }
+
+    public static Type getKeyType(Type type) {
+        return type.getTypeParameters().get(0);
+    }
+
+    public static Type getValueType(Type type) {
+        return type.getTypeParameters().get(1);
     }
 }

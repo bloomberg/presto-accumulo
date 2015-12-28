@@ -121,6 +121,18 @@ public class StringRowSerializer implements AccumuloRowSerializer {
     }
 
     @Override
+    public Block getMap(String name, Type type) {
+        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                "maps are not (yet?) supported for StringRowSerializer");
+    }
+
+    @Override
+    public void setMap(Text text, Type type, Block block) {
+        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                "maps are not (yet?) supported for StringRowSerializer");
+    }
+
+    @Override
     public Time getTime(String name) {
         return new Time(Long.parseLong(getFieldValue(name)));
     }

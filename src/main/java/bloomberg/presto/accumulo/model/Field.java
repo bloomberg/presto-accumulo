@@ -4,6 +4,10 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.accumulo.core.util.ComparablePair;
 
 import com.facebook.presto.spi.block.ArrayBlock;
 import com.facebook.presto.spi.block.Block;
@@ -16,6 +20,7 @@ import com.facebook.presto.spi.type.VarbinaryType;
 
 import bloomberg.presto.accumulo.Types;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
+import io.airlift.slice.Slice;
 
 public class Field {
     private Object value;
@@ -29,7 +34,7 @@ public class Field {
     public Field(Field f) {
         this.type = f.type;
 
-        if (Types.isArrayType(this.type)) {
+        if (Types.isArrayType(this.type) || Types.isMapType(this.type)) {
             this.value = f.value;
             return;
         }
@@ -105,6 +110,10 @@ public class Field {
         throw new UnsupportedOperationException();
     }
 
+    public Block getMap() {
+        return (Block) value;
+    }
+
     public Object getObject() {
         return value;
     }
@@ -139,6 +148,13 @@ public class Field {
         }
 
         if (Types.isArrayType(t)) {
+            if (!(v instanceof Block))
+                throw new RuntimeException(
+                        "Object is not a Block, but " + v.getClass());
+            return v;
+        }
+
+        if (Types.isMapType(t)) {
             if (!(v instanceof Block))
                 throw new RuntimeException(
                         "Object is not a Block, but " + v.getClass());
@@ -191,11 +207,19 @@ public class Field {
                         "Object is not a Timestamp, but " + v.getClass());
             break;
         case StandardTypes.VARBINARY:
+            if (v instanceof Slice) {
+                return ((Slice) v).getBytes();
+            }
+
             if (!(v instanceof byte[]))
                 throw new RuntimeException(
                         "Object is not a byte[], but " + v.getClass());
             break;
         case StandardTypes.VARCHAR:
+            if (v instanceof Slice) {
+                return new String(((Slice) v).getBytes());
+            }
+
             if (!(v instanceof String))
                 throw new RuntimeException(
                         "Object is not a String, but " + v.getClass());
@@ -248,6 +272,7 @@ public class Field {
         return retval;
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public String toString() {
         if (value == null) {
@@ -259,10 +284,61 @@ public class Field {
             StringBuilder bldr = new StringBuilder("ARRAY [");
             for (Object f : AccumuloRowSerializer.getArrayFromBlock(et,
                     this.getArray())) {
-                bldr.append(new Field(f, et)).append(',');
+                if (Types.isArrayType(et)) {
+                    Type eet = Types.getElementType(et);
+                    bldr.append(new Field(AccumuloRowSerializer
+                            .getBlockFromArray(eet, (List<?>) f), et))
+                            .append(',');
+                } else if (Types.isMapType(et)) {
+                    bldr.append(new Field(AccumuloRowSerializer
+                            .getBlockFromMap(et, (Map<?, ?>) f), et))
+                            .append(',');
+                } else {
+                    bldr.append(new Field(f, et)).append(',');
+                }
             }
 
             return bldr.deleteCharAt(bldr.length() - 1).append("]").toString();
+        }
+
+        if (Types.isMapType(type)) {
+            StringBuilder bldr = new StringBuilder("MAP(");
+            StringBuilder keys = new StringBuilder("ARRAY [");
+            StringBuilder values = new StringBuilder("ARRAY [");
+            for (ComparablePair cp : AccumuloRowSerializer
+                    .getPairListFromBlock(type, this.getMap())) {
+
+                Type kt = Types.getKeyType(type);
+                if (Types.isArrayType(kt)) {
+                    keys.append(new Field(AccumuloRowSerializer
+                            .getBlockFromArray(kt, (List<?>) cp.getFirst()),
+                            kt)).append(',');
+                } else if (Types.isMapType(kt)) {
+                    keys.append(new Field(AccumuloRowSerializer.getBlockFromMap(
+                            kt, (Map<?, ?>) cp.getFirst()), kt)).append(',');
+                } else {
+                    keys.append(new Field(cp.getFirst(), kt)).append(',');
+                }
+
+                Type vt = Types.getValueType(type);
+                if (Types.isArrayType(vt)) {
+                    values.append(new Field(AccumuloRowSerializer
+                            .getBlockFromArray(vt, (List<?>) cp.getSecond()),
+                            vt)).append(',');
+                } else if (Types.isMapType(vt)) {
+                    values.append(
+                            new Field(AccumuloRowSerializer.getBlockFromMap(vt,
+                                    (Map<?, ?>) cp.getSecond()), vt))
+                            .append(',');
+                } else {
+                    values.append(new Field(cp.getSecond(), vt)).append(',');
+                }
+            }
+
+            keys.deleteCharAt(keys.length() - 1).append(']');
+            values.deleteCharAt(values.length() - 1).append(']');
+            return bldr.append(keys).append(", ").append(values).append(")")
+                    .toString();
         }
 
         // Validate the object is the given type
