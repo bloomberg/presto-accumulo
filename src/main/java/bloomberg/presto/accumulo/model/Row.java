@@ -69,7 +69,7 @@ public class Row implements Comparable<Row> {
 
     @Override
     public String toString() {
-        StringBuilder bldr = new StringBuilder();
+        StringBuilder bldr = new StringBuilder("(");
         for (Field f : fields) {
             bldr.append(f).append(",");
         }
@@ -77,6 +77,6 @@ public class Row implements Comparable<Row> {
         if (bldr.length() > 0) {
             bldr.deleteCharAt(bldr.length() - 1);
         }
-        return bldr.toString();
+        return bldr.append(')').toString();
     }
 }

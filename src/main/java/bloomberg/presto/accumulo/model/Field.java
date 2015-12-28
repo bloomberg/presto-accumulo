@@ -15,6 +15,7 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarbinaryType;
 
 import bloomberg.presto.accumulo.Types;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 
 public class Field {
     private Object value;
@@ -249,6 +250,39 @@ public class Field {
 
     @Override
     public String toString() {
-        return value == null ? "null" : value.toString();
+        if (value == null) {
+            return "null";
+        }
+
+        if (Types.isArrayType(type)) {
+            Type et = Types.getElementType(type);
+            StringBuilder bldr = new StringBuilder("ARRAY [");
+            for (Object f : AccumuloRowSerializer.getArrayFromBlock(et,
+                    this.getArray())) {
+                bldr.append(new Field(f, et)).append(',');
+            }
+
+            return bldr.deleteCharAt(bldr.length() - 1).append("]").toString();
+        }
+
+        // Validate the object is the given type
+        switch (type.getDisplayName()) {
+        case StandardTypes.BIGINT:
+        case StandardTypes.BOOLEAN:
+        case StandardTypes.DOUBLE:
+            return value.toString();
+        case StandardTypes.DATE:
+            return "DATE '" + ((Date) value).toString() + "'";
+        case StandardTypes.TIME:
+            return "TIME '" + ((Time) value).toString() + "'";
+        case StandardTypes.TIMESTAMP:
+            return "TIMESTAMP '" + ((Timestamp) value).toString() + "'";
+        case StandardTypes.VARBINARY:
+            return "CAST('" + new String((byte[]) value) + "' AS VARBINARY)";
+        case StandardTypes.VARCHAR:
+            return "'" + value + "'";
+        default:
+            throw new RuntimeException("Unsupported PrestoType " + type);
+        }
     }
 }

@@ -23,17 +23,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
-import org.apache.accumulo.core.client.BatchWriter;
-import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
-import org.apache.accumulo.core.client.MutationsRejectedException;
 import org.apache.accumulo.core.client.TableExistsException;
-import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.curator.framework.CuratorFramework;
@@ -55,7 +50,6 @@ import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.TypeRegistry;
 
 import bloomberg.presto.accumulo.AccumuloConfig;
-import bloomberg.presto.accumulo.AccumuloPageSink;
 import bloomberg.presto.accumulo.AccumuloTable;
 import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import bloomberg.presto.accumulo.model.Row;
@@ -292,8 +286,8 @@ public class QueryDriver {
 
     public void initialize() throws Exception {
         createTable();
-        pushInput();
         pushPrestoMetadata();
+        pushInput();
         initialized = true;
     }
 
@@ -388,32 +382,31 @@ public class QueryDriver {
         }
     }
 
-    protected void pushInput()
-            throws TableNotFoundException, MutationsRejectedException {
-        BatchWriter wrtr = conn.createBatchWriter(tableName,
-                new BatchWriterConfig());
+    protected void pushInput() throws Exception {
+
+        LOG.info("Connecting to database...");
+        Properties props = new Properties();
+        props.setProperty("user", "root");
+        Connection conn = DriverManager.getConnection(this.getDbUrl(), props);
+
+        StringBuilder bldr = new StringBuilder(
+                "INSERT INTO "
+                        + (this.getSchema().equals("default")
+                                ? this.getAccumuloTable()
+                                : this.getSchema() + '.'
+                                        + this.getAccumuloTable())
+                        + " VALUES ");
 
         for (Row row : inputs) {
-            // So... the deal here is we are converting the Date objects,
-            // specified by the user, to the number of days because that is what
-            // Presto wants
-
-            // Chose to just do this here instead of putting the burden on the
-            // programmer using this library for converting the Date types to #
-            // of days
-
-            // Maybe I will regret this later, but for now, check out this cool
-            // stream stuff
-            Row toMutate = new Row(row);
-            toMutate.getFields().stream()
-                    .filter(x -> x.getType().equals(DateType.DATE))
-                    .forEach(x -> x.setDate(TimeUnit.MILLISECONDS
-                            .toDays(x.getDate().getTime())));
-            wrtr.addMutation(AccumuloPageSink.toMutation(toMutate,
-                    inputSchema.getColumns(), serializer));
+            bldr.append(row).append(',');
         }
+        bldr.deleteCharAt(bldr.length() - 1);
 
-        wrtr.close();
+        LOG.info("Creating statement...");
+        Statement stmt = conn.createStatement();
+        LOG.info("Executing " + bldr);
+        int rows = stmt.executeUpdate(bldr.toString());
+        LOG.info("Inserted " + rows + " rows");
     }
 
     protected void pushPrestoMetadata() throws Exception {
