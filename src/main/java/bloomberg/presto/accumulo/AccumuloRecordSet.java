@@ -20,6 +20,7 @@ import java.util.List;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Scanner;
 
+import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.RecordSet;
@@ -39,9 +40,12 @@ public class AccumuloRecordSet implements RecordSet {
     private final List<Type> columnTypes;
     private final Scanner scan;
     private final AccumuloRowSerializer serializer;
+    private final ConnectorSession session;
 
-    public AccumuloRecordSet(AccumuloConfig config, AccumuloSplit split,
-            List<AccumuloColumnHandle> columnHandles, Connector conn) {
+    public AccumuloRecordSet(ConnectorSession session, AccumuloConfig config,
+            AccumuloSplit split, List<AccumuloColumnHandle> columnHandles,
+            Connector conn) {
+        this.session = requireNonNull(session, "session is null");
         requireNonNull(config, "config is null");
         requireNonNull(split, "split is null");
         constraints = requireNonNull(split.getConstraints(),
@@ -84,7 +88,7 @@ public class AccumuloRecordSet implements RecordSet {
 
     @Override
     public RecordCursor cursor() {
-        return new AccumuloRecordCursor(serializer, scan, columnHandles,
-                constraints);
+        return new AccumuloRecordCursor(session, serializer, scan,
+                columnHandles, constraints);
     }
 }

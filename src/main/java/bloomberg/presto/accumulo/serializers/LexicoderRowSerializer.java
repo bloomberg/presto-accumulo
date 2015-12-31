@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,12 +15,10 @@ import org.apache.accumulo.core.client.lexicoder.DoubleLexicoder;
 import org.apache.accumulo.core.client.lexicoder.Lexicoder;
 import org.apache.accumulo.core.client.lexicoder.ListLexicoder;
 import org.apache.accumulo.core.client.lexicoder.LongLexicoder;
-import org.apache.accumulo.core.client.lexicoder.PairLexicoder;
 import org.apache.accumulo.core.client.lexicoder.StringLexicoder;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
-import org.apache.accumulo.core.util.ComparablePair;
 import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.PrestoException;
@@ -29,7 +26,10 @@ import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
+import com.facebook.presto.spi.type.DateType;
 import com.facebook.presto.spi.type.DoubleType;
+import com.facebook.presto.spi.type.TimeType;
+import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarbinaryType;
 import com.facebook.presto.spi.type.VarcharType;
@@ -45,8 +45,7 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
     private static final Logger LOG = Logger.get(LexicoderRowSerializer.class);
     private static Map<Type, Lexicoder> lexicoderMap = null;
     private static Map<String, ListLexicoder<?>> listLexicoders = new HashMap<>();
-
-    private static Map<String, ListLexicoder<ComparablePair>> mapLexicoders = new HashMap<>();
+    private static Map<String, MapLexicoder<?, ?>> mapLexicoders = new HashMap<>();
     private Map<String, Map<String, String>> f2q2pc = new HashMap<>();
     private Map<String, byte[]> columnValues = new HashMap<>();
     private Text rowId = new Text(), cf = new Text(), cq = new Text(),
@@ -57,7 +56,10 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
             lexicoderMap = new HashMap<>();
             lexicoderMap.put(BigintType.BIGINT, new LongLexicoder());
             lexicoderMap.put(BooleanType.BOOLEAN, new BytesLexicoder());
+            lexicoderMap.put(DateType.DATE, new LongLexicoder());
             lexicoderMap.put(DoubleType.DOUBLE, new DoubleLexicoder());
+            lexicoderMap.put(TimeType.TIME, new LongLexicoder());
+            lexicoderMap.put(TimestampType.TIMESTAMP, new LongLexicoder());
             lexicoderMap.put(VarbinaryType.VARBINARY, new BytesLexicoder());
             lexicoderMap.put(VarcharType.VARCHAR, new StringLexicoder());
         }
@@ -73,9 +75,8 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
         }
 
         q2pc.put(qual, name);
-        LOG.debug(String.format("Added mapping for presto col %s, %s:%s", name,
-                fam, qual));
 
+        LOG.debug("Added mapping for presto col %s, %s:%s", name, fam, qual);
     }
 
     @Override
@@ -122,7 +123,7 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public boolean getBoolean(String name) {
-        return getFieldValue(name)[0] == TRUE[0] ? true : false;
+        return getFieldValue(name)[0] == TRUE[0];
     }
 
     @Override
@@ -166,18 +167,14 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public Block getMap(String name, Type type) {
-        Map map = new HashMap<>();
-        for (ComparablePair o : getMapLexicoder(type)
-                .decode(getFieldValue(name))) {
-            map.put(o.getFirst(), o.getSecond());
-        }
-        return AccumuloRowSerializer.getBlockFromMap(type, map);
+        return AccumuloRowSerializer.getBlockFromMap(type,
+                getMapLexicoder(type).decode(getFieldValue(name)));
     }
 
     @Override
     public void setMap(Text text, Type type, Block block) {
-        text.set(getMapLexicoder(type).encode(toPairList(type,
-                AccumuloRowSerializer.getMapFromBlock(type, block))));
+        text.set(getMapLexicoder(type)
+                .encode(AccumuloRowSerializer.getMapFromBlock(type, block)));
     }
 
     @Override
@@ -228,93 +225,41 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
         return columnValues.get(name);
     }
 
-    private Lexicoder getLexicoder(Type type) {
-        Lexicoder l = lexicoderMap.get(type);
-        if (l == null) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                    "No lexicoder for type " + type);
+    public static Lexicoder getLexicoder(Type type) {
+        if (Types.isArrayType(type)) {
+            return getListLexicoder(type);
+        } else if (Types.isMapType(type)) {
+            return getMapLexicoder(type);
+        } else {
+            Lexicoder l = (Lexicoder) lexicoderMap.get(type);
+            if (l == null) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "No lexicoder for type " + type);
+            }
+            return l;
         }
-        return l;
     }
 
-    private ListLexicoder getListLexicoder(Type type) {
+    private static ListLexicoder getListLexicoder(Type type) {
         ListLexicoder<?> listLexicoder = listLexicoders
                 .get(type.getDisplayName());
         if (listLexicoder == null) {
-            if (Types.isArrayType(type)) {
-                listLexicoder = new ListLexicoder(
-                        getListLexicoder(Types.getElementType(type)));
-            } else if (Types.isMapType(type)) {
-                listLexicoder = new ListLexicoder(
-                        getMapLexicoder(Types.getElementType(type)));
-            } else {
-                listLexicoder = new ListLexicoder(lexicoderMap.get(type));
-            }
+            listLexicoder = new ListLexicoder(
+                    getLexicoder(Types.getElementType(type)));
             listLexicoders.put(type.getDisplayName(), listLexicoder);
         }
         return listLexicoder;
     }
 
-    private ListLexicoder<ComparablePair> getMapLexicoder(Type type) {
-
-        ListLexicoder<ComparablePair> mapLexicoder = mapLexicoders
+    private static MapLexicoder getMapLexicoder(Type type) {
+        MapLexicoder<?, ?> mapLexicoder = mapLexicoders
                 .get(type.getDisplayName());
         if (mapLexicoder == null) {
-            Lexicoder keyLexicoder;
-            Type kt = Types.getKeyType(type);
-            if (Types.isArrayType(kt)) {
-                keyLexicoder = getListLexicoder(kt);
-            } else if (Types.isMapType(kt)) {
-                keyLexicoder = getMapLexicoder(kt);
-            } else {
-                keyLexicoder = getLexicoder(kt);
-            }
-
-            Lexicoder valueLexicoder;
-            Type vt = Types.getValueType(type);
-            if (Types.isArrayType(vt)) {
-                valueLexicoder = getListLexicoder(vt);
-            } else if (Types.isMapType(kt)) {
-                valueLexicoder = getMapLexicoder(vt);
-            } else {
-                valueLexicoder = getLexicoder(vt);
-            }
-
-            mapLexicoder = new ListLexicoder(
-                    new PairLexicoder(keyLexicoder, valueLexicoder));
+            mapLexicoder = new MapLexicoder(
+                    getLexicoder(Types.getKeyType(type)),
+                    getLexicoder(Types.getValueType(type)));
             mapLexicoders.put(type.getDisplayName(), mapLexicoder);
         }
         return mapLexicoder;
-    }
-
-    private ComparableList<ComparablePair> toPairList(Type type,
-            Map<Object, Object> map) {
-        ComparableList<ComparablePair> pairs = new ComparableList<>();
-
-        Type kt = Types.getKeyType(type);
-        Type vt = Types.getKeyType(type);
-        for (Entry<Object, Object> e : map.entrySet()) {
-            if (Types.isMapType(kt) || Types.isMapType(vt)
-                    || Types.isArrayType(kt) || Types.isArrayType(vt)) {
-                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
-                        "Key/value types of a map pairs must be plain types");
-            }
-
-            Comparable key = (Comparable) e.getKey();
-            Comparable value = (Comparable) e.getValue();
-            pairs.add(new ComparablePair(key, value));
-        }
-
-        return pairs;
-    }
-
-    private class ComparableList<T> extends ArrayList
-            implements Comparable<Comparable> {
-        private static final long serialVersionUID = -7950290764571415125L;
-
-        @Override
-        public int compareTo(Comparable o) {
-            return 0;
-        }
     }
 }

@@ -203,72 +203,226 @@ public class PredicatePushdownTests {
     }
 
     @Test
-    public void testSelectBigIntEquals() throws Exception {
+    public void testSelectBigIntNoWhere() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", BigintType.BIGINT);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(28), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
                 .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
 
+        // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable")
-                .withQuery("SELECT * FROM testmytable WHERE age = 28")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
-                .withOutput(r1).runTest();
+                .withInput(r3).withOutput(r1).withOutput(r2).withOutput(r3)
+                .runTest();
     }
 
     @Test
-    public void testSelectBigIntLessThan() throws Exception {
+    public void testSelectBigIntLess() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", BigintType.BIGINT);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(28), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
                 .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
-                .withQuery("SELECT * FROM testmytable WHERE age < 10")
+                .withQuery("SELECT * FROM testmytable WHERE age < 15")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
-                .withOutput(r2).runTest();
+                .withInput(r3).withOutput(r1).runTest();
     }
 
     @Test
-    public void testSelectBigIntGreaterThan() throws Exception {
+    public void testSelectBigIntLessOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", BigintType.BIGINT);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(28), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
                 .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
-                .withQuery("SELECT * FROM testmytable WHERE age > 10")
+                .withQuery("SELECT * FROM testmytable WHERE age <= 15")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
-                .withOutput(r1).runTest();
+                .withInput(r3).withOutput(r1).withOutput(r2).runTest();
     }
 
     @Test
-    public void testSelectBigIntLessThanAndGreaterThan() throws Exception {
+    public void testSelectBigIntEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", BigintType.BIGINT);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(28), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
                 .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE age = 15")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withInput(r3).withOutput(r2).runTest();
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
                 .withQuery(
-                        "SELECT * FROM testmytable WHERE age < 30 AND age > 10")
+                        "SELECT * FROM testmytable WHERE age = 15 AND age IS NOT NULL")
                 .withInputSchema(schema).withInput(r1).withInput(r2)
-                .withOutput(r1).runTest();
+                .withInput(r3).withOutput(r2).runTest();
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE age = 15 OR age IS NULL")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withInput(r3).withOutput(r2).runTest();
+    }
+
+    @Test
+    public void testSelectBigIntGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE age > 15")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withInput(r3).withOutput(r3).runTest();
+    }
+
+    @Test
+    public void testSelectBigIntGreaterOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE age >= 15")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withInput(r3).withOutput(r2).withOutput(r3).runTest();
+    }
+
+    @Test
+    public void testSelectBigIntLessAndGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE age < 30 AND age > 0")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withInput(r3).withOutput(r2).runTest();
+    }
+
+    @Test
+    public void testSelectBigIntLessEqualAndGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(new Long(-15), BigintType.BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(new Long(45), BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE age <= 30 AND age > 0")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withInput(r3).withInput(r4).withInput(r5).withOutput(r2)
+                .withOutput(r3).runTest();
+    }
+
+    @Test
+    public void testSelectBigIntLessAndGreaterEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(new Long(-15), BigintType.BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(new Long(45), BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE age < 30 AND age >= 0")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withInput(r3).withInput(r4).withInput(r5).withOutput(r1)
+                .withOutput(r2).runTest();
+    }
+
+    @Test
+    public void testSelectBigIntLessEqualAndGreaterEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(new Long(-15), BigintType.BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(new Long(45), BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE age <= 30 AND age >= 0")
+                .withInputSchema(schema).withInput(r1).withInput(r2)
+                .withInput(r3).withInput(r4).withInput(r5).withOutput(r1)
+                .withOutput(r2).withOutput(r3).runTest();
     }
 
     @Test

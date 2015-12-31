@@ -73,6 +73,7 @@ public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
                     checkType(handle, AccumuloColumnHandle.class, "handle"));
         }
 
-        return new AccumuloRecordSet(config, accSplit, handles.build(), conn);
+        return new AccumuloRecordSet(session, config, accSplit, handles.build(),
+                conn);
     }
 }

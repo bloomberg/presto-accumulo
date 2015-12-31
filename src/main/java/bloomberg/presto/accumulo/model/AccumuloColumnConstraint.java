@@ -12,12 +12,18 @@ import io.airlift.log.Logger;
 
 public class AccumuloColumnConstraint {
     private final String name;
+    private final String family;
+    private final String qualifier;
     private Domain domain;
 
     @JsonCreator
     public AccumuloColumnConstraint(@JsonProperty("name") String name,
+            @JsonProperty("family") String family,
+            @JsonProperty("qualifier") String qualifier,
             @JsonProperty("domain") Domain domain) {
         this.name = requireNonNull(name, "name is null");
+        this.family = requireNonNull(family, "family is null");
+        this.qualifier = requireNonNull(qualifier, "qualifier is null");
         this.domain = domain;
         Logger.get(getClass()).debug("CONST DOMAIN IS " + domain);
     }
@@ -25,6 +31,16 @@ public class AccumuloColumnConstraint {
     @JsonProperty
     public String getName() {
         return name;
+    }
+
+    @JsonProperty
+    public String getFamily() {
+        return family;
+    }
+
+    @JsonProperty
+    public String getQualifier() {
+        return qualifier;
     }
 
     @JsonProperty
@@ -38,9 +54,9 @@ public class AccumuloColumnConstraint {
         Logger.get(getClass()).debug("SET DOMAIN IS " + domain);
     }
 
-    @Override
     public String toString() {
-        return toStringHelper(this).add("name", name).add("domain", domain)
-                .toString();
+        return toStringHelper(this).add("name", this.name)
+                .add("family", this.family).add("qualifier", this.qualifier)
+                .add("domain", this.domain).toString();
     }
 }

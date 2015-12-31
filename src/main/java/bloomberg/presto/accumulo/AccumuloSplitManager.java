@@ -90,11 +90,14 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
     private List<AccumuloColumnConstraint> getColumnConstraints(
             TupleDomain<ColumnHandle> constraint) {
         List<AccumuloColumnConstraint> acc = new ArrayList<>();
-        for (ColumnDomain<ColumnHandle> o : constraint.getColumnDomains()
+        for (ColumnDomain<ColumnHandle> cd : constraint.getColumnDomains()
                 .get()) {
-            AccumuloColumnHandle col = checkType(o.getColumn(),
+            AccumuloColumnHandle col = checkType(cd.getColumn(),
                     AccumuloColumnHandle.class, "column handle");
-            acc.add(new AccumuloColumnConstraint(col.getName(), o.getDomain()));
+
+            acc.add(new AccumuloColumnConstraint(col.getName(),
+                    col.getColumnFamily(), col.getColumnQualifier(),
+                    cd.getDomain()));
         }
 
         return acc;
