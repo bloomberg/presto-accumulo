@@ -5,7 +5,7 @@
 
     <groupId>bloomberg.presto</groupId>
     <artifactId>presto-accumulo</artifactId>
-    <version>0.130</version>
+    <version>0.131</version>
     <description>Presto - Accumulo Connector</description>
     <packaging>presto-plugin</packaging>
 
@@ -16,7 +16,7 @@
         <javax.inject.version>1</javax.inject.version>
         <guava.version>18.0</guava.version>
         <mavenPluginPluginVersion>3.2</mavenPluginPluginVersion>
-        <presto.version>0.130</presto.version>
+        <presto.version>0.131</presto.version>
         <project.build.targetJdk>1.8</project.build.targetJdk>
         <zookeeper.version>3.4.6</zookeeper.version>
     </properties>
