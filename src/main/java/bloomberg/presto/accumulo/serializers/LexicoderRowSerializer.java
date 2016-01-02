@@ -108,7 +108,7 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
     public Block getArray(String name, Type type) {
         Type elementType = Types.getElementType(type);
         return AccumuloRowSerializer.getBlockFromArray(elementType,
-                getListLexicoder(elementType).decode(getFieldValue(name)));
+                getListLexicoder(type).decode(getFieldValue(name)));
     }
 
     @Override
@@ -118,7 +118,7 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
         List array = AccumuloRowSerializer.getArrayFromBlock(elementType,
                 block);
 
-        text.set(getListLexicoder(elementType).encode(array));
+        text.set(getListLexicoder(type).encode(array));
     }
 
     @Override
