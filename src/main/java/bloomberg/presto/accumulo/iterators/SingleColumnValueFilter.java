@@ -14,10 +14,15 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
-import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.TypeSignature;
+import com.facebook.presto.spi.type.VarbinaryType;
+import com.facebook.presto.spi.type.VarcharType;
+import com.facebook.presto.type.TypeRegistry;
 import com.google.common.collect.ImmutableMap;
 
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
+import io.airlift.slice.Slice;
 
 public class SingleColumnValueFilter extends Filter {
 
@@ -31,23 +36,26 @@ public class SingleColumnValueFilter extends Filter {
     protected static final String CF = "family";
     protected static final String CQ = "qualifier";
     protected static final String COMPARE_OP = "compareOp";
+    protected static final String TYPE = "type";
     protected static final String VALUE = "value";
 
     private Text columnFamily;
     private Text columnQualifier;
     private Value value;
     private CompareOp compareOp;
+    private Type type;
     private Text cf = new Text();
     private Text cq = new Text();
 
     public static Map<String, String> getProperties(String family,
-            String qualifier, CompareOp op, byte[] value) {
+            String qualifier, CompareOp op, Type type, byte[] value) {
 
         Map<String, String> opts = new HashMap<>();
 
         opts.put(CF, family);
         opts.put(CQ, qualifier);
         opts.put(COMPARE_OP, op.toString());
+        opts.put(TYPE, type.getDisplayName());
         opts.put(VALUE, Hex.encodeHexString(value));
 
         return opts;
@@ -74,13 +82,34 @@ public class SingleColumnValueFilter extends Filter {
             k.getColumnQualifier(cq);
             if (columnQualifier.equals(cq)) {
                 int compareResult = v.compareTo(value);
-                LOG.info(String.format(
-                        "%s COMPARE OF VALUE %s AGAINST %s IS %d", compareOp,
-                        LexicoderRowSerializer.getLexicoder(BigintType.BIGINT)
-                                .decode(v.get()),
-                        LexicoderRowSerializer.getLexicoder(BigintType.BIGINT)
-                                .decode(value.get()),
-                        compareResult));
+                if (type.equals(VarcharType.VARCHAR)) {
+                    LOG.info(String.format(
+                            "%s COMPARE OF VALUE %s AGAINST %s IS %d",
+                            compareOp,
+                            (((Slice) LexicoderRowSerializer.getLexicoder(type)
+                                    .decode(v.get())).toString()),
+                            (((Slice) LexicoderRowSerializer.getLexicoder(type)
+                                    .decode(value.get())).toString()),
+                            compareResult));
+                } else if (type.equals(VarbinaryType.VARBINARY)) {
+                    LOG.info(String.format(
+                            "%s COMPARE OF VALUE %s AGAINST %s IS %d",
+                            compareOp,
+                            Hex.encodeHexString((byte[]) LexicoderRowSerializer
+                                    .getLexicoder(type).decode(v.get())),
+                            Hex.encodeHexString((byte[]) LexicoderRowSerializer
+                                    .getLexicoder(type).decode(value.get())),
+                            compareResult));
+                } else {
+                    LOG.info(String.format(
+                            "%s COMPARE OF VALUE %s AGAINST %s IS %d",
+                            compareOp,
+                            LexicoderRowSerializer.getLexicoder(type)
+                                    .decode(v.get()),
+                            LexicoderRowSerializer.getLexicoder(type)
+                                    .decode(value.get()),
+                            compareResult));
+                }
                 switch (compareOp) {
                 case LESS:
                     return compareResult < 0;
@@ -111,6 +140,14 @@ public class SingleColumnValueFilter extends Filter {
         columnFamily = new Text(options.get(CF));
         columnQualifier = new Text(options.get(CQ));
         compareOp = CompareOp.valueOf(options.get(COMPARE_OP));
+        TypeRegistry t = new TypeRegistry();
+        type = t.getType(TypeSignature.parseTypeSignature(options.get(TYPE)));
+
+        if (type == null) {
+            throw new IllegalArgumentException(
+                    "Type is null from options " + options.get(TYPE));
+        }
+
         try {
             value = new Value(Hex.decodeHex(options.get(VALUE).toCharArray()));
         } catch (DecoderException e) {
@@ -133,6 +170,7 @@ public class SingleColumnValueFilter extends Filter {
         copy.columnFamily = new Text(this.columnFamily);
         copy.columnQualifier = new Text(this.columnQualifier);
         copy.value = new Value(this.value);
+        copy.type = type;
         copy.compareOp = this.compareOp;
 
         // Return the copy
@@ -141,16 +179,18 @@ public class SingleColumnValueFilter extends Filter {
 
     @Override
     public IteratorOptions describeOptions() {
+
         return new IteratorOptions("singlecolumnvaluefilter",
                 "Filter accepts or rejects each Key/Value pair based on the lexicographic comparison of a value stored in a single column family/qualifier",
-                ImmutableMap.of(
-                        // @formatter:off
-                        CF, "column family to match on, required",
-                        CQ, "column qualifier to match on, required",
-                        COMPARE_OP, "CompareOp enum type for lexicographic comparison, required",
-                        VALUE, "Hex-encoded bytes of the value for comparison, required",
-                        NEGATE, "default false keeps k/v that pass accept method, true rejects k/v that pass accept method"),
-                        // @formatter:on
+                // @formatter:off
+                    ImmutableMap.<String, String>builder().put(CF, "column family to match on, required")
+                        .put(CQ, "column qualifier to match on, required")
+                        .put(COMPARE_OP, "CompareOp enum type for lexicographic comparison, required")
+                        .put(TYPE, "Presto Type for logging, required")
+                        .put(VALUE, "Hex-encoded bytes of the value for comparison, required")
+                        .put(NEGATE, "default false keeps k/v that pass accept method, true rejects k/v that pass accept method")
+                        .build(),
+                // @formatter:on
                 null);
     }
 
@@ -161,6 +201,7 @@ public class SingleColumnValueFilter extends Filter {
         checkNotNull(CF, options);
         checkNotNull(CQ, options);
         checkNotNull(COMPARE_OP, options);
+        checkNotNull(TYPE, options);
         checkNotNull(VALUE, options);
 
         try {

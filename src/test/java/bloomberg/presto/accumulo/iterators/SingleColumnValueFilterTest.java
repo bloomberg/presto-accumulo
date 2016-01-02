@@ -42,7 +42,7 @@ public class SingleColumnValueFilterTest {
         Value vFilterValue = new Value(
                 LexicoderRowSerializer.getLexicoder(type).encode(filterValue));
         Map<String, String> opts = SingleColumnValueFilter.getProperties(
-                filterFam, filterQual, filterOp, vFilterValue.get());
+                filterFam, filterQual, filterOp, type, vFilterValue.get());
 
         SingleColumnValueFilter filter = new SingleColumnValueFilter();
         filter.validateOptions(opts);

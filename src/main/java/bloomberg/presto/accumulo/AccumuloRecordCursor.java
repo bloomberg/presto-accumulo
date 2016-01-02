@@ -51,6 +51,7 @@ import com.facebook.presto.spi.predicate.Marker.Bound;
 import com.facebook.presto.spi.predicate.Range;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.VarcharType;
 
 import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter;
 import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter.CompareOp;
@@ -321,12 +322,19 @@ public class AccumuloRecordCursor implements RecordCursor {
 
         String name = String.format("nullable-single-value:%s:%d",
                 col.getName(), priority);
-        byte[] valueBytes = LexicoderRowSerializer.getLexicoder(type)
-                .encode(value);
+        byte[] valueBytes;
+        if (type.equals(VarcharType.VARCHAR)) {
+            valueBytes = LexicoderRowSerializer.getLexicoder(type)
+                    .encode(((Slice) value).toString());
+        } else {
+            valueBytes = LexicoderRowSerializer.getLexicoder(type)
+                    .encode(value);
+        }
         IteratorSetting cfg = new IteratorSetting(priority++, name,
                 SingleColumnValueFilter.class,
                 SingleColumnValueFilter.getProperties(col.getFamily(),
-                        col.getQualifier(), op, valueBytes));
+                        col.getQualifier(), op, col.getDomain().getType(),
+                        valueBytes));
 
         this.scan.addScanIterator(cfg);
     }
