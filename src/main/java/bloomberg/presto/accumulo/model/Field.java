@@ -141,6 +141,10 @@ public class Field {
         return (String) value;
     }
 
+    public boolean isNull() {
+        return value == null;
+    }
+
     public static Object cleanObject(Object v, Type t) {
         if (v == null) {
             return v;

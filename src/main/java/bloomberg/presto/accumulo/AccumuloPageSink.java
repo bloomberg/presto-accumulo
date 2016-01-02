@@ -108,6 +108,10 @@ public class AccumuloPageSink implements ConnectorPageSink {
             if (!ach.getName()
                     .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
 
+                if (row.getField(i).isNull()) {
+                    continue;
+                }
+
                 if (Types.isArrayType(ach.getType())) {
                     serializer.setArray(value, ach.getType(),
                             row.getField(i).getBlock());
