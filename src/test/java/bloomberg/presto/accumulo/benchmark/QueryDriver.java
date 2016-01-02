@@ -115,8 +115,10 @@ public class QueryDriver {
         return this;
     }
 
-    public QueryDriver withInput(Row row) {
-        this.inputs.add(row);
+    public QueryDriver withInput(Row... rows) {
+        for (Row r : rows) {
+            this.inputs.add(r);
+        }
         return this;
     }
 
@@ -126,8 +128,10 @@ public class QueryDriver {
         return this;
     }
 
-    public QueryDriver withOutput(Row row) {
-        this.expectedOutputs.add(row);
+    public QueryDriver withOutput(Row... rows) {
+        for (Row r : rows) {
+            this.expectedOutputs.add(r);
+        }
         return this;
     }
 

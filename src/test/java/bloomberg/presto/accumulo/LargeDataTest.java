@@ -15,7 +15,7 @@ import bloomberg.presto.accumulo.benchmark.QueryDriver;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 
-public class LargeDataTests {
+public class LargeDataTest {
 
     private static final File INPUT_FILE = new File(
             "src/test/resources/datagen.txt.gz");
