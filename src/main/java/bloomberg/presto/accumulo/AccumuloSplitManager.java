@@ -29,9 +29,11 @@ import com.facebook.presto.spi.ConnectorSplitManager;
 import com.facebook.presto.spi.ConnectorSplitSource;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.FixedSplitSource;
+import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.predicate.TupleDomain.ColumnDomain;
 
+import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import io.airlift.log.Logger;
@@ -58,8 +60,10 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
 
         String schemaName = tableHandle.getSchemaName();
         String tableName = tableHandle.getTableName();
+        Domain rDom = getRangeDomain(layoutHandle.getConstraint());
+
         List<TabletSplitMetadata> tSplits = client.getTabletSplits(schemaName,
-                tableName);
+                tableName, rDom);
 
         List<ConnectorSplit> cSplits = new ArrayList<>();
         if (tSplits.size() > 0) {
@@ -70,7 +74,7 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
                         smd.getRangeHandle(),
                         getColumnConstraints(layoutHandle.getConstraint()));
                 cSplits.add(accSplit);
-                LOG.debug("Added split " + accSplit);
+                LOG.debug("Added split " + smd);
             }
         } else {
             AccumuloSplit accSplit = new AccumuloSplit(connectorId,
@@ -87,6 +91,20 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         return new FixedSplitSource(connectorId, cSplits);
     }
 
+    private Domain getRangeDomain(TupleDomain<ColumnHandle> constraint) {
+        for (ColumnDomain<ColumnHandle> cd : constraint.getColumnDomains()
+                .get()) {
+
+            AccumuloColumnHandle col = checkType(cd.getColumn(),
+                    AccumuloColumnHandle.class, "column handle");
+            if (col.getName()
+                    .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
+                return cd.getDomain();
+            }
+        }
+        return null;
+    }
+
     private List<AccumuloColumnConstraint> getColumnConstraints(
             TupleDomain<ColumnHandle> constraint) {
         List<AccumuloColumnConstraint> acc = new ArrayList<>();
@@ -95,9 +113,12 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
             AccumuloColumnHandle col = checkType(cd.getColumn(),
                     AccumuloColumnHandle.class, "column handle");
 
-            acc.add(new AccumuloColumnConstraint(col.getName(),
-                    col.getColumnFamily(), col.getColumnQualifier(),
-                    cd.getDomain()));
+            if (!col.getName()
+                    .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
+                acc.add(new AccumuloColumnConstraint(col.getName(),
+                        col.getColumnFamily(), col.getColumnQualifier(),
+                        cd.getDomain()));
+            }
         }
 
         return acc;

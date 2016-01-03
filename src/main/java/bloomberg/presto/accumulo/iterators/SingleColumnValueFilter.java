@@ -22,7 +22,6 @@ import com.facebook.presto.type.TypeRegistry;
 import com.google.common.collect.ImmutableMap;
 
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
-import io.airlift.slice.Slice;
 
 public class SingleColumnValueFilter extends Filter {
 
@@ -65,9 +64,9 @@ public class SingleColumnValueFilter extends Filter {
     public boolean accept(Key k, Value v) {
         boolean c = acceptHelper(k, v);
         if (c) {
-            LOG.info(String.format("ACCEPT %s %s", k, v));
+            LOG.debug(String.format("ACCEPT %s %s", k, v));
         } else {
-            LOG.info(String.format("REJECT %s %s", k, v));
+            LOG.debug(String.format("REJECT %s %s", k, v));
         }
         return c;
     }
@@ -83,16 +82,15 @@ public class SingleColumnValueFilter extends Filter {
             if (columnQualifier.equals(cq)) {
                 int compareResult = v.compareTo(value);
                 if (type.equals(VarcharType.VARCHAR)) {
-                    LOG.info(String.format(
+                    String tv = (String) LexicoderRowSerializer
+                            .getLexicoder(type).decode(v.get());
+                    String fv = (String) LexicoderRowSerializer
+                            .getLexicoder(type).decode(value.get());
+                    LOG.debug(String.format(
                             "%s COMPARE OF VALUE %s AGAINST %s IS %d",
-                            compareOp,
-                            (((Slice) LexicoderRowSerializer.getLexicoder(type)
-                                    .decode(v.get())).toString()),
-                            (((Slice) LexicoderRowSerializer.getLexicoder(type)
-                                    .decode(value.get())).toString()),
-                            compareResult));
+                            compareOp, tv, fv, compareResult));
                 } else if (type.equals(VarbinaryType.VARBINARY)) {
-                    LOG.info(String.format(
+                    LOG.debug(String.format(
                             "%s COMPARE OF VALUE %s AGAINST %s IS %d",
                             compareOp,
                             Hex.encodeHexString((byte[]) LexicoderRowSerializer
@@ -101,7 +99,7 @@ public class SingleColumnValueFilter extends Filter {
                                     .getLexicoder(type).decode(value.get())),
                             compareResult));
                 } else {
-                    LOG.info(String.format(
+                    LOG.debug(String.format(
                             "%s COMPARE OF VALUE %s AGAINST %s IS %d",
                             compareOp,
                             LexicoderRowSerializer.getLexicoder(type)
@@ -197,7 +195,7 @@ public class SingleColumnValueFilter extends Filter {
     @Override
     public boolean validateOptions(Map<String, String> options) {
         super.validateOptions(options);
-        LOG.info("validate " + options);
+        LOG.debug("validate " + options);
         checkNotNull(CF, options);
         checkNotNull(CQ, options);
         checkNotNull(COMPARE_OP, options);
@@ -206,7 +204,7 @@ public class SingleColumnValueFilter extends Filter {
 
         try {
             CompareOp.valueOf(options.get(COMPARE_OP));
-            LOG.info("compare op configured");
+            LOG.debug("compare op configured");
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Unknown value of " + COMPARE_OP
                     + ":" + options.get(COMPARE_OP));
@@ -214,7 +212,7 @@ public class SingleColumnValueFilter extends Filter {
 
         try {
             new Value(Hex.decodeHex(options.get(VALUE).toCharArray()));
-            LOG.info("value configured");
+            LOG.debug("value configured");
         } catch (DecoderException e) {
             throw new IllegalArgumentException("Option " + VALUE
                     + " is not a hex-encoded value: " + options.get(VALUE), e);
@@ -227,7 +225,7 @@ public class SingleColumnValueFilter extends Filter {
             throw new IllegalArgumentException(
                     "Option " + opt + " is required");
         } else {
-            LOG.info(opt + " configured");
+            LOG.debug(opt + " configured");
         }
     }
 }

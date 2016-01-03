@@ -18,6 +18,7 @@ import static java.util.Objects.requireNonNull;
 import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,11 +46,14 @@ import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.StandardErrorCode;
+import com.facebook.presto.spi.predicate.Domain;
+import com.facebook.presto.spi.predicate.Marker.Bound;
 
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
+import io.airlift.slice.Slice;
 
 public class AccumuloClient {
     private static final Logger LOG = Logger.get(AccumuloClient.class);
@@ -202,41 +206,91 @@ public class AccumuloClient {
     }
 
     public List<TabletSplitMetadata> getTabletSplits(String schema,
-            String table) {
+            String table, Domain rDom) {
         try {
             String fulltable = getFullTableName(schema, table);
             List<TabletSplitMetadata> tabletSplits = new ArrayList<>();
-            String prevSplit = null;
-            for (Text tSplit : conn.tableOperations().listSplits(fulltable)) {
-                String split = tSplit.toString();
-
-                String loc = this.getTabletLocation(fulltable, split);
-                String host = HostAddress.fromString(loc).getHostText();
-                int port = HostAddress.fromString(loc).getPort();
-
-                RangeHandle rHandle = prevSplit == null
-                        ? new RangeHandle(null, true, split, true)
-                        : new RangeHandle(prevSplit, false, split, true);
-
-                prevSplit = split;
-
-                tabletSplits.add(new TabletSplitMetadata(split.toString(), host,
-                        port, rHandle));
+            if (rDom != null) {
+                Logger.get(getClass()).debug("COLUMN recordkey HAS %d RANGES",
+                        rDom.getValues().getRanges().getRangeCount());
+                for (com.facebook.presto.spi.predicate.Range r : rDom
+                        .getValues().getRanges().getOrderedRanges()) {
+                    tabletSplits.addAll(getTabletsFromRange(fulltable, r));
+                }
+            } else {
+                for (Range r : conn.tableOperations().splitRangeByTablets(
+                        fulltable, new Range(), Integer.MAX_VALUE)) {
+                    tabletSplits.add(getTableSplitMetadata(fulltable, r));
+                }
             }
-
-            // last range from prevSplit to infinity
-            String loc = this.getTabletLocation(fulltable, null);
-            String host = HostAddress.fromString(loc).getHostText();
-            int port = HostAddress.fromString(loc).getPort();
-
-            tabletSplits.add(new TabletSplitMetadata(null, host, port,
-                    new RangeHandle(prevSplit, false, null, true)));
-
             return tabletSplits;
         } catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                    "Accumulo error when getting splits", e);
+                    "Failed to get splits", e);
         }
+    }
+
+    private Collection<? extends TabletSplitMetadata> getTabletsFromRange(
+            String fulltable, com.facebook.presto.spi.predicate.Range pRange)
+                    throws AccumuloException, AccumuloSecurityException,
+                    TableNotFoundException {
+
+        List<TabletSplitMetadata> tabletSplits = new ArrayList<>();
+
+        Range preSplitRange;
+        if (pRange.isAll()) {
+            preSplitRange = new Range();
+        } else if (pRange.isSingleValue()) {
+            preSplitRange = new Range(
+                    ((Slice) pRange.getSingleValue()).toStringUtf8());
+        } else {
+            if (pRange.getLow().isLowerUnbounded()) {
+                boolean inclusive = pRange.getHigh()
+                        .getBound() == Bound.EXACTLY;
+                String split = ((Slice) pRange.getHigh().getValue())
+                        .toStringUtf8();
+                preSplitRange = new Range(null, false, split, inclusive);
+            } else if (pRange.getHigh().isUpperUnbounded()) {
+                boolean inclusive = pRange.getLow().getBound() == Bound.EXACTLY;
+                String split = ((Slice) pRange.getLow().getValue())
+                        .toStringUtf8();
+                preSplitRange = new Range(split, inclusive, null, false);
+            } else {
+                boolean startKeyInclusive = pRange.getLow()
+                        .getBound() == Bound.EXACTLY;
+                String startSplit = ((Slice) pRange.getLow().getValue())
+                        .toStringUtf8();
+
+                boolean endKeyInclusive = pRange.getHigh()
+                        .getBound() == Bound.EXACTLY;
+                String endSplit = ((Slice) pRange.getHigh().getValue())
+                        .toStringUtf8();
+                preSplitRange = new Range(startSplit, startKeyInclusive,
+                        endSplit, endKeyInclusive);
+            }
+        }
+
+        for (Range r : conn.tableOperations().splitRangeByTablets(fulltable,
+                preSplitRange, Integer.MAX_VALUE)) {
+            tabletSplits.add(getTableSplitMetadata(fulltable, r));
+        }
+
+        return tabletSplits;
+    }
+
+    private TabletSplitMetadata getTableSplitMetadata(String fulltable,
+            Range range) throws TableNotFoundException, AccumuloException,
+                    AccumuloSecurityException {
+
+        String startKey = range.getStartKey().getRow().toString();
+        String endKey = range.getEndKey().getRow().toString();
+
+        RangeHandle rHandle = new RangeHandle(startKey,
+                range.isStartKeyInclusive(), endKey, range.isEndKeyInclusive());
+        String loc = this.getTabletLocation(fulltable, endKey);
+        String host = HostAddress.fromString(loc).getHostText();
+        int port = HostAddress.fromString(loc).getPort();
+        return new TabletSplitMetadata(endKey, host, port, rHandle);
     }
 
     /**
@@ -277,7 +331,13 @@ public class AccumuloClient {
 
         LOG.debug(String.format("Location of split %s for table %s is %s",
                 split, fulltable, location));
-        return location;
+        if (location == null) {
+            // TODO need to locate a split based on what tablet it would be in,
+            // then find that tablet location
+            return "localhost:9997";
+        } else {
+            return location;
+        }
     }
 
     public static String getFullTableName(String schema, String table) {

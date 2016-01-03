@@ -222,6 +222,34 @@ public class PredicatePushdownTest {
     }
 
     @Test
+    public void testSelectBigIntNoWhereWithSplits() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(new Long(-15), BigintType.BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(new Long(45), BigintType.BIGINT);
+        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
+                .addField(new Long(60), BigintType.BIGINT);
+        Row r7 = Row.newInstance().addField("row7", VarcharType.VARCHAR)
+                .addField(new Long(90), BigintType.BIGINT);
+
+        // no constraints on predicate pushdown
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withSplits("row4", "row6")
+                .withInput(r1, r2, r3, r4, r5, r6, r7)
+                .withOutput(r1, r2, r3, r4, r5, r6, r7).runTest();
+    }
+
+    @Test
     public void testSelectBigIntLess() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", BigintType.BIGINT);
@@ -501,6 +529,56 @@ public class PredicatePushdownTest {
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
                 .runTest();
+    }
+
+    @Test
+    public void testSelectBigIntWhereRecordKeyIs() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+
+        // no constraints on predicate pushdown
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE recordkey = 'row2'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectBigIntWhereRecordKeyInRange() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(new Long(-15), BigintType.BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(new Long(45), BigintType.BIGINT);
+        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
+                .addField(new Long(60), BigintType.BIGINT);
+        Row r7 = Row.newInstance().addField("row7", VarcharType.VARCHAR)
+                .addField(new Long(90), BigintType.BIGINT);
+
+        // no constraints on predicate pushdown
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE (recordkey < 'row6' AND recordkey >= 'row3') OR recordkey = 'row1'")
+                .withInputSchema(schema).withSplits("row4", "row6")
+                .withInput(r1, r2, r3, r4, r5, r6, r7)
+                .withOutput(r1, r3, r4, r5).runTest();
     }
 
     @Test

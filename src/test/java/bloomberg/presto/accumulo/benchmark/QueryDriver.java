@@ -24,17 +24,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.TableExistsException;
+import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
@@ -71,6 +75,7 @@ public class QueryDriver {
     private Connector conn;
     private List<Row> inputs = new ArrayList<>(),
             expectedOutputs = new ArrayList<>();
+    private SortedSet<Text> splits = new TreeSet<>();
     private RowSchema inputSchema, outputSchema;
     private AccumuloRowSerializer serializer;
     private ZooKeeperMetadataManager metaManager;
@@ -159,6 +164,21 @@ public class QueryDriver {
 
         this.withInput(loadRowsFromFile(inputSchema, file));
 
+        return this;
+    }
+
+    public QueryDriver withSplits(String... splits) {
+        for (String s : splits) {
+            this.splits.add(new Text(s));
+        }
+        return this;
+    }
+
+    public QueryDriver withSplits(List<String> splits) {
+        this.splits.clear();
+        for (String s : splits) {
+            this.splits.add(new Text(s));
+        }
         return this;
     }
 
@@ -380,11 +400,18 @@ public class QueryDriver {
 
     protected void createTable() throws AccumuloException,
             AccumuloSecurityException, TableExistsException {
-        if (this.getSchema().equals("default")) {
-            conn.tableOperations().create(this.getAccumuloTable());
-        } else {
-            conn.tableOperations()
-                    .create(this.getSchema() + "." + this.getAccumuloTable());
+        String fulltable = this.getSchema().equals("default")
+                ? this.getAccumuloTable()
+                : this.getSchema() + "." + this.getAccumuloTable();
+
+        conn.tableOperations().create(fulltable);
+
+        if (splits.size() > 0) {
+            try {
+                conn.tableOperations().addSplits(fulltable, splits);
+            } catch (TableNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
