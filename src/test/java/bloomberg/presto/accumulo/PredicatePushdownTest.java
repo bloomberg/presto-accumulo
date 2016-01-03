@@ -422,6 +422,71 @@ public class PredicatePushdownTest {
     }
 
     @Test
+    public void testSelectBigIntWithOr() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(new Long(-15), BigintType.BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(new Long(45), BigintType.BIGINT);
+        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
+                .addField(new Long(60), BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE (age <= 30 AND age >= 0) OR (age > 45 AND age < 70)")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r1, r2, r3, r6).runTest();
+    }
+
+    @Test
+    public void testSelectBigIntWithComplexWhereing() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("age", "metadata", "age", BigintType.BIGINT)
+                .addColumn("fav_num", "metadata", "fav_num", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT)
+                .addField(new Long(30), BigintType.BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(new Long(-15), BigintType.BIGINT)
+                .addField(new Long(-15), BigintType.BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(new Long(45), BigintType.BIGINT)
+                .addField(new Long(45), BigintType.BIGINT);
+        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
+                .addField(new Long(60), BigintType.BIGINT)
+                .addField(new Long(60), BigintType.BIGINT);
+        Row r7 = Row.newInstance().addField("row7", VarcharType.VARCHAR)
+                .addField(new Long(90), BigintType.BIGINT)
+                .addField(new Long(90), BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE (("
+                        + "age <= 30 AND age >= 0) OR ("
+                        + "age > 45 AND age < 70) OR (age > 80)) AND (("
+                        + "fav_num <= 30 AND fav_num > 15) OR ("
+                        + "fav_num >= 45 AND fav_num < 60) OR (fav_num = 90))")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6, r7)
+                .withOutput(r3, r7).runTest();
+    }
+
+    @Test
     @Ignore
     public void testSelectBoolean() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",

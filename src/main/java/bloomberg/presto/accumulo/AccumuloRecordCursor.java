@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -53,6 +54,8 @@ import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarcharType;
 
+import bloomberg.presto.accumulo.iterators.AndFilter;
+import bloomberg.presto.accumulo.iterators.OrFilter;
 import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter;
 import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter.CompareOp;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
@@ -260,61 +263,81 @@ public class AccumuloRecordCursor implements RecordCursor {
             Logger.get(getClass()).debug("COLUMN %s HAS %d RANGES",
                     col.getName(), dom.getValues().getRanges().getRangeCount());
 
+            List<IteratorSetting> settings = new ArrayList<>(
+                    dom.getValues().getRanges().getRangeCount());
             for (Range r : dom.getValues().getRanges().getOrderedRanges()) {
                 Logger.get(getClass()).debug("RANGE %s", r.toString(session));
-                if (r.isAll()) {
-                    // [min, max]
-                    Logger.get(getClass()).debug("RANGE %s IS ALL",
-                            r.toString(session));
-                } else if (r.isSingleValue()) {
-                    // value = value
-                    Logger.get(getClass()).debug("RANGE %s IS SINGLE VALUE",
-                            r.toString(session));
-                    addSingleValueFilter(priority++, col, CompareOp.EQUAL,
-                            r.getType(), r.getSingleValue());
-                } else {
-                    if (r.getLow().isLowerUnbounded()) {
-                        Logger.get(getClass()).debug(
-                                "RANGE %s IS LOWER UNBOUNDED",
-                                r.toString(session));
-                        // (min, x] WHERE x < 10
-                        CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
-                                ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
-                        addSingleValueFilter(priority++, col, op, r.getType(),
-                                r.getHigh().getValue());
-                    } else if (r.getHigh().isUpperUnbounded()) {
-                        Logger.get(getClass()).debug(
-                                "RANGE %s IS UPPER UNBOUNDED",
-                                r.toString(session));
-                        // [(x, max] WHERE x > 10
-                        CompareOp op = r.getLow().getBound() == Bound.EXACTLY
-                                ? CompareOp.GREATER_OR_EQUAL
-                                : CompareOp.GREATER;
-                        addSingleValueFilter(priority++, col, op, r.getType(),
-                                r.getLow().getValue());
-                    } else {
-                        Logger.get(getClass()).debug("RANGE %s IS BOUNDED",
-                                r.toString(session));
-                        // WHERE x > 10 AND x < 20
-                        CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
-                                ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
-                        addSingleValueFilter(priority++, col, op, r.getType(),
-                                r.getHigh().getValue());
 
-                        op = r.getLow().getBound() == Bound.EXACTLY
-                                ? CompareOp.GREATER_OR_EQUAL
-                                : CompareOp.GREATER;
-                        addSingleValueFilter(priority++, col, op, r.getType(),
-                                r.getLow().getValue());
-                    }
+                IteratorSetting cfg = getFilterSettingFromRange(col, r,
+                        priority);
+                if (cfg != null) {
+                    settings.add(cfg);
                 }
             }
 
+            if (settings.size() == 1) {
+                this.scan.addScanIterator(settings.get(0));
+            } else if (settings.size() > 0) {
+                this.scan.addScanIterator(OrFilter.orFilters(priority++,
+                        settings.toArray(new IteratorSetting[0])));
+            } // else no-op
+        }
+    }
+
+    private IteratorSetting getFilterSettingFromRange(
+            AccumuloColumnConstraint col, Range r, int priority) {
+
+        if (r.isAll()) {
+            // [min, max]
+            Logger.get(getClass()).debug("RANGE %s IS ALL",
+                    r.toString(session));
+            return null;
+        } else if (r.isSingleValue()) {
+            // value = value
+            Logger.get(getClass()).debug("RANGE %s IS SINGLE VALUE",
+                    r.toString(session));
+            return getIteratorSetting(priority++, col, CompareOp.EQUAL,
+                    r.getType(), r.getSingleValue());
+        } else {
+            if (r.getLow().isLowerUnbounded()) {
+                Logger.get(getClass()).debug("RANGE %s IS LOWER UNBOUNDED",
+                        r.toString(session));
+                // (min, x] WHERE x < 10
+                CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
+                        ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
+                return getIteratorSetting(priority++, col, op, r.getType(),
+                        r.getHigh().getValue());
+            } else if (r.getHigh().isUpperUnbounded()) {
+                Logger.get(getClass()).debug("RANGE %s IS UPPER UNBOUNDED",
+                        r.toString(session));
+                // [(x, max] WHERE x > 10
+                CompareOp op = r.getLow().getBound() == Bound.EXACTLY
+                        ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
+                return getIteratorSetting(priority++, col, op, r.getType(),
+                        r.getLow().getValue());
+            } else {
+                Logger.get(getClass()).debug("RANGE %s IS BOUNDED",
+                        r.toString(session));
+                // WHERE x > 10 AND x < 20
+                CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
+                        ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
+
+                IteratorSetting high = getIteratorSetting(priority++, col, op,
+                        r.getType(), r.getHigh().getValue());
+
+                op = r.getLow().getBound() == Bound.EXACTLY
+                        ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
+
+                IteratorSetting low = getIteratorSetting(priority++, col, op,
+                        r.getType(), r.getLow().getValue());
+
+                return AndFilter.andFilters(priority++, high, low);
+            }
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void addSingleValueFilter(int priority,
+    private IteratorSetting getIteratorSetting(int priority,
             AccumuloColumnConstraint col, CompareOp op, Type type,
             Object value) {
 
@@ -330,13 +353,11 @@ public class AccumuloRecordCursor implements RecordCursor {
             valueBytes = LexicoderRowSerializer.getLexicoder(type)
                     .encode(value);
         }
-        IteratorSetting cfg = new IteratorSetting(priority++, name,
+        return new IteratorSetting(priority++, name,
                 SingleColumnValueFilter.class,
                 SingleColumnValueFilter.getProperties(col.getFamily(),
                         col.getQualifier(), op, col.getDomain().getType(),
                         valueBytes));
-
-        this.scan.addScanIterator(cfg);
     }
 
     private static class RowOnlySerializer implements AccumuloRowSerializer {
