@@ -348,7 +348,7 @@ public class AccumuloRecordCursor implements RecordCursor {
         byte[] valueBytes;
         if (type.equals(VarcharType.VARCHAR)) {
             valueBytes = LexicoderRowSerializer.getLexicoder(type)
-                    .encode(((Slice) value).toString());
+                    .encode(((Slice) value).toStringUtf8());
         } else {
             valueBytes = LexicoderRowSerializer.getLexicoder(type)
                     .encode(value);
