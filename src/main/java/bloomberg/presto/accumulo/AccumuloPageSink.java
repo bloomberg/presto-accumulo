@@ -97,6 +97,12 @@ public class AccumuloPageSink implements ConnectorPageSink {
     public static Mutation toMutation(Row row,
             List<AccumuloColumnHandle> columns,
             AccumuloRowSerializer serializer) {
+
+        if (row.getField(0).isNull()) {
+            throw new PrestoException(StandardErrorCode.USER_ERROR,
+                    "Row recordkey cannot be null");
+        }
+
         // make a new mutation, passing in the row ID
         Mutation m = new Mutation(row.getField(0).getObject().toString());
 
