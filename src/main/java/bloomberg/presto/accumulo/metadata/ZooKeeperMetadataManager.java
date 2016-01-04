@@ -124,12 +124,10 @@ public class ZooKeeperMetadataManager extends AccumuloMetadataManager {
     public AccumuloTable getTable(SchemaTableName stName) {
         try {
             if (curator.checkExists().forPath(getTablePath(stName)) != null) {
-                LOG.debug("getTable " + toAccumuloTable(
-                        curator.getData().forPath(getTablePath(stName))));
                 return toAccumuloTable(
                         curator.getData().forPath(getTablePath(stName)));
             } else {
-                LOG.debug("No metadata for table " + stName);
+                LOG.info("No metadata for table " + stName);
                 return null;
             }
         } catch (Exception e) {
@@ -154,10 +152,8 @@ public class ZooKeeperMetadataManager extends AccumuloMetadataManager {
         }
 
         try {
-            byte[] data = toJsonBytes(table);
             curator.create().creatingParentsIfNeeded().forPath(tablePath,
                     toJsonBytes(table));
-            LOG.debug("createTableMetadata " + new String(data));
         } catch (Exception e) {
             throw new RuntimeException("Error creating table node in ZooKeeper",
                     e);
@@ -167,7 +163,6 @@ public class ZooKeeperMetadataManager extends AccumuloMetadataManager {
     @Override
     public void deleteTableMetadata(SchemaTableName stName) {
         try {
-            LOG.debug("deleteTableMetadata for " + stName);
             curator.delete().deletingChildrenIfNeeded()
                     .forPath(getTablePath(stName));
         } catch (Exception e) {

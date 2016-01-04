@@ -36,10 +36,8 @@ import com.facebook.presto.spi.predicate.TupleDomain.ColumnDomain;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
-import io.airlift.log.Logger;
 
 public class AccumuloSplitManager implements ConnectorSplitManager {
-    private static final Logger LOG = Logger.get(AccumuloSplitManager.class);
     private final String connectorId;
     private final AccumuloClient client;
 
@@ -74,7 +72,6 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
                         smd.getRangeHandle(),
                         getColumnConstraints(layoutHandle.getConstraint()));
                 cSplits.add(accSplit);
-                LOG.debug("Added split " + smd);
             }
         } else {
             AccumuloSplit accSplit = new AccumuloSplit(connectorId,
@@ -83,7 +80,6 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
                     new RangeHandle(null, true, null, true),
                     getColumnConstraints(layoutHandle.getConstraint()));
             cSplits.add(accSplit);
-            LOG.debug("Added split " + accSplit);
         }
 
         Collections.shuffle(cSplits);

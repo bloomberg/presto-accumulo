@@ -29,12 +29,9 @@ import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
-import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 
 public class AccumuloPageSink implements ConnectorPageSink {
-    private static final Logger LOG = Logger.get(AccumuloPageSink.class);
-
     private final BatchWriter wrtr;
     private final List<Row> rows = new ArrayList<>();
     private final List<AccumuloColumnHandle> types;
@@ -61,9 +58,6 @@ public class AccumuloPageSink implements ConnectorPageSink {
 
     @Override
     public void appendPage(Page page, Block sampleWeightBlock) {
-        LOG.debug("appendPage " + page + " " + sampleWeightBlock
-                + " num blocks " + page.getBlocks().length);
-
         for (int position = 0; position < page.getPositionCount(); ++position) {
             Row r = Row.newInstance();
             for (int channel = 0; channel < page.getChannelCount(); ++channel) {
@@ -91,7 +85,6 @@ public class AccumuloPageSink implements ConnectorPageSink {
 
     @Override
     public void rollback() {
-        LOG.debug("rollback");
     }
 
     public static Mutation toMutation(Row row,

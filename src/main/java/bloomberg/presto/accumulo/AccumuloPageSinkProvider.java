@@ -32,18 +32,13 @@ import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
 
-import io.airlift.log.Logger;
-
 public class AccumuloPageSinkProvider implements ConnectorPageSinkProvider {
-    private static final Logger LOG = Logger
-            .get(AccumuloPageSinkProvider.class);
     private final AccumuloClient client;
     private final Connector conn;
 
     @Inject
     public AccumuloPageSinkProvider(AccumuloConfig config,
             AccumuloClient client) {
-        LOG.debug("constructor");
         this.client = requireNonNull(client, "client is null");
         requireNonNull(config, "config is null");
 

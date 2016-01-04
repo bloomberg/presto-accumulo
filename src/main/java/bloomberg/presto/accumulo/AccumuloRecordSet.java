@@ -31,10 +31,8 @@ import com.google.common.collect.ImmutableList;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
-import io.airlift.log.Logger;
 
 public class AccumuloRecordSet implements RecordSet {
-    private static final Logger LOG = Logger.get(AccumuloRecordSet.class);
     private final List<AccumuloColumnHandle> columnHandles;
     private final List<AccumuloColumnConstraint> constraints;
     private final List<Type> columnTypes;
@@ -73,8 +71,6 @@ public class AccumuloRecordSet implements RecordSet {
                     conn.securityOperations()
                             .getUserAuthorizations(config.getUsername()));
 
-            LOG.debug(String.format("Adding range %s",
-                    split.getRangeHandle().getRange()));
             scan.setRange(split.getRangeHandle().getRange());
         } catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
