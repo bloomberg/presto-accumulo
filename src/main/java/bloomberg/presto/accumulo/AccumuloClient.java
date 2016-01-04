@@ -282,8 +282,10 @@ public class AccumuloClient {
             Range range) throws TableNotFoundException, AccumuloException,
                     AccumuloSecurityException {
 
-        String startKey = range.getStartKey().getRow().toString();
-        String endKey = range.getEndKey().getRow().toString();
+        String startKey = range.getStartKey() != null
+                ? range.getStartKey().getRow().toString() : null;
+        String endKey = range.getEndKey() != null
+                ? range.getEndKey().getRow().toString() : null;
 
         RangeHandle rHandle = new RangeHandle(startKey,
                 range.isStartKeyInclusive(), endKey, range.isEndKeyInclusive());
