@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.SortedMap;
 
 import org.apache.accumulo.core.client.lexicoder.BytesLexicoder;
 import org.apache.accumulo.core.client.lexicoder.DoubleLexicoder;
@@ -18,7 +17,6 @@ import org.apache.accumulo.core.client.lexicoder.LongLexicoder;
 import org.apache.accumulo.core.client.lexicoder.StringLexicoder;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.PrestoException;
@@ -36,13 +34,11 @@ import com.facebook.presto.spi.type.VarcharType;
 
 import bloomberg.presto.accumulo.Types;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
-import io.airlift.log.Logger;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class LexicoderRowSerializer implements AccumuloRowSerializer {
     public static final byte[] TRUE = new byte[] { 1 };
     public static final byte[] FALSE = new byte[] { 0 };
-    private static final Logger LOG = Logger.get(LexicoderRowSerializer.class);
     private static Map<Type, Lexicoder> lexicoderMap = null;
     private static Map<String, ListLexicoder<?>> listLexicoders = new HashMap<>();
     private static Map<String, MapLexicoder<?, ?>> mapLexicoders = new HashMap<>();
@@ -75,28 +71,27 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
         }
 
         q2pc.put(qual, name);
-
-        LOG.debug("Added mapping for presto col %s, %s:%s", name, fam, qual);
     }
 
     @Override
-    public void deserialize(Entry<Key, Value> row) throws IOException {
+    public void reset() {
         columnValues.clear();
+    }
 
-        SortedMap<Key, Value> decodedRow = WholeRowIterator
-                .decodeRow(row.getKey(), row.getValue());
-
-        decodedRow.entrySet().iterator().next().getKey().getRow(rowId);
-        columnValues.put(AccumuloMetadataManager.ROW_ID_COLUMN_NAME,
-                rowId.copyBytes());
-
-        for (Entry<Key, Value> kvp : decodedRow.entrySet()) {
-            kvp.getKey().getColumnFamily(cf);
-            kvp.getKey().getColumnQualifier(cq);
-            value.set(kvp.getValue().get());
-            columnValues.put(f2q2pc.get(cf.toString()).get(cq.toString()),
-                    value.copyBytes());
+    @Override
+    public void deserialize(Entry<Key, Value> kvp) throws IOException {
+        if (!columnValues
+                .containsKey(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
+            kvp.getKey().getRow(rowId);
+            columnValues.put(AccumuloMetadataManager.ROW_ID_COLUMN_NAME,
+                    rowId.copyBytes());
         }
+
+        kvp.getKey().getColumnFamily(cf);
+        kvp.getKey().getColumnQualifier(cq);
+        value.set(kvp.getValue().get());
+        columnValues.put(f2q2pc.get(cf.toString()).get(cq.toString()),
+                value.copyBytes());
     }
 
     @Override

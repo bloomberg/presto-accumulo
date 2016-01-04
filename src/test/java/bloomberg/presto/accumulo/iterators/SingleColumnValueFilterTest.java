@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
@@ -12,8 +13,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 
+import org.apache.accumulo.core.data.ByteSequence;
 import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.iterators.IteratorEnvironment;
+import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -46,11 +51,12 @@ public class SingleColumnValueFilterTest {
 
         SingleColumnValueFilter filter = new SingleColumnValueFilter();
         filter.validateOptions(opts);
-        filter.init(null, opts, null);
 
         Value vTestValue = new Value(
                 LexicoderRowSerializer.getLexicoder(type).encode(testValue));
-        return filter.accept(testKey, vTestValue);
+
+        filter.init(new TestKeyValueIterator(testKey, vTestValue), opts, null);
+        return filter.acceptRow(new TestKeyValueIterator(testKey, vTestValue));
     }
 
     public void testBigint(CompareOp op, BiFunction<Long, Long, Boolean> func)
@@ -638,5 +644,58 @@ public class SingleColumnValueFilterTest {
     @Test
     public void testVarcharGreaterOrEqual() throws Exception {
         testVarchar(CompareOp.GREATER_OR_EQUAL, (x, y) -> x.compareTo(y) >= 0);
+    }
+
+    public class TestKeyValueIterator
+            implements SortedKeyValueIterator<Key, Value> {
+
+        private Key testKey;
+        private Value testValue;
+        private boolean read = false;
+
+        public TestKeyValueIterator(Key testKey, Value testValue) {
+            this.testKey = testKey;
+            this.testValue = testValue;
+        }
+
+        @Override
+        public void init(SortedKeyValueIterator<Key, Value> source,
+                Map<String, String> options, IteratorEnvironment env)
+                        throws IOException {
+
+        }
+
+        @Override
+        public boolean hasTop() {
+            boolean ret = !read;
+            read = true;
+            return ret;
+        }
+
+        @Override
+        public void next() throws IOException {
+        }
+
+        @Override
+        public void seek(Range range, Collection<ByteSequence> columnFamilies,
+                boolean inclusive) throws IOException {
+        }
+
+        @Override
+        public Key getTopKey() {
+            return testKey;
+        }
+
+        @Override
+        public Value getTopValue() {
+            return testValue;
+        }
+
+        @Override
+        public SortedKeyValueIterator<Key, Value> deepCopy(
+                IteratorEnvironment env) {
+            return new TestKeyValueIterator(testKey, testValue);
+        }
+
     }
 }

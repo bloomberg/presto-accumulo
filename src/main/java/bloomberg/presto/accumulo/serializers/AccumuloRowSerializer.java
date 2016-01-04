@@ -35,7 +35,9 @@ public interface AccumuloRowSerializer {
 
     public void setMapping(String name, String fam, String qual);
 
-    public void deserialize(Entry<Key, Value> row) throws IOException;
+    public void reset();
+
+    public void deserialize(Entry<Key, Value> kvp) throws IOException;
 
     public boolean isNull(String name);
 

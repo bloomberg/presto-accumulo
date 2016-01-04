@@ -32,13 +32,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
-import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
 
@@ -68,8 +68,6 @@ import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 
 public class AccumuloRecordCursor implements RecordCursor {
-
-    private static final Logger LOG = Logger.get(AccumuloRecordCursor.class);
     private final List<AccumuloColumnHandle> cHandles;
     private final String[] fieldToColumnName;
 
@@ -79,6 +77,9 @@ public class AccumuloRecordCursor implements RecordCursor {
     private final Iterator<Entry<Key, Value>> iterator;
     private final AccumuloRowSerializer serializer;
     private final ConnectorSession session;
+    private Entry<Key, Value> prevKV;
+    private Text prevRowID = new Text();
+    private Text rowID = new Text();
 
     public AccumuloRecordCursor(ConnectorSession session,
             AccumuloRowSerializer serializer, Scanner scan,
@@ -88,15 +89,13 @@ public class AccumuloRecordCursor implements RecordCursor {
         this.cHandles = requireNonNull(cHandles, "cHandles is null");
         this.scan = requireNonNull(scan, "scan is null");
 
-        LOG.debug("Number of column handles is " + cHandles.size());
-
         // if there are no columns, or the only column is the row ID, then
         // configure a scan iterator/serializer to only return the row IDs
         if (cHandles.size() == 0
                 || (cHandles.size() == 1 && cHandles.get(0).getName()
                         .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME))) {
-            this.scan.addScanIterator(new IteratorSetting(Integer.MAX_VALUE,
-                    "firstentryiter", FirstEntryInRowIterator.class));
+            this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter",
+                    FirstEntryInRowIterator.class));
 
             this.serializer = new RowOnlySerializer();
             fieldToColumnName = new String[1];
@@ -105,8 +104,6 @@ public class AccumuloRecordCursor implements RecordCursor {
             this.serializer = requireNonNull(serializer, "serializer is null");
 
             Text fam = new Text(), qual = new Text();
-            this.scan.addScanIterator(new IteratorSetting(Integer.MAX_VALUE,
-                    "whole-row-iterator", WholeRowIterator.class));
             fieldToColumnName = new String[cHandles.size()];
 
             for (int i = 0; i < cHandles.size(); ++i) {
@@ -115,7 +112,6 @@ public class AccumuloRecordCursor implements RecordCursor {
 
                 if (!cHandle.getName()
                         .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
-                    LOG.debug("Set column mapping %s", cHandle);
                     serializer.setMapping(cHandle.getName(),
                             cHandle.getColumnFamily(),
                             cHandle.getColumnQualifier());
@@ -123,11 +119,6 @@ public class AccumuloRecordCursor implements RecordCursor {
                     fam.set(cHandle.getColumnFamily());
                     qual.set(cHandle.getColumnQualifier());
                     this.scan.fetchColumn(fam, qual);
-                    LOG.debug("Column %s maps to Accumulo column %s:%s",
-                            cHandle.getName(), fam, qual);
-                } else {
-                    LOG.debug("Column %s maps to Accumulo row ID",
-                            cHandle.getName());
                 }
             }
         }
@@ -161,12 +152,54 @@ public class AccumuloRecordCursor implements RecordCursor {
     @Override
     public boolean advanceNextPosition() {
         try {
-            if (iterator.hasNext()) {
-                serializer.deserialize(iterator.next());
-                return true;
-            } else {
-                return false;
+            // if the iterator doesn't have any more values
+            if (!iterator.hasNext()) {
+                // deserialize final KV pair
+                // this accounts for the edge case when the last read KV pair
+                // was a new row and we broke out of the below loop
+                if (prevKV != null) {
+                    serializer.reset();
+                    serializer.deserialize(prevKV);
+                    prevKV = null;
+                    return true;
+                } else {
+                    // else we are super done
+                    return false;
+                }
             }
+
+            // deserialize the previous KV pair, resetting the serializer first
+            // this occurs when we need to switch to a new row
+            if (prevRowID.getLength() != 0) {
+                serializer.reset();
+                serializer.deserialize(prevKV);
+            }
+
+            boolean braek = false;
+            while (iterator.hasNext() && !braek) {
+                Entry<Key, Value> kv = iterator.next();
+                kv.getKey().getRow(rowID);
+                // if the row IDs are equivalent (or there is no previous row
+                // ID), deserialize the KV pairs
+                if (rowID.equals(prevRowID) || prevRowID.getLength() == 0) {
+                    serializer.deserialize(kv);
+                } else {
+                    // if they are different, we need to break out of the loop
+                    braek = true;
+                }
+                // set our 'previous' member variables
+                prevKV = kv;
+                prevRowID.set(rowID);
+            }
+
+            // if we didn't break out of the loop, we ran out of KV pairs
+            // which means we have deserialized all of them
+            if (!braek) {
+                prevKV = null;
+            }
+
+            // return true to process the row
+            return true;
         } catch (IOException e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
@@ -256,18 +289,13 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     private void addColumnIterators(
             List<AccumuloColumnConstraint> constraints) {
-        int priority = 1;
+        AtomicInteger priority = new AtomicInteger(1);
         for (AccumuloColumnConstraint col : constraints) {
             Domain dom = col.getDomain();
-
-            Logger.get(getClass()).debug("COLUMN %s HAS %d RANGES",
-                    col.getName(), dom.getValues().getRanges().getRangeCount());
 
             List<IteratorSetting> settings = new ArrayList<>(
                     dom.getValues().getRanges().getRangeCount());
             for (Range r : dom.getValues().getRanges().getOrderedRanges()) {
-                Logger.get(getClass()).debug("RANGE %s", r.toString(session));
-
                 IteratorSetting cfg = getFilterSettingFromRange(col, r,
                         priority);
                 if (cfg != null) {
@@ -278,14 +306,16 @@ public class AccumuloRecordCursor implements RecordCursor {
             if (settings.size() == 1) {
                 this.scan.addScanIterator(settings.get(0));
             } else if (settings.size() > 0) {
-                this.scan.addScanIterator(OrFilter.orFilters(priority++,
-                        settings.toArray(new IteratorSetting[0])));
+                IteratorSetting ore = OrFilter.orFilters(
+                        priority.getAndIncrement(),
+                        settings.toArray(new IteratorSetting[0]));
+                this.scan.addScanIterator(ore);
             } // else no-op
         }
     }
 
     private IteratorSetting getFilterSettingFromRange(
-            AccumuloColumnConstraint col, Range r, int priority) {
+            AccumuloColumnConstraint col, Range r, AtomicInteger priority) {
 
         if (r.isAll()) {
             // [min, max]
@@ -296,8 +326,8 @@ public class AccumuloRecordCursor implements RecordCursor {
             // value = value
             Logger.get(getClass()).debug("RANGE %s IS SINGLE VALUE",
                     r.toString(session));
-            return getIteratorSetting(priority++, col, CompareOp.EQUAL,
-                    r.getType(), r.getSingleValue());
+            return getIteratorSetting(priority.getAndIncrement(), col,
+                    CompareOp.EQUAL, r.getType(), r.getSingleValue());
         } else {
             if (r.getLow().isLowerUnbounded()) {
                 Logger.get(getClass()).debug("RANGE %s IS LOWER UNBOUNDED",
@@ -305,16 +335,16 @@ public class AccumuloRecordCursor implements RecordCursor {
                 // (min, x] WHERE x < 10
                 CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
                         ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
-                return getIteratorSetting(priority++, col, op, r.getType(),
-                        r.getHigh().getValue());
+                return getIteratorSetting(priority.getAndIncrement(), col, op,
+                        r.getType(), r.getHigh().getValue());
             } else if (r.getHigh().isUpperUnbounded()) {
                 Logger.get(getClass()).debug("RANGE %s IS UPPER UNBOUNDED",
                         r.toString(session));
                 // [(x, max] WHERE x > 10
                 CompareOp op = r.getLow().getBound() == Bound.EXACTLY
                         ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
-                return getIteratorSetting(priority++, col, op, r.getType(),
-                        r.getLow().getValue());
+                return getIteratorSetting(priority.getAndIncrement(), col, op,
+                        r.getType(), r.getLow().getValue());
             } else {
                 Logger.get(getClass()).debug("RANGE %s IS BOUNDED",
                         r.toString(session));
@@ -322,16 +352,19 @@ public class AccumuloRecordCursor implements RecordCursor {
                 CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
                         ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
 
-                IteratorSetting high = getIteratorSetting(priority++, col, op,
-                        r.getType(), r.getHigh().getValue());
+                IteratorSetting high = getIteratorSetting(
+                        priority.getAndIncrement(), col, op, r.getType(),
+                        r.getHigh().getValue());
 
                 op = r.getLow().getBound() == Bound.EXACTLY
                         ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
 
-                IteratorSetting low = getIteratorSetting(priority++, col, op,
-                        r.getType(), r.getLow().getValue());
+                IteratorSetting low = getIteratorSetting(
+                        priority.getAndIncrement(), col, op, r.getType(),
+                        r.getLow().getValue());
 
-                return AndFilter.andFilters(priority++, high, low);
+                return AndFilter.andFilters(priority.getAndIncrement(), high,
+                        low);
             }
         }
     }
@@ -340,9 +373,6 @@ public class AccumuloRecordCursor implements RecordCursor {
     private IteratorSetting getIteratorSetting(int priority,
             AccumuloColumnConstraint col, CompareOp op, Type type,
             Object value) {
-
-        LOG.debug(String.format("Adding %s filter at value %s", op, value));
-
         String name = String.format("nullable-single-value:%s:%d",
                 col.getName(), priority);
         byte[] valueBytes;
@@ -369,8 +399,15 @@ public class AccumuloRecordCursor implements RecordCursor {
         }
 
         @Override
+        public void reset() {
+            r.clear();
+        }
+
+        @Override
         public void deserialize(Entry<Key, Value> row) throws IOException {
-            row.getKey().getRow(r);
+            if (r.getLength() == 0) {
+                row.getKey().getRow(r);
+            }
         }
 
         @Override

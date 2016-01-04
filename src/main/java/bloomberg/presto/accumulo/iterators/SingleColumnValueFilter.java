@@ -6,9 +6,10 @@ import java.util.Map;
 
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.core.iterators.Filter;
 import org.apache.accumulo.core.iterators.IteratorEnvironment;
+import org.apache.accumulo.core.iterators.OptionDescriber;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
+import org.apache.accumulo.core.iterators.user.RowFilter;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.io.Text;
@@ -23,7 +24,8 @@ import com.google.common.collect.ImmutableMap;
 
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 
-public class SingleColumnValueFilter extends Filter {
+public class SingleColumnValueFilter extends RowFilter
+        implements OptionDescriber {
 
     private static final Logger LOG = Logger
             .getLogger(SingleColumnValueFilter.class);
@@ -46,32 +48,21 @@ public class SingleColumnValueFilter extends Filter {
     private Text cf = new Text();
     private Text cq = new Text();
 
-    public static Map<String, String> getProperties(String family,
-            String qualifier, CompareOp op, Type type, byte[] value) {
-
-        Map<String, String> opts = new HashMap<>();
-
-        opts.put(CF, family);
-        opts.put(CQ, qualifier);
-        opts.put(COMPARE_OP, op.toString());
-        opts.put(TYPE, type.getDisplayName());
-        opts.put(VALUE, Hex.encodeHexString(value));
-
-        return opts;
-    }
-
     @Override
-    public boolean accept(Key k, Value v) {
-        boolean c = acceptHelper(k, v);
-        if (c) {
-            LOG.debug(String.format("ACCEPT %s %s", k, v));
-        } else {
-            LOG.debug(String.format("REJECT %s %s", k, v));
+    public boolean acceptRow(SortedKeyValueIterator<Key, Value> rowIterator)
+            throws IOException {
+        while (rowIterator.hasTop()) {
+            if (!acceptSingleKeyValue(rowIterator.getTopKey(),
+                    rowIterator.getTopValue())) {
+                return false;
+            }
+            rowIterator.next();
         }
-        return c;
+        return true;
     }
 
-    private boolean acceptHelper(Key k, Value v) {
+    private boolean acceptSingleKeyValue(Key k, Value v) {
+        LOG.debug(String.format("Key: %s Value: %s", k, v));
         if (compareOp == CompareOp.NO_OP) {
             return true;
         }
@@ -161,8 +152,7 @@ public class SingleColumnValueFilter extends Filter {
 
         // Create a new SingleColumnValueFilter object based on the parent's
         // deepCopy
-        SingleColumnValueFilter copy = (SingleColumnValueFilter) super.deepCopy(
-                env);
+        SingleColumnValueFilter copy = new SingleColumnValueFilter();
 
         // Replicate all of the current options into the copy
         copy.columnFamily = new Text(this.columnFamily);
@@ -186,7 +176,6 @@ public class SingleColumnValueFilter extends Filter {
                         .put(COMPARE_OP, "CompareOp enum type for lexicographic comparison, required")
                         .put(TYPE, "Presto Type for logging, required")
                         .put(VALUE, "Hex-encoded bytes of the value for comparison, required")
-                        .put(NEGATE, "default false keeps k/v that pass accept method, true rejects k/v that pass accept method")
                         .build(),
                 // @formatter:on
                 null);
@@ -194,8 +183,6 @@ public class SingleColumnValueFilter extends Filter {
 
     @Override
     public boolean validateOptions(Map<String, String> options) {
-        super.validateOptions(options);
-        LOG.debug("validate " + options);
         checkNotNull(CF, options);
         checkNotNull(CQ, options);
         checkNotNull(COMPARE_OP, options);
@@ -204,7 +191,6 @@ public class SingleColumnValueFilter extends Filter {
 
         try {
             CompareOp.valueOf(options.get(COMPARE_OP));
-            LOG.debug("compare op configured");
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Unknown value of " + COMPARE_OP
                     + ":" + options.get(COMPARE_OP));
@@ -212,7 +198,6 @@ public class SingleColumnValueFilter extends Filter {
 
         try {
             new Value(Hex.decodeHex(options.get(VALUE).toCharArray()));
-            LOG.debug("value configured");
         } catch (DecoderException e) {
             throw new IllegalArgumentException("Option " + VALUE
                     + " is not a hex-encoded value: " + options.get(VALUE), e);
@@ -224,8 +209,21 @@ public class SingleColumnValueFilter extends Filter {
         if (options.get(opt) == null) {
             throw new IllegalArgumentException(
                     "Option " + opt + " is required");
-        } else {
-            LOG.debug(opt + " configured");
         }
     }
+
+    public static Map<String, String> getProperties(String family,
+            String qualifier, CompareOp op, Type type, byte[] value) {
+
+        Map<String, String> opts = new HashMap<>();
+
+        opts.put(CF, family);
+        opts.put(CQ, qualifier);
+        opts.put(COMPARE_OP, op.toString());
+        opts.put(TYPE, type.getDisplayName());
+        opts.put(VALUE, Hex.encodeHexString(value));
+
+        return opts;
+    }
+
 }

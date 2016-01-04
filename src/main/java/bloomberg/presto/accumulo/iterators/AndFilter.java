@@ -1,16 +1,20 @@
 package bloomberg.presto.accumulo.iterators;
 
+import java.io.IOException;
+
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.core.iterators.Filter;
+import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
+import org.apache.accumulo.core.iterators.user.RowFilter;
 
 public class AndFilter extends AbstractBooleanFilter {
 
     @Override
-    public boolean accept(Key k, Value v) {
-        for (Filter f : filters) {
-            if (!f.accept(k, v)) {
+    public boolean acceptRow(SortedKeyValueIterator<Key, Value> rowIterator)
+            throws IOException {
+        for (RowFilter f : filters) {
+            if (!f.acceptRow(rowIterator)) {
                 return false;
             }
         }
