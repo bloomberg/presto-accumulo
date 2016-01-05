@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo.benchmark;
+package bloomberg.presto.accumulo.integration.tests;
 
 import java.io.BufferedReader;
 import java.io.File;

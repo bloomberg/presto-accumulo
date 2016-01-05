@@ -103,7 +103,7 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
     public Block getArray(String name, Type type) {
         Type elementType = Types.getElementType(type);
         return AccumuloRowSerializer.getBlockFromArray(elementType,
-                getListLexicoder(type).decode(getFieldValue(name)));
+                decode(type, getFieldValue(name)));
     }
 
     @Override
@@ -113,7 +113,7 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
         List array = AccumuloRowSerializer.getArrayFromBlock(elementType,
                 block);
 
-        text.set(getListLexicoder(type).encode(array));
+        text.set(encode(type, array));
     }
 
     @Override
@@ -123,101 +123,101 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void setBoolean(Text text, Boolean value) {
-        text.set(
-                getLexicoder(BooleanType.BOOLEAN).encode(value ? TRUE : FALSE));
+        text.set(encode(BooleanType.BOOLEAN, value ? TRUE : FALSE));
     }
 
     @Override
     public Date getDate(String name) {
-        return new Date((Long) (getLexicoder(BigintType.BIGINT)
-                .decode(getFieldValue(name))));
+        return new Date(decode(BigintType.BIGINT, getFieldValue(name)));
     }
 
     @Override
     public void setDate(Text text, Date value) {
-        text.set(getLexicoder(BigintType.BIGINT).encode(value.getTime()));
+        text.set(encode(BigintType.BIGINT, value.getTime()));
     }
 
     @Override
     public double getDouble(String name) {
-        return (Double) getLexicoder(DoubleType.DOUBLE)
-                .decode(getFieldValue(name));
+        return decode(DoubleType.DOUBLE, getFieldValue(name));
     }
 
     @Override
     public void setDouble(Text text, Double value) {
-        text.set(getLexicoder(DoubleType.DOUBLE).encode(value));
+        text.set(encode(DoubleType.DOUBLE, value));
     }
 
     @Override
     public long getLong(String name) {
-        return (Long) getLexicoder(BigintType.BIGINT)
-                .decode(getFieldValue(name));
+        return decode(BigintType.BIGINT, getFieldValue(name));
     }
 
     @Override
     public void setLong(Text text, Long value) {
-        text.set(getLexicoder(BigintType.BIGINT).encode(value));
+        text.set(encode(BigintType.BIGINT, value));
     }
 
     @Override
     public Block getMap(String name, Type type) {
         return AccumuloRowSerializer.getBlockFromMap(type,
-                getMapLexicoder(type).decode(getFieldValue(name)));
+                decode(type, getFieldValue(name)));
     }
 
     @Override
     public void setMap(Text text, Type type, Block block) {
-        text.set(getMapLexicoder(type)
-                .encode(AccumuloRowSerializer.getMapFromBlock(type, block)));
+        text.set(encode(type,
+                AccumuloRowSerializer.getMapFromBlock(type, block)));
     }
 
     @Override
     public Time getTime(String name) {
-        return new Time((Long) getLexicoder(BigintType.BIGINT)
-                .decode(getFieldValue(name)));
+        return new Time(decode(BigintType.BIGINT, getFieldValue(name)));
     }
 
     @Override
     public void setTime(Text text, Time value) {
-        text.set(getLexicoder(BigintType.BIGINT).encode(value.getTime()));
+        text.set(encode(BigintType.BIGINT, value.getTime()));
     }
 
     @Override
     public Timestamp getTimestamp(String name) {
-        return new Timestamp((Long) getLexicoder(BigintType.BIGINT)
-                .decode(getFieldValue(name)));
+        return new Timestamp(decode(BigintType.BIGINT, getFieldValue(name)));
     }
 
     @Override
     public void setTimestamp(Text text, Timestamp value) {
-        text.set(getLexicoder(BigintType.BIGINT).encode(value.getTime()));
+        text.set(encode(BigintType.BIGINT, value.getTime()));
     }
 
     @Override
     public byte[] getVarbinary(String name) {
-        return (byte[]) getLexicoder(VarbinaryType.VARBINARY)
-                .decode(getFieldValue(name));
+        return decode(VarbinaryType.VARBINARY, getFieldValue(name));
     }
 
     @Override
     public void setVarbinary(Text text, byte[] value) {
-        text.set(getLexicoder(VarbinaryType.VARBINARY).encode(value));
+        text.set(encode(VarbinaryType.VARBINARY, value));
     }
 
     @Override
     public String getVarchar(String name) {
-        return (String) getLexicoder(VarcharType.VARCHAR)
-                .decode(getFieldValue(name));
+        return decode(VarcharType.VARCHAR, getFieldValue(name));
     }
 
     @Override
     public void setVarchar(Text text, String value) {
-        text.set(getLexicoder(VarcharType.VARCHAR).encode(value));
+        text.set(encode(VarcharType.VARCHAR, value));
     }
 
     private byte[] getFieldValue(String name) {
         return columnValues.get(name);
+    }
+
+    public static byte[] encode(Type type, Object v) {
+        return getLexicoder(type).encode(v);
+    }
+
+    public static <T> T decode(Type type, byte[] v) {
+        return (T) getLexicoder(type).decode(v);
     }
 
     public static Lexicoder getLexicoder(Type type) {

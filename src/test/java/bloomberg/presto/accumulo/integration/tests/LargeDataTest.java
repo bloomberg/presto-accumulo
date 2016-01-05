@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo;
+package bloomberg.presto.accumulo.integration.tests;
 
 import java.io.File;
 import java.sql.Date;
@@ -11,7 +11,7 @@ import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.DateType;
 import com.facebook.presto.spi.type.VarcharType;
 
-import bloomberg.presto.accumulo.benchmark.QueryDriver;
+import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 

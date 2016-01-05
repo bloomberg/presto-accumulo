@@ -18,7 +18,6 @@ import org.apache.log4j.Logger;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeSignature;
 import com.facebook.presto.spi.type.VarbinaryType;
-import com.facebook.presto.spi.type.VarcharType;
 import com.facebook.presto.type.TypeRegistry;
 import com.google.common.collect.ImmutableMap;
 
@@ -47,10 +46,16 @@ public class SingleColumnValueFilter extends RowFilter
     private Type type;
     private Text cf = new Text();
     private Text cq = new Text();
+    private boolean columnFound = false;
 
     @Override
     public boolean acceptRow(SortedKeyValueIterator<Key, Value> rowIterator)
             throws IOException {
+        if (compareOp == CompareOp.NO_OP) {
+            return true;
+        }
+
+        columnFound = false;
         while (rowIterator.hasTop()) {
             if (!acceptSingleKeyValue(rowIterator.getTopKey(),
                     rowIterator.getTopValue())) {
@@ -58,47 +63,32 @@ public class SingleColumnValueFilter extends RowFilter
             }
             rowIterator.next();
         }
-        return true;
+        return columnFound;
     }
 
     private boolean acceptSingleKeyValue(Key k, Value v) {
         LOG.debug(String.format("Key: %s Value: %s", k, v));
-        if (compareOp == CompareOp.NO_OP) {
-            return true;
-        }
 
         k.getColumnFamily(cf);
         if (columnFamily.equals(cf)) {
             k.getColumnQualifier(cq);
             if (columnQualifier.equals(cq)) {
+                columnFound = true;
                 int compareResult = v.compareTo(value);
-                if (type.equals(VarcharType.VARCHAR)) {
-                    String tv = (String) LexicoderRowSerializer
-                            .getLexicoder(type).decode(v.get());
-                    String fv = (String) LexicoderRowSerializer
-                            .getLexicoder(type).decode(value.get());
-                    LOG.debug(String.format(
-                            "%s COMPARE OF VALUE %s AGAINST %s IS %d",
-                            compareOp, tv, fv, compareResult));
-                } else if (type.equals(VarbinaryType.VARBINARY)) {
-                    LOG.debug(String.format(
-                            "%s COMPARE OF VALUE %s AGAINST %s IS %d",
-                            compareOp,
-                            Hex.encodeHexString((byte[]) LexicoderRowSerializer
-                                    .getLexicoder(type).decode(v.get())),
-                            Hex.encodeHexString((byte[]) LexicoderRowSerializer
-                                    .getLexicoder(type).decode(value.get())),
-                            compareResult));
+                String tv, fv;
+                if (type.equals(VarbinaryType.VARBINARY)) {
+                    tv = Hex.encodeHexString(
+                            LexicoderRowSerializer.decode(type, v.get()));
+                    fv = Hex.encodeHexString(
+                            LexicoderRowSerializer.decode(type, value.get()));
                 } else {
-                    LOG.debug(String.format(
-                            "%s COMPARE OF VALUE %s AGAINST %s IS %d",
-                            compareOp,
-                            LexicoderRowSerializer.getLexicoder(type)
-                                    .decode(v.get()),
-                            LexicoderRowSerializer.getLexicoder(type)
-                                    .decode(value.get()),
-                            compareResult));
+                    tv = LexicoderRowSerializer.decode(type, v.get())
+                            .toString();
+                    fv = LexicoderRowSerializer.decode(type, value.get())
+                            .toString();
                 }
+                LOG.debug(String.format("%s compareTo(%s,%s) = %d", compareOp,
+                        tv, fv, compareResult));
                 switch (compareOp) {
                 case LESS:
                     return compareResult < 0;
