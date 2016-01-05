@@ -2,6 +2,7 @@ package bloomberg.presto.accumulo.iterators;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.data.Key;
@@ -28,5 +29,11 @@ public class OrFilter extends AbstractBooleanFilter {
     public static IteratorSetting orFilters(int priority,
             IteratorSetting... configs) {
         return combineFilters(OrFilter.class, priority, configs);
+    }
+
+    public static IteratorSetting orFilters(int priority,
+            List<IteratorSetting> configs) {
+        return combineFilters(OrFilter.class, priority,
+                configs.toArray(new IteratorSetting[0]));
     }
 }

@@ -290,27 +290,34 @@ public class AccumuloRecordCursor implements RecordCursor {
     private void addColumnIterators(
             List<AccumuloColumnConstraint> constraints) {
         AtomicInteger priority = new AtomicInteger(1);
+        List<IteratorSetting> allSettings = new ArrayList<>();
         for (AccumuloColumnConstraint col : constraints) {
             Domain dom = col.getDomain();
 
-            List<IteratorSetting> settings = new ArrayList<>(
+            List<IteratorSetting> colSettings = new ArrayList<>(
                     dom.getValues().getRanges().getRangeCount());
             for (Range r : dom.getValues().getRanges().getOrderedRanges()) {
                 IteratorSetting cfg = getFilterSettingFromRange(col, r,
                         priority);
                 if (cfg != null) {
-                    settings.add(cfg);
+                    colSettings.add(cfg);
                 }
             }
 
-            if (settings.size() == 1) {
-                this.scan.addScanIterator(settings.get(0));
-            } else if (settings.size() > 0) {
+            if (colSettings.size() == 1) {
+                allSettings.add(colSettings.get(0));
+            } else if (colSettings.size() > 0) {
                 IteratorSetting ore = OrFilter.orFilters(
                         priority.getAndIncrement(),
-                        settings.toArray(new IteratorSetting[0]));
-                this.scan.addScanIterator(ore);
+                        colSettings.toArray(new IteratorSetting[0]));
+                allSettings.add(ore);
             } // else no-op
+        }
+
+        if (allSettings.size() == 1) {
+            this.scan.addScanIterator(allSettings.get(0));
+        } else if (allSettings.size() > 0) {
+            this.scan.addScanIterator(AndFilter.andFilters(1, allSettings));
         }
     }
 
