@@ -215,13 +215,13 @@ public class DataTypeTest {
 
     @Test
     public void testSelectBoolean() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male",
                 "metadata", "male", BooleanType.BOOLEAN);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Boolean(true), BooleanType.BOOLEAN);
+                .addField(true, BooleanType.BOOLEAN);
         Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Boolean(false), BooleanType.BOOLEAN);
+                .addField(false, BooleanType.BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -231,8 +231,8 @@ public class DataTypeTest {
 
     @Test
     public void testSelectDate() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
                 .addField(new Date(new GregorianCalendar(2015, 12, 14).getTime()
@@ -249,7 +249,7 @@ public class DataTypeTest {
 
     @Test
     public void testSelectDouble() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("rate",
                 "metadata", "rate", DoubleType.DOUBLE);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
@@ -360,8 +360,8 @@ public class DataTypeTest {
 
     @Test
     public void testSelectTime() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "last_login", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "last_login", "metadata", "last_login", TimeType.TIME);
 
         Calendar cal = new GregorianCalendar();
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
@@ -379,8 +379,9 @@ public class DataTypeTest {
 
     @Test
     public void testSelectTimestamp() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "last_login", TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "last_login", "metadata", "last_login",
+                TimestampType.TIMESTAMP);
 
         Calendar cal = new GregorianCalendar();
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
@@ -400,7 +401,7 @@ public class DataTypeTest {
 
     @Test
     public void testSelectVarbinary() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
                 "metadata", "bytes", VarbinaryType.VARBINARY);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
@@ -419,7 +420,7 @@ public class DataTypeTest {
 
     @Test
     public void testSelectVarchar() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("name",
                 "metadata", "name", VarcharType.VARCHAR);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)

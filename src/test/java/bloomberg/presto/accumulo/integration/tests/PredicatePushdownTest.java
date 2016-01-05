@@ -53,156 +53,6 @@ public class PredicatePushdownTest {
     }
 
     @Test
-    @Ignore
-    public void testSelectArray() throws Exception {
-        Type elementType = VarcharType.VARCHAR;
-        ArrayType arrayType = new ArrayType(elementType);
-        RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("senders", "metadata", "senders", arrayType);
-
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(AccumuloRowSerializer.getBlockFromArray(elementType,
-                        ImmutableList.of("a", "b", "c")), arrayType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(AccumuloRowSerializer.getBlockFromArray(elementType,
-                        ImmutableList.of("d", "e", "f")), arrayType);
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
-                .runTest();
-    }
-
-    @Test
-    @Ignore
-    public void testSelectNestedArray() throws Exception {
-        ArrayType nestedArrayType = new ArrayType(VarcharType.VARCHAR);
-        ArrayType arrayType = new ArrayType(nestedArrayType);
-        RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("senders", "metadata", "senders", arrayType);
-
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
-                                ImmutableList.of(
-                                        ImmutableList.of("a", "b", "c"),
-                                        ImmutableList.of("d", "e", "f"),
-                                        ImmutableList.of("g", "h", "i"))),
-                        arrayType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
-                                ImmutableList.of(
-                                        ImmutableList.of("j", "k", "l"),
-                                        ImmutableList.of("m", "n", "o"),
-                                        ImmutableList.of("p", "q", "r"))),
-                        arrayType);
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
-                .runTest();
-    }
-
-    @Test
-    @Ignore
-    public void testSelectVeryNestedArray() throws Exception {
-        ArrayType veryNestedArrayType = new ArrayType(VarcharType.VARCHAR);
-        ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
-        ArrayType arrayType = new ArrayType(nestedArrayType);
-
-        RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("senders", "metadata", "senders", arrayType);
-
-        // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
-                        		ImmutableList.of(
-                                    ImmutableList.of(
-                                            ImmutableList.of("a", "b", "c"),
-                                            ImmutableList.of("d", "e", "f"),
-                                            ImmutableList.of("g", "h", "i")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("j", "k", "l"),
-                                            ImmutableList.of("m", "n", "o"),
-                                            ImmutableList.of("p", "q", "r")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("s", "t", "u"),
-                                            ImmutableList.of("v", "w", "x"),
-                                            ImmutableList.of("y", "z", "aa")))),
-                        arrayType);
-        // @formatter:on
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
-    }
-
-    @Test
-    @Ignore
-    public void testSelectUberNestedArray() throws Exception {
-        ArrayType uberNestedArrayType = new ArrayType(VarcharType.VARCHAR);
-        ArrayType veryNestedArrayType = new ArrayType(uberNestedArrayType);
-        ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
-        ArrayType arrayType = new ArrayType(nestedArrayType);
-
-        RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("senders", "metadata", "senders", arrayType);
-
-        // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
-                            ImmutableList.of(
-                                ImmutableList.of(
-                                    ImmutableList.of(
-                                            ImmutableList.of("a", "b", "c"),
-                                            ImmutableList.of("d", "e", "f"),
-                                            ImmutableList.of("g", "h", "i")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("j", "k", "l"),
-                                            ImmutableList.of("m", "n", "o"),
-                                            ImmutableList.of("p", "q", "r")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("s", "t", "u"),
-                                            ImmutableList.of("v", "w", "x"),
-                                            ImmutableList.of("y", "z", "aa"))),
-                                ImmutableList.of(
-                                    ImmutableList.of(
-                                            ImmutableList.of("a", "b", "c"),
-                                            ImmutableList.of("d", "e", "f"),
-                                            ImmutableList.of("g", "h", "i")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("j", "k", "l"),
-                                            ImmutableList.of("m", "n", "o"),
-                                            ImmutableList.of("p", "q", "r")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("s", "t", "u"),
-                                            ImmutableList.of("v", "w", "x"),
-                                            ImmutableList.of("y", "z", "aa"))),
-                                ImmutableList.of(
-                                    ImmutableList.of(
-                                            ImmutableList.of("a", "b", "c"),
-                                            ImmutableList.of("d", "e", "f"),
-                                            ImmutableList.of("g", "h", "i")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("j", "k", "l"),
-                                            ImmutableList.of("m", "n", "o"),
-                                            ImmutableList.of("p", "q", "r")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("s", "t", "u"),
-                                            ImmutableList.of("v", "w", "x"),
-                                            ImmutableList.of("y", "z", "aa"))))),
-                        arrayType);
-        // @formatter:on
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
-    }
-
-    @Test
     public void testSelectBigIntNoWhere() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", BigintType.BIGINT);
@@ -515,23 +365,6 @@ public class PredicatePushdownTest {
     }
 
     @Test
-    @Ignore
-    public void testSelectBoolean() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "male", BooleanType.BOOLEAN);
-
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Boolean(true), BooleanType.BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Boolean(false), BooleanType.BOOLEAN);
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
-                .runTest();
-    }
-
-    @Test
     public void testSelectBigIntWhereRecordKeyIs() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", BigintType.BIGINT);
@@ -582,10 +415,86 @@ public class PredicatePushdownTest {
     }
 
     @Test
+    public void testSelectBooleanIsTrue() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male",
+                "metadata", "male", BooleanType.BOOLEAN);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Boolean(true), BooleanType.BOOLEAN);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Boolean(false), BooleanType.BOOLEAN);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE male = true")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r1)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectBooleanIsFalse() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male",
+                "metadata", "male", BooleanType.BOOLEAN);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(true, BooleanType.BOOLEAN);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(false, BooleanType.BOOLEAN);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE male = false")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectBooleanIsTrueOrFalse() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male",
+                "metadata", "male", BooleanType.BOOLEAN);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(true, BooleanType.BOOLEAN);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(false, BooleanType.BOOLEAN);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE male = true OR male = false")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectBooleanTrueAndFalse() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("male", "metadata", "male", BooleanType.BOOLEAN)
+                .addColumn("human", "metadata", "human", BooleanType.BOOLEAN);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(true, BooleanType.BOOLEAN)
+                .addField(true, BooleanType.BOOLEAN);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(false, BooleanType.BOOLEAN)
+                .addField(true, BooleanType.BOOLEAN);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(true, BooleanType.BOOLEAN)
+                .addField(false, BooleanType.BOOLEAN);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE male = false AND human = true")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
     @Ignore
     public void testSelectDate() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
                 .addField(new Date(new GregorianCalendar(2015, 12, 14).getTime()
@@ -603,7 +512,7 @@ public class PredicatePushdownTest {
     @Test
     @Ignore
     public void testSelectDouble() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("rate",
                 "metadata", "rate", DoubleType.DOUBLE);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
@@ -620,106 +529,9 @@ public class PredicatePushdownTest {
 
     @Test
     @Ignore
-    public void testSelectMap() throws Exception {
-        Type keyType = VarcharType.VARCHAR;
-        Type valueType = BigintType.BIGINT;
-        MapType mapType = new MapType(keyType, valueType);
-        RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("peopleages", "metadata", "peopleages", mapType);
-
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of("a", 1, "b", 2, "c", 3)),
-                        mapType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of("d", 4, "e", 5, "f", 6)),
-                        mapType);
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
-                .runTest();
-    }
-
-    @Test(expected = SQLException.class)
-    @Ignore
-    public void testSelectMapOfArrays() throws Exception {
-        Type elementType = BigintType.BIGINT;
-        Type keyMapType = new ArrayType(elementType);
-        Type valueMapType = new ArrayType(elementType);
-        MapType mapType = new MapType(keyMapType, valueMapType);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo",
-                "metadata", "foo", mapType);
-
-        // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of(
-                                        ImmutableList.of(1, 2, 3),
-                                        ImmutableList.of(1, 2, 3))
-                                ),
-                        mapType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of(
-                                        ImmutableList.of(4, 5, 6),
-                                        ImmutableList.of(4, 5, 6))
-                                ),
-                        mapType);
-        // @formatter:on
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
-                .runTest();
-    }
-
-    @Test(expected = SQLException.class)
-    @Ignore
-    public void testSelectMapOfMaps() throws Exception {
-        Type keyType = VarcharType.VARCHAR;
-        Type valueType = BigintType.BIGINT;
-        Type keyMapType = new MapType(keyType, valueType);
-        Type valueMapType = new MapType(keyType, valueType);
-        MapType mapType = new MapType(keyMapType, valueMapType);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo",
-                "metadata", "foo", mapType);
-
-        // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of(
-                                        ImmutableMap.of("a", 1, "b", 2, "c", 3),
-                                        ImmutableMap.of("a", 1, "b", 2, "c", 3))
-                                ),
-                        mapType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of(
-                                        ImmutableMap.of("d", 4, "e", 5, "f", 6),
-                                        ImmutableMap.of("d", 4, "e", 5, "f", 6))
-                                ),
-                        mapType);
-        // @formatter:on
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
-                .runTest();
-    }
-
-    @Test
-    @Ignore
     public void testSelectTime() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "last_login", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "last_login", "metadata", "last_login", TimeType.TIME);
 
         Calendar cal = new GregorianCalendar();
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
@@ -738,8 +550,9 @@ public class PredicatePushdownTest {
     @Test
     @Ignore
     public void testSelectTimestamp() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "last_login", TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "last_login", "metadata", "last_login",
+                TimestampType.TIMESTAMP);
 
         Calendar cal = new GregorianCalendar();
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
@@ -760,7 +573,7 @@ public class PredicatePushdownTest {
     @Test
     @Ignore
     public void testSelectVarbinary() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
                 "metadata", "bytes", VarbinaryType.VARBINARY);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
@@ -780,7 +593,7 @@ public class PredicatePushdownTest {
     @Test
     @Ignore
     public void testSelectVarchar() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("name",
                 "metadata", "name", VarcharType.VARCHAR);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
@@ -794,5 +607,252 @@ public class PredicatePushdownTest {
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1, r2, r3)
                 .withOutput(r1, r2, r3).runTest();
+    }
+
+    @Test
+    @Ignore
+    public void testSelectArray() throws Exception {
+        Type elementType = VarcharType.VARCHAR;
+        ArrayType arrayType = new ArrayType(elementType);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(AccumuloRowSerializer.getBlockFromArray(elementType,
+                        ImmutableList.of("a", "b", "c")), arrayType);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(AccumuloRowSerializer.getBlockFromArray(elementType,
+                        ImmutableList.of("d", "e", "f")), arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .runTest();
+    }
+
+    @Test
+    @Ignore
+    public void testSelectNestedArray() throws Exception {
+        ArrayType nestedArrayType = new ArrayType(VarcharType.VARCHAR);
+        ArrayType arrayType = new ArrayType(nestedArrayType);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
+                                ImmutableList.of(
+                                        ImmutableList.of("a", "b", "c"),
+                                        ImmutableList.of("d", "e", "f"),
+                                        ImmutableList.of("g", "h", "i"))),
+                        arrayType);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
+                                ImmutableList.of(
+                                        ImmutableList.of("j", "k", "l"),
+                                        ImmutableList.of("m", "n", "o"),
+                                        ImmutableList.of("p", "q", "r"))),
+                        arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .runTest();
+    }
+
+    @Test
+    @Ignore
+    public void testSelectVeryNestedArray() throws Exception {
+        ArrayType veryNestedArrayType = new ArrayType(VarcharType.VARCHAR);
+        ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
+        ArrayType arrayType = new ArrayType(nestedArrayType);
+
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        // @formatter:off
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
+                        		ImmutableList.of(
+                                    ImmutableList.of(
+                                            ImmutableList.of("a", "b", "c"),
+                                            ImmutableList.of("d", "e", "f"),
+                                            ImmutableList.of("g", "h", "i")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("j", "k", "l"),
+                                            ImmutableList.of("m", "n", "o"),
+                                            ImmutableList.of("p", "q", "r")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("s", "t", "u"),
+                                            ImmutableList.of("v", "w", "x"),
+                                            ImmutableList.of("y", "z", "aa")))),
+                        arrayType);
+        // @formatter:on
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
+    }
+
+    @Test
+    @Ignore
+    public void testSelectUberNestedArray() throws Exception {
+        ArrayType uberNestedArrayType = new ArrayType(VarcharType.VARCHAR);
+        ArrayType veryNestedArrayType = new ArrayType(uberNestedArrayType);
+        ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
+        ArrayType arrayType = new ArrayType(nestedArrayType);
+
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        // @formatter:off
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
+                            ImmutableList.of(
+                                ImmutableList.of(
+                                    ImmutableList.of(
+                                            ImmutableList.of("a", "b", "c"),
+                                            ImmutableList.of("d", "e", "f"),
+                                            ImmutableList.of("g", "h", "i")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("j", "k", "l"),
+                                            ImmutableList.of("m", "n", "o"),
+                                            ImmutableList.of("p", "q", "r")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("s", "t", "u"),
+                                            ImmutableList.of("v", "w", "x"),
+                                            ImmutableList.of("y", "z", "aa"))),
+                                ImmutableList.of(
+                                    ImmutableList.of(
+                                            ImmutableList.of("a", "b", "c"),
+                                            ImmutableList.of("d", "e", "f"),
+                                            ImmutableList.of("g", "h", "i")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("j", "k", "l"),
+                                            ImmutableList.of("m", "n", "o"),
+                                            ImmutableList.of("p", "q", "r")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("s", "t", "u"),
+                                            ImmutableList.of("v", "w", "x"),
+                                            ImmutableList.of("y", "z", "aa"))),
+                                ImmutableList.of(
+                                    ImmutableList.of(
+                                            ImmutableList.of("a", "b", "c"),
+                                            ImmutableList.of("d", "e", "f"),
+                                            ImmutableList.of("g", "h", "i")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("j", "k", "l"),
+                                            ImmutableList.of("m", "n", "o"),
+                                            ImmutableList.of("p", "q", "r")),
+                                    ImmutableList.of(
+                                            ImmutableList.of("s", "t", "u"),
+                                            ImmutableList.of("v", "w", "x"),
+                                            ImmutableList.of("y", "z", "aa"))))),
+                        arrayType);
+        // @formatter:on
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
+    }
+
+    @Test
+    @Ignore
+    public void testSelectMap() throws Exception {
+        Type keyType = VarcharType.VARCHAR;
+        Type valueType = BigintType.BIGINT;
+        MapType mapType = new MapType(keyType, valueType);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("peopleages", "metadata", "peopleages", mapType);
+    
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of("a", 1, "b", 2, "c", 3)),
+                        mapType);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of("d", 4, "e", 5, "f", 6)),
+                        mapType);
+    
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .runTest();
+    }
+
+    @Test(expected = SQLException.class)
+    @Ignore
+    public void testSelectMapOfArrays() throws Exception {
+        Type elementType = BigintType.BIGINT;
+        Type keyMapType = new ArrayType(elementType);
+        Type valueMapType = new ArrayType(elementType);
+        MapType mapType = new MapType(keyMapType, valueMapType);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo",
+                "metadata", "foo", mapType);
+    
+        // @formatter:off
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of(
+                                        ImmutableList.of(1, 2, 3),
+                                        ImmutableList.of(1, 2, 3))
+                                ),
+                        mapType);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of(
+                                        ImmutableList.of(4, 5, 6),
+                                        ImmutableList.of(4, 5, 6))
+                                ),
+                        mapType);
+        // @formatter:on
+    
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .runTest();
+    }
+
+    @Test(expected = SQLException.class)
+    @Ignore
+    public void testSelectMapOfMaps() throws Exception {
+        Type keyType = VarcharType.VARCHAR;
+        Type valueType = BigintType.BIGINT;
+        Type keyMapType = new MapType(keyType, valueType);
+        Type valueMapType = new MapType(keyType, valueType);
+        MapType mapType = new MapType(keyMapType, valueMapType);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo",
+                "metadata", "foo", mapType);
+    
+        // @formatter:off
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of(
+                                        ImmutableMap.of("a", 1, "b", 2, "c", 3),
+                                        ImmutableMap.of("a", 1, "b", 2, "c", 3))
+                                ),
+                        mapType);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(
+                        AccumuloRowSerializer.getBlockFromMap(mapType,
+                                ImmutableMap.of(
+                                        ImmutableMap.of("d", 4, "e", 5, "f", 6),
+                                        ImmutableMap.of("d", 4, "e", 5, "f", 6))
+                                ),
+                        mapType);
+        // @formatter:on
+    
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .runTest();
     }
 }

@@ -179,7 +179,7 @@ public class Field {
             if (!(v instanceof Boolean))
                 throw new RuntimeException(
                         "Object is not a Boolean, but " + v.getClass());
-            break;
+            return new Boolean((boolean) v);
         case StandardTypes.DATE:
             if (v instanceof Long)
                 return new Date((Long) v);

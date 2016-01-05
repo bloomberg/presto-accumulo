@@ -50,6 +50,7 @@ import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
 import com.facebook.presto.spi.predicate.Range;
+import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarcharType;
@@ -386,10 +387,15 @@ public class AccumuloRecordCursor implements RecordCursor {
         if (type.equals(VarcharType.VARCHAR)) {
             valueBytes = LexicoderRowSerializer.getLexicoder(type)
                     .encode(((Slice) value).toStringUtf8());
+        } else if (type.equals(BooleanType.BOOLEAN)) {
+            valueBytes = value.equals(Boolean.TRUE)
+                    ? LexicoderRowSerializer.TRUE
+                    : LexicoderRowSerializer.FALSE;
         } else {
             valueBytes = LexicoderRowSerializer.getLexicoder(type)
                     .encode(value);
         }
+
         return new IteratorSetting(priority++, name,
                 SingleColumnValueFilter.class,
                 SingleColumnValueFilter.getProperties(col.getFamily(),
