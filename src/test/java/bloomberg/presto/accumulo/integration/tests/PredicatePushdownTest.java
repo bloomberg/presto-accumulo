@@ -2174,22 +2174,307 @@ public class PredicatePushdownTest {
     }
 
     @Test
-    @Ignore
-    public void testSelectVarchar() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("name",
-                "metadata", "name", VARCHAR);
+    public void testSelectVarcharWhereNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("data", "metadata", "data", VARCHAR)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("Alice",
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc", VARCHAR).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, VARCHAR).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi", VARCHAR).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectVarcharWhereNotNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("data", "metadata", "data", VARCHAR)
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc", VARCHAR).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, VARCHAR).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi", VARCHAR).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data IS NOT NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r3).runTest();
+    }
+
+    @Test
+    public void testSelectVarcharWhereNullOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("data", "metadata", "data", VARCHAR)
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc", VARCHAR).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, VARCHAR).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi", VARCHAR).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE data = 'abc' OR data IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectVarcharLess() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
                 VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("Bob",
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
                 VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("Carol",
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
                 VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data < 'def'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectVarcharLessOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
+                VARCHAR);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data <= 'def'")
                 .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectVarcharEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
+                VARCHAR);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data = 'def'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectVarcharGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
+                VARCHAR);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data > 'def'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectVarcharGreaterOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
+                VARCHAR);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data >= 'def'")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectVarcharLessAndGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
+                VARCHAR);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "data > 'abc' AND " + "data < 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectVarcharLessEqualAndGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
+                VARCHAR);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a",
+                VARCHAR);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl",
+                VARCHAR);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "data > 'abc' AND " + "data <= 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectVarcharLessAndGreaterEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
+                VARCHAR);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a",
+                VARCHAR);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl",
+                VARCHAR);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "data >= 'abc' AND " + "data < 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectVarcharLessEqualAndGreaterEqual() throws Exception {
+
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
+                VARCHAR);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a",
+                VARCHAR);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl",
+                VARCHAR);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "data >= 'abc' AND " + "data <= 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
                 .withOutput(r1, r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectVarcharWithOr() throws Exception {
+
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
+                VARCHAR);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a",
+                VARCHAR);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl",
+                VARCHAR);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField("mno",
+                VARCHAR);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE ("
+                        + "(data > 'abc' AND " + "data <= 'ghi')) OR ("
+                        + "(data >= 'jkl' AND " + "data < 'mno'))")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r2, r3, r5).runTest();
+    }
+
+    @Test
+    public void testSelectVarcharInRange() throws Exception {
+
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data",
+                "metadata", "data", VARCHAR);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi",
+                VARCHAR);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a",
+                VARCHAR);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl",
+                VARCHAR);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField("mno",
+                VARCHAR);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE data IN ('abc', 'ghi', 'jkl', 'a')")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r1, r3, r5, r4).runTest();
     }
 
     @Test
