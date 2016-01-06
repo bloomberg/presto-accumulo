@@ -14,9 +14,12 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import org.junit.After;
+import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
+import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.MapType;
@@ -28,9 +31,23 @@ import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 
+@FixMethodOrder(value = MethodSorters.NAME_ASCENDING)
 public class PredicatePushdownTest {
 
     public static final QueryDriver HARNESS;
+
+    private static final Block ARRAY_A = AccumuloRowSerializer
+            .getBlockFromArray(VARCHAR, ImmutableList.of("a"));
+    private static final Block ARRAY_ABC = AccumuloRowSerializer
+            .getBlockFromArray(VARCHAR, ImmutableList.of("a", "b", "c"));
+    private static final Block ARRAY_DEF = AccumuloRowSerializer
+            .getBlockFromArray(VARCHAR, ImmutableList.of("d", "e", "f"));
+    private static final Block ARRAY_GHI = AccumuloRowSerializer
+            .getBlockFromArray(VARCHAR, ImmutableList.of("g", "h", "i"));
+    private static final Block ARRAY_JKL = AccumuloRowSerializer
+            .getBlockFromArray(VARCHAR, ImmutableList.of("j", "k", "l"));
+    private static final Block ARRAY_MNO = AccumuloRowSerializer
+            .getBlockFromArray(VARCHAR, ImmutableList.of("m", "n", "o"));
 
     static {
         try {
@@ -2167,8 +2184,8 @@ public class PredicatePushdownTest {
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
                 .withQuery("SELECT * FROM testmytable WHERE bytes IN ("
-                        + "VARBINARY 'abc', " + "VARBINARY 'ghi', "
-                        + "VARBINARY 'jkl', " + "VARBINARY 'a')")
+                        + "VARBINARY 'abc', VARBINARY 'ghi', "
+                        + "VARBINARY 'jkl', VARBINARY 'a')")
                 .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
                 .withOutput(r1, r3, r5, r4).runTest();
     }
@@ -2478,24 +2495,332 @@ public class PredicatePushdownTest {
     }
 
     @Test
-    @Ignore
-    public void testSelectArray() throws Exception {
-        Type elementType = VARCHAR;
-        ArrayType arrayType = new ArrayType(elementType);
+    public void testSelectArrayWhereNull() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType)
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, arrayType).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ARRAY_GHI, arrayType).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE senders IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectArrayWhereNotNull() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType)
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, arrayType).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ARRAY_GHI, arrayType).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE senders IS NOT NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r3).runTest();
+    }
+
+    @Test
+    public void testSelectArrayWhereNullOrEqual() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType)
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, arrayType).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ARRAY_GHI, arrayType).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE senders = ARRAY['a','b','c'] OR senders IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectArrayLess() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId()
                 .addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR)
-                .addField(AccumuloRowSerializer.getBlockFromArray(elementType,
-                        ImmutableList.of("a", "b", "c")), arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR)
-                .addField(AccumuloRowSerializer.getBlockFromArray(elementType,
-                        ImmutableList.of("d", "e", "f")), arrayType);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE senders < ARRAY['d','e','f']")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1)
                 .runTest();
+    }
+
+    @Test
+    public void testSelectArrayLessOrEqual() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE senders <= ARRAY['d','e','f']")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectArrayEqual() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE senders = ARRAY['d','e','f']")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectArrayGreater() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE senders > ARRAY['d','e','f']")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectArrayGreaterOrEqual() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE senders >= ARRAY['d','e','f']")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectArrayLessAndGreater() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "senders > ARRAY['a','b','c'] AND "
+                        + "senders < ARRAY['g','h','i']")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectArrayLessEqualAndGreater() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ARRAY_A,
+                arrayType);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ARRAY_JKL,
+                arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "senders > ARRAY['a','b','c'] AND "
+                        + "senders <= ARRAY['g','h','i']")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectArrayLessAndGreaterEqual() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ARRAY_A,
+                arrayType);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ARRAY_JKL,
+                arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "senders >= ARRAY['a','b','c'] AND "
+                        + "senders < ARRAY['g','h','i']")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r1, r2).runTest();
+    }
+
+    // Operator BETWEEN(array<varchar>, array<varchar>, array<varchar>) not
+    // registered
+    @Test(expected = SQLException.class)
+    public void testSelectArrayLessEqualAndGreaterEqual() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ARRAY_A,
+                arrayType);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ARRAY_JKL,
+                arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "senders >= ARRAY['a','b','c'] AND "
+                        + "senders <= ARRAY['g','h','i']")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r1, r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectArrayWithOr() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ARRAY_A,
+                arrayType);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ARRAY_JKL,
+                arrayType);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(ARRAY_MNO,
+                arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE ("
+                        + "(senders > ARRAY['a','b','c'] AND "
+                        + "senders <= ARRAY['g','h','i'])) OR ("
+                        + "(senders >= ARRAY['j','k','l'] AND "
+                        + "senders < ARRAY['m','n','o']))")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r2, r3, r5).runTest();
+    }
+
+    @Test
+    public void testSelectArrayInRange() throws Exception {
+        ArrayType arrayType = new ArrayType(VARCHAR);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("senders", "metadata", "senders", arrayType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC,
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF,
+                arrayType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI,
+                arrayType);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ARRAY_A,
+                arrayType);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ARRAY_JKL,
+                arrayType);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(ARRAY_MNO,
+                arrayType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE senders IN (ARRAY['a','b','c'], ARRAY['g','h','i'], ARRAY['j','k','l'], ARRAY['a'])")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r1, r3, r5, r4).runTest();
     }
 
     @Test

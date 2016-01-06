@@ -50,11 +50,8 @@ import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
 import com.facebook.presto.spi.predicate.Range;
-import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.VarbinaryType;
-import com.facebook.presto.spi.type.VarcharType;
 
 import bloomberg.presto.accumulo.iterators.AndFilter;
 import bloomberg.presto.accumulo.iterators.OrFilter;
@@ -390,26 +387,11 @@ public class AccumuloRecordCursor implements RecordCursor {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private IteratorSetting getIteratorSetting(AtomicInteger priority,
             AccumuloColumnConstraint col, CompareOp op, Type type,
             Object value) {
         String name = String.format("%s:%d", col.getName(), priority.get());
-        byte[] valueBytes;
-        if (type.equals(VarcharType.VARCHAR)) {
-            valueBytes = LexicoderRowSerializer.getLexicoder(type)
-                    .encode(((Slice) value).toStringUtf8());
-        } else if (type.equals(VarbinaryType.VARBINARY)) {
-            valueBytes = LexicoderRowSerializer.getLexicoder(type)
-                    .encode(((Slice) value).getBytes());
-        } else if (type.equals(BooleanType.BOOLEAN)) {
-            valueBytes = value.equals(Boolean.TRUE)
-                    ? LexicoderRowSerializer.TRUE
-                    : LexicoderRowSerializer.FALSE;
-        } else {
-            valueBytes = LexicoderRowSerializer.getLexicoder(type)
-                    .encode(value);
-        }
+        byte[] valueBytes = LexicoderRowSerializer.encode(type, value);
 
         return new IteratorSetting(priority.getAndIncrement(), name,
                 SingleColumnValueFilter.class,

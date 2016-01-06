@@ -1,11 +1,20 @@
 package bloomberg.presto.accumulo.serializers;
 
+import static bloomberg.presto.accumulo.metadata.AccumuloMetadataManager.ROW_ID_COLUMN_NAME;
+import static com.facebook.presto.spi.type.BigintType.BIGINT;
+import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
+import static com.facebook.presto.spi.type.DateType.DATE;
+import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
+import static com.facebook.presto.spi.type.TimeType.TIME;
+import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
+import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
+import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+
 import java.io.IOException;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -22,18 +31,10 @@ import org.apache.hadoop.io.Text;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
-import com.facebook.presto.spi.type.BigintType;
-import com.facebook.presto.spi.type.BooleanType;
-import com.facebook.presto.spi.type.DateType;
-import com.facebook.presto.spi.type.DoubleType;
-import com.facebook.presto.spi.type.TimeType;
-import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.VarbinaryType;
-import com.facebook.presto.spi.type.VarcharType;
 
 import bloomberg.presto.accumulo.Types;
-import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
+import io.airlift.slice.Slice;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class LexicoderRowSerializer implements AccumuloRowSerializer {
@@ -50,14 +51,14 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
     static {
         if (lexicoderMap == null) {
             lexicoderMap = new HashMap<>();
-            lexicoderMap.put(BigintType.BIGINT, new LongLexicoder());
-            lexicoderMap.put(BooleanType.BOOLEAN, new BytesLexicoder());
-            lexicoderMap.put(DateType.DATE, new LongLexicoder());
-            lexicoderMap.put(DoubleType.DOUBLE, new DoubleLexicoder());
-            lexicoderMap.put(TimeType.TIME, new LongLexicoder());
-            lexicoderMap.put(TimestampType.TIMESTAMP, new LongLexicoder());
-            lexicoderMap.put(VarbinaryType.VARBINARY, new BytesLexicoder());
-            lexicoderMap.put(VarcharType.VARCHAR, new StringLexicoder());
+            lexicoderMap.put(BIGINT, new LongLexicoder());
+            lexicoderMap.put(BOOLEAN, new BytesLexicoder());
+            lexicoderMap.put(DATE, new LongLexicoder());
+            lexicoderMap.put(DOUBLE, new DoubleLexicoder());
+            lexicoderMap.put(TIME, new LongLexicoder());
+            lexicoderMap.put(TIMESTAMP, new LongLexicoder());
+            lexicoderMap.put(VARBINARY, new BytesLexicoder());
+            lexicoderMap.put(VARCHAR, new StringLexicoder());
         }
     }
 
@@ -80,11 +81,9 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void deserialize(Entry<Key, Value> kvp) throws IOException {
-        if (!columnValues
-                .containsKey(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
+        if (!columnValues.containsKey(ROW_ID_COLUMN_NAME)) {
             kvp.getKey().getRow(rowId);
-            columnValues.put(AccumuloMetadataManager.ROW_ID_COLUMN_NAME,
-                    rowId.copyBytes());
+            columnValues.put(ROW_ID_COLUMN_NAME, rowId.copyBytes());
         }
 
         kvp.getKey().getColumnFamily(cf);
@@ -108,12 +107,7 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void setArray(Text text, Type type, Block block) {
-        Type elementType = Types.getElementType(type);
-
-        List array = AccumuloRowSerializer.getArrayFromBlock(elementType,
-                block);
-
-        text.set(encode(type, array));
+        text.set(encode(type, block));
     }
 
     @Override
@@ -123,37 +117,37 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void setBoolean(Text text, Boolean value) {
-        text.set(encode(BooleanType.BOOLEAN, value ? TRUE : FALSE));
+        text.set(encode(BOOLEAN, value));
     }
 
     @Override
     public Date getDate(String name) {
-        return new Date(decode(BigintType.BIGINT, getFieldValue(name)));
+        return new Date(decode(BIGINT, getFieldValue(name)));
     }
 
     @Override
     public void setDate(Text text, Date value) {
-        text.set(encode(BigintType.BIGINT, value.getTime()));
+        text.set(encode(DATE, value));
     }
 
     @Override
     public double getDouble(String name) {
-        return decode(DoubleType.DOUBLE, getFieldValue(name));
+        return decode(DOUBLE, getFieldValue(name));
     }
 
     @Override
     public void setDouble(Text text, Double value) {
-        text.set(encode(DoubleType.DOUBLE, value));
+        text.set(encode(DOUBLE, value));
     }
 
     @Override
     public long getLong(String name) {
-        return decode(BigintType.BIGINT, getFieldValue(name));
+        return decode(BIGINT, getFieldValue(name));
     }
 
     @Override
     public void setLong(Text text, Long value) {
-        text.set(encode(BigintType.BIGINT, value));
+        text.set(encode(BIGINT, value));
     }
 
     @Override
@@ -164,58 +158,203 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void setMap(Text text, Type type, Block block) {
-        text.set(encode(type,
-                AccumuloRowSerializer.getMapFromBlock(type, block)));
+        text.set(encode(type, block));
     }
 
     @Override
     public Time getTime(String name) {
-        return new Time(decode(BigintType.BIGINT, getFieldValue(name)));
+        return new Time(decode(BIGINT, getFieldValue(name)));
     }
 
     @Override
     public void setTime(Text text, Time value) {
-        text.set(encode(BigintType.BIGINT, value.getTime()));
+        text.set(encode(TIME, value));
     }
 
     @Override
     public Timestamp getTimestamp(String name) {
-        return new Timestamp(decode(BigintType.BIGINT, getFieldValue(name)));
+        return new Timestamp(decode(TIMESTAMP, getFieldValue(name)));
     }
 
     @Override
     public void setTimestamp(Text text, Timestamp value) {
-        text.set(encode(BigintType.BIGINT, value.getTime()));
+        text.set(encode(TIMESTAMP, value));
     }
 
     @Override
     public byte[] getVarbinary(String name) {
-        return decode(VarbinaryType.VARBINARY, getFieldValue(name));
+        return decode(VARBINARY, getFieldValue(name));
     }
 
     @Override
     public void setVarbinary(Text text, byte[] value) {
-        text.set(encode(VarbinaryType.VARBINARY, value));
+        text.set(encode(VARBINARY, value));
     }
 
     @Override
     public String getVarchar(String name) {
-        return decode(VarcharType.VARCHAR, getFieldValue(name));
+        return decode(VARCHAR, getFieldValue(name));
     }
 
     @Override
     public void setVarchar(Text text, String value) {
-        text.set(encode(VarcharType.VARCHAR, value));
+        text.set(encode(VARCHAR, value));
     }
 
     private byte[] getFieldValue(String name) {
         return columnValues.get(name);
     }
 
+    /**
+     * Encodes a Presto Java object to a byte array based on the given type.
+     * 
+     * Java Lists and Maps can be converted to Blocks using
+     * {@link AccumuloRowSerializer#getBlockFromArray(Type, java.util.List)} and
+     * {@link AccumuloRowSerializer#getBlockFromMap(Type, Map)}
+     * 
+     * Expected types are:<br>
+     * <table>
+     * <tr>
+     * <th>Type to Encode</th>
+     * <th>Expected Java Object</th>
+     * </tr>
+     * <tr>
+     * <td>ARRAY</td>
+     * <td>com.facebook.presto.spi.block.Block</td>
+     * </tr>
+     * <tr>
+     * <td>BOOLEAN</td>
+     * <td>Boolean</td>
+     * </tr>
+     * <tr>
+     * <td>DATE</td>
+     * <td>java.sql.Date, Long</td>
+     * </tr>
+     * <tr>
+     * <td>DOUBLE</td>
+     * <td>Double</td>
+     * </tr>
+     * <tr>
+     * <td>LONG</td>
+     * <td>Long</td>
+     * </tr>
+     * <tr>
+     * <td>Map</td>
+     * <td>com.facebook.presto.spi.block.Block</td>
+     * </tr>
+     * <tr>
+     * <td>Time</td>
+     * <td>java.sql.Time, Long</td>
+     * </tr>
+     * <tr>
+     * <td>Timestamp</td>
+     * <td>java.sql.Timestamp, Long</td>
+     * </tr>
+     * <tr>
+     * <td>VARBINARY</td>
+     * <td>io.airlift.slice.Slice or byte[]</td>
+     * </tr>
+     * <tr>
+     * <td>VARCHAR</td>
+     * <td>io.airlift.slice.Slice or String</td>
+     * </tr>
+     * </table>
+     * 
+     * @param type
+     *            The presto {@link com.facebook.presto.spi.type.Type}
+     * @param v
+     *            The Java object per the table in the method description
+     * @return Encoded bytes
+     */
     public static byte[] encode(Type type, Object v) {
-        return getLexicoder(type).encode(v);
+        Object toEncode;
+        if (Types.isArrayType(type)) {
+            toEncode = AccumuloRowSerializer
+                    .getArrayFromBlock(Types.getElementType(type), (Block) v);
+        } else if (Types.isMapType(type)) {
+            toEncode = AccumuloRowSerializer.getMapFromBlock(type, (Block) v);
+        } else if (type.equals(BOOLEAN)) {
+            toEncode = v.equals(Boolean.TRUE) ? LexicoderRowSerializer.TRUE
+                    : LexicoderRowSerializer.FALSE;
+        } else if (type.equals(DATE) && v instanceof Date) {
+            toEncode = ((Date) v).getTime();
+        } else if (type.equals(TIME) && v instanceof Time) {
+            toEncode = ((Time) v).getTime();
+        } else if (type.equals(TIMESTAMP) && v instanceof Timestamp) {
+            toEncode = ((Timestamp) v).getTime();
+        } else if (type.equals(VARBINARY) && v instanceof Slice) {
+            toEncode = ((Slice) v).getBytes();
+        } else if (type.equals(VARCHAR) && v instanceof Slice) {
+            toEncode = ((Slice) v).toStringUtf8();
+        } else {
+            toEncode = v;
+        }
+
+        return getLexicoder(type).encode(toEncode);
     }
 
+    /**
+     * Generic function to decode the given byte array to a Java object based on
+     * the given type.
+     * 
+     * Blocks from ARRAY and MAP types can be converted to Java Lists and Maps
+     * using {@link AccumuloRowSerializer#getArrayFromBlock(Type, Block)} and
+     * {@link AccumuloRowSerializer#getMapFromBlock(Type, Block)}
+     * 
+     * Expected types are:<br>
+     * <table>
+     * <tr>
+     * <th>Encoded Type</th>
+     * <th>Returned Java Object</th>
+     * </tr>
+     * <tr>
+     * <td>ARRAY</td>
+     * <td>List<?></td>
+     * </tr>
+     * <tr>
+     * <td>BOOLEAN</td>
+     * <td>Boolean</td>
+     * </tr>
+     * <tr>
+     * <td>DATE</td>
+     * <td>Long</td>
+     * </tr>
+     * <tr>
+     * <td>DOUBLE</td>
+     * <td>Double</td>
+     * </tr>
+     * <tr>
+     * <td>LONG</td>
+     * <td>Long</td>
+     * </tr>
+     * <tr>
+     * <td>Map</td>
+     * <td>Map<?,?></td>
+     * </tr>
+     * <tr>
+     * <td>Time</td>
+     * <td>Long</td>
+     * </tr>
+     * <tr>
+     * <td>Timestamp</td>
+     * <td>Long</td>
+     * </tr>
+     * <tr>
+     * <td>VARBINARY</td>
+     * <td>byte[]</td>
+     * </tr>
+     * <tr>
+     * <td>VARCHAR</td>
+     * <td>String</td>
+     * </tr>
+     * </table>
+     * 
+     * @param type
+     *            The presto {@link com.facebook.presto.spi.type.Type}
+     * @param v
+     *            Encoded bytes to decode
+     * @return The Java object per the table in the method description
+     */
     public static <T> T decode(Type type, byte[] v) {
         return (T) getLexicoder(type).decode(v);
     }

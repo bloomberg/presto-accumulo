@@ -7,7 +7,9 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import org.junit.After;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
@@ -28,6 +30,7 @@ import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 
+@FixMethodOrder(value = MethodSorters.NAME_ASCENDING)
 public class DataTypeTest {
 
     public static final QueryDriver HARNESS;

@@ -5,7 +5,9 @@ import java.sql.Date;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.DateType;
@@ -15,6 +17,7 @@ import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 
+@FixMethodOrder(value = MethodSorters.NAME_ASCENDING)
 public class LargeDataTest {
 
     private static final File INPUT_FILE = new File(

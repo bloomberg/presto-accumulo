@@ -1,5 +1,9 @@
 package bloomberg.presto.accumulo.iterators;
 
+import static bloomberg.presto.accumulo.serializers.LexicoderRowSerializer.FALSE;
+import static bloomberg.presto.accumulo.serializers.LexicoderRowSerializer.TRUE;
+import static bloomberg.presto.accumulo.serializers.LexicoderRowSerializer.encode;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.sql.Date;
@@ -15,7 +19,9 @@ import java.util.function.BiFunction;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.junit.Assert;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
@@ -28,27 +34,24 @@ import com.facebook.presto.spi.type.VarbinaryType;
 import com.facebook.presto.spi.type.VarcharType;
 
 import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter.CompareOp;
-import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 
+@FixMethodOrder(value = MethodSorters.NAME_ASCENDING)
 public class SingleColumnValueFilterTest {
 
     private Random rand = new Random();
 
-    @SuppressWarnings("unchecked")
     public boolean testFilter(String filterFam, String filterQual,
             CompareOp filterOp, Object filterValue, Type type, Key testKey,
             Object testValue) throws IOException {
 
-        Value vFilterValue = new Value(
-                LexicoderRowSerializer.getLexicoder(type).encode(filterValue));
+        Value vFilterValue = new Value(encode(type, filterValue));
         Map<String, String> opts = SingleColumnValueFilter.getProperties(
                 filterFam, filterQual, filterOp, type, vFilterValue.get());
 
         SingleColumnValueFilter filter = new SingleColumnValueFilter();
         filter.validateOptions(opts);
 
-        Value vTestValue = new Value(
-                LexicoderRowSerializer.getLexicoder(type).encode(testValue));
+        Value vTestValue = new Value(encode(type, testValue));
 
         filter.init(new TestKeyValueIterator(testKey, vTestValue), opts, null);
         return filter.acceptRow(new TestKeyValueIterator(testKey, vTestValue));
@@ -57,8 +60,7 @@ public class SingleColumnValueFilterTest {
     @Test
     public void testNullField() throws IOException {
 
-        Value vFilterValue = new Value(
-                LexicoderRowSerializer.encode(BigintType.BIGINT, 5L));
+        Value vFilterValue = new Value(encode(BigintType.BIGINT, 5L));
 
         Map<String, String> opts = SingleColumnValueFilter.getProperties("cf",
                 "cq1", CompareOp.EQUAL, BigintType.BIGINT, vFilterValue.get());
@@ -162,10 +164,8 @@ public class SingleColumnValueFilterTest {
 
         for (boolean i : values) {
             for (boolean j : values) {
-                byte[] filterValue = i ? LexicoderRowSerializer.TRUE
-                        : LexicoderRowSerializer.FALSE;
-                byte[] testValue = j ? LexicoderRowSerializer.TRUE
-                        : LexicoderRowSerializer.FALSE;
+                byte[] filterValue = i ? TRUE : FALSE;
+                byte[] testValue = j ? TRUE : FALSE;
 
                 Assert.assertFalse("Filter accepted key with wrong family",
                         op != CompareOp.NO_OP && testFilter(filterFam,

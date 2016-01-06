@@ -484,6 +484,10 @@ public class QueryDriver {
             for (int j = 1; j <= rs.getMetaData().getColumnCount(); ++j) {
 
                 Type type = getType(rs, rs.getMetaData(), j);
+                if (type == null) {
+                    orow.addField(null, null);
+                    continue;
+                }
                 if (bloomberg.presto.accumulo.Types.isArrayType(type)) {
                     Array array = rs.getArray(j);
                     Type elementType = getType(array.getBaseTypeName());
@@ -567,9 +571,14 @@ public class QueryDriver {
             throws SQLException {
         switch (rsmd.getColumnType(column)) {
         case Types.ARRAY:
-            Type t = typeManager.getType(TypeSignature
-                    .parseTypeSignature(rs.getArray(column).getBaseTypeName()));
-            return new ArrayType(t);
+            Array ar = rs.getArray(column);
+            if (ar != null) {
+                Type t = typeManager.getType(TypeSignature.parseTypeSignature(
+                        rs.getArray(column).getBaseTypeName()));
+                return new ArrayType(t);
+            } else {
+                return null;
+            }
         case Types.BIGINT:
             return BigintType.BIGINT;
         case Types.BOOLEAN:
