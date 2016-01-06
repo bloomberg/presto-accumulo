@@ -4,6 +4,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -184,9 +185,13 @@ public class Field {
             if (v instanceof Long)
                 return new Date((Long) v);
 
+            if (v instanceof Calendar)
+                return new Date(((Calendar) v).getTime().getTime());
+
             if (!(v instanceof Date))
                 throw new RuntimeException(
-                        "Object is not a Date, but " + v.getClass());
+                        "Object is not a Calendar, Date, or Long, but "
+                                + v.getClass());
             break;
         case StandardTypes.DOUBLE:
             if (!(v instanceof Double))

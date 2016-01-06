@@ -1,6 +1,5 @@
 package bloomberg.presto.accumulo.integration.tests;
 
-import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -235,11 +234,9 @@ public class DataTypeTest {
                 "start_date", "metadata", "start_date", DateType.DATE);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Date(new GregorianCalendar(2015, 12, 14).getTime()
-                        .getTime()), DateType.DATE);
+                .addField(c(2015, 12, 14), DateType.DATE);
         Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Date(new GregorianCalendar(2015, 12, 15).getTime()
-                        .getTime()), DateType.DATE);
+                .addField(c(2015, 12, 15), DateType.DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -434,5 +431,9 @@ public class DataTypeTest {
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1, r2, r3)
                 .withOutput(r1, r2, r3).runTest();
+    }
+
+    private static Calendar c(int y, int m, int d) {
+        return new GregorianCalendar(y, m - 1, d);
     }
 }

@@ -1,6 +1,5 @@
 package bloomberg.presto.accumulo.integration.tests;
 
-import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -300,6 +299,36 @@ public class PredicatePushdownTest {
     }
 
     @Test
+    public void testSelectBigIntInRange() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(new Long(15), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(new Long(-15), BigintType.BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(new Long(45), BigintType.BIGINT);
+        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
+                .addField(new Long(60), BigintType.BIGINT);
+        Row r7 = Row.newInstance().addField("row7", VarcharType.VARCHAR)
+                .addField(new Long(90), BigintType.BIGINT);
+
+        // no constraints on predicate pushdown
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE age IN (0, 15, -15, 45)")
+                .withInputSchema(schema).withSplits("row4", "row6")
+                .withInput(r1, r2, r3, r4, r5, r6, r7)
+                .withOutput(r1, r2, r4, r5).runTest();
+    }
+
+    @Test
     public void testSelectBigIntWithOr() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", BigintType.BIGINT);
@@ -449,25 +478,7 @@ public class PredicatePushdownTest {
     }
 
     @Test
-    public void testSelectBooleanIsTrueOrFalse() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male",
-                "metadata", "male", BooleanType.BOOLEAN);
-
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(true, BooleanType.BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(false, BooleanType.BOOLEAN);
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable")
-                .withQuery(
-                        "SELECT * FROM testmytable WHERE male = true OR male = false")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
-                .runTest();
-    }
-
-    @Test
-    public void testSelectBooleanTrueAndFalse() throws Exception {
+    public void testSelectBooleanIsTrueAndFalse() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
                 .addColumn("male", "metadata", "male", BooleanType.BOOLEAN)
                 .addColumn("human", "metadata", "human", BooleanType.BOOLEAN);
@@ -491,22 +502,294 @@ public class PredicatePushdownTest {
     }
 
     @Test
-    @Ignore
-    public void testSelectDate() throws Exception {
+    public void testSelectBooleanInRange() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male",
+                "metadata", "male", BooleanType.BOOLEAN);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(true, BooleanType.BOOLEAN);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(false, BooleanType.BOOLEAN);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE male IN (false, true)")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectDateNoWhere() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
                 "start_date", "metadata", "start_date", DateType.DATE);
 
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Date(new GregorianCalendar(2015, 12, 14).getTime()
-                        .getTime()), DateType.DATE);
+                .addField(c(2015, 12, 1), DateType.DATE);
         Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Date(new GregorianCalendar(2015, 12, 15).getTime()
-                        .getTime()), DateType.DATE);
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectDateLess() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE start_date < DATE '2015-12-15'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1)
                 .runTest();
+    }
+
+    @Test
+    public void testSelectDateLessOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE start_date <= DATE '2015-12-15'")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectDateEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE start_date = DATE '2015-12-15'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectDateGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE start_date > DATE '2015-12-15'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectDateGreaterOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE start_date >= DATE '2015-12-15'")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectDateLessAndGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "start_date > DATE '2015-12-01' AND "
+                        + "start_date < DATE '2015-12-31'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectDateLessEqualAndGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(c(2015, 11, 15), DateType.DATE);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(c(2016, 1, 15), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "start_date > DATE '2015-12-01' AND "
+                        + "start_date <= DATE '2015-12-31'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectDateLessAndGreaterEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(c(2015, 11, 15), DateType.DATE);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(c(2016, 1, 15), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "start_date >= DATE '2015-12-01' AND "
+                        + "start_date < DATE '2015-12-31'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectDateLessEqualAndGreaterEqual() throws Exception {
+
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(c(2015, 11, 15), DateType.DATE);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(c(2016, 1, 15), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "start_date >= DATE '2015-12-01' AND "
+                        + "start_date <= DATE '2015-12-31'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r1, r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectDateWithOr() throws Exception {
+
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(c(2015, 11, 15), DateType.DATE);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(c(2016, 1, 15), DateType.DATE);
+        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
+                .addField(c(2016, 1, 31), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE ("
+                        + "(start_date > DATE '2015-12-01' AND "
+                        + "start_date <= DATE '2015-12-31')) OR ("
+                        + "(start_date >= DATE '2016-01-15' AND "
+                        + "start_date < DATE '2016-01-31'))")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r2, r3, r5).runTest();
+    }
+
+    @Test
+    public void testSelectDateInRange() throws Exception {
+
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
+                "start_date", "metadata", "start_date", DateType.DATE);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 15), DateType.DATE);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
+                .addField(c(2015, 11, 15), DateType.DATE);
+        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
+                .addField(c(2016, 1, 15), DateType.DATE);
+        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
+                .addField(c(2016, 1, 31), DateType.DATE);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE start_date IN ("
+                        + "DATE '2015-12-01', " + "DATE '2015-12-31', "
+                        + "DATE '2016-01-15', " + "DATE '2015-11-15')")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r1, r3, r5, r4).runTest();
     }
 
     @Test
@@ -767,7 +1050,7 @@ public class PredicatePushdownTest {
         MapType mapType = new MapType(keyType, valueType);
         RowSchema schema = RowSchema.newInstance().addRowId()
                 .addColumn("peopleages", "metadata", "peopleages", mapType);
-    
+
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromMap(mapType,
@@ -778,7 +1061,7 @@ public class PredicatePushdownTest {
                         AccumuloRowSerializer.getBlockFromMap(mapType,
                                 ImmutableMap.of("d", 4, "e", 5, "f", 6)),
                         mapType);
-    
+
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
@@ -794,7 +1077,7 @@ public class PredicatePushdownTest {
         MapType mapType = new MapType(keyMapType, valueMapType);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo",
                 "metadata", "foo", mapType);
-    
+
         // @formatter:off
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
                 .addField(
@@ -813,7 +1096,7 @@ public class PredicatePushdownTest {
                                 ),
                         mapType);
         // @formatter:on
-    
+
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
@@ -830,7 +1113,7 @@ public class PredicatePushdownTest {
         MapType mapType = new MapType(keyMapType, valueMapType);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo",
                 "metadata", "foo", mapType);
-    
+
         // @formatter:off
         Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
                 .addField(
@@ -849,10 +1132,14 @@ public class PredicatePushdownTest {
                                 ),
                         mapType);
         // @formatter:on
-    
+
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
                 .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
                 .runTest();
+    }
+
+    private static Calendar c(int y, int m, int d) {
+        return new GregorianCalendar(y, m - 1, d);
     }
 }
