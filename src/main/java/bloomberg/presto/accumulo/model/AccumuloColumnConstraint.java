@@ -8,8 +8,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 
-import io.airlift.log.Logger;
-
 public class AccumuloColumnConstraint {
     private final String name;
     private final String family;
@@ -25,7 +23,6 @@ public class AccumuloColumnConstraint {
         this.family = requireNonNull(family, "family is null");
         this.qualifier = requireNonNull(qualifier, "qualifier is null");
         this.domain = domain;
-        Logger.get(getClass()).debug("CONST DOMAIN IS " + domain);
     }
 
     @JsonProperty
@@ -51,7 +48,6 @@ public class AccumuloColumnConstraint {
     @JsonSetter
     public void setDomain(Domain domain) {
         this.domain = domain;
-        Logger.get(getClass()).debug("SET DOMAIN IS " + domain);
     }
 
     public String toString() {
