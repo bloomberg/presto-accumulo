@@ -433,6 +433,43 @@ public class DataTypeTest {
                 .withOutput(r1, r2, r3).runTest();
     }
 
+    @Test(expected = SQLException.class)
+    public void testErrorOnOnlyOneNullField() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
+                "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(60L, BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(null, BigintType.BIGINT);
+
+        // no constraints on predicate pushdown
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE age = 0 OR age is NULL")
+                .withInputSchema(schema).withInput(r1, r2).initialize();
+    }
+
+    @Test(expected = SQLException.class)
+    public void testErrorOnBothFieldsNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("age", "metadata", "age", BigintType.BIGINT)
+                .addColumn("male", "metadata", "male", BooleanType.BOOLEAN);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(60L, BigintType.BIGINT)
+                .addField(true, BooleanType.BOOLEAN);
+        Row r2 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(null, BigintType.BIGINT)
+                .addField(null, BooleanType.BOOLEAN);
+
+        // no constraints on predicate pushdown
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
+                .withInputSchema(schema).withInput(r1, r2).initialize();
+    }
+
     private static Calendar c(int y, int m, int d) {
         return new GregorianCalendar(y, m - 1, d);
     }

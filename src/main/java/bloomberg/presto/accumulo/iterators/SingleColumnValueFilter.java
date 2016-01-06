@@ -30,7 +30,7 @@ public class SingleColumnValueFilter extends RowFilter
             .getLogger(SingleColumnValueFilter.class);
 
     public enum CompareOp {
-        LESS, LESS_OR_EQUAL, EQUAL, NOT_EQUAL, GREATER_OR_EQUAL, GREATER, NO_OP,
+        LESS, LESS_OR_EQUAL, EQUAL, NOT_EQUAL, GREATER_OR_EQUAL, GREATER, NO_OP, IS_NULL,
     }
 
     protected static final String CF = "family";
@@ -55,15 +55,26 @@ public class SingleColumnValueFilter extends RowFilter
             return true;
         }
 
-        columnFound = false;
-        while (rowIterator.hasTop()) {
-            if (!acceptSingleKeyValue(rowIterator.getTopKey(),
-                    rowIterator.getTopValue())) {
-                return false;
+        if (compareOp != CompareOp.IS_NULL) {
+            columnFound = false;
+            while (rowIterator.hasTop()) {
+                if (!acceptSingleKeyValue(rowIterator.getTopKey(),
+                        rowIterator.getTopValue())) {
+                    return false;
+                }
+                rowIterator.next();
             }
-            rowIterator.next();
+
+            return columnFound;
+        } else {
+            while (rowIterator.hasTop()) {
+                if (isNotNull(rowIterator.getTopKey())) {
+                    return false;
+                }
+                rowIterator.next();
+            }
+            return true;
         }
-        return columnFound;
     }
 
     private boolean acceptSingleKeyValue(Key k, Value v) {
@@ -111,6 +122,20 @@ public class SingleColumnValueFilter extends RowFilter
         return true;
     }
 
+    private boolean isNotNull(Key k) {
+        LOG.debug(String.format("Key: %s", k));
+
+        k.getColumnFamily(cf);
+        if (columnFamily.equals(cf)) {
+            k.getColumnQualifier(cq);
+            if (columnQualifier.equals(cq)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     @Override
     public void init(SortedKeyValueIterator<Key, Value> source,
             Map<String, String> options, IteratorEnvironment env)
@@ -119,20 +144,25 @@ public class SingleColumnValueFilter extends RowFilter
         columnFamily = new Text(options.get(CF));
         columnQualifier = new Text(options.get(CQ));
         compareOp = CompareOp.valueOf(options.get(COMPARE_OP));
-        TypeRegistry t = new TypeRegistry();
-        type = t.getType(TypeSignature.parseTypeSignature(options.get(TYPE)));
 
-        if (type == null) {
-            throw new IllegalArgumentException(
-                    "Type is null from options " + options.get(TYPE));
-        }
+        if (compareOp != CompareOp.IS_NULL) {
+            TypeRegistry t = new TypeRegistry();
+            type = t.getType(
+                    TypeSignature.parseTypeSignature(options.get(TYPE)));
 
-        try {
-            value = new Value(Hex.decodeHex(options.get(VALUE).toCharArray()));
-        } catch (DecoderException e) {
-            // should not occur, as validateOptions tries this same thing
-            throw new IllegalArgumentException(
-                    "Error decoding hex value in option", e);
+            if (type == null) {
+                throw new IllegalArgumentException(
+                        "Type is null from options " + options.get(TYPE));
+            }
+
+            try {
+                value = new Value(
+                        Hex.decodeHex(options.get(VALUE).toCharArray()));
+            } catch (DecoderException e) {
+                // should not occur, as validateOptions tries this same thing
+                throw new IllegalArgumentException(
+                        "Error decoding hex value in option", e);
+            }
         }
     }
 
@@ -176,8 +206,6 @@ public class SingleColumnValueFilter extends RowFilter
         checkNotNull(CF, options);
         checkNotNull(CQ, options);
         checkNotNull(COMPARE_OP, options);
-        checkNotNull(TYPE, options);
-        checkNotNull(VALUE, options);
 
         try {
             CompareOp.valueOf(options.get(COMPARE_OP));
@@ -186,12 +214,19 @@ public class SingleColumnValueFilter extends RowFilter
                     + ":" + options.get(COMPARE_OP));
         }
 
-        try {
-            new Value(Hex.decodeHex(options.get(VALUE).toCharArray()));
-        } catch (DecoderException e) {
-            throw new IllegalArgumentException("Option " + VALUE
-                    + " is not a hex-encoded value: " + options.get(VALUE), e);
+        if (CompareOp.valueOf(options.get(COMPARE_OP)) != CompareOp.IS_NULL) {
+            checkNotNull(TYPE, options);
+            checkNotNull(VALUE, options);
+
+            try {
+                new Value(Hex.decodeHex(options.get(VALUE).toCharArray()));
+            } catch (DecoderException e) {
+                throw new IllegalArgumentException("Option " + VALUE
+                        + " is not a hex-encoded value: " + options.get(VALUE),
+                        e);
+            }
         }
+
         return true;
     }
 
@@ -212,6 +247,18 @@ public class SingleColumnValueFilter extends RowFilter
         opts.put(COMPARE_OP, op.toString());
         opts.put(TYPE, type.getDisplayName());
         opts.put(VALUE, Hex.encodeHexString(value));
+
+        return opts;
+    }
+
+    public static Map<String, String> getNullProperties(String family,
+            String qualifier) {
+
+        Map<String, String> opts = new HashMap<>();
+
+        opts.put(CF, family);
+        opts.put(CQ, qualifier);
+        opts.put(COMPARE_OP, CompareOp.IS_NULL.toString());
 
         return opts;
     }

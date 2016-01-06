@@ -71,10 +71,15 @@ public class AccumuloPageSink implements ConnectorPageSink {
 
     @Override
     public Collection<Slice> commit() {
-
         try {
             for (Row row : rows) {
-                wrtr.addMutation(toMutation(row, types, serializer));
+                Mutation m = toMutation(row, types, serializer);
+                if (m.size() > 0) {
+                    wrtr.addMutation(m);
+                } else {
+                    throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                            "At least one non-recordkey column must contain a non-null value");
+                }
             }
             wrtr.close();
         } catch (MutationsRejectedException e) {
@@ -102,14 +107,14 @@ public class AccumuloPageSink implements ConnectorPageSink {
         Text cf = new Text(), cq = new Text(), value = new Text();
         // for each column in the input schema
         for (int i = 1; i < columns.size(); ++i) {
+            if (row.getField(i).isNull()) {
+                continue;
+            }
+
             AccumuloColumnHandle ach = columns.get(i);
             // if this column's name is not the row ID
             if (!ach.getName()
                     .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
-
-                if (row.getField(i).isNull()) {
-                    continue;
-                }
 
                 if (Types.isArrayType(ach.getType())) {
                     serializer.setArray(value, ach.getType(),

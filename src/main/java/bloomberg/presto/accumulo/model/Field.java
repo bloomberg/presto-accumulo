@@ -245,7 +245,11 @@ public class Field {
         if (obj instanceof Field) {
             Field f = (Field) obj;
             if (type.equals(f.getType())) {
-                if (type.equals(VarbinaryType.VARBINARY)) {
+                if (this.isNull() && f.isNull()) {
+                    retval = true;
+                } else if (this.isNull() ^ f.isNull()) {
+                    retval = false;
+                } else if (type.equals(VarbinaryType.VARBINARY)) {
                     // special case for byte arrays
                     // aren't they so fancy
                     retval = Arrays.equals((byte[]) value,

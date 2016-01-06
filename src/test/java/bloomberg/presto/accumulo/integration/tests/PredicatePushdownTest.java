@@ -99,6 +99,79 @@ public class PredicatePushdownTest {
     }
 
     @Test
+    public void testSelectBigIntWhereNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("age", "metadata", "age", BigintType.BIGINT)
+                .addColumn("weight", "metadata", "weight", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT)
+                .addField(new Long(60), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(null, BigintType.BIGINT)
+                .addField(new Long(60), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT)
+                .addField(new Long(60), BigintType.BIGINT);
+
+        // no constraints on predicate pushdown
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE age IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectBigIntWhereNotNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("age", "metadata", "age", BigintType.BIGINT)
+                .addColumn("weight", "metadata", "weight", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT)
+                .addField(new Long(60), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(null, BigintType.BIGINT)
+                .addField(new Long(60), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT)
+                .addField(new Long(60), BigintType.BIGINT);
+
+        // no constraints on predicate pushdown
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE age IS NOT NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r3).runTest();
+    }
+
+    @Test
+    public void testSelectBigIntWhereEqualOrNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("age", "metadata", "age", BigintType.BIGINT)
+                .addColumn("weight", "metadata", "weight", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(new Long(0), BigintType.BIGINT)
+                .addField(new Long(60), BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(null, BigintType.BIGINT)
+                .addField(new Long(60), BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(new Long(30), BigintType.BIGINT)
+                .addField(new Long(60), BigintType.BIGINT);
+
+        // no constraints on predicate pushdown
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE age = 0 OR age is NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
     public void testSelectBigIntLess() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
                 "metadata", "age", BigintType.BIGINT);
@@ -520,6 +593,70 @@ public class PredicatePushdownTest {
     }
 
     @Test
+    public void testSelectBooleanWhereNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("male", "metadata", "male", BooleanType.BOOLEAN)
+                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(null, BooleanType.BOOLEAN)
+                .addField(10L, BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(false, BooleanType.BOOLEAN)
+                .addField(10L, BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE male IS NULL")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r1)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectBooleanWhereNotNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("male", "metadata", "male", BooleanType.BOOLEAN)
+                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(null, BooleanType.BOOLEAN)
+                .addField(10L, BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(false, BooleanType.BOOLEAN)
+                .addField(10L, BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE male IS NOT NULL")
+                .withInputSchema(schema).withInput(r1, r2).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectBooleanNullOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("male", "metadata", "male", BooleanType.BOOLEAN)
+                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(null, BooleanType.BOOLEAN)
+                .addField(10L, BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(false, BooleanType.BOOLEAN)
+                .addField(10L, BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(true, BooleanType.BOOLEAN)
+                .addField(10L, BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE male = false OR male IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
     public void testSelectDateNoWhere() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
                 "start_date", "metadata", "start_date", DateType.DATE);
@@ -790,6 +927,77 @@ public class PredicatePushdownTest {
                         + "DATE '2016-01-15', " + "DATE '2015-11-15')")
                 .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
                 .withOutput(r1, r3, r5, r4).runTest();
+    }
+
+    @Test
+    public void testSelectDateWhereNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date",
+                        DateType.DATE)
+                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE)
+                .addField(10L, BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(null, DateType.DATE).addField(10L, BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE)
+                .addField(10L, BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE start_date IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectDateWhereNotNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date",
+                        DateType.DATE)
+                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE)
+                .addField(10L, BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(null, DateType.DATE).addField(10L, BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE)
+                .addField(10L, BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE start_date IS NOT NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r3).runTest();
+    }
+
+    @Test
+    public void testSelectDateNullOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date",
+                        DateType.DATE)
+                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 1), DateType.DATE)
+                .addField(10L, BigintType.BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                .addField(null, DateType.DATE).addField(10L, BigintType.BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
+                .addField(c(2015, 12, 31), DateType.DATE)
+                .addField(10L, BigintType.BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE start_date = DATE '2015-12-01' OR start_date IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
     }
 
     @Test

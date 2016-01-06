@@ -294,9 +294,13 @@ public class AccumuloRecordCursor implements RecordCursor {
         List<IteratorSetting> allSettings = new ArrayList<>();
         for (AccumuloColumnConstraint col : constraints) {
             Domain dom = col.getDomain();
-
             List<IteratorSetting> colSettings = new ArrayList<>(
                     dom.getValues().getRanges().getRangeCount());
+
+            if (dom.isNullAllowed()) {
+                colSettings.add(getNullFilterSetting(col, priority));
+            }
+
             for (Range r : dom.getValues().getRanges().getOrderedRanges()) {
                 IteratorSetting cfg = getFilterSettingFromRange(col, r,
                         priority);
@@ -322,6 +326,16 @@ public class AccumuloRecordCursor implements RecordCursor {
         }
     }
 
+    private IteratorSetting getNullFilterSetting(AccumuloColumnConstraint col,
+            AtomicInteger priority) {
+
+        String name = String.format("%s:%d", col.getName(), priority.get());
+        return new IteratorSetting(priority.getAndIncrement(), name,
+                SingleColumnValueFilter.class,
+                SingleColumnValueFilter.getNullProperties(col.getFamily(),
+                        col.getQualifier()));
+    }
+
     private IteratorSetting getFilterSettingFromRange(
             AccumuloColumnConstraint col, Range r, AtomicInteger priority) {
 
@@ -334,8 +348,8 @@ public class AccumuloRecordCursor implements RecordCursor {
             // value = value
             Logger.get(getClass()).debug("RANGE %s IS SINGLE VALUE",
                     r.toString(session));
-            return getIteratorSetting(priority.getAndIncrement(), col,
-                    CompareOp.EQUAL, r.getType(), r.getSingleValue());
+            return getIteratorSetting(priority, col, CompareOp.EQUAL,
+                    r.getType(), r.getSingleValue());
         } else {
             if (r.getLow().isLowerUnbounded()) {
                 Logger.get(getClass()).debug("RANGE %s IS LOWER UNBOUNDED",
@@ -343,16 +357,16 @@ public class AccumuloRecordCursor implements RecordCursor {
                 // (min, x] WHERE x < 10
                 CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
                         ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
-                return getIteratorSetting(priority.getAndIncrement(), col, op,
-                        r.getType(), r.getHigh().getValue());
+                return getIteratorSetting(priority, col, op, r.getType(),
+                        r.getHigh().getValue());
             } else if (r.getHigh().isUpperUnbounded()) {
                 Logger.get(getClass()).debug("RANGE %s IS UPPER UNBOUNDED",
                         r.toString(session));
                 // [(x, max] WHERE x > 10
                 CompareOp op = r.getLow().getBound() == Bound.EXACTLY
                         ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
-                return getIteratorSetting(priority.getAndIncrement(), col, op,
-                        r.getType(), r.getLow().getValue());
+                return getIteratorSetting(priority, col, op, r.getType(),
+                        r.getLow().getValue());
             } else {
                 Logger.get(getClass()).debug("RANGE %s IS BOUNDED",
                         r.toString(session));
@@ -360,16 +374,14 @@ public class AccumuloRecordCursor implements RecordCursor {
                 CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
                         ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
 
-                IteratorSetting high = getIteratorSetting(
-                        priority.getAndIncrement(), col, op, r.getType(),
-                        r.getHigh().getValue());
+                IteratorSetting high = getIteratorSetting(priority, col, op,
+                        r.getType(), r.getHigh().getValue());
 
                 op = r.getLow().getBound() == Bound.EXACTLY
                         ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
 
-                IteratorSetting low = getIteratorSetting(
-                        priority.getAndIncrement(), col, op, r.getType(),
-                        r.getLow().getValue());
+                IteratorSetting low = getIteratorSetting(priority, col, op,
+                        r.getType(), r.getLow().getValue());
 
                 return AndFilter.andFilters(priority.getAndIncrement(), high,
                         low);
@@ -378,11 +390,10 @@ public class AccumuloRecordCursor implements RecordCursor {
     }
 
     @SuppressWarnings("unchecked")
-    private IteratorSetting getIteratorSetting(int priority,
+    private IteratorSetting getIteratorSetting(AtomicInteger priority,
             AccumuloColumnConstraint col, CompareOp op, Type type,
             Object value) {
-        String name = String.format("nullable-single-value:%s:%d",
-                col.getName(), priority);
+        String name = String.format("%s:%d", col.getName(), priority.get());
         byte[] valueBytes;
         if (type.equals(VarcharType.VARCHAR)) {
             valueBytes = LexicoderRowSerializer.getLexicoder(type)
@@ -396,7 +407,7 @@ public class AccumuloRecordCursor implements RecordCursor {
                     .encode(value);
         }
 
-        return new IteratorSetting(priority++, name,
+        return new IteratorSetting(priority.getAndIncrement(), name,
                 SingleColumnValueFilter.class,
                 SingleColumnValueFilter.getProperties(col.getFamily(),
                         col.getQualifier(), op, col.getDomain().getType(),

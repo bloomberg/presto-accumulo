@@ -497,31 +497,52 @@ public class QueryDriver {
                             (Map<?, ?>) rs.getObject(j)), type);
                 } else {
                     switch (type.getDisplayName()) {
-                    case StandardTypes.BIGINT:
-                        orow.addField(rs.getLong(j), BigintType.BIGINT);
+                    case StandardTypes.BIGINT: {
+                        Long v = rs.getLong(j);
+                        orow.addField(rs.wasNull() ? null : v,
+                                BigintType.BIGINT);
                         break;
-                    case StandardTypes.BOOLEAN:
-                        orow.addField(rs.getBoolean(j), BooleanType.BOOLEAN);
+                    }
+                    case StandardTypes.BOOLEAN: {
+                        Boolean v = rs.getBoolean(j);
+                        orow.addField(rs.wasNull() ? null : v,
+                                BooleanType.BOOLEAN);
                         break;
-                    case StandardTypes.DATE:
-                        orow.addField(rs.getDate(j), DateType.DATE);
+                    }
+                    case StandardTypes.DATE: {
+                        Date v = rs.getDate(j);
+                        orow.addField(rs.wasNull() ? null : v, DateType.DATE);
                         break;
-                    case StandardTypes.DOUBLE:
-                        orow.addField(rs.getDouble(j), DoubleType.DOUBLE);
+                    }
+                    case StandardTypes.DOUBLE: {
+                        Double v = rs.getDouble(j);
+                        orow.addField(rs.wasNull() ? null : v,
+                                DoubleType.DOUBLE);
                         break;
-                    case StandardTypes.TIME:
-                        orow.addField(rs.getTime(j), TimeType.TIME);
+                    }
+                    case StandardTypes.TIME: {
+                        Time v = rs.getTime(j);
+                        orow.addField(rs.wasNull() ? null : v, TimeType.TIME);
                         break;
-                    case StandardTypes.TIMESTAMP:
-                        orow.addField(rs.getTimestamp(j),
+                    }
+                    case StandardTypes.TIMESTAMP: {
+                        Timestamp v = rs.getTimestamp(j);
+                        orow.addField(rs.wasNull() ? null : v,
                                 TimestampType.TIMESTAMP);
                         break;
-                    case StandardTypes.VARBINARY:
-                        orow.addField(rs.getBytes(j), VarbinaryType.VARBINARY);
+                    }
+                    case StandardTypes.VARBINARY: {
+                        byte[] v = rs.getBytes(j);
+                        orow.addField(rs.wasNull() ? null : v,
+                                VarbinaryType.VARBINARY);
                         break;
-                    case StandardTypes.VARCHAR:
-                        orow.addField(rs.getString(j), VarcharType.VARCHAR);
+                    }
+                    case StandardTypes.VARCHAR: {
+                        String v = rs.getString(j);
+                        orow.addField(rs.wasNull() ? null : v,
+                                VarcharType.VARCHAR);
                         break;
+                    }
                     default:
                         throw new RuntimeException("Unknown SQL type "
                                 + rs.getMetaData().getColumnType(j));
