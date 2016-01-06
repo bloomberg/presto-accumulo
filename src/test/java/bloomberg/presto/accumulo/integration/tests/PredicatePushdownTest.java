@@ -1,5 +1,14 @@
 package bloomberg.presto.accumulo.integration.tests;
 
+import static com.facebook.presto.spi.type.BigintType.BIGINT;
+import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
+import static com.facebook.presto.spi.type.DateType.DATE;
+import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
+import static com.facebook.presto.spi.type.TimeType.TIME;
+import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
+import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
+import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -8,15 +17,7 @@ import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.facebook.presto.spi.type.BigintType;
-import com.facebook.presto.spi.type.BooleanType;
-import com.facebook.presto.spi.type.DateType;
-import com.facebook.presto.spi.type.DoubleType;
-import com.facebook.presto.spi.type.TimeType;
-import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.VarbinaryType;
-import com.facebook.presto.spi.type.VarcharType;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.MapType;
 import com.google.common.collect.ImmutableList;
@@ -52,18 +53,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntWhereNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("age", "metadata", "age", BigintType.BIGINT)
-                .addColumn("weight", "metadata", "weight", BigintType.BIGINT);
+                .addColumn("age", "metadata", "age", BIGINT)
+                .addColumn("weight", "metadata", "weight", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT)
-                .addField(new Long(60), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, BigintType.BIGINT)
-                .addField(new Long(60), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT)
-                .addField(new Long(60), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, BIGINT).addField(new Long(60), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT).addField(new Long(60), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
@@ -76,18 +74,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntWhereNotNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("age", "metadata", "age", BigintType.BIGINT)
-                .addColumn("weight", "metadata", "weight", BigintType.BIGINT);
+                .addColumn("age", "metadata", "age", BIGINT)
+                .addColumn("weight", "metadata", "weight", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT)
-                .addField(new Long(60), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, BigintType.BIGINT)
-                .addField(new Long(60), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT)
-                .addField(new Long(60), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, BIGINT).addField(new Long(60), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT).addField(new Long(60), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
@@ -100,18 +95,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntWhereNullOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("age", "metadata", "age", BigintType.BIGINT)
-                .addColumn("weight", "metadata", "weight", BigintType.BIGINT);
+                .addColumn("age", "metadata", "age", BIGINT)
+                .addColumn("weight", "metadata", "weight", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT)
-                .addField(new Long(60), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, BigintType.BIGINT)
-                .addField(new Long(60), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT)
-                .addField(new Long(60), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, BIGINT).addField(new Long(60), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT).addField(new Long(60), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
@@ -125,14 +117,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntLess() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -144,14 +136,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntLessOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -163,14 +155,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -196,14 +188,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntGreater() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
                 .withQuery("SELECT * FROM testmytable WHERE age > 15")
@@ -214,14 +206,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntGreaterOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -233,14 +225,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntLessAndGreater() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -253,18 +245,18 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntLessEqualAndGreater() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Long(-15), BigintType.BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Long(45), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Long(-15), BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Long(45), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -277,18 +269,18 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntLessAndGreaterEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Long(-15), BigintType.BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Long(45), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Long(-15), BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Long(45), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -301,18 +293,18 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntLessEqualAndGreaterEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Long(-15), BigintType.BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Long(45), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Long(-15), BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Long(45), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -325,22 +317,22 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntInRange() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Long(-15), BigintType.BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Long(45), BigintType.BIGINT);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(new Long(60), BigintType.BIGINT);
-        Row r7 = Row.newInstance().addField("row7", VarcharType.VARCHAR)
-                .addField(new Long(90), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Long(-15), BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Long(45), BIGINT);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(new Long(60), BIGINT);
+        Row r7 = Row.newInstance().addField("row7", VARCHAR)
+                .addField(new Long(90), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
@@ -355,20 +347,20 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntWithOr() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Long(-15), BigintType.BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Long(45), BigintType.BIGINT);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(new Long(60), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Long(-15), BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Long(45), BIGINT);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(new Long(60), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -381,30 +373,24 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntWithComplexWhereing() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("age", "metadata", "age", BigintType.BIGINT)
-                .addColumn("fav_num", "metadata", "fav_num", BigintType.BIGINT);
+                .addColumn("age", "metadata", "age", BIGINT)
+                .addColumn("fav_num", "metadata", "fav_num", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT)
-                .addField(new Long(30), BigintType.BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Long(-15), BigintType.BIGINT)
-                .addField(new Long(-15), BigintType.BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Long(45), BigintType.BIGINT)
-                .addField(new Long(45), BigintType.BIGINT);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(new Long(60), BigintType.BIGINT)
-                .addField(new Long(60), BigintType.BIGINT);
-        Row r7 = Row.newInstance().addField("row7", VarcharType.VARCHAR)
-                .addField(new Long(90), BigintType.BIGINT)
-                .addField(new Long(90), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT).addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT).addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT).addField(new Long(30), BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Long(-15), BIGINT)
+                .addField(new Long(-15), BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Long(45), BIGINT).addField(new Long(45), BIGINT);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(new Long(60), BIGINT).addField(new Long(60), BIGINT);
+        Row r7 = Row.newInstance().addField("row7", VARCHAR)
+                .addField(new Long(90), BIGINT).addField(new Long(90), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -420,15 +406,13 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBooleanWhereNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("male", "metadata", "male", BooleanType.BOOLEAN)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("male", "metadata", "male", BOOLEAN)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(null, BooleanType.BOOLEAN)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(false, BooleanType.BOOLEAN)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(null, BOOLEAN).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(false, BOOLEAN).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -440,15 +424,13 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBooleanWhereNotNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("male", "metadata", "male", BooleanType.BOOLEAN)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("male", "metadata", "male", BOOLEAN)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(null, BooleanType.BOOLEAN)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(false, BooleanType.BOOLEAN)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(null, BOOLEAN).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(false, BOOLEAN).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -460,18 +442,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBooleanWhereNullOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("male", "metadata", "male", BooleanType.BOOLEAN)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("male", "metadata", "male", BOOLEAN)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(null, BooleanType.BOOLEAN)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(false, BooleanType.BOOLEAN)
-                .addField(10L, BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(true, BooleanType.BOOLEAN)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(null, BOOLEAN).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(false, BOOLEAN).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(true, BOOLEAN).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -484,12 +463,12 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBooleanIsTrue() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male",
-                "metadata", "male", BooleanType.BOOLEAN);
+                "metadata", "male", BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Boolean(true), BooleanType.BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Boolean(false), BooleanType.BOOLEAN);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Boolean(true), BOOLEAN);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Boolean(false), BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -501,12 +480,12 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBooleanIsFalse() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male",
-                "metadata", "male", BooleanType.BOOLEAN);
+                "metadata", "male", BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(true, BooleanType.BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(false, BooleanType.BOOLEAN);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(true,
+                BOOLEAN);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(false,
+                BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -518,18 +497,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBooleanIsTrueAndFalse() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("male", "metadata", "male", BooleanType.BOOLEAN)
-                .addColumn("human", "metadata", "human", BooleanType.BOOLEAN);
+                .addColumn("male", "metadata", "male", BOOLEAN)
+                .addColumn("human", "metadata", "human", BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(true, BooleanType.BOOLEAN)
-                .addField(true, BooleanType.BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(false, BooleanType.BOOLEAN)
-                .addField(true, BooleanType.BOOLEAN);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(true, BooleanType.BOOLEAN)
-                .addField(false, BooleanType.BOOLEAN);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(true, BOOLEAN).addField(true, BOOLEAN);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(false, BOOLEAN).addField(true, BOOLEAN);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(true, BOOLEAN).addField(false, BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -542,12 +518,12 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBooleanInRange() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male",
-                "metadata", "male", BooleanType.BOOLEAN);
+                "metadata", "male", BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(true, BooleanType.BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(false, BooleanType.BOOLEAN);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(true,
+                BOOLEAN);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(false,
+                BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -560,18 +536,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDateWhereNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("start_date", "metadata", "start_date",
-                        DateType.DATE)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("start_date", "metadata", "start_date", DATE)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, DateType.DATE).addField(10L, BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, DATE).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -583,18 +556,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDateWhereNotNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("start_date", "metadata", "start_date",
-                        DateType.DATE)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("start_date", "metadata", "start_date", DATE)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, DateType.DATE).addField(10L, BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, DATE).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -607,18 +577,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDateWhereNullOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("start_date", "metadata", "start_date",
-                        DateType.DATE)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("start_date", "metadata", "start_date", DATE)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, DateType.DATE).addField(10L, BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, DATE).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -630,15 +597,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectDateLess() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -650,15 +617,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectDateLessOrEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -670,15 +637,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectDateEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -690,15 +657,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectDateGreater() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -710,15 +677,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectDateGreaterOrEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -730,15 +697,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectDateLessAndGreater() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -751,19 +718,19 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectDateLessEqualAndGreater() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(c(2015, 11, 15), DateType.DATE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(c(2016, 1, 15), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(c(2015, 11, 15), DATE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(c(2016, 1, 15), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -776,19 +743,19 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectDateLessAndGreaterEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(c(2015, 11, 15), DateType.DATE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(c(2016, 1, 15), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(c(2015, 11, 15), DATE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(c(2016, 1, 15), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -802,19 +769,19 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDateLessEqualAndGreaterEqual() throws Exception {
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(c(2015, 11, 15), DateType.DATE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(c(2016, 1, 15), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(c(2015, 11, 15), DATE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(c(2016, 1, 15), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -828,21 +795,21 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDateWithOr() throws Exception {
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(c(2015, 11, 15), DateType.DATE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(c(2016, 1, 15), DateType.DATE);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(c(2016, 1, 31), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(c(2015, 11, 15), DATE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(c(2016, 1, 15), DATE);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(c(2016, 1, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -858,21 +825,21 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDateInRange() throws Exception {
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 1), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 15), DateType.DATE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(c(2015, 12, 31), DateType.DATE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(c(2015, 11, 15), DateType.DATE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(c(2016, 1, 15), DateType.DATE);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(c(2016, 1, 31), DateType.DATE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(c(2015, 12, 31), DATE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(c(2015, 11, 15), DATE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(c(2016, 1, 15), DATE);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(c(2016, 1, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -886,18 +853,17 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleWhereNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("age", "metadata", "age", DoubleType.DOUBLE)
-                .addColumn("weight", "metadata", "weight", DoubleType.DOUBLE);
+                .addColumn("age", "metadata", "age", DOUBLE)
+                .addColumn("weight", "metadata", "weight", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE)
-                .addField(new Double(60), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, DoubleType.DOUBLE)
-                .addField(new Double(60), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE)
-                .addField(new Double(60), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE)
+                .addField(new Double(60), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, DOUBLE).addField(new Double(60), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE)
+                .addField(new Double(60), DOUBLE);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
@@ -910,18 +876,17 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleWhereNotNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("age", "metadata", "age", DoubleType.DOUBLE)
-                .addColumn("weight", "metadata", "weight", DoubleType.DOUBLE);
+                .addColumn("age", "metadata", "age", DOUBLE)
+                .addColumn("weight", "metadata", "weight", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE)
-                .addField(new Double(60), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, DoubleType.DOUBLE)
-                .addField(new Double(60), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE)
-                .addField(new Double(60), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE)
+                .addField(new Double(60), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, DOUBLE).addField(new Double(60), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE)
+                .addField(new Double(60), DOUBLE);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
@@ -934,18 +899,17 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleWhereNullOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("age", "metadata", "age", DoubleType.DOUBLE)
-                .addColumn("weight", "metadata", "weight", DoubleType.DOUBLE);
+                .addColumn("age", "metadata", "age", DOUBLE)
+                .addColumn("weight", "metadata", "weight", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE)
-                .addField(new Double(60), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, DoubleType.DOUBLE)
-                .addField(new Double(60), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE)
-                .addField(new Double(60), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE)
+                .addField(new Double(60), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, DOUBLE).addField(new Double(60), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE)
+                .addField(new Double(60), DOUBLE);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
@@ -959,14 +923,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleLess() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -978,14 +942,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleLessOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -997,14 +961,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1030,14 +994,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleGreater() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
                 .withQuery("SELECT * FROM testmytable WHERE age > 15")
@@ -1048,14 +1012,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleGreaterOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1067,14 +1031,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleLessAndGreater() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1087,18 +1051,18 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleLessEqualAndGreater() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Double(-15), DoubleType.DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Double(45), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Double(45), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1111,18 +1075,18 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleLessAndGreaterEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Double(-15), DoubleType.DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Double(45), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Double(45), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1135,18 +1099,18 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleLessEqualAndGreaterEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Double(-15), DoubleType.DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Double(45), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Double(45), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1159,22 +1123,22 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleInRange() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Double(-15), DoubleType.DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Double(45), DoubleType.DOUBLE);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(new Double(60), DoubleType.DOUBLE);
-        Row r7 = Row.newInstance().addField("row7", VarcharType.VARCHAR)
-                .addField(new Double(90), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Double(45), DOUBLE);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(new Double(60), DOUBLE);
+        Row r7 = Row.newInstance().addField("row7", VARCHAR)
+                .addField(new Double(90), DOUBLE);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
@@ -1189,20 +1153,20 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleWithOr() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", DoubleType.DOUBLE);
+                "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Double(-15), DoubleType.DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Double(45), DoubleType.DOUBLE);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(new Double(60), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Double(45), DOUBLE);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(new Double(60), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1215,30 +1179,30 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectDoubleWithComplexWhereing() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("age", "metadata", "age", DoubleType.DOUBLE)
-                .addColumn("fav_num", "metadata", "fav_num", DoubleType.DOUBLE);
+                .addColumn("age", "metadata", "age", DOUBLE)
+                .addColumn("fav_num", "metadata", "fav_num", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Double(0), DoubleType.DOUBLE)
-                .addField(new Double(0), DoubleType.DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Double(15), DoubleType.DOUBLE)
-                .addField(new Double(15), DoubleType.DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Double(30), DoubleType.DOUBLE)
-                .addField(new Double(30), DoubleType.DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Double(-15), DoubleType.DOUBLE)
-                .addField(new Double(-15), DoubleType.DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Double(45), DoubleType.DOUBLE)
-                .addField(new Double(45), DoubleType.DOUBLE);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(new Double(60), DoubleType.DOUBLE)
-                .addField(new Double(60), DoubleType.DOUBLE);
-        Row r7 = Row.newInstance().addField("row7", VarcharType.VARCHAR)
-                .addField(new Double(90), DoubleType.DOUBLE)
-                .addField(new Double(90), DoubleType.DOUBLE);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Double(0), DOUBLE)
+                .addField(new Double(0), DOUBLE);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Double(15), DOUBLE)
+                .addField(new Double(15), DOUBLE);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Double(30), DOUBLE)
+                .addField(new Double(30), DOUBLE);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Double(-15), DOUBLE)
+                .addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Double(45), DOUBLE)
+                .addField(new Double(45), DOUBLE);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(new Double(60), DOUBLE)
+                .addField(new Double(60), DOUBLE);
+        Row r7 = Row.newInstance().addField("row7", VARCHAR)
+                .addField(new Double(90), DOUBLE)
+                .addField(new Double(90), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1254,18 +1218,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimeWhereNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("start_date", "metadata", "start_date",
-                        TimeType.TIME)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("start_date", "metadata", "start_date", TIME)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, TimeType.TIME).addField(10L, BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, TIME).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1277,18 +1238,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimeWhereNotNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("start_date", "metadata", "start_date",
-                        TimeType.TIME)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("start_date", "metadata", "start_date", TIME)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, TimeType.TIME).addField(10L, BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, TIME).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1301,18 +1259,15 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimeWhereNullOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("start_date", "metadata", "start_date",
-                        TimeType.TIME)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("start_date", "metadata", "start_date", TIME)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, TimeType.TIME).addField(10L, BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, TIME).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1324,15 +1279,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimeLess() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1344,15 +1299,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimeLessOrEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1364,15 +1319,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimeEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1384,15 +1339,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimeGreater() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1404,15 +1359,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimeGreaterOrEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1424,15 +1379,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimeLessAndGreater() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1445,19 +1400,19 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimeLessEqualAndGreater() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(t(0, 0, 0), TimeType.TIME);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(t(22, 0, 15), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(t(0, 0, 0), TIME);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(t(22, 0, 15), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1470,19 +1425,19 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimeLessAndGreaterEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(t(0, 0, 0), TimeType.TIME);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(t(22, 0, 15), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(t(0, 0, 0), TIME);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(t(22, 0, 15), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1496,19 +1451,19 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimeLessEqualAndGreaterEqual() throws Exception {
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(t(0, 0, 0), TimeType.TIME);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(t(22, 0, 15), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(t(0, 0, 0), TIME);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(t(22, 0, 15), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1522,21 +1477,21 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimeWithOr() throws Exception {
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(t(0, 0, 0), TimeType.TIME);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(t(22, 0, 15), TimeType.TIME);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(ts(2016, 01, 31, 23, 0, 0), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(t(0, 0, 0), TIME);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(t(22, 0, 15), TIME);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(ts(2016, 01, 31, 23, 0, 0), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1552,21 +1507,21 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimeInRange() throws Exception {
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date", TimeType.TIME);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimeType.TIME);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(t(12, 0, 30), TimeType.TIME);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(t(20, 15, 30), TimeType.TIME);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(t(0, 0, 0), TimeType.TIME);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(t(22, 0, 15), TimeType.TIME);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(ts(2016, 01, 31, 23, 0, 0), TimeType.TIME);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(t(20, 15, 30), TIME);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(t(0, 0, 0), TIME);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(t(22, 0, 15), TIME);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(ts(2016, 01, 31, 23, 0, 0), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1580,19 +1535,17 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimestampWhereNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("start_date", "metadata", "start_date",
-                        TimestampType.TIMESTAMP)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(t(0, 30, 0), TimestampType.TIMESTAMP)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, TimestampType.TIMESTAMP)
-                .addField(10L, BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30), TimestampType.TIMESTAMP)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP)
+                .addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, TIMESTAMP).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP)
+                .addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1604,19 +1557,17 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimestampWhereNotNull() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("start_date", "metadata", "start_date",
-                        TimestampType.TIMESTAMP)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, TimestampType.TIMESTAMP)
-                .addField(10L, BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30), TimestampType.TIMESTAMP)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP)
+                .addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, TIMESTAMP).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP)
+                .addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1629,19 +1580,17 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimestampWhereNullOrEqual() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("start_date", "metadata", "start_date",
-                        TimestampType.TIMESTAMP)
-                .addColumn("age", "metadata", "age", BigintType.BIGINT);
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP)
-                .addField(10L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(null, TimestampType.TIMESTAMP)
-                .addField(10L, BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30), TimestampType.TIMESTAMP)
-                .addField(10L, BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP)
+                .addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, TIMESTAMP).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP)
+                .addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1653,17 +1602,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimestampLess() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1675,17 +1622,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimestampLessOrEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1697,17 +1642,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimestampEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1719,17 +1662,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimestampGreater() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1741,17 +1682,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimestampGreaterOrEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1763,17 +1702,15 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimestampLessAndGreater() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1786,21 +1723,19 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimestampLessEqualAndGreater() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(ts(2015, 11, 15, 0, 0, 0), TimestampType.TIMESTAMP);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(ts(2016, 01, 15, 22, 0, 15), TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1813,21 +1748,19 @@ public class PredicatePushdownTest {
 
     @Test
     public void testSelectTimestampLessAndGreaterEqual() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(ts(2015, 11, 15, 0, 0, 0), TimestampType.TIMESTAMP);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(ts(2016, 01, 15, 22, 0, 15), TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1841,21 +1774,19 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimestampLessEqualAndGreaterEqual() throws Exception {
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(ts(2015, 11, 15, 0, 0, 0), TimestampType.TIMESTAMP);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(ts(2016, 01, 15, 22, 0, 15), TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1869,23 +1800,21 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimestampWithOr() throws Exception {
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(ts(2015, 11, 15, 0, 0, 0), TimestampType.TIMESTAMP);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(ts(2016, 01, 15, 22, 0, 15), TimestampType.TIMESTAMP);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(ts(2016, 01, 31, 23, 0, 0), TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(ts(2016, 01, 31, 23, 0, 0), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1901,23 +1830,21 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectTimestampInRange() throws Exception {
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn(
-                "start_date", "metadata", "start_date",
-                TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 1, 0, 30, 0), TimestampType.TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 15, 12, 0, 30), TimestampType.TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(ts(2015, 12, 31, 20, 15, 30),
-                        TimestampType.TIMESTAMP);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(ts(2015, 11, 15, 0, 0, 0), TimestampType.TIMESTAMP);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(ts(2016, 01, 15, 22, 0, 15), TimestampType.TIMESTAMP);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(ts(2016, 01, 31, 23, 0, 0), TimestampType.TIMESTAMP);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(ts(2016, 01, 31, 23, 0, 0), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable")
@@ -1931,37 +1858,333 @@ public class PredicatePushdownTest {
     }
 
     @Test
-    @Ignore
-    public void testSelectVarbinary() throws Exception {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
-                "metadata", "bytes", VarbinaryType.VARBINARY);
+    public void testSelectVarbinaryWhereNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("bytes", "metadata", "bytes", VARBINARY)
+                .addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField("Check out all this data!".getBytes(),
-                        VarbinaryType.VARBINARY);
-
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField("Check out all this other data!".getBytes(),
-                        VarbinaryType.VARBINARY);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, VARBINARY).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE bytes IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
                 .runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryWhereNotNull() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("bytes", "metadata", "bytes", VARBINARY)
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, VARBINARY).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE bytes IS NOT NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r3).runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryWhereNullOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("bytes", "metadata", "bytes", VARBINARY)
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, VARBINARY).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE bytes = VARBINARY 'abc' OR bytes IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryLess() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE bytes < VARBINARY 'def'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryLessOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE bytes <= VARBINARY 'def'")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE bytes = VARBINARY 'def'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE bytes > VARBINARY 'def'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryGreaterOrEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE bytes >= VARBINARY 'def'")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryLessAndGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "bytes > VARBINARY 'abc' AND "
+                        + "bytes < VARBINARY 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryLessEqualAndGreater() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField("a".getBytes(), VARBINARY);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField("jkl".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "bytes > VARBINARY 'abc' AND "
+                        + "bytes <= VARBINARY 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryLessAndGreaterEqual() throws Exception {
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField("a".getBytes(), VARBINARY);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField("jkl".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "bytes >= VARBINARY 'abc' AND "
+                        + "bytes < VARBINARY 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryLessEqualAndGreaterEqual() throws Exception {
+
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField("a".getBytes(), VARBINARY);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField("jkl".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "bytes >= VARBINARY 'abc' AND "
+                        + "bytes <= VARBINARY 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r1, r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryWithOr() throws Exception {
+
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField("a".getBytes(), VARBINARY);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField("jkl".getBytes(), VARBINARY);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField("mno".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE ("
+                        + "(bytes > VARBINARY 'abc' AND "
+                        + "bytes <= VARBINARY 'ghi')) OR ("
+                        + "(bytes >= VARBINARY 'jkl' AND "
+                        + "bytes < VARBINARY 'mno'))")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r2, r3, r5).runTest();
+    }
+
+    @Test
+    public void testSelectVarbinaryInRange() throws Exception {
+
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes",
+                "metadata", "bytes", VARBINARY);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField("ghi".getBytes(), VARBINARY);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField("a".getBytes(), VARBINARY);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField("jkl".getBytes(), VARBINARY);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField("mno".getBytes(), VARBINARY);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE bytes IN ("
+                        + "VARBINARY 'abc', " + "VARBINARY 'ghi', "
+                        + "VARBINARY 'jkl', " + "VARBINARY 'a')")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r1, r3, r5, r4).runTest();
     }
 
     @Test
     @Ignore
     public void testSelectVarchar() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("name",
-                "metadata", "name", VarcharType.VARCHAR);
+                "metadata", "name", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField("Alice", VarcharType.VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField("Bob", VarcharType.VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField("Carol", VarcharType.VARCHAR);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("Alice",
+                VARCHAR);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("Bob",
+                VARCHAR);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("Carol",
+                VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -1972,15 +2195,15 @@ public class PredicatePushdownTest {
     @Test
     @Ignore
     public void testSelectArray() throws Exception {
-        Type elementType = VarcharType.VARCHAR;
+        Type elementType = VARCHAR;
         ArrayType arrayType = new ArrayType(elementType);
         RowSchema schema = RowSchema.newInstance().addRowId()
                 .addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
                 .addField(AccumuloRowSerializer.getBlockFromArray(elementType,
                         ImmutableList.of("a", "b", "c")), arrayType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
                 .addField(AccumuloRowSerializer.getBlockFromArray(elementType,
                         ImmutableList.of("d", "e", "f")), arrayType);
 
@@ -1993,27 +2216,27 @@ public class PredicatePushdownTest {
     @Test
     @Ignore
     public void testSelectNestedArray() throws Exception {
-        ArrayType nestedArrayType = new ArrayType(VarcharType.VARCHAR);
+        ArrayType nestedArrayType = new ArrayType(VARCHAR);
         ArrayType arrayType = new ArrayType(nestedArrayType);
         RowSchema schema = RowSchema.newInstance().addRowId()
                 .addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
                                 ImmutableList.of(
                                         ImmutableList.of("a", "b", "c"),
                                         ImmutableList.of("d", "e", "f"),
                                         ImmutableList.of("g", "h", "i"))),
-                        arrayType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                arrayType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
                                 ImmutableList.of(
                                         ImmutableList.of("j", "k", "l"),
                                         ImmutableList.of("m", "n", "o"),
                                         ImmutableList.of("p", "q", "r"))),
-                        arrayType);
+                arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -2024,7 +2247,7 @@ public class PredicatePushdownTest {
     @Test
     @Ignore
     public void testSelectVeryNestedArray() throws Exception {
-        ArrayType veryNestedArrayType = new ArrayType(VarcharType.VARCHAR);
+        ArrayType veryNestedArrayType = new ArrayType(VARCHAR);
         ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
         ArrayType arrayType = new ArrayType(nestedArrayType);
 
@@ -2032,7 +2255,7 @@ public class PredicatePushdownTest {
                 .addColumn("senders", "metadata", "senders", arrayType);
 
         // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
                         		ImmutableList.of(
@@ -2059,7 +2282,7 @@ public class PredicatePushdownTest {
     @Test
     @Ignore
     public void testSelectUberNestedArray() throws Exception {
-        ArrayType uberNestedArrayType = new ArrayType(VarcharType.VARCHAR);
+        ArrayType uberNestedArrayType = new ArrayType(VARCHAR);
         ArrayType veryNestedArrayType = new ArrayType(uberNestedArrayType);
         ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
         ArrayType arrayType = new ArrayType(nestedArrayType);
@@ -2068,7 +2291,7 @@ public class PredicatePushdownTest {
                 .addColumn("senders", "metadata", "senders", arrayType);
 
         // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
                             ImmutableList.of(
@@ -2122,22 +2345,22 @@ public class PredicatePushdownTest {
     @Test
     @Ignore
     public void testSelectMap() throws Exception {
-        Type keyType = VarcharType.VARCHAR;
-        Type valueType = BigintType.BIGINT;
+        Type keyType = VARCHAR;
+        Type valueType = BIGINT;
         MapType mapType = new MapType(keyType, valueType);
         RowSchema schema = RowSchema.newInstance().addRowId()
                 .addColumn("peopleages", "metadata", "peopleages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromMap(mapType,
                                 ImmutableMap.of("a", 1, "b", 2, "c", 3)),
-                        mapType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromMap(mapType,
                                 ImmutableMap.of("d", 4, "e", 5, "f", 6)),
-                        mapType);
+                mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmytable").withQuery("SELECT * FROM testmytable")
@@ -2148,7 +2371,7 @@ public class PredicatePushdownTest {
     @Test(expected = SQLException.class)
     @Ignore
     public void testSelectMapOfArrays() throws Exception {
-        Type elementType = BigintType.BIGINT;
+        Type elementType = BIGINT;
         Type keyMapType = new ArrayType(elementType);
         Type valueMapType = new ArrayType(elementType);
         MapType mapType = new MapType(keyMapType, valueMapType);
@@ -2156,7 +2379,7 @@ public class PredicatePushdownTest {
                 "metadata", "foo", mapType);
 
         // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromMap(mapType,
                                 ImmutableMap.of(
@@ -2164,7 +2387,7 @@ public class PredicatePushdownTest {
                                         ImmutableList.of(1, 2, 3))
                                 ),
                         mapType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromMap(mapType,
                                 ImmutableMap.of(
@@ -2183,8 +2406,8 @@ public class PredicatePushdownTest {
     @Test(expected = SQLException.class)
     @Ignore
     public void testSelectMapOfMaps() throws Exception {
-        Type keyType = VarcharType.VARCHAR;
-        Type valueType = BigintType.BIGINT;
+        Type keyType = VARCHAR;
+        Type valueType = BIGINT;
         Type keyMapType = new MapType(keyType, valueType);
         Type valueMapType = new MapType(keyType, valueType);
         MapType mapType = new MapType(keyMapType, valueMapType);
@@ -2192,7 +2415,7 @@ public class PredicatePushdownTest {
                 "metadata", "foo", mapType);
 
         // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromMap(mapType,
                                 ImmutableMap.of(
@@ -2200,7 +2423,7 @@ public class PredicatePushdownTest {
                                         ImmutableMap.of("a", 1, "b", 2, "c", 3))
                                 ),
                         mapType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
                 .addField(
                         AccumuloRowSerializer.getBlockFromMap(mapType,
                                 ImmutableMap.of(
@@ -2219,22 +2442,22 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntNoWhereWithSplits() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Long(-15), BigintType.BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Long(45), BigintType.BIGINT);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(new Long(60), BigintType.BIGINT);
-        Row r7 = Row.newInstance().addField("row7", VarcharType.VARCHAR)
-                .addField(new Long(90), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Long(-15), BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Long(45), BIGINT);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(new Long(60), BIGINT);
+        Row r7 = Row.newInstance().addField("row7", VARCHAR)
+                .addField(new Long(90), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
@@ -2247,14 +2470,14 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntWhereRecordKeyIs() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
@@ -2267,22 +2490,22 @@ public class PredicatePushdownTest {
     @Test
     public void testSelectBigIntWhereRecordKeyInRange() throws Exception {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age",
-                "metadata", "age", BigintType.BIGINT);
+                "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR)
-                .addField(new Long(0), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR)
-                .addField(new Long(15), BigintType.BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR)
-                .addField(new Long(30), BigintType.BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VarcharType.VARCHAR)
-                .addField(new Long(-15), BigintType.BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VarcharType.VARCHAR)
-                .addField(new Long(45), BigintType.BIGINT);
-        Row r6 = Row.newInstance().addField("row6", VarcharType.VARCHAR)
-                .addField(new Long(60), BigintType.BIGINT);
-        Row r7 = Row.newInstance().addField("row7", VarcharType.VARCHAR)
-                .addField(new Long(90), BigintType.BIGINT);
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(new Long(0), BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(new Long(15), BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(new Long(30), BIGINT);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR)
+                .addField(new Long(-15), BIGINT);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR)
+                .addField(new Long(45), BIGINT);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR)
+                .addField(new Long(60), BIGINT);
+        Row r7 = Row.newInstance().addField("row7", VARCHAR)
+                .addField(new Long(90), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")

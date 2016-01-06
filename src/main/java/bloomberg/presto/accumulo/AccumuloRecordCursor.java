@@ -53,6 +53,7 @@ import com.facebook.presto.spi.predicate.Range;
 import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.VarbinaryType;
 import com.facebook.presto.spi.type.VarcharType;
 
 import bloomberg.presto.accumulo.iterators.AndFilter;
@@ -398,6 +399,9 @@ public class AccumuloRecordCursor implements RecordCursor {
         if (type.equals(VarcharType.VARCHAR)) {
             valueBytes = LexicoderRowSerializer.getLexicoder(type)
                     .encode(((Slice) value).toStringUtf8());
+        } else if (type.equals(VarbinaryType.VARBINARY)) {
+            valueBytes = LexicoderRowSerializer.getLexicoder(type)
+                    .encode(((Slice) value).getBytes());
         } else if (type.equals(BooleanType.BOOLEAN)) {
             valueBytes = value.equals(Boolean.TRUE)
                     ? LexicoderRowSerializer.TRUE
