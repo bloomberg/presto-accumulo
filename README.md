@@ -13,7 +13,12 @@ mvn clean package
 mkdir -p $PRESTO_HOME/plugin/accumulo/
 cp target/presto-accumulo-0.*/* $PRESTO_HOME/plugin/accumulo/
 ```
+The connector depends on some customer iterators in order to push various information in a SQL WHERE clause to Accumulo for server-side filtering.  This dependency requires the built `target/presto-accumulo-0.*/presto-accumulo-0.*.jar` to be placed in Accumulo's `lib` directory on every Accumulo TabletServer node.
 
+```bash
+# For each TabletServer node:
+scp target/presto-accumulo-0.*/presto-accumulo-0.*.jar <tabletserver_address>:$ACCUMULO_HOME/lib
+```
 ### Configuration
 See ```etc/catalog/accumulo.properties``` for an example configuration of the Accumulo connector.  Fill in the appropriate values to fit your cluster, then copy this file into ```$PRESTO_HOME/etc/catalog```.
 
