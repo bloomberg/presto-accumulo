@@ -15,12 +15,10 @@ import java.util.GregorianCalendar;
 
 import org.junit.After;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import com.facebook.presto.spi.block.Block;
-import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.MapType;
 import com.google.common.collect.ImmutableList;
@@ -48,6 +46,24 @@ public class PredicatePushdownTest {
             .getBlockFromArray(VARCHAR, ImmutableList.of("j", "k", "l"));
     private static final Block ARRAY_MNO = AccumuloRowSerializer
             .getBlockFromArray(VARCHAR, ImmutableList.of("m", "n", "o"));
+
+    private static final Block MAP_A = AccumuloRowSerializer.getBlockFromMap(
+            new MapType(VARCHAR, BIGINT), ImmutableMap.of("a", 1));
+    private static final Block MAP_ABC = AccumuloRowSerializer.getBlockFromMap(
+            new MapType(VARCHAR, BIGINT),
+            ImmutableMap.of("a", 1, "b", 2, "c", 3));
+    private static final Block MAP_DEF = AccumuloRowSerializer.getBlockFromMap(
+            new MapType(VARCHAR, BIGINT),
+            ImmutableMap.of("d", 4, "e", 5, "f", 6));
+    private static final Block MAP_GHI = AccumuloRowSerializer.getBlockFromMap(
+            new MapType(VARCHAR, BIGINT),
+            ImmutableMap.of("g", 7, "h", 8, "i", 9));
+    private static final Block MAP_JKL = AccumuloRowSerializer.getBlockFromMap(
+            new MapType(VARCHAR, BIGINT),
+            ImmutableMap.of("j", 0, "k", 1, "l", 2));
+    private static final Block MAP_MNO = AccumuloRowSerializer.getBlockFromMap(
+            new MapType(VARCHAR, BIGINT),
+            ImmutableMap.of("m", 3, "n", 4, "o", 5));
 
     static {
         try {
@@ -2824,229 +2840,354 @@ public class PredicatePushdownTest {
     }
 
     @Test
-    @Ignore
-    public void testSelectNestedArray() throws Exception {
-        ArrayType nestedArrayType = new ArrayType(VARCHAR);
-        ArrayType arrayType = new ArrayType(nestedArrayType);
+    public void testSelectMapWhereNull() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("senders", "metadata", "senders", arrayType);
+                .addColumn("ages", "metadata", "ages", mapType)
+                .addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newInstance().addField("row1", VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
-                                ImmutableList.of(
-                                        ImmutableList.of("a", "b", "c"),
-                                        ImmutableList.of("d", "e", "f"),
-                                        ImmutableList.of("g", "h", "i"))),
-                arrayType);
+                .addField(MAP_ABC, mapType).addField(10L, BIGINT);
         Row r2 = Row.newInstance().addField("row2", VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
-                                ImmutableList.of(
-                                        ImmutableList.of("j", "k", "l"),
-                                        ImmutableList.of("m", "n", "o"),
-                                        ImmutableList.of("p", "q", "r"))),
-                arrayType);
+                .addField(null, mapType).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(MAP_GHI, mapType).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE ages IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
                 .runTest();
     }
 
     @Test
-    @Ignore
-    public void testSelectVeryNestedArray() throws Exception {
-        ArrayType veryNestedArrayType = new ArrayType(VARCHAR);
-        ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
-        ArrayType arrayType = new ArrayType(nestedArrayType);
-
+    public void testSelectMapWhereNotNull() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("senders", "metadata", "senders", arrayType);
-
-        // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
-                        		ImmutableList.of(
-                                    ImmutableList.of(
-                                            ImmutableList.of("a", "b", "c"),
-                                            ImmutableList.of("d", "e", "f"),
-                                            ImmutableList.of("g", "h", "i")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("j", "k", "l"),
-                                            ImmutableList.of("m", "n", "o"),
-                                            ImmutableList.of("p", "q", "r")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("s", "t", "u"),
-                                            ImmutableList.of("v", "w", "x"),
-                                            ImmutableList.of("y", "z", "aa")))),
-                        arrayType);
-        // @formatter:on
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
-    }
-
-    @Test
-    @Ignore
-    public void testSelectUberNestedArray() throws Exception {
-        ArrayType uberNestedArrayType = new ArrayType(VARCHAR);
-        ArrayType veryNestedArrayType = new ArrayType(uberNestedArrayType);
-        ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
-        ArrayType arrayType = new ArrayType(nestedArrayType);
-
-        RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("senders", "metadata", "senders", arrayType);
-
-        // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromArray(nestedArrayType,
-                            ImmutableList.of(
-                                ImmutableList.of(
-                                    ImmutableList.of(
-                                            ImmutableList.of("a", "b", "c"),
-                                            ImmutableList.of("d", "e", "f"),
-                                            ImmutableList.of("g", "h", "i")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("j", "k", "l"),
-                                            ImmutableList.of("m", "n", "o"),
-                                            ImmutableList.of("p", "q", "r")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("s", "t", "u"),
-                                            ImmutableList.of("v", "w", "x"),
-                                            ImmutableList.of("y", "z", "aa"))),
-                                ImmutableList.of(
-                                    ImmutableList.of(
-                                            ImmutableList.of("a", "b", "c"),
-                                            ImmutableList.of("d", "e", "f"),
-                                            ImmutableList.of("g", "h", "i")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("j", "k", "l"),
-                                            ImmutableList.of("m", "n", "o"),
-                                            ImmutableList.of("p", "q", "r")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("s", "t", "u"),
-                                            ImmutableList.of("v", "w", "x"),
-                                            ImmutableList.of("y", "z", "aa"))),
-                                ImmutableList.of(
-                                    ImmutableList.of(
-                                            ImmutableList.of("a", "b", "c"),
-                                            ImmutableList.of("d", "e", "f"),
-                                            ImmutableList.of("g", "h", "i")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("j", "k", "l"),
-                                            ImmutableList.of("m", "n", "o"),
-                                            ImmutableList.of("p", "q", "r")),
-                                    ImmutableList.of(
-                                            ImmutableList.of("s", "t", "u"),
-                                            ImmutableList.of("v", "w", "x"),
-                                            ImmutableList.of("y", "z", "aa"))))),
-                        arrayType);
-        // @formatter:on
-
-        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
-    }
-
-    @Test
-    @Ignore
-    public void testSelectMap() throws Exception {
-        Type keyType = VARCHAR;
-        Type valueType = BIGINT;
-        MapType mapType = new MapType(keyType, valueType);
-        RowSchema schema = RowSchema.newInstance().addRowId()
-                .addColumn("peopleages", "metadata", "peopleages", mapType);
+                .addColumn("ages", "metadata", "ages", mapType)
+                .addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newInstance().addField("row1", VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of("a", 1, "b", 2, "c", 3)),
-                mapType);
+                .addField(MAP_ABC, mapType).addField(10L, BIGINT);
         Row r2 = Row.newInstance().addField("row2", VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of("d", 4, "e", 5, "f", 6)),
+                .addField(null, mapType).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(MAP_GHI, mapType).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE ages IS NOT NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r3).runTest();
+    }
+
+    @Test
+    public void testSelectMapWhereNullOrEqual() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId()
+                .addColumn("ages", "metadata", "ages", mapType)
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR)
+                .addField(MAP_ABC, mapType).addField(10L, BIGINT);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR)
+                .addField(null, mapType).addField(10L, BIGINT);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR)
+                .addField(MAP_GHI, mapType).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE ages = MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) OR ages IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    // Operator LESS_THAN(map<varchar,bigint>, map<varchar,bigint>) not
+    // registered
+    @Test(expected = SQLException.class)
+    public void testSelectMapLess() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
                 mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE ages < MAP(ARRAY['d','e','f'],ARRAY[4,5,6])")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1)
                 .runTest();
     }
 
+    // Operator LESS_THAN_OR_EQUAL(map<varchar,bigint>, map<varchar,bigint>) not
+    // registered
     @Test(expected = SQLException.class)
-    @Ignore
-    public void testSelectMapOfArrays() throws Exception {
-        Type elementType = BIGINT;
-        Type keyMapType = new ArrayType(elementType);
-        Type valueMapType = new ArrayType(elementType);
-        MapType mapType = new MapType(keyMapType, valueMapType);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo",
-                "metadata", "foo", mapType);
+    public void testSelectMapLessOrEqual() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
 
-        // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of(
-                                        ImmutableList.of(1, 2, 3),
-                                        ImmutableList.of(1, 2, 3))
-                                ),
-                        mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of(
-                                        ImmutableList.of(4, 5, 6),
-                                        ImmutableList.of(4, 5, 6))
-                                ),
-                        mapType);
-        // @formatter:on
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
+                mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE ages <= MAP(ARRAY['d','e','f'],ARRAY[4,5,6])")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectMapEqual() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
+                mapType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE ages = MAP(ARRAY['d','e','f'],ARRAY[4,5,6])")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
                 .runTest();
     }
 
+    // Operator GREATER_THAN(map<varchar,bigint>, map<varchar,bigint>) not
+    // registered
     @Test(expected = SQLException.class)
-    @Ignore
-    public void testSelectMapOfMaps() throws Exception {
-        Type keyType = VARCHAR;
-        Type valueType = BIGINT;
-        Type keyMapType = new MapType(keyType, valueType);
-        Type valueMapType = new MapType(keyType, valueType);
-        MapType mapType = new MapType(keyMapType, valueMapType);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo",
-                "metadata", "foo", mapType);
+    public void testSelectMapGreater() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
 
-        // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of(
-                                        ImmutableMap.of("a", 1, "b", 2, "c", 3),
-                                        ImmutableMap.of("a", 1, "b", 2, "c", 3))
-                                ),
-                        mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR)
-                .addField(
-                        AccumuloRowSerializer.getBlockFromMap(mapType,
-                                ImmutableMap.of(
-                                        ImmutableMap.of("d", 4, "e", 5, "f", 6),
-                                        ImmutableMap.of("d", 4, "e", 5, "f", 6))
-                                ),
-                        mapType);
-        // @formatter:on
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
+                mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default")
-                .withTable("testmytable").withQuery("SELECT * FROM testmytable")
-                .withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2)
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE ages > MAP(ARRAY['d','e','f'],ARRAY[4,5,6])")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3)
                 .runTest();
+    }
+
+    // Operator GREATER_THAN_OR_EQUAL(map<varchar,bigint>, map<varchar,bigint>)
+    // not registered
+    @Test(expected = SQLException.class)
+    public void testSelectMapGreaterOrEqual() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
+                mapType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE ages >= MAP(ARRAY['d','e','f'],ARRAY[4,5,6])")
+                .withInputSchema(schema).withInput(r1, r2, r3)
+                .withOutput(r2, r3).runTest();
+    }
+
+    // Operator GREATER_THAN(map<varchar,bigint>, map<varchar,bigint>) not
+    // registered
+    @Test(expected = SQLException.class)
+    public void testSelectMapLessAndGreater() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
+                mapType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "ages > MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) AND "
+                        + "ages < MAP(ARRAY['g','h','i'],ARRAY[7,8,9])")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2)
+                .runTest();
+    }
+
+    // Operator GREATER_THAN(map<varchar,bigint>, map<varchar,bigint>) not
+    // registered
+    @Test(expected = SQLException.class)
+    public void testSelectMapLessEqualAndGreater() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
+                mapType);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(MAP_A,
+                mapType);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(MAP_JKL,
+                mapType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "ages > MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) AND "
+                        + "ages <= MAP(ARRAY['g','h','i'],ARRAY[7,8,9])")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r2, r3).runTest();
+    }
+
+    // Operator GREATER_THAN_OR_EQUAL(map<varchar,bigint>, map<varchar,bigint>)
+    // not registered
+    @Test(expected = SQLException.class)
+    public void testSelectMapLessAndGreaterEqual() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
+                mapType);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(MAP_A,
+                mapType);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(MAP_JKL,
+                mapType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "ages >= MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) AND "
+                        + "ages < MAP(ARRAY['g','h','i'],ARRAY[7,8,9])")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r1, r2).runTest();
+    }
+
+    // Operator GREATER_THAN_OR_EQUAL(map<varchar,bigint>, map<varchar,bigint>)
+    // not registered
+    @Test(expected = SQLException.class)
+    public void testSelectMapLessEqualAndGreaterEqual() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
+                mapType);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(MAP_A,
+                mapType);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(MAP_JKL,
+                mapType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE "
+                        + "ages >= MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) AND "
+                        + "ages <= MAP(ARRAY['g','h','i'],ARRAY[7,8,9])")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5)
+                .withOutput(r1, r2, r3).runTest();
+    }
+
+    // Operator GREATER_THAN(map<varchar,bigint>, map<varchar,bigint>) not
+    // registered
+    @Test(expected = SQLException.class)
+    public void testSelectMapWithOr() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
+                mapType);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(MAP_A,
+                mapType);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(MAP_JKL,
+                mapType);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(MAP_MNO,
+                mapType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE ("
+                        + "(ages > MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) AND "
+                        + "ages <= MAP(ARRAY['g','h','i'],ARRAY[7,8,9]))) OR ("
+                        + "(ages >= MAP(ARRAY['j','k','l'],ARRAY[0,1,2]) AND "
+                        + "ages < MAP(ARRAY['m','n','o'],ARRAY[3,4,5])))")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r2, r3, r5).runTest();
+    }
+
+    // Query parser explodes on this query
+    // > error calculating hash code for InterleavedBlock{columns=2,
+    // positionCount=3}
+    // > Out of range: -3074044911
+    @Test(expected = SQLException.class)
+    public void testSelectMapInRange() throws Exception {
+        MapType mapType = new MapType(VARCHAR, BIGINT);
+        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages",
+                "metadata", "ages", mapType);
+
+        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC,
+                mapType);
+        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF,
+                mapType);
+        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI,
+                mapType);
+        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(MAP_A,
+                mapType);
+        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(MAP_JKL,
+                mapType);
+        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(MAP_MNO,
+                mapType);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE ages IN ("
+                        + "MAP(ARRAY['a','b','c'],ARRAY[1,2,3]), "
+                        + "MAP(ARRAY['g','h','i'],ARRAY[4,5,6]), "
+                        + "MAP(ARRAY['j','k','l'],ARRAY[7,8,9]), "
+                        + "MAP(ARRAY['a'],ARRAY[0]))")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r1, r3, r5, r4).runTest();
     }
 
     @Test

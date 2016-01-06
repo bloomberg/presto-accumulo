@@ -497,8 +497,10 @@ public class QueryDriver {
                                     Arrays.asList(elements)),
                             new ArrayType(elementType));
                 } else if (bloomberg.presto.accumulo.Types.isMapType(type)) {
-                    orow.addField(AccumuloRowSerializer.getBlockFromMap(type,
-                            (Map<?, ?>) rs.getObject(j)), type);
+                    Map<?, ?> map = (Map<?, ?>) rs.getObject(j);
+                    orow.addField(rs.wasNull() ? null
+                            : AccumuloRowSerializer.getBlockFromMap(type, map),
+                            type);
                 } else {
                     switch (type.getDisplayName()) {
                     case StandardTypes.BIGINT: {

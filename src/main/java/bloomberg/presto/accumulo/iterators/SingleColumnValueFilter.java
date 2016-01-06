@@ -245,7 +245,7 @@ public class SingleColumnValueFilter extends RowFilter
         opts.put(CF, family);
         opts.put(CQ, qualifier);
         opts.put(COMPARE_OP, op.toString());
-        opts.put(TYPE, type.getDisplayName());
+        opts.put(TYPE, type.toString());
         opts.put(VALUE, Hex.encodeHexString(value));
 
         return opts;

@@ -42,7 +42,6 @@ import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
 
-import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.StandardErrorCode;
@@ -62,7 +61,6 @@ import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
-import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 
@@ -75,16 +73,13 @@ public class AccumuloRecordCursor implements RecordCursor {
     private final Scanner scan;
     private final Iterator<Entry<Key, Value>> iterator;
     private final AccumuloRowSerializer serializer;
-    private final ConnectorSession session;
     private Entry<Key, Value> prevKV;
     private Text prevRowID = new Text();
     private Text rowID = new Text();
 
-    public AccumuloRecordCursor(ConnectorSession session,
-            AccumuloRowSerializer serializer, Scanner scan,
+    public AccumuloRecordCursor(AccumuloRowSerializer serializer, Scanner scan,
             List<AccumuloColumnHandle> cHandles,
             List<AccumuloColumnConstraint> constraints) {
-        this.session = requireNonNull(session, "session is null");
         this.cHandles = requireNonNull(cHandles, "cHandles is null");
         this.scan = requireNonNull(scan, "scan is null");
 
@@ -292,18 +287,30 @@ public class AccumuloRecordCursor implements RecordCursor {
         List<IteratorSetting> allSettings = new ArrayList<>();
         for (AccumuloColumnConstraint col : constraints) {
             Domain dom = col.getDomain();
-            List<IteratorSetting> colSettings = new ArrayList<>(
-                    dom.getValues().getRanges().getRangeCount());
+            List<IteratorSetting> colSettings = new ArrayList<>();
 
             if (dom.isNullAllowed()) {
                 colSettings.add(getNullFilterSetting(col, priority));
             }
 
-            for (Range r : dom.getValues().getRanges().getOrderedRanges()) {
-                IteratorSetting cfg = getFilterSettingFromRange(col, r,
-                        priority);
-                if (cfg != null) {
-                    colSettings.add(cfg);
+            if (Types.isMapType(dom.getType())) {
+                // map types are discrete values
+                for (Object o : dom.getValues().getDiscreteValues()
+                        .getValues()) {
+                    IteratorSetting cfg = getIteratorSetting(priority, col,
+                            CompareOp.EQUAL, dom.getType(), (Block) o);
+                    if (cfg != null) {
+                        colSettings.add(cfg);
+                    }
+                }
+            } else {
+                // for non-map types (or so it seems), all ranges are ordered
+                for (Range r : dom.getValues().getRanges().getOrderedRanges()) {
+                    IteratorSetting cfg = getFilterSettingFromRange(col, r,
+                            priority);
+                    if (cfg != null) {
+                        colSettings.add(cfg);
+                    }
                 }
             }
 
@@ -339,35 +346,25 @@ public class AccumuloRecordCursor implements RecordCursor {
 
         if (r.isAll()) {
             // [min, max]
-            Logger.get(getClass()).debug("RANGE %s IS ALL",
-                    r.toString(session));
             return null;
         } else if (r.isSingleValue()) {
             // value = value
-            Logger.get(getClass()).debug("RANGE %s IS SINGLE VALUE",
-                    r.toString(session));
             return getIteratorSetting(priority, col, CompareOp.EQUAL,
                     r.getType(), r.getSingleValue());
         } else {
             if (r.getLow().isLowerUnbounded()) {
-                Logger.get(getClass()).debug("RANGE %s IS LOWER UNBOUNDED",
-                        r.toString(session));
                 // (min, x] WHERE x < 10
                 CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
                         ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
                 return getIteratorSetting(priority, col, op, r.getType(),
                         r.getHigh().getValue());
             } else if (r.getHigh().isUpperUnbounded()) {
-                Logger.get(getClass()).debug("RANGE %s IS UPPER UNBOUNDED",
-                        r.toString(session));
                 // [(x, max] WHERE x > 10
                 CompareOp op = r.getLow().getBound() == Bound.EXACTLY
                         ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
                 return getIteratorSetting(priority, col, op, r.getType(),
                         r.getLow().getValue());
             } else {
-                Logger.get(getClass()).debug("RANGE %s IS BOUNDED",
-                        r.toString(session));
                 // WHERE x > 10 AND x < 20
                 CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
                         ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
@@ -396,8 +393,7 @@ public class AccumuloRecordCursor implements RecordCursor {
         return new IteratorSetting(priority.getAndIncrement(), name,
                 SingleColumnValueFilter.class,
                 SingleColumnValueFilter.getProperties(col.getFamily(),
-                        col.getQualifier(), op, col.getDomain().getType(),
-                        valueBytes));
+                        col.getQualifier(), op, type, valueBytes));
     }
 
     private static class RowOnlySerializer implements AccumuloRowSerializer {

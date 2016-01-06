@@ -1,7 +1,5 @@
 package bloomberg.presto.accumulo.iterators;
 
-import static bloomberg.presto.accumulo.serializers.LexicoderRowSerializer.FALSE;
-import static bloomberg.presto.accumulo.serializers.LexicoderRowSerializer.TRUE;
 import static bloomberg.presto.accumulo.serializers.LexicoderRowSerializer.encode;
 
 import java.io.IOException;
@@ -162,10 +160,8 @@ public class SingleColumnValueFilterTest {
         values.add(true);
         values.add(false);
 
-        for (boolean i : values) {
-            for (boolean j : values) {
-                byte[] filterValue = i ? TRUE : FALSE;
-                byte[] testValue = j ? TRUE : FALSE;
+        for (boolean filterValue : values) {
+            for (boolean testValue : values) {
 
                 Assert.assertFalse("Filter accepted key with wrong family",
                         op != CompareOp.NO_OP && testFilter(filterFam,
@@ -180,7 +176,7 @@ public class SingleColumnValueFilterTest {
                         filterValue, BooleanType.BOOLEAN, matchingKey,
                         testValue);
 
-                if (func.apply(j, i)) {
+                if (func.apply(testValue, filterValue)) {
                     Assert.assertTrue(test);
                 } else {
                     Assert.assertFalse(test);
