@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>bloomberg.presto</groupId>
+    <artifactId>presto-accumulo-iterators</artifactId>
+    <version>0.131</version>
+    <description>Iterators for the Presto - Accumulo Connector</description>
+    <packaging>jar</packaging>
+
+    <properties>
+        <accumulo.version>1.6.2</accumulo.version>
+        <curator.version>2.9.1</curator.version>
+        <jackson.version>2.4.4</jackson.version>
+        <javax.inject.version>1</javax.inject.version>
+        <guava.version>18.0</guava.version>
+        <mavenPluginPluginVersion>3.2</mavenPluginPluginVersion>
+        <presto.version>0.131</presto.version>
+        <project.build.targetJdk>1.7</project.build.targetJdk>
+        <zookeeper.version>3.4.6</zookeeper.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.0</version>
+                <configuration>
+                    <source>${project.build.targetJdk}</source>
+                    <target>${project.build.targetJdk}</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.accumulo</groupId>
+            <artifactId>accumulo-core</artifactId>
+            <version>${accumulo.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+    </dependencies>
+</project>
