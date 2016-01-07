@@ -80,7 +80,7 @@ public class AccumuloClient {
                 config);
     }
 
-    public void createTable(ConnectorTableMetadata meta) {
+    public AccumuloTable createTable(ConnectorTableMetadata meta) {
         boolean metaOnly = (boolean) meta.getProperties()
                 .get(AccumuloConnector.PROP_METADATA_ONLY);
 
@@ -185,10 +185,24 @@ public class AccumuloClient {
                         "Accumulo error when creating table", e);
             }
         }
+
+        return table;
     }
 
     public void dropTable(SchemaTableName stName) {
         metaManager.deleteTableMetadata(stName);
+    }
+
+    public void deleteAccumuloTable(SchemaTableName schemaTableName) {
+        String tn = getFullTableName(schemaTableName);
+        if (conn.tableOperations().exists(tn)) {
+            try {
+                conn.tableOperations().delete(tn);
+            } catch (Exception e) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Failed to delete table");
+            }
+        }
     }
 
     public Set<String> getSchemaNames() {

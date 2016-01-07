@@ -29,6 +29,7 @@ import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.ConnectorInsertTableHandle;
 import com.facebook.presto.spi.ConnectorMetadata;
+import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorTableHandle;
 import com.facebook.presto.spi.ConnectorTableLayout;
@@ -56,6 +57,28 @@ public class AccumuloMetadata implements ConnectorMetadata {
         this.connectorId = requireNonNull(connectorId, "connectorId is null")
                 .toString();
         this.client = requireNonNull(client, "client is null");
+    }
+
+    public ConnectorOutputTableHandle beginCreateTable(ConnectorSession session,
+            ConnectorTableMetadata tableMetadata) {
+        SchemaTableName stName = tableMetadata.getTable();
+        AccumuloTable table = client.createTable(tableMetadata);
+        return new AccumuloTableHandle(connectorId, stName.getSchemaName(),
+                stName.getTableName(), table.getSerializerClass().getName());
+    }
+
+    public void commitCreateTable(ConnectorSession session,
+            ConnectorOutputTableHandle tableHandle,
+            Collection<Slice> fragments) {
+        // no-op?
+    }
+
+    public void rollbackCreateTable(ConnectorSession session,
+            ConnectorOutputTableHandle tableHandle) {
+        AccumuloTableHandle th = checkType(tableHandle,
+                AccumuloTableHandle.class, "table");
+        client.dropTable(th.toSchemaTableName());
+        client.deleteAccumuloTable(th.toSchemaTableName());
     }
 
     @Override
