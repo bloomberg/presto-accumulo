@@ -26,7 +26,6 @@ public class SingleColumnValueFilter extends RowFilter
     protected static final String CF = "family";
     protected static final String CQ = "qualifier";
     protected static final String COMPARE_OP = "compareOp";
-    protected static final String TYPE = "type";
     protected static final String VALUE = "value";
 
     private Text columnFamily;
@@ -155,7 +154,6 @@ public class SingleColumnValueFilter extends RowFilter
                     ImmutableMap.<String, String>builder().put(CF, "column family to match on, required")
                         .put(CQ, "column qualifier to match on, required")
                         .put(COMPARE_OP, "CompareOp enum type for lexicographic comparison, required")
-                        .put(TYPE, "Presto Type for logging, required")
                         .put(VALUE, "Hex-encoded bytes of the value for comparison, required")
                         .build(),
                 // @formatter:on
@@ -176,7 +174,6 @@ public class SingleColumnValueFilter extends RowFilter
         }
 
         if (CompareOp.valueOf(options.get(COMPARE_OP)) != CompareOp.IS_NULL) {
-            checkNotNull(TYPE, options);
             checkNotNull(VALUE, options);
 
             try {

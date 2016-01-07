@@ -393,7 +393,7 @@ public class AccumuloRecordCursor implements RecordCursor {
         return new IteratorSetting(priority.getAndIncrement(), name,
                 SingleColumnValueFilter.class,
                 SingleColumnValueFilter.getProperties(col.getFamily(),
-                        col.getQualifier(), op, type, valueBytes));
+                        col.getQualifier(), op, valueBytes));
     }
 
     private static class RowOnlySerializer implements AccumuloRowSerializer {

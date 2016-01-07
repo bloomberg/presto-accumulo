@@ -44,7 +44,7 @@ public class SingleColumnValueFilterTest {
 
         Value vFilterValue = new Value(encode(type, filterValue));
         Map<String, String> opts = SingleColumnValueFilter.getProperties(
-                filterFam, filterQual, filterOp, type, vFilterValue.get());
+                filterFam, filterQual, filterOp, vFilterValue.get());
 
         SingleColumnValueFilter filter = new SingleColumnValueFilter();
         filter.validateOptions(opts);
@@ -61,7 +61,7 @@ public class SingleColumnValueFilterTest {
         Value vFilterValue = new Value(encode(BigintType.BIGINT, 5L));
 
         Map<String, String> opts = SingleColumnValueFilter.getProperties("cf",
-                "cq1", CompareOp.EQUAL, BigintType.BIGINT, vFilterValue.get());
+                "cq1", CompareOp.EQUAL, vFilterValue.get());
 
         SingleColumnValueFilter filter = new SingleColumnValueFilter();
         filter.validateOptions(opts);

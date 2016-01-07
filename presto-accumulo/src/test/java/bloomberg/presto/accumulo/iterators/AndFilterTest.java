@@ -21,19 +21,16 @@ import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 public class AndFilterTest {
 
     IteratorSetting cq1gt3 = new IteratorSetting(1, "1",
-            SingleColumnValueFilter.class,
-            getProperties("cf1", "cq1", CompareOp.GREATER, BigintType.BIGINT,
-                    encode(BigintType.BIGINT, 3L)));
+            SingleColumnValueFilter.class, getProperties("cf1", "cq1",
+                    CompareOp.GREATER, encode(BigintType.BIGINT, 3L)));
 
     IteratorSetting cq1lt10 = new IteratorSetting(2, "2",
-            SingleColumnValueFilter.class,
-            getProperties("cf1", "cq1", CompareOp.LESS, BigintType.BIGINT,
-                    encode(BigintType.BIGINT, 10L)));
+            SingleColumnValueFilter.class, getProperties("cf1", "cq1",
+                    CompareOp.LESS, encode(BigintType.BIGINT, 10L)));
 
     IteratorSetting cq2lt10 = new IteratorSetting(2, "2",
-            SingleColumnValueFilter.class,
-            getProperties("cf1", "cq2", CompareOp.LESS, BigintType.BIGINT,
-                    encode(BigintType.BIGINT, 10L)));
+            SingleColumnValueFilter.class, getProperties("cf1", "cq2",
+                    CompareOp.LESS, encode(BigintType.BIGINT, 10L)));
 
     @Test
     public void testSameColumn() throws IOException {
