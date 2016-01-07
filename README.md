@@ -2,8 +2,30 @@
 
 A Presto connector for working with data stored in Apache Accumulo
 
-### Installation
+### Dependencies
+* Java 1.8 (required for connector)
+* Java 1.7 (`accumulo.jdk.version == 1.7 ? required : !required`)
+* Maven
+* Presto
+* Accumulo
+* presto-accumulo-iterators
 
+### Installing the Iterator Dependency
+There is a separate Maven project in this repository, `presto-accumulo-iterators`, which contains customer iterators in order to push various information in a SQL WHERE clause to Accumulo for server-side filtering.  Build this jar file using Maven (which will also install the dependency in your local Maven repository), and push the file out to Accumulo's `lib` directory on every Accumulo TabletServer node.
+
+This Maven build uses JDK v1.7.  Change the value of `project.build.targetJdk` in `pom.xml` to `1.8` in order to build a JDK 1.8-compliant version.
+
+```bash
+cd presto-accumulo-iterators/
+
+# Update pom.xml to JDK 1.8 if necessary
+mvn clean install
+
+# For each TabletServer node:
+scp target/presto-accumulo-iterators-0.*.jar <tabletserver_address>:$ACCUMULO_HOME/lib
+```
+
+### Installing the Connector
 In order to use the connector, build the presto-accumulo connector using Maven.  This will create a directory containing all JAR file dependencies for the connector to function.  Copy the contents of this directory into an ```accumulo``` directory under ```$PRESTO_HOME/plugin```.
 
 ```bash 
@@ -13,12 +35,7 @@ mvn clean package
 mkdir -p $PRESTO_HOME/plugin/accumulo/
 cp target/presto-accumulo-0.*/* $PRESTO_HOME/plugin/accumulo/
 ```
-The connector depends on some customer iterators in order to push various information in a SQL WHERE clause to Accumulo for server-side filtering.  This dependency requires the built `target/presto-accumulo-0.*/presto-accumulo-0.*.jar` to be placed in Accumulo's `lib` directory on every Accumulo TabletServer node.
 
-```bash
-# For each TabletServer node:
-scp target/presto-accumulo-0.*/presto-accumulo-0.*.jar <tabletserver_address>:$ACCUMULO_HOME/lib
-```
 ### Configuration
 See ```etc/catalog/accumulo.properties``` for an example configuration of the Accumulo connector.  Fill in the appropriate values to fit your cluster, then copy this file into ```$PRESTO_HOME/etc/catalog```.
 
