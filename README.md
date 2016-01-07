@@ -16,6 +16,7 @@ There is a separate Maven project in this repository, `presto-accumulo-iterators
 This Maven build uses JDK v1.7.  Change the value of `project.build.targetJdk` in `pom.xml` to `1.8` in order to build a JDK 1.8-compliant version.
 
 ```bash
+# After cloning the repository:
 cd presto-accumulo-iterators/
 
 # Update pom.xml to JDK 1.8 if necessary
@@ -29,7 +30,7 @@ scp target/presto-accumulo-iterators-0.*.jar <tabletserver_address>:$ACCUMULO_HO
 In order to use the connector, build the presto-accumulo connector using Maven.  This will create a directory containing all JAR file dependencies for the connector to function.  Copy the contents of this directory into an ```accumulo``` directory under ```$PRESTO_HOME/plugin```.
 
 ```bash 
-git clone <url>
+# After cloning the repository:
 cd presto-accumulo/
 mvn clean package
 mkdir -p $PRESTO_HOME/plugin/accumulo/
@@ -96,9 +97,46 @@ SELECT * FROM myschema.scientists;
  row3      | Tim Berners-Lee |  60 | 1984-07-27 
 (3 rows)
 ```
-You can also drop tables using the DROP command.  This command drops __metadata only__.  Dropping your Accumulo table seems wildly unsafe.  You'll have to do that in the Accumulo shell.
+You can also drop tables using the DROP command.
 ```SQL
 DROP TABLE myschema.scientists;
+```
+As you can see via the Accumulo shell snippet below, this command drops __metadata only__, unless you've specified the `internal` table property to `true`. See the below section on [Internal Tables](#internal-tables)  for more information.
+ ```
+root@default> tables
+accumulo.metadata
+accumulo.root
+myschema.scientists
+trace
+```
+### Internal Tables
+
+By default, the tables created using SQL statements via Presto are _external_ tables, that is the table backing the data in Accumulo will not be deleted when the table is dropped.  To change this behavior, set the `internal` property to `true` when issuing the `CREATE` statement.  This will make the table an _internal_ table, and a `DROP TABLE` command will also delete the corresponding Accumulo table.  Ye be warned.
+```SQL
+CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
+WITH (
+    column_mapping = 'name:metadata:name,age:metadata:age,birthday:metadata:date',
+    internal = true
+);
+```
+ In the Accumulo shell:
+```
+root@default> tables
+accumulo.metadata
+accumulo.root
+myschema.scientists
+trace
+```
+When the table is dropped:
+```SQL
+DROP TABLE myschema.scientists;
+```
+ All gone!
+```
+root@default> tables
+accumulo.metadata
+accumulo.root
+trace
 ```
 ### Serializers
 The Presto connector for Accumulo has a pluggable serializer framework for handling I/O between Presto and Accumulo.  This enables end-users the ability to programatically serialized and deserialize their special data formats within Accumulo, while abstracting away the complexity of the connector itself.
@@ -126,8 +164,8 @@ WITH (
     serializer = 'my.serializer.package.MySerializer'
 );
 ```
-### Metadata Management
 
+### Metadata Management
 Metadata management for the Accumulo tables is pluggable, with an initial implementation storing the data in ZooKeeper.  You can (and should) issue SQL statements in Presto to create and drop tables.  This is the easiest method of creating the metadata required to make the connector work.  It is best to not mess with the metadata, but here are the details of how it is stored.  Information is power.
 
 A root node in ZooKeeper holds all the mappings, and the format is as follows:
@@ -139,7 +177,6 @@ Where `<metadata-root` is the value of `zookeeper.metadata.root` in the config f
 If you have a need to programmatically manipulate the ZooKeeper metadata for Accumulo, take a look at ```bloomberg.presto.accumulo.metadata.ZooKeeperMetadataManager``` for some Java code to simplify the process.
 
 ### Test Data Generation
-
 Some test cases require generation of large files for testing.  This repository includes a file, datagen.py, that can be used to generate these large files.
 
 Dependent on faker which can be installed like so: `pip install fake-factory`
