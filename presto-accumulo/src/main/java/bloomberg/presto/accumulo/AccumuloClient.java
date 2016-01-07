@@ -158,9 +158,11 @@ public class AccumuloClient {
             }
         }
 
-        AccumuloTable table = new AccumuloTable(meta.getTable().getSchemaName(),
-                meta.getTable().getTableName(), columns,
-                (String) meta.getProperties()
+        boolean internal = (boolean) meta.getProperties()
+                .get(AccumuloConnector.PROP_INTERNAL);
+        AccumuloTable table = new AccumuloTable(internal,
+                meta.getTable().getSchemaName(), meta.getTable().getTableName(),
+                columns, (String) meta.getProperties()
                         .get(AccumuloConnector.PROP_SERIALIZER));
 
         // Create dat metadata
@@ -189,18 +191,18 @@ public class AccumuloClient {
         return table;
     }
 
-    public void dropTable(SchemaTableName stName) {
+    public void dropTable(SchemaTableName stName, boolean dropTable) {
+        String tn = getFullTableName(stName);
         metaManager.deleteTableMetadata(stName);
-    }
 
-    public void deleteAccumuloTable(SchemaTableName schemaTableName) {
-        String tn = getFullTableName(schemaTableName);
-        if (conn.tableOperations().exists(tn)) {
-            try {
-                conn.tableOperations().delete(tn);
-            } catch (Exception e) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                        "Failed to delete table");
+        if (dropTable) {
+            if (conn.tableOperations().exists(tn)) {
+                try {
+                    conn.tableOperations().delete(tn);
+                } catch (Exception e) {
+                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                            "Failed to delete table");
+                }
             }
         }
     }

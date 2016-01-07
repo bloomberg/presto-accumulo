@@ -455,7 +455,7 @@ public class QueryDriver {
     }
 
     protected void pushPrestoMetadata() throws Exception {
-        metaManager.createTableMetadata(new AccumuloTable(getSchema(),
+        metaManager.createTableMetadata(new AccumuloTable(false, getSchema(),
                 getAccumuloTable(), inputSchema.getColumns(),
                 this.serializer.getClass().getName()));
     }

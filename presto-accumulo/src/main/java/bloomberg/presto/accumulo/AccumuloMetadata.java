@@ -63,8 +63,9 @@ public class AccumuloMetadata implements ConnectorMetadata {
             ConnectorTableMetadata tableMetadata) {
         SchemaTableName stName = tableMetadata.getTable();
         AccumuloTable table = client.createTable(tableMetadata);
-        return new AccumuloTableHandle(connectorId, stName.getSchemaName(),
-                stName.getTableName(), table.getSerializerClass().getName());
+        return new AccumuloTableHandle(connectorId, table.isInternal(),
+                stName.getSchemaName(), stName.getTableName(),
+                table.getSerializerClass().getName());
     }
 
     public void commitCreateTable(ConnectorSession session,
@@ -77,8 +78,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
             ConnectorOutputTableHandle tableHandle) {
         AccumuloTableHandle th = checkType(tableHandle,
                 AccumuloTableHandle.class, "table");
-        client.dropTable(th.toSchemaTableName());
-        client.deleteAccumuloTable(th.toSchemaTableName());
+        client.dropTable(th.toSchemaTableName(), th.isInternal());
     }
 
     @Override
@@ -92,7 +92,7 @@ public class AccumuloMetadata implements ConnectorMetadata {
             ConnectorTableHandle tableHandle) {
         AccumuloTableHandle th = checkType(tableHandle,
                 AccumuloTableHandle.class, "table");
-        client.dropTable(th.toSchemaTableName());
+        client.dropTable(th.toSchemaTableName(), th.isInternal());
     }
 
     @Override
@@ -136,8 +136,9 @@ public class AccumuloMetadata implements ConnectorMetadata {
             return null;
         }
 
-        return new AccumuloTableHandle(connectorId, stName.getSchemaName(),
-                stName.getTableName(), table.getSerializerClass().getName());
+        return new AccumuloTableHandle(connectorId, table.isInternal(),
+                stName.getSchemaName(), stName.getTableName(),
+                table.getSerializerClass().getName());
     }
 
     @Override

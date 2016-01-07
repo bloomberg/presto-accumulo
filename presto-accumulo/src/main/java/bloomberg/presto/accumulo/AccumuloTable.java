@@ -14,8 +14,6 @@
 package bloomberg.presto.accumulo;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Objects.requireNonNull;
 
 import java.util.List;
@@ -34,6 +32,7 @@ import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 
 public class AccumuloTable {
+    private final boolean internal;
     private final String schemaName;
     private final String tableName;
     private final List<AccumuloColumnHandle> columns;
@@ -41,16 +40,14 @@ public class AccumuloTable {
     private final String serializerClassName;
 
     @JsonCreator
-    public AccumuloTable(@JsonProperty("schemaName") String schemaName,
+    public AccumuloTable(@JsonProperty("internal") boolean internal,
+            @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
             @JsonProperty("columns") List<AccumuloColumnHandle> columns,
             @JsonProperty("serializerClassName") String serializerClassName) {
-        checkArgument(!isNullOrEmpty(schemaName),
-                "schemaName is null or is empty");
-        checkArgument(!isNullOrEmpty(tableName),
-                "tableName is null or is empty");
-        this.schemaName = schemaName;
-        this.tableName = tableName;
+        this.internal = requireNonNull(internal, "internal is null");
+        this.schemaName = requireNonNull(schemaName, "schemaName is null");
+        this.tableName = requireNonNull(tableName, "tableName is null");
         this.columns = ImmutableList
                 .copyOf(requireNonNull(columns, "columns are null"));
         this.serializerClassName = requireNonNull(serializerClassName,
@@ -93,6 +90,11 @@ public class AccumuloTable {
     @JsonIgnore
     public List<ColumnMetadata> getColumnsMetadata() {
         return columnsMetadata;
+    }
+
+    @JsonProperty
+    public boolean isInternal() {
+        return internal;
     }
 
     @SuppressWarnings("unchecked")

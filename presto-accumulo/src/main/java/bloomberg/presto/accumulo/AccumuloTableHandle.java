@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
         ConnectorOutputTableHandle, ConnectorTableHandle {
+    private final boolean internal;
     private final String connectorId;
     private final String schemaName;
     private final String serializerClassName;
@@ -34,10 +35,12 @@ public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
 
     @JsonCreator
     public AccumuloTableHandle(@JsonProperty("connectorId") String connectorId,
+            @JsonProperty("internal") boolean internal,
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
             @JsonProperty("serializerClassName") String serializerClassName) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
+        this.internal = requireNonNull(internal, "internal is null");
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         this.serializerClassName = requireNonNull(serializerClassName,
                 "serializerClassName is null");
@@ -62,6 +65,11 @@ public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
     @JsonProperty
     public String getTableName() {
         return tableName;
+    }
+
+    @JsonProperty
+    public boolean isInternal() {
+        return internal;
     }
 
     public SchemaTableName toSchemaTableName() {
