@@ -11,7 +11,7 @@ NEW_SCHEMA=$1
 
 if [[ " ${SCHEMAS[@]} " =~ " ${NEW_SCHEMA} " ]]; then
     for FILE in `ls templates`; do
-        sed s/\${SCHEMA}/$1/g $TEMPLATE_DIR/$FILE > scripts/$FILE
+        sed s/\${SCHEMA}/$1/g $TEMPLATE_DIR/$FILE > $SCRIPT_DIR/$FILE
     done
 else
     echo "Schema must be one of ${SCHEMAS[@]}"

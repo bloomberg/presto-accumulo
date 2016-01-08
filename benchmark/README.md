@@ -46,3 +46,46 @@ DROP TABLE
 DROP TABLE
 DROP TABLE
 ```
+
+### Running the Queries
+There is a bash script in the `benchmark` directory called `run_scripts.sh`.  This script assumes the variables have been set and the tables have been created.  Simply execute this script and all of the TPC-H queries that can be executed by Presto will be run.  Non-compliant SQL scripts (as well as the create/drop/count scripts) will be skipped.  See the comments within the bash script to view why some queries will not execute.Each script is printed to `stdout` before running the query.  The results will be dumped to `stdout` as well, along with the execution time.
+```bash
+$ cd benchmark/
+$ ./run_scripts.sh
+Executing 1.sql
+-- $ID$
+-- TPC-H/TPC-R Pricing Summary Report Query (Q1)
+-- Functional Query Definition
+-- Approved February 1998
+
+select
+    returnflag,
+    linestatus,
+    sum(quantity) as sum_qty,
+    sum(extendedprice) as sum_base_price,
+    sum(extendedprice * (1 - discount)) as sum_disc_price,
+    sum(extendedprice * (1 - discount) * (1 + tax)) as sum_charge,
+    avg(quantity) as avg_qty,
+    avg(extendedprice) as avg_price,
+    avg(discount) as avg_disc,
+    count(*) as count_order
+from
+    tiny.lineitem
+where
+    shipdate <= date '1998-12-01' - interval '90' day
+group by
+    returnflag,
+    linestatus
+order by
+    returnflag,
+    linestatus;
+
+"A","F","92447","1.2970121190000004E8","1.2325002970349996E8","1.2829896244477099E8","25.404506732618852","35641.99282769993","0.050065952184666355","3639"
+"N","F","2255","2943302.3300000005","2790509.914999999","2906601.049755001","25.055555555555557","32703.35922222223","0.052222222222222205","90"
+"N","O","185499","2.599671000099986E8","2.4702218530249965E8","2.5687762937960002E8","25.40734146007396","35607.05382961219","0.050026023832351","7301"
+"R","F","96145","1.3523031803000015E8","1.2852640191730024E8","1.3380723709176506E8","25.638666666666666","36061.41814133337","0.04978933333333361","3750"
+
+real    0m1.876s
+user    0m1.655s
+sys 0m0.218s
+```
