@@ -33,11 +33,12 @@ import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 
 public class AccumuloSplit implements ConnectorSplit {
+    private final boolean remotelyAccessible;
     private final String connectorId;
+    private final String rowIdName;
     private final String schemaName;
     private final String tableName;
     private String serializerClassName;
-    private final boolean remotelyAccessible;
     private final List<HostAddress> addresses;
     private RangeHandle rHandle;
     private List<AccumuloColumnConstraint> constraints;
@@ -46,12 +47,14 @@ public class AccumuloSplit implements ConnectorSplit {
     public AccumuloSplit(@JsonProperty("connectorId") String connectorId,
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
+            @JsonProperty("rowIdName") String rowIdName,
             @JsonProperty("serializerClassName") String serializerClassName,
             @JsonProperty("rHandle") RangeHandle rHandle,
             @JsonProperty("constraints") List<AccumuloColumnConstraint> constraints) {
-        this.connectorId = requireNonNull(connectorId, "connector id is null");
-        this.schemaName = requireNonNull(schemaName, "schema name is null");
-        this.tableName = requireNonNull(tableName, "table name is null");
+        this.connectorId = requireNonNull(connectorId, "connectorId is null");
+        this.rowIdName = requireNonNull(rowIdName, "rowIdName is null");
+        this.schemaName = requireNonNull(schemaName, "schemaName is null");
+        this.tableName = requireNonNull(tableName, "tableName is null");
         this.serializerClassName = serializerClassName;
         this.constraints = requireNonNull(constraints, "constraints is null");
 
@@ -67,6 +70,11 @@ public class AccumuloSplit implements ConnectorSplit {
     @JsonProperty
     public String getConnectorId() {
         return connectorId;
+    }
+
+    @JsonProperty
+    public String getRowIdName() {
+        return rowIdName;
     }
 
     @JsonProperty
@@ -130,6 +138,7 @@ public class AccumuloSplit implements ConnectorSplit {
     public String toString() {
         return toStringHelper(this).add("connectorId", connectorId)
                 .add("schemaName", schemaName).add("tableName", tableName)
+                .add("rowIdName", rowIdName)
                 .add("serializerClassName", serializerClassName)
                 .add("remotelyAccessible", remotelyAccessible)
                 .add("addresses", addresses).add("rHandle", rHandle)

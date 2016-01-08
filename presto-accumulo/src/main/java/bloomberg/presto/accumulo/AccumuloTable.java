@@ -33,6 +33,7 @@ import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 
 public class AccumuloTable {
     private final boolean internal;
+    private final String rowIdName;
     private final String schemaName;
     private final String tableName;
     private final List<AccumuloColumnHandle> columns;
@@ -40,12 +41,14 @@ public class AccumuloTable {
     private final String serializerClassName;
 
     @JsonCreator
-    public AccumuloTable(@JsonProperty("internal") boolean internal,
-            @JsonProperty("schemaName") String schemaName,
+    public AccumuloTable(@JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
             @JsonProperty("columns") List<AccumuloColumnHandle> columns,
+            @JsonProperty("rowIdName") String rowIdName,
+            @JsonProperty("internal") boolean internal,
             @JsonProperty("serializerClassName") String serializerClassName) {
         this.internal = requireNonNull(internal, "internal is null");
+        this.rowIdName = requireNonNull(rowIdName, "rowIdName is null");
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         this.tableName = requireNonNull(tableName, "tableName is null");
         this.columns = ImmutableList
@@ -59,6 +62,11 @@ public class AccumuloTable {
             columnsMetadata.add(column.getColumnMetadata());
         }
         this.columnsMetadata = columnsMetadata.build();
+    }
+
+    @JsonProperty
+    public String getRowIdName() {
+        return rowIdName;
     }
 
     @JsonProperty
@@ -117,6 +125,7 @@ public class AccumuloTable {
     public String toString() {
         return toStringHelper(this).add("schemaName", schemaName)
                 .add("tableName", tableName).add("columns", columns)
+                .add("rowIdName", rowIdName).add("internal", internal)
                 .add("serializerClassName", serializerClassName).toString();
     }
 }

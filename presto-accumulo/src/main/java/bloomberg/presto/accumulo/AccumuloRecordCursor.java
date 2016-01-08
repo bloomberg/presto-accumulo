@@ -25,9 +25,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -56,7 +53,6 @@ import bloomberg.presto.accumulo.iterators.AndFilter;
 import bloomberg.presto.accumulo.iterators.OrFilter;
 import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter;
 import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter.CompareOp;
-import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
@@ -78,25 +74,25 @@ public class AccumuloRecordCursor implements RecordCursor {
     private Text rowID = new Text();
 
     public AccumuloRecordCursor(AccumuloRowSerializer serializer, Scanner scan,
-            List<AccumuloColumnHandle> cHandles,
+            String rowIdName, List<AccumuloColumnHandle> cHandles,
             List<AccumuloColumnConstraint> constraints) {
         this.cHandles = requireNonNull(cHandles, "cHandles is null");
         this.scan = requireNonNull(scan, "scan is null");
 
+        this.serializer = requireNonNull(serializer, "serializer is null");
+        this.serializer.setRowIdName(rowIdName);
+
         // if there are no columns, or the only column is the row ID, then
-        // configure a scan iterator/serializer to only return the row IDs
-        if (cHandles.size() == 0
-                || (cHandles.size() == 1 && cHandles.get(0).getName()
-                        .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME))) {
+        // configure a scan iterator to only return the row IDs
+        if (cHandles.size() == 0 || (cHandles.size() == 1
+                && cHandles.get(0).getName().equals(rowIdName))) {
             this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter",
                     FirstEntryInRowIterator.class));
 
-            this.serializer = new RowOnlySerializer();
             fieldToColumnName = new String[1];
-            fieldToColumnName[0] = AccumuloMetadataManager.ROW_ID_COLUMN_NAME;
+            fieldToColumnName[0] = rowIdName;
+            this.serializer.setRowOnly(true);
         } else {
-            this.serializer = requireNonNull(serializer, "serializer is null");
-
             Text fam = new Text(), qual = new Text();
             fieldToColumnName = new String[cHandles.size()];
 
@@ -104,9 +100,8 @@ public class AccumuloRecordCursor implements RecordCursor {
                 AccumuloColumnHandle cHandle = cHandles.get(i);
                 fieldToColumnName[i] = cHandle.getName();
 
-                if (!cHandle.getName()
-                        .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
-                    serializer.setMapping(cHandle.getName(),
+                if (!cHandle.getName().equals(rowIdName)) {
+                    this.serializer.setMapping(cHandle.getName(),
                             cHandle.getColumnFamily(),
                             cHandle.getColumnQualifier());
 
@@ -394,131 +389,5 @@ public class AccumuloRecordCursor implements RecordCursor {
                 SingleColumnValueFilter.class,
                 SingleColumnValueFilter.getProperties(col.getFamily(),
                         col.getQualifier(), op, valueBytes));
-    }
-
-    private static class RowOnlySerializer implements AccumuloRowSerializer {
-        private Text r = new Text();
-
-        @Override
-        public void setMapping(String name, String fam, String qual) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void reset() {
-            r.clear();
-        }
-
-        @Override
-        public void deserialize(Entry<Key, Value> row) throws IOException {
-            if (r.getLength() == 0) {
-                row.getKey().getRow(r);
-            }
-        }
-
-        @Override
-        public boolean isNull(String name) {
-            return false;
-        }
-
-        @Override
-        public Block getArray(String name, Type type) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setArray(Text value, Type type, Block block) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean getBoolean(String name) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setBoolean(Text text, Boolean value) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Date getDate(String string) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setDate(Text text, Date value) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public double getDouble(String name) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setDouble(Text text, Double value) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long getLong(String name) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setLong(Text text, Long value) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Block getMap(String name, Type type) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setMap(Text text, Type type, Block block) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Time getTime(String string) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setTime(Text text, Time value) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Timestamp getTimestamp(String string) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setTimestamp(Text text, Timestamp value) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public byte[] getVarbinary(String string) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setVarbinary(Text text, byte[] value) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String getVarchar(String string) {
-            return r.toString();
-        }
-
-        @Override
-        public void setVarchar(Text text, String value) {
-            throw new UnsupportedOperationException();
-        }
     }
 }

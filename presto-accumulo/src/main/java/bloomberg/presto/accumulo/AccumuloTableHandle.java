@@ -29,18 +29,21 @@ public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
         ConnectorOutputTableHandle, ConnectorTableHandle {
     private final boolean internal;
     private final String connectorId;
+    private final String rowIdName;
     private final String schemaName;
     private final String serializerClassName;
     private final String tableName;
 
     @JsonCreator
     public AccumuloTableHandle(@JsonProperty("connectorId") String connectorId,
-            @JsonProperty("internal") boolean internal,
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
+            @JsonProperty("rowIdName") String rowIdName,
+            @JsonProperty("internal") boolean internal,
             @JsonProperty("serializerClassName") String serializerClassName) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.internal = requireNonNull(internal, "internal is null");
+        this.rowIdName = requireNonNull(rowIdName, "rowIdName is null");
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         this.serializerClassName = requireNonNull(serializerClassName,
                 "serializerClassName is null");
@@ -50,6 +53,11 @@ public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
     @JsonProperty
     public String getConnectorId() {
         return connectorId;
+    }
+
+    @JsonProperty
+    public String getRowIdName() {
+        return rowIdName;
     }
 
     @JsonProperty
@@ -78,8 +86,8 @@ public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
 
     @Override
     public int hashCode() {
-        return Objects.hash(connectorId, schemaName, tableName,
-                serializerClassName);
+        return Objects.hash(connectorId, schemaName, tableName, rowIdName,
+                internal, serializerClassName);
     }
 
     @Override
@@ -95,6 +103,8 @@ public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
         return Objects.equals(this.connectorId, other.connectorId)
                 && Objects.equals(this.schemaName, other.schemaName)
                 && Objects.equals(this.tableName, other.tableName)
+                && Objects.equals(this.rowIdName, other.rowIdName)
+                && Objects.equals(this.internal, other.internal)
                 && Objects.equals(this.serializerClassName,
                         other.serializerClassName);
     }
@@ -103,6 +113,7 @@ public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
     public String toString() {
         return toStringHelper(this).add("connectorId", connectorId)
                 .add("schemaName", schemaName).add("tableName", tableName)
+                .add("rowIdName", rowIdName).add("internal", internal)
                 .add("serializerClassName", serializerClassName).toString();
     }
 }

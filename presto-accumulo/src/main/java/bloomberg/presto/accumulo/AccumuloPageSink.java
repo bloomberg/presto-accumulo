@@ -25,8 +25,8 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeUtils;
 import com.google.common.collect.ImmutableList;
 
-import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.model.Field;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.slice.Slice;
@@ -36,6 +36,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
     private final List<Row> rows = new ArrayList<>();
     private final List<AccumuloColumnHandle> types;
     private final AccumuloRowSerializer serializer;
+    private final String rowIdName;
 
     public AccumuloPageSink(Connector conn, AccumuloTable table) {
         requireNonNull(conn, "conn is null");
@@ -54,6 +55,8 @@ public class AccumuloPageSink implements ConnectorPageSink {
         } catch (TableNotFoundException e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
+
+        rowIdName = table.getRowIdName();
     }
 
     @Override
@@ -73,7 +76,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
     public Collection<Slice> commit() {
         try {
             for (Row row : rows) {
-                Mutation m = toMutation(row, types, serializer);
+                Mutation m = toMutation(row, rowIdName, types, serializer);
                 if (m.size() > 0) {
                     wrtr.addMutation(m);
                 } else {
@@ -92,7 +95,7 @@ public class AccumuloPageSink implements ConnectorPageSink {
     public void rollback() {
     }
 
-    public static Mutation toMutation(Row row,
+    public static Mutation toMutation(Row row, String rowIdName,
             List<AccumuloColumnHandle> columns,
             AccumuloRowSerializer serializer) {
 
@@ -102,69 +105,68 @@ public class AccumuloPageSink implements ConnectorPageSink {
         }
 
         // make a new mutation, passing in the row ID
-        Mutation m = new Mutation(row.getField(0).getObject().toString());
+        Text rowId = new Text();
+        columns.parallelStream().filter(x -> x.getName().equals(rowIdName))
+                .forEach(x -> setText(serializer, rowId, x.getType(),
+                        row.getField(x.getOrdinal())));
 
-        Text cf = new Text(), cq = new Text(), value = new Text();
-        // for each column in the input schema
-        for (int i = 1; i < columns.size(); ++i) {
-            if (row.getField(i).isNull()) {
-                continue;
-            }
+        if (rowId.getLength() == 0) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "Failed to locate row ID in columns");
+        }
 
-            AccumuloColumnHandle ach = columns.get(i);
-            // if this column's name is not the row ID
-            if (!ach.getName()
-                    .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
+        Mutation m = new Mutation(rowId);
 
-                if (Types.isArrayType(ach.getType())) {
-                    serializer.setArray(value, ach.getType(),
-                            row.getField(i).getBlock());
-                } else if (Types.isMapType(ach.getType())) {
-                    serializer.setMap(value, ach.getType(),
-                            row.getField(i).getBlock());
-                } else {
-                    switch (ach.getType().getDisplayName()) {
-                    case StandardTypes.BIGINT:
-                        serializer.setLong(value, row.getField(i).getBigInt());
-                        break;
-                    case StandardTypes.BOOLEAN:
-                        serializer.setBoolean(value,
-                                row.getField(i).getBoolean());
-                        break;
-                    case StandardTypes.DATE:
-                        serializer.setDate(value, row.getField(i).getDate());
-                        break;
-                    case StandardTypes.DOUBLE:
-                        serializer.setDouble(value,
-                                row.getField(i).getDouble());
-                        break;
-                    case StandardTypes.TIME:
-                        serializer.setTime(value, row.getField(i).getTime());
-                        break;
-                    case StandardTypes.TIMESTAMP:
-                        serializer.setTimestamp(value,
-                                row.getField(i).getTimestamp());
-                        break;
-                    case StandardTypes.VARBINARY:
-                        serializer.setVarbinary(value,
-                                row.getField(i).getVarbinary());
-                        break;
-                    case StandardTypes.VARCHAR:
-                        serializer.setVarchar(value,
-                                row.getField(i).getVarchar());
-                        break;
-                    default:
-                        throw new UnsupportedOperationException(
-                                "Unsupported type " + ach.getType());
-                    }
-                }
+        Text value = new Text();
+        columns.stream().filter(x -> !row.getField(x.getOrdinal()).isNull()
+                && !x.getName().equals(rowIdName)).forEach(ach ->
+                    {
+                        setText(serializer, value, ach.getType(),
+                                row.getField(ach.getOrdinal()));
+                        m.put(ach.getColumnFamily(), ach.getColumnQualifier(),
+                                new Value(value.copyBytes()));
+                    });
 
-                cf.set(ach.getColumnFamily());
-                cq.set(ach.getColumnQualifier());
-                m.put(cf, cq, new Value(value.copyBytes()));
+        return m;
+    }
+
+    private static void setText(AccumuloRowSerializer serializer, Text value,
+            Type type, Field field) {
+        if (Types.isArrayType(type)) {
+            serializer.setArray(value, type, field.getBlock());
+        } else if (Types.isMapType(type)) {
+            serializer.setMap(value, type, field.getBlock());
+        } else {
+            switch (type.getDisplayName()) {
+            case StandardTypes.BIGINT:
+                serializer.setLong(value, field.getBigInt());
+                break;
+            case StandardTypes.BOOLEAN:
+                serializer.setBoolean(value, field.getBoolean());
+                break;
+            case StandardTypes.DATE:
+                serializer.setDate(value, field.getDate());
+                break;
+            case StandardTypes.DOUBLE:
+                serializer.setDouble(value, field.getDouble());
+                break;
+            case StandardTypes.TIME:
+                serializer.setTime(value, field.getTime());
+                break;
+            case StandardTypes.TIMESTAMP:
+                serializer.setTimestamp(value, field.getTimestamp());
+                break;
+            case StandardTypes.VARBINARY:
+                serializer.setVarbinary(value, field.getVarbinary());
+                break;
+            case StandardTypes.VARCHAR:
+                serializer.setVarchar(value, field.getVarchar());
+                break;
+            default:
+                throw new UnsupportedOperationException(
+                        "Unsupported type " + type);
             }
         }
 
-        return m;
     }
 }

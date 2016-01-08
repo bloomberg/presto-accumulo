@@ -33,7 +33,11 @@ public interface AccumuloRowSerializer {
         return new LexicoderRowSerializer();
     }
 
+    public void setRowIdName(String name);
+
     public void setMapping(String name, String fam, String qual);
+
+    public void setRowOnly(boolean rowOnly);
 
     public void reset();
 

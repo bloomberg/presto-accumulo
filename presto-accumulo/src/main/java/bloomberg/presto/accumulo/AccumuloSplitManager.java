@@ -33,7 +33,6 @@ import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.predicate.TupleDomain.ColumnDomain;
 
-import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 
@@ -58,7 +57,8 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
 
         String schemaName = tableHandle.getSchemaName();
         String tableName = tableHandle.getTableName();
-        Domain rDom = getRangeDomain(layoutHandle.getConstraint());
+        String rowIdName = tableHandle.getRowIdName();
+        Domain rDom = getRangeDomain(rowIdName, layoutHandle.getConstraint());
 
         List<TabletSplitMetadata> tSplits = client.getTabletSplits(schemaName,
                 tableName, rDom);
@@ -67,18 +67,18 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         if (tSplits.size() > 0) {
             for (TabletSplitMetadata smd : tSplits) {
                 AccumuloSplit accSplit = new AccumuloSplit(connectorId,
-                        tableHandle.getSchemaName(), tableHandle.getTableName(),
+                        schemaName, tableName, rowIdName,
                         tableHandle.getSerializerClassName(),
-                        smd.getRangeHandle(),
-                        getColumnConstraints(layoutHandle.getConstraint()));
+                        smd.getRangeHandle(), getColumnConstraints(rowIdName,
+                                layoutHandle.getConstraint()));
                 cSplits.add(accSplit);
             }
         } else {
-            AccumuloSplit accSplit = new AccumuloSplit(connectorId,
-                    tableHandle.getSchemaName(), tableHandle.getTableName(),
-                    tableHandle.getSerializerClassName(),
+            AccumuloSplit accSplit = new AccumuloSplit(connectorId, schemaName,
+                    tableName, rowIdName, tableHandle.getSerializerClassName(),
                     new RangeHandle(null, true, null, true),
-                    getColumnConstraints(layoutHandle.getConstraint()));
+                    getColumnConstraints(rowIdName,
+                            layoutHandle.getConstraint()));
             cSplits.add(accSplit);
         }
 
@@ -87,14 +87,14 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         return new FixedSplitSource(connectorId, cSplits);
     }
 
-    private Domain getRangeDomain(TupleDomain<ColumnHandle> constraint) {
+    private Domain getRangeDomain(String rowIdName,
+            TupleDomain<ColumnHandle> constraint) {
         for (ColumnDomain<ColumnHandle> cd : constraint.getColumnDomains()
                 .get()) {
 
             AccumuloColumnHandle col = checkType(cd.getColumn(),
                     AccumuloColumnHandle.class, "column handle");
-            if (col.getName()
-                    .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
+            if (col.getName().equals(rowIdName)) {
                 return cd.getDomain();
             }
         }
@@ -102,15 +102,14 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
     }
 
     private List<AccumuloColumnConstraint> getColumnConstraints(
-            TupleDomain<ColumnHandle> constraint) {
+            String rowIdName, TupleDomain<ColumnHandle> constraint) {
         List<AccumuloColumnConstraint> acc = new ArrayList<>();
         for (ColumnDomain<ColumnHandle> cd : constraint.getColumnDomains()
                 .get()) {
             AccumuloColumnHandle col = checkType(cd.getColumn(),
                     AccumuloColumnHandle.class, "column handle");
 
-            if (!col.getName()
-                    .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
+            if (!col.getName().equals(rowIdName)) {
                 acc.add(new AccumuloColumnConstraint(col.getName(),
                         col.getColumnFamily(), col.getColumnQualifier(),
                         cd.getDomain()));

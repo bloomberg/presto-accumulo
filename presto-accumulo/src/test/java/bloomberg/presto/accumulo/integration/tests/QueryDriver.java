@@ -71,7 +71,8 @@ public class QueryDriver {
     private boolean initialized = false, orderMatters = false;
     private int port = 8080;
     private final AccumuloConfig config;
-    private String host = "localhost", schema, query, tableName;
+    private String host = "localhost", schema, query, tableName,
+            rowIdName = "recordkey";
     private Connector conn;
     private List<Row> inputs = new ArrayList<>(),
             expectedOutputs = new ArrayList<>();
@@ -164,6 +165,11 @@ public class QueryDriver {
 
         this.withInput(loadRowsFromFile(inputSchema, file));
 
+        return this;
+    }
+
+    public QueryDriver withRowIdColumnName(String name) throws IOException {
+        this.rowIdName = name;
         return this;
     }
 
@@ -455,8 +461,8 @@ public class QueryDriver {
     }
 
     protected void pushPrestoMetadata() throws Exception {
-        metaManager.createTableMetadata(new AccumuloTable(false, getSchema(),
-                getAccumuloTable(), inputSchema.getColumns(),
+        metaManager.createTableMetadata(new AccumuloTable(getSchema(),
+                getAccumuloTable(), inputSchema.getColumns(), rowIdName, false,
                 this.serializer.getClass().getName()));
     }
 

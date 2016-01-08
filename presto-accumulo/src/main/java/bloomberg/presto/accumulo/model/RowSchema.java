@@ -4,8 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.facebook.presto.spi.type.Type;
-
-import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
+import com.facebook.presto.spi.type.VarcharType;
 
 public class RowSchema {
 
@@ -20,7 +19,8 @@ public class RowSchema {
             throw new RuntimeException("Row ID must be the first column");
         }
 
-        columns.add(AccumuloMetadataManager.getRowIdColumn());
+        columns.add(new AccumuloColumnHandle("accumulo", "recordkey", null,
+                null, VarcharType.VARCHAR, columns.size(), "Accumulo row ID"));
         return this;
     }
 

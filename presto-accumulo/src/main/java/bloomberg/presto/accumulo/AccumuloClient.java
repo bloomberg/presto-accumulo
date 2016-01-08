@@ -84,17 +84,11 @@ public class AccumuloClient {
         boolean metaOnly = (boolean) meta.getProperties()
                 .get(AccumuloConnector.PROP_METADATA_ONLY);
 
-        // Validate first column is the accumulo row id
-        ColumnMetadata firstCol = meta.getColumns().get(0);
-        if (!firstCol.getName()
-                .equals(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)
-                || !firstCol.getType()
-                        .equals(AccumuloMetadataManager.ROW_ID_COLUMN_TYPE)) {
-            throw new InvalidParameterException(
-                    String.format("First column must be '%s %s', not %s %s",
-                            AccumuloMetadataManager.ROW_ID_COLUMN_NAME,
-                            AccumuloMetadataManager.ROW_ID_COLUMN_TYPE,
-                            firstCol.getName(), firstCol.getType()));
+        String rowIdColumn = (String) meta.getProperties()
+                .get(AccumuloConnector.PROP_ROW_ID);
+
+        if (rowIdColumn == null) {
+            rowIdColumn = meta.getColumns().get(0).getName();
         }
 
         if (meta.getColumns().size() == 1) {
@@ -141,28 +135,35 @@ public class AccumuloClient {
         // And now we parse the configured columns and create handles for the
         // metadata manager, adding the special row ID column first
         List<AccumuloColumnHandle> columns = new ArrayList<>();
-        columns.add(AccumuloMetadataManager.getRowIdColumn());
+        for (int i = 0; i < meta.getColumns().size(); ++i) {
 
-        for (int i = 1; i < meta.getColumns().size(); ++i) {
             ColumnMetadata cm = meta.getColumns().get(i);
-            try {
-                Pair<String, String> famqual = mapping.get(cm.getName());
-                columns.add(new AccumuloColumnHandle("accumulo", cm.getName(),
-                        famqual.getLeft(), famqual.getRight(), cm.getType(), i,
-                        String.format("Accumulo column %s:%s",
-                                famqual.getLeft(), famqual.getRight())));
-            } catch (NullPointerException e) {
-                throw new InvalidParameterException(String.format(
-                        "Misconfigured mapping for presto column %s",
-                        cm.getName()));
+            if (cm.getName().toLowerCase().equals(rowIdColumn)) {
+                columns.add(new AccumuloColumnHandle("accumulo", rowIdColumn,
+                        null, null, cm.getType(), i, "Accumulo row ID"));
+            } else {
+                try {
+                    Pair<String, String> famqual = mapping.get(cm.getName());
+                    columns.add(
+                            new AccumuloColumnHandle("accumulo", cm.getName(),
+                                    famqual.getLeft(), famqual.getRight(),
+                                    cm.getType(), i,
+                                    String.format("Accumulo column %s:%s",
+                                            famqual.getLeft(),
+                                            famqual.getRight())));
+                } catch (NullPointerException e) {
+                    throw new InvalidParameterException(String.format(
+                            "Misconfigured mapping for presto column %s",
+                            cm.getName()));
+                }
             }
         }
 
         boolean internal = (boolean) meta.getProperties()
                 .get(AccumuloConnector.PROP_INTERNAL);
-        AccumuloTable table = new AccumuloTable(internal,
-                meta.getTable().getSchemaName(), meta.getTable().getTableName(),
-                columns, (String) meta.getProperties()
+        AccumuloTable table = new AccumuloTable(meta.getTable().getSchemaName(),
+                meta.getTable().getTableName(), columns, rowIdColumn, internal,
+                (String) meta.getProperties()
                         .get(AccumuloConnector.PROP_SERIALIZER));
 
         // Create dat metadata

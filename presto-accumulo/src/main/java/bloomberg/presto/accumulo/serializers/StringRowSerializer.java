@@ -17,13 +17,23 @@ import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.Type;
 
-import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
-
 public class StringRowSerializer implements AccumuloRowSerializer {
     private Map<String, Map<String, String>> f2q2pc = new HashMap<>();
     private Map<String, Object> columnValues = new HashMap<>();
     private Text rowId = new Text(), cf = new Text(), cq = new Text(),
             value = new Text();
+    private boolean rowOnly = false;
+    private String rowIdName;
+
+    @Override
+    public void setRowIdName(String name) {
+        this.rowIdName = name;
+    }
+
+    @Override
+    public void setRowOnly(boolean rowOnly) {
+        this.rowOnly = rowOnly;
+    }
 
     @Override
     public void setMapping(String name, String fam, String qual) {
@@ -44,11 +54,13 @@ public class StringRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void deserialize(Entry<Key, Value> kvp) throws IOException {
-        if (!columnValues
-                .containsKey(AccumuloMetadataManager.ROW_ID_COLUMN_NAME)) {
+        if (!columnValues.containsKey(rowIdName)) {
             kvp.getKey().getRow(rowId);
-            columnValues.put(AccumuloMetadataManager.ROW_ID_COLUMN_NAME,
-                    rowId.toString());
+            columnValues.put(rowIdName, rowId.toString());
+        }
+
+        if (rowOnly) {
+            return;
         }
 
         kvp.getKey().getColumnFamily(cf);

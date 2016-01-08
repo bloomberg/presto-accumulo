@@ -63,8 +63,8 @@ public class AccumuloMetadata implements ConnectorMetadata {
             ConnectorTableMetadata tableMetadata) {
         SchemaTableName stName = tableMetadata.getTable();
         AccumuloTable table = client.createTable(tableMetadata);
-        return new AccumuloTableHandle(connectorId, table.isInternal(),
-                stName.getSchemaName(), stName.getTableName(),
+        return new AccumuloTableHandle(connectorId, stName.getSchemaName(),
+                stName.getTableName(), table.getRowIdName(), table.isInternal(),
                 table.getSerializerClass().getName());
     }
 
@@ -136,8 +136,8 @@ public class AccumuloMetadata implements ConnectorMetadata {
             return null;
         }
 
-        return new AccumuloTableHandle(connectorId, table.isInternal(),
-                stName.getSchemaName(), stName.getTableName(),
+        return new AccumuloTableHandle(connectorId, stName.getSchemaName(),
+                stName.getTableName(), table.getRowIdName(), table.isInternal(),
                 table.getSerializerClass().getName());
     }
 

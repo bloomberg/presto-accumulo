@@ -1,6 +1,5 @@
 package bloomberg.presto.accumulo.serializers;
 
-import static bloomberg.presto.accumulo.metadata.AccumuloMetadataManager.ROW_ID_COLUMN_NAME;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.DateType.DATE;
@@ -47,6 +46,8 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
     private Map<String, byte[]> columnValues = new HashMap<>();
     private Text rowId = new Text(), cf = new Text(), cq = new Text(),
             value = new Text();
+    private boolean rowOnly = false;
+    private String rowIdName;
 
     static {
         if (lexicoderMap == null) {
@@ -60,6 +61,16 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
             lexicoderMap.put(VARBINARY, new BytesLexicoder());
             lexicoderMap.put(VARCHAR, new StringLexicoder());
         }
+    }
+
+    @Override
+    public void setRowIdName(String name) {
+        rowIdName = name;
+    }
+
+    @Override
+    public void setRowOnly(boolean rowOnly) {
+        this.rowOnly = rowOnly;
     }
 
     @Override
@@ -81,9 +92,13 @@ public class LexicoderRowSerializer implements AccumuloRowSerializer {
 
     @Override
     public void deserialize(Entry<Key, Value> kvp) throws IOException {
-        if (!columnValues.containsKey(ROW_ID_COLUMN_NAME)) {
+        if (!columnValues.containsKey(rowIdName)) {
             kvp.getKey().getRow(rowId);
-            columnValues.put(ROW_ID_COLUMN_NAME, rowId.copyBytes());
+            columnValues.put(rowIdName, rowId.copyBytes());
+        }
+
+        if (rowOnly) {
+            return;
         }
 
         kvp.getKey().getColumnFamily(cf);

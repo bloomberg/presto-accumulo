@@ -18,20 +18,11 @@ import static java.util.Objects.requireNonNull;
 import java.util.Set;
 
 import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.VarcharType;
 
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloTable;
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 
 public abstract class AccumuloMetadataManager {
-
-    public static final String ROW_ID_COLUMN_NAME = "recordkey";
-    public static final Type ROW_ID_COLUMN_TYPE = VarcharType.VARCHAR;
-    private static final AccumuloColumnHandle ROW_ID_COLUMN = new AccumuloColumnHandle(
-            "accumulo", ROW_ID_COLUMN_NAME, null, null, ROW_ID_COLUMN_TYPE, 0,
-            "Accumulo row ID");
 
     protected final String connectorId;
     protected final AccumuloConfig config;
@@ -44,10 +35,6 @@ public abstract class AccumuloMetadataManager {
     public static AccumuloMetadataManager getDefault(String connectorId,
             AccumuloConfig config) {
         return new ZooKeeperMetadataManager(connectorId, config);
-    }
-
-    public static AccumuloColumnHandle getRowIdColumn() {
-        return ROW_ID_COLUMN;
     }
 
     public abstract Set<String> getSchemaNames();

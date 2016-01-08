@@ -36,8 +36,9 @@ public class AccumuloRecordSet implements RecordSet {
     private final List<AccumuloColumnHandle> columnHandles;
     private final List<AccumuloColumnConstraint> constraints;
     private final List<Type> columnTypes;
-    private final Scanner scan;
     private final AccumuloRowSerializer serializer;
+    private final Scanner scan;
+    private final String rowIdName;
 
     public AccumuloRecordSet(ConnectorSession session, AccumuloConfig config,
             AccumuloSplit split, List<AccumuloColumnHandle> columnHandles,
@@ -46,6 +47,8 @@ public class AccumuloRecordSet implements RecordSet {
         requireNonNull(split, "split is null");
         constraints = requireNonNull(split.getConstraints(),
                 "constraints is null");
+
+        rowIdName = split.getRowIdName();
 
         try {
             this.serializer = split.getSerializerClass().newInstance();
@@ -82,7 +85,7 @@ public class AccumuloRecordSet implements RecordSet {
 
     @Override
     public RecordCursor cursor() {
-        return new AccumuloRecordCursor(serializer, scan, columnHandles,
-                constraints);
+        return new AccumuloRecordCursor(serializer, scan, rowIdName,
+                columnHandles, constraints);
     }
 }

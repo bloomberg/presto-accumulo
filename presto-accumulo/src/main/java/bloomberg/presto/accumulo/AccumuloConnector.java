@@ -41,6 +41,7 @@ public class AccumuloConnector implements Connector {
     public static final String PROP_INTERNAL = "internal";
     public static final String PROP_METADATA_ONLY = "metadata_only";
     public static final String PROP_SERIALIZER = "serializer";
+    public static final String PROP_ROW_ID = "row_id";
     private static final Logger LOG = Logger.get(AccumuloConnector.class);
 
     private final LifeCycleManager lifeCycleManager;
@@ -105,6 +106,11 @@ public class AccumuloConnector implements Connector {
         properties.add(new PropertyMetadata<Boolean>(PROP_METADATA_ONLY,
                 "True to only create metadata about the Accumulo table vs. actually creating the table",
                 BooleanType.BOOLEAN, Boolean.class, false, false));
+
+        properties.add(new PropertyMetadata<String>(PROP_ROW_ID,
+                "Set the column name of the Accumulo row ID.  Default is the first column",
+                VarcharType.VARCHAR, String.class, null, false,
+                value -> ((String) value).toLowerCase()));
 
         properties.add(new PropertyMetadata<String>(PROP_SERIALIZER,
                 "Serializer for Accumulo data encodings.  Can either be 'default', 'string', 'lexicoder', or a Java class name.  Default is 'default', i.e. the value from AccumuloRowSerializer.getDefault()",
