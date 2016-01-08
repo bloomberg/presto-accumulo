@@ -46,9 +46,9 @@ presto --server localhost:8080 --catalog accumulo --schema default
 ```
 
 ### Usage
-Simply begin using SQL to create a new table in Accumulo to begin working with data.  The first column of the table definition is expected to be ```recordkey VARCHAR```, which maps to the Accumulo row ID.  After that, specify the presto column names and data types.
+Simply begin using SQL to create a new table in Accumulo to begin working with data.  By default, the first column of the table definition is set to the Accumulo row ID.  This should be the primary key of your table.  It can be any valid Presto datatype.  You can set the row ID using the `row_id` table property within the `WITH` clause of your table definition if you want the row ID to be in a different column than the first.  Simply set this property to the name of the presto column.
 
-When creating a table using SQL, you __must__ specify a ```column_mapping``` table property.  The value of this property is a comma-delimited list of triples -- presto column __:__ accumulo column family __:__ accumulo column qualifier.  This sets the mapping of the presto column name to the corresponding Accumulo column family and column qualifier.  See below for an example
+When creating a table using SQL, you __must__ specify a `column_mapping` table property.  The value of this property is a comma-delimited list of triples, -- presto column __:__ accumulo column family __:__ accumulo column qualifier, with one triple for every non-row ID column.  This sets the mapping of the presto column name to the corresponding Accumulo column family and column qualifier.  See below for an example
 
 ```SQL
 CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
