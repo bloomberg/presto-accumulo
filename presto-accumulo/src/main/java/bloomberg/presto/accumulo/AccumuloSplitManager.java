@@ -32,6 +32,7 @@ import com.facebook.presto.spi.FixedSplitSource;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.predicate.TupleDomain.ColumnDomain;
+import com.google.common.collect.ImmutableList;
 
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
@@ -63,22 +64,29 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         List<TabletSplitMetadata> tSplits = client.getTabletSplits(schemaName,
                 tableName, rDom);
 
+        List<AccumuloColumnConstraint> constraints;
+        if (session.getProperty(
+                AccumuloConnector.SESSION_PROP_COLUMN_FILTER_OPTIMIZATIONS_ENABLED,
+                Boolean.class)) {
+            constraints = getColumnConstraints(rowIdName,
+                    layoutHandle.getConstraint());
+        } else {
+            constraints = ImmutableList.of();
+        }
+
         List<ConnectorSplit> cSplits = new ArrayList<>();
         if (tSplits.size() > 0) {
             for (TabletSplitMetadata smd : tSplits) {
                 AccumuloSplit accSplit = new AccumuloSplit(connectorId,
                         schemaName, tableName, rowIdName,
                         tableHandle.getSerializerClassName(),
-                        smd.getRangeHandle(), getColumnConstraints(rowIdName,
-                                layoutHandle.getConstraint()));
+                        smd.getRangeHandle(), constraints);
                 cSplits.add(accSplit);
             }
         } else {
             AccumuloSplit accSplit = new AccumuloSplit(connectorId, schemaName,
                     tableName, rowIdName, tableHandle.getSerializerClassName(),
-                    new RangeHandle(null, true, null, true),
-                    getColumnConstraints(rowIdName,
-                            layoutHandle.getConstraint()));
+                    new RangeHandle(null, true, null, true), constraints);
             cSplits.add(accSplit);
         }
 

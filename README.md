@@ -109,6 +109,17 @@ accumulo.root
 myschema.scientists
 trace
 ```
+### Session Properties
+You can change the default value of a session property by using the SET SESSION clause at the top of your Presto script:
+```SQL
+SET SESSION accumulo.column_filter_optimizations_enabled = false;
+```
+
+| Property Name                                  | Default Value   | Description                                                                                                                                                                                                                                      |
+|------------------------------------------------|-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `accumulo.column_filter_optimizations_enabled` | `true`          | True to enable column filter optimizations.  Enabling this property will enable predicate pushdowns, configuring a server-side iterator to restrict the rows returned from Accumulo to only those properly matching the WHERE clause of a query. |
+
+
 ### Internal Tables
 
 By default, the tables created using SQL statements via Presto are _external_ tables, that is the table backing the data in Accumulo will not be deleted when the table is dropped.  To change this behavior, set the `internal` property to `true` when issuing the `CREATE` statement.  This will make the table an _internal_ table, and a `DROP TABLE` command will also delete the corresponding Accumulo table.  Ye be warned.
