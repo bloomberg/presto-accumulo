@@ -37,11 +37,11 @@ public final class AccumuloTableProperties {
     private static final String SERIALIZER = "serializer";
     private static final String ROW_ID = "row_id";
 
-    private final List<PropertyMetadata<?>> sessionProperties;
+    private final List<PropertyMetadata<?>> tableProperties;
 
     @Inject
     public AccumuloTableProperties(AccumuloConfig config) {
-        sessionProperties = ImmutableList.of(
+        tableProperties = ImmutableList.of(
                 new PropertyMetadata<String>(COLUMN_MAPPING,
                         "Comma-delimited list of column metadata: col_name:col_family:col_qualifier,[...]",
                         VarcharType.VARCHAR, String.class, null, false,
@@ -74,7 +74,7 @@ public final class AccumuloTableProperties {
     }
 
     public List<PropertyMetadata<?>> getTableProperties() {
-        return sessionProperties;
+        return tableProperties;
     }
 
     public static String getColumnMapping(Map<String, Object> tableProperties) {
@@ -83,7 +83,7 @@ public final class AccumuloTableProperties {
 
     public static String getSerializerClass(
             Map<String, Object> tableProperties) {
-        return (String) tableProperties.get(ROW_ID);
+        return (String) tableProperties.get(SERIALIZER);
     }
 
     public static String getRowId(Map<String, Object> tableProperties) {
