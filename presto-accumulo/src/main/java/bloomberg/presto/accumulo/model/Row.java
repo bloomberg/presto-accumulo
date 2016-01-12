@@ -1,7 +1,22 @@
 package bloomberg.presto.accumulo.model;
 
+import static com.facebook.presto.spi.type.BigintType.BIGINT;
+import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
+import static com.facebook.presto.spi.type.DateType.DATE;
+import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
+import static com.facebook.presto.spi.type.TimeType.TIME;
+import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
+import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
+import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+
+import java.security.InvalidParameterException;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
 
 import com.facebook.presto.spi.type.Type;
 
@@ -78,5 +93,43 @@ public class Row implements Comparable<Row> {
             bldr.deleteCharAt(bldr.length() - 1);
         }
         return bldr.append(')').toString();
+    }
+
+    public static Row fromString(RowSchema schema, String str, char delimiter) {
+        Row r = Row.newInstance();
+
+        String[] fields = StringUtils.split(str, delimiter);
+
+        if (fields.length != schema.getLength()) {
+            throw new InvalidParameterException(
+                    "Number of split tokens is not equal to schema length");
+        }
+
+        for (int i = 0; i < fields.length; ++i) {
+            Type type = schema.getColumn(i).getType();
+
+            if (type == BIGINT) {
+                r.addField(Long.parseLong(fields[i]), BIGINT);
+            } else if (type == BOOLEAN) {
+                r.addField(Boolean.parseBoolean(fields[i]), BOOLEAN);
+            } else if (type == DATE) {
+                r.addField(Date.valueOf(fields[i]), DATE);
+            } else if (type == DOUBLE) {
+                r.addField(Double.parseDouble(fields[i]), DOUBLE);
+            } else if (type == TIME) {
+                r.addField(Time.valueOf(fields[i]), TIME);
+            } else if (type == TIMESTAMP) {
+                r.addField(Timestamp.valueOf(fields[i]), TIMESTAMP);
+            } else if (type == VARBINARY) {
+                r.addField(fields[i].getBytes(), VARBINARY);
+            } else if (type == VARCHAR) {
+                r.addField(fields[i], VARCHAR);
+            } else {
+                throw new UnsupportedOperationException("Unsupported type "
+                        + type);
+            }
+        }
+
+        return r;
     }
 }

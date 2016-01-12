@@ -48,9 +48,6 @@
                                 <includes>
                                     <include>com.fasterxml.jackson.core:*</include>
                                 </includes>
-                                <!--<excludes>
-                                    <exclude>*:*</exclude>
-                                </excludes>-->
                             </artifactSet>
                         </configuration>
                     </execution>
