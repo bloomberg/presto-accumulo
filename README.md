@@ -117,8 +117,8 @@ SET SESSION accumulo.column_filter_optimizations_enabled = false;
 
 | Property Name                                  | Default Value   | Description                                                                                                                                                                                                                                      |
 |------------------------------------------------|-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `accumulo.column_filter_optimizations_enabled` | `true`          | True to enable column filter optimizations.  Enabling this property will enable predicate pushdowns, configuring a server-side iterator to restrict the rows returned from Accumulo to only those properly matching the WHERE clause of a query. |
-
+| `accumulo.optimize_column_filters_enabled` | `true`          | True to enable column filter optimizations.  Enabling this property will enable predicate pushdowns, configuring a server-side iterator to restrict the rows returned from Accumulo to only those properly matching the WHERE clause of a query. |
+| `accumulo.optimize_range_splits_enabled`   | `true`          | True to enable splitting the range scan by tablets, i.e. one task per tablet for full table scans.  This should typically be enabled and this parameter exists for testing purposes. |
 
 ### Internal Tables
 
