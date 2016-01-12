@@ -50,6 +50,7 @@ import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 
 import bloomberg.presto.accumulo.iterators.AndFilter;
+import bloomberg.presto.accumulo.iterators.NullRowFilter;
 import bloomberg.presto.accumulo.iterators.OrFilter;
 import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter;
 import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter.CompareOp;
@@ -331,9 +332,8 @@ public class AccumuloRecordCursor implements RecordCursor {
 
         String name = String.format("%s:%d", col.getName(), priority.get());
         return new IteratorSetting(priority.getAndIncrement(), name,
-                SingleColumnValueFilter.class,
-                SingleColumnValueFilter.getNullProperties(col.getFamily(),
-                        col.getQualifier()));
+                NullRowFilter.class, NullRowFilter
+                        .getProperties(col.getFamily(), col.getQualifier()));
     }
 
     private IteratorSetting getFilterSettingFromRange(

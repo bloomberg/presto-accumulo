@@ -91,13 +91,11 @@ public class SingleColumnValueFilterTest {
         for (long filterValue : values) {
             for (long testValue : values) {
                 Assert.assertFalse("Filter accepted key with wrong family",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue, BigintType.BIGINT,
-                                wrongFam, testValue));
+                        testFilter(filterFam, filterQual, op, filterValue,
+                                BigintType.BIGINT, wrongFam, testValue));
                 Assert.assertFalse("Filter accepted key with wrong qual",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue, BigintType.BIGINT,
-                                wrongQual, testValue));
+                        testFilter(filterFam, filterQual, op, filterValue,
+                                BigintType.BIGINT, wrongQual, testValue));
 
                 boolean test = testFilter(filterFam, filterQual, op,
                         filterValue, BigintType.BIGINT, matchingKey, testValue);
@@ -132,11 +130,6 @@ public class SingleColumnValueFilterTest {
     }
 
     @Test
-    public void testBigintNoOp() throws Exception {
-        testBigint(CompareOp.NO_OP, (x, y) -> true);
-    }
-
-    @Test
     public void testBigintGreater() throws Exception {
         testBigint(CompareOp.GREATER, (x, y) -> Long.compare(x, y) > 0);
     }
@@ -164,12 +157,10 @@ public class SingleColumnValueFilterTest {
             for (boolean testValue : values) {
 
                 Assert.assertFalse("Filter accepted key with wrong family",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue,
+                        testFilter(filterFam, filterQual, op, filterValue,
                                 BooleanType.BOOLEAN, wrongFam, testValue));
                 Assert.assertFalse("Filter accepted key with wrong qual",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue,
+                        testFilter(filterFam, filterQual, op, filterValue,
                                 BooleanType.BOOLEAN, wrongQual, testValue));
 
                 boolean test = testFilter(filterFam, filterQual, op,
@@ -207,11 +198,6 @@ public class SingleColumnValueFilterTest {
     }
 
     @Test
-    public void testBooleanNoOp() throws Exception {
-        testBoolean(CompareOp.NO_OP, (x, y) -> true);
-    }
-
-    @Test
     public void testBooleanGreater() throws Exception {
         testBoolean(CompareOp.GREATER, (x, y) -> Boolean.compare(x, y) > 0);
     }
@@ -239,13 +225,13 @@ public class SingleColumnValueFilterTest {
         for (Date filterValue : values) {
             for (Date testValue : values) {
                 Assert.assertFalse("Filter accepted key with wrong family",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue.getTime(),
-                                DateType.DATE, wrongFam, testValue.getTime()));
+                        testFilter(filterFam, filterQual, op,
+                                filterValue.getTime(), DateType.DATE, wrongFam,
+                                testValue.getTime()));
                 Assert.assertFalse("Filter accepted key with wrong qual",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue.getTime(),
-                                DateType.DATE, wrongQual, testValue.getTime()));
+                        testFilter(filterFam, filterQual, op,
+                                filterValue.getTime(), DateType.DATE, wrongQual,
+                                testValue.getTime()));
 
                 boolean test = testFilter(filterFam, filterQual, op,
                         filterValue.getTime(), DateType.DATE, matchingKey,
@@ -281,11 +267,6 @@ public class SingleColumnValueFilterTest {
     }
 
     @Test
-    public void testDateNoOp() throws Exception {
-        testDate(CompareOp.NO_OP, (x, y) -> true);
-    }
-
-    @Test
     public void testDateGreater() throws Exception {
         testDate(CompareOp.GREATER, (x, y) -> x.compareTo(y) > 0);
     }
@@ -312,13 +293,11 @@ public class SingleColumnValueFilterTest {
         for (double filterValue : values) {
             for (double testValue : values) {
                 Assert.assertFalse("Filter accepted key with wrong family",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue, DoubleType.DOUBLE,
-                                wrongFam, testValue));
+                        testFilter(filterFam, filterQual, op, filterValue,
+                                DoubleType.DOUBLE, wrongFam, testValue));
                 Assert.assertFalse("Filter accepted key with wrong qual",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue, DoubleType.DOUBLE,
-                                wrongQual, testValue));
+                        testFilter(filterFam, filterQual, op, filterValue,
+                                DoubleType.DOUBLE, wrongQual, testValue));
 
                 boolean test = testFilter(filterFam, filterQual, op,
                         filterValue, DoubleType.DOUBLE, matchingKey, testValue);
@@ -353,11 +332,6 @@ public class SingleColumnValueFilterTest {
     }
 
     @Test
-    public void testDoubleNoOp() throws Exception {
-        testDouble(CompareOp.NO_OP, (x, y) -> true);
-    }
-
-    @Test
     public void testDoubleGreater() throws Exception {
         testDouble(CompareOp.GREATER, (x, y) -> x.compareTo(y) > 0);
     }
@@ -385,13 +359,13 @@ public class SingleColumnValueFilterTest {
             for (Time testValue : values) {
 
                 Assert.assertFalse("Filter accepted key with wrong family",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue.getTime(),
-                                TimeType.TIME, wrongFam, testValue.getTime()));
+                        testFilter(filterFam, filterQual, op,
+                                filterValue.getTime(), TimeType.TIME, wrongFam,
+                                testValue.getTime()));
                 Assert.assertFalse("Filter accepted key with wrong qual",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue.getTime(),
-                                TimeType.TIME, wrongQual, testValue.getTime()));
+                        testFilter(filterFam, filterQual, op,
+                                filterValue.getTime(), TimeType.TIME, wrongQual,
+                                testValue.getTime()));
 
                 boolean test = testFilter(filterFam, filterQual, op,
                         filterValue.getTime(), TimeType.TIME, matchingKey,
@@ -427,11 +401,6 @@ public class SingleColumnValueFilterTest {
     }
 
     @Test
-    public void testTimeNoOp() throws Exception {
-        testTime(CompareOp.NO_OP, (x, y) -> true);
-    }
-
-    @Test
     public void testTimeGreater() throws Exception {
         testTime(CompareOp.GREATER, (x, y) -> x.compareTo(y) > 0);
     }
@@ -458,15 +427,13 @@ public class SingleColumnValueFilterTest {
         for (Timestamp filterValue : values) {
             for (Timestamp testValue : values) {
                 Assert.assertFalse("Filter accepted key with wrong family",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue.getTime(),
-                                TimestampType.TIMESTAMP, wrongFam,
-                                testValue.getTime()));
+                        testFilter(filterFam, filterQual, op,
+                                filterValue.getTime(), TimestampType.TIMESTAMP,
+                                wrongFam, testValue.getTime()));
                 Assert.assertFalse("Filter accepted key with wrong qual",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue.getTime(),
-                                TimestampType.TIMESTAMP, wrongQual,
-                                testValue.getTime()));
+                        testFilter(filterFam, filterQual, op,
+                                filterValue.getTime(), TimestampType.TIMESTAMP,
+                                wrongQual, testValue.getTime()));
 
                 boolean test = testFilter(filterFam, filterQual, op,
                         filterValue.getTime(), TimestampType.TIMESTAMP,
@@ -502,11 +469,6 @@ public class SingleColumnValueFilterTest {
     }
 
     @Test
-    public void testTimestampNoOp() throws Exception {
-        testTimestamp(CompareOp.NO_OP, (x, y) -> true);
-    }
-
-    @Test
     public void testTimestampGreater() throws Exception {
         testTimestamp(CompareOp.GREATER, (x, y) -> x.compareTo(y) > 0);
     }
@@ -534,12 +496,10 @@ public class SingleColumnValueFilterTest {
         for (byte[] filterValue : bytes) {
             for (byte[] testValue : bytes) {
                 Assert.assertFalse("Filter accepted key with wrong family",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue,
+                        testFilter(filterFam, filterQual, op, filterValue,
                                 VarbinaryType.VARBINARY, wrongFam, testValue));
                 Assert.assertFalse("Filter accepted key with wrong qual",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue,
+                        testFilter(filterFam, filterQual, op, filterValue,
                                 VarbinaryType.VARBINARY, wrongQual, testValue));
 
                 boolean test = testFilter(filterFam, filterQual, op,
@@ -580,11 +540,6 @@ public class SingleColumnValueFilterTest {
     }
 
     @Test
-    public void testVarbinaryNoOp() throws Exception {
-        testVarbinary(CompareOp.NO_OP, (x, y) -> true);
-    }
-
-    @Test
     public void testVarbinaryGreater() throws Exception {
         testVarbinary(CompareOp.GREATER,
                 (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) > 0);
@@ -613,12 +568,10 @@ public class SingleColumnValueFilterTest {
         for (String filterValue : bytes) {
             for (String testValue : bytes) {
                 Assert.assertFalse("Filter accepted key with wrong family",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue,
+                        testFilter(filterFam, filterQual, op, filterValue,
                                 VarcharType.VARCHAR, wrongFam, testValue));
                 Assert.assertFalse("Filter accepted key with wrong qual",
-                        op != CompareOp.NO_OP && testFilter(filterFam,
-                                filterQual, op, filterValue,
+                        testFilter(filterFam, filterQual, op, filterValue,
                                 VarcharType.VARCHAR, wrongQual, testValue));
 
                 boolean test = testFilter(filterFam, filterQual, op,
@@ -652,11 +605,6 @@ public class SingleColumnValueFilterTest {
     @Test
     public void testVarcharNotEqual() throws Exception {
         testVarchar(CompareOp.NOT_EQUAL, (x, y) -> x.compareTo(y) != 0);
-    }
-
-    @Test
-    public void testVarcharNoOp() throws Exception {
-        testVarchar(CompareOp.NO_OP, (x, y) -> true);
     }
 
     @Test

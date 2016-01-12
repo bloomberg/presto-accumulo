@@ -14,6 +14,9 @@ import org.apache.accumulo.core.iterators.user.RowFilter;
 
 public class AndFilter extends AbstractBooleanFilter {
 
+    private static final Range SEEK_RANGE = new Range();
+    private static final HashSet<ByteSequence> SEEK_HASH_SET = new HashSet<>();
+
     @Override
     public boolean acceptRow(SortedKeyValueIterator<Key, Value> rowIterator)
             throws IOException {
@@ -21,7 +24,7 @@ public class AndFilter extends AbstractBooleanFilter {
             if (!f.acceptRow(rowIterator)) {
                 return false;
             }
-            rowIterator.seek(new Range(), new HashSet<ByteSequence>(), false);
+            rowIterator.seek(SEEK_RANGE, SEEK_HASH_SET, false);
         }
 
         return true;

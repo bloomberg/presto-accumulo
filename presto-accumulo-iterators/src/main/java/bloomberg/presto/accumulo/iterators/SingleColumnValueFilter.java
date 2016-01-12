@@ -20,7 +20,7 @@ public class SingleColumnValueFilter extends RowFilter
         implements OptionDescriber {
 
     public enum CompareOp {
-        LESS, LESS_OR_EQUAL, EQUAL, NOT_EQUAL, GREATER_OR_EQUAL, GREATER, NO_OP, IS_NULL,
+        LESS, LESS_OR_EQUAL, EQUAL, NOT_EQUAL, GREATER_OR_EQUAL, GREATER
     }
 
     protected static final String CF = "family";
@@ -32,78 +32,46 @@ public class SingleColumnValueFilter extends RowFilter
     private Text columnQualifier;
     private Value value;
     private CompareOp compareOp;
-    private Text cf = new Text();
-    private Text cq = new Text();
     private boolean columnFound = false;
 
     @Override
     public boolean acceptRow(SortedKeyValueIterator<Key, Value> rowIterator)
             throws IOException {
-        if (compareOp == CompareOp.NO_OP) {
-            return true;
+        columnFound = false;
+        while (rowIterator.hasTop()) {
+            if (!acceptSingleKeyValue(rowIterator.getTopKey(),
+                    rowIterator.getTopValue())) {
+                return false;
+            }
+            rowIterator.next();
         }
 
-        if (compareOp != CompareOp.IS_NULL) {
-            columnFound = false;
-            while (rowIterator.hasTop()) {
-                if (!acceptSingleKeyValue(rowIterator.getTopKey(),
-                        rowIterator.getTopValue())) {
-                    return false;
-                }
-                rowIterator.next();
-            }
-
-            return columnFound;
-        } else {
-            while (rowIterator.hasTop()) {
-                if (isNotNull(rowIterator.getTopKey())) {
-                    return false;
-                }
-                rowIterator.next();
-            }
-            return true;
-        }
+        return columnFound;
     }
 
     private boolean acceptSingleKeyValue(Key k, Value v) {
-        k.getColumnFamily(cf);
-        if (columnFamily.equals(cf)) {
-            k.getColumnQualifier(cq);
-            if (columnQualifier.equals(cq)) {
-                columnFound = true;
-                int compareResult = v.compareTo(value);
-                switch (compareOp) {
-                case LESS:
-                    return compareResult < 0;
-                case LESS_OR_EQUAL:
-                    return compareResult <= 0;
-                case EQUAL:
-                    return compareResult == 0;
-                case NOT_EQUAL:
-                    return compareResult != 0;
-                case GREATER_OR_EQUAL:
-                    return compareResult >= 0;
-                case GREATER:
-                    return compareResult > 0;
-                default:
-                    throw new RuntimeException(
-                            "Unknown Compare op " + compareOp.name());
-                }
+        if (k.compareColumnQualifier(columnQualifier) == 0
+                && k.compareColumnFamily(columnFamily) == 0) {
+            columnFound = true;
+            switch (compareOp) {
+            case LESS:
+                return v.compareTo(value) < 0;
+            case LESS_OR_EQUAL:
+                return v.compareTo(value) <= 0;
+            case EQUAL:
+                return v.compareTo(value) == 0;
+            case NOT_EQUAL:
+                return v.compareTo(value) != 0;
+            case GREATER_OR_EQUAL:
+                return v.compareTo(value) >= 0;
+            case GREATER:
+                return v.compareTo(value) > 0;
+            default:
+                throw new RuntimeException(
+                        "Unknown Compare op " + compareOp.name());
             }
         }
         return true;
-    }
-
-    private boolean isNotNull(Key k) {
-        k.getColumnFamily(cf);
-        if (columnFamily.equals(cf)) {
-            k.getColumnQualifier(cq);
-            if (columnQualifier.equals(cq)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     @Override
@@ -115,15 +83,12 @@ public class SingleColumnValueFilter extends RowFilter
         columnQualifier = new Text(options.get(CQ));
         compareOp = CompareOp.valueOf(options.get(COMPARE_OP));
 
-        if (compareOp != CompareOp.IS_NULL) {
-            try {
-                value = new Value(
-                        Hex.decodeHex(options.get(VALUE).toCharArray()));
-            } catch (DecoderException e) {
-                // should not occur, as validateOptions tries this same thing
-                throw new IllegalArgumentException(
-                        "Error decoding hex value in option", e);
-            }
+        try {
+            value = new Value(Hex.decodeHex(options.get(VALUE).toCharArray()));
+        } catch (DecoderException e) {
+            // should not occur, as validateOptions tries this same thing
+            throw new IllegalArgumentException(
+                    "Error decoding hex value in option", e);
         }
     }
 
@@ -173,16 +138,13 @@ public class SingleColumnValueFilter extends RowFilter
                     + ":" + options.get(COMPARE_OP));
         }
 
-        if (CompareOp.valueOf(options.get(COMPARE_OP)) != CompareOp.IS_NULL) {
-            checkNotNull(VALUE, options);
+        checkNotNull(VALUE, options);
 
-            try {
-                new Value(Hex.decodeHex(options.get(VALUE).toCharArray()));
-            } catch (DecoderException e) {
-                throw new IllegalArgumentException("Option " + VALUE
-                        + " is not a hex-encoded value: " + options.get(VALUE),
-                        e);
-            }
+        try {
+            new Value(Hex.decodeHex(options.get(VALUE).toCharArray()));
+        } catch (DecoderException e) {
+            throw new IllegalArgumentException("Option " + VALUE
+                    + " is not a hex-encoded value: " + options.get(VALUE), e);
         }
 
         return true;
@@ -208,16 +170,10 @@ public class SingleColumnValueFilter extends RowFilter
         return opts;
     }
 
-    public static Map<String, String> getNullProperties(String family,
-            String qualifier) {
-
-        Map<String, String> opts = new HashMap<>();
-
-        opts.put(CF, family);
-        opts.put(CQ, qualifier);
-        opts.put(COMPARE_OP, CompareOp.IS_NULL.toString());
-
-        return opts;
+    @Override
+    public String toString() {
+        return String.format(
+                "SingleColumnValueFilter{columnFamily=%s,columnQualifier=%s,compareOp=%s,value=%s}",
+                columnFamily, columnQualifier, compareOp, value);
     }
-
 }
