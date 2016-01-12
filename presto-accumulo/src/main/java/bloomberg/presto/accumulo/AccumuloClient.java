@@ -81,11 +81,11 @@ public class AccumuloClient {
     }
 
     public AccumuloTable createTable(ConnectorTableMetadata meta) {
-        boolean metaOnly = (boolean) meta.getProperties()
-                .get(AccumuloConnector.PROP_METADATA_ONLY);
+        Map<String, Object> tableProperties = meta.getProperties();
+        boolean metaOnly = AccumuloTableProperties
+                .isMetadataOnly(tableProperties);
 
-        String rowIdColumn = (String) meta.getProperties()
-                .get(AccumuloConnector.PROP_ROW_ID);
+        String rowIdColumn = AccumuloTableProperties.getRowId(tableProperties);
 
         if (rowIdColumn == null) {
             rowIdColumn = meta.getColumns().get(0).getName();
@@ -111,12 +111,11 @@ public class AccumuloClient {
         }
 
         // parse the mapping configuration to get the accumulo fam/qual pair
-        String strMapping = (String) meta.getProperties()
-                .get(AccumuloConnector.PROP_COLUMN_MAPPING);
+        String strMapping = AccumuloTableProperties
+                .getColumnMapping(meta.getProperties());
         if (strMapping == null || strMapping.isEmpty()) {
-            throw new InvalidParameterException(String.format(
-                    "Must specify mapping property in WITH (%s = ...)",
-                    AccumuloConnector.PROP_COLUMN_MAPPING));
+            throw new InvalidParameterException(
+                    "Must specify column mapping property");
         }
 
         Map<String, Pair<String, String>> mapping = new HashMap<>();
@@ -159,12 +158,10 @@ public class AccumuloClient {
             }
         }
 
-        boolean internal = (boolean) meta.getProperties()
-                .get(AccumuloConnector.PROP_INTERNAL);
+        boolean internal = AccumuloTableProperties.isInternal(tableProperties);
         AccumuloTable table = new AccumuloTable(meta.getTable().getSchemaName(),
                 meta.getTable().getTableName(), columns, rowIdColumn, internal,
-                (String) meta.getProperties()
-                        .get(AccumuloConnector.PROP_SERIALIZER));
+                AccumuloTableProperties.getSerializerClass(tableProperties));
 
         // Create dat metadata
         metaManager.createTableMetadata(table);

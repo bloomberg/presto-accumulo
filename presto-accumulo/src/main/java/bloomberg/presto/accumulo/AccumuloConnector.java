@@ -15,7 +15,6 @@ package bloomberg.presto.accumulo;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -27,21 +26,11 @@ import com.facebook.presto.spi.ConnectorPageSinkProvider;
 import com.facebook.presto.spi.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.ConnectorSplitManager;
 import com.facebook.presto.spi.session.PropertyMetadata;
-import com.facebook.presto.spi.type.BooleanType;
-import com.facebook.presto.spi.type.VarcharType;
 
-import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
-import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
-import bloomberg.presto.accumulo.serializers.StringRowSerializer;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.log.Logger;
 
 public class AccumuloConnector implements Connector {
-    public static final String PROP_COLUMN_MAPPING = "column_mapping";
-    public static final String PROP_INTERNAL = "internal";
-    public static final String PROP_METADATA_ONLY = "metadata_only";
-    public static final String PROP_SERIALIZER = "serializer";
-    public static final String PROP_ROW_ID = "row_id";
     private static final Logger LOG = Logger.get(AccumuloConnector.class);
 
     private final LifeCycleManager lifeCycleManager;
@@ -51,6 +40,7 @@ public class AccumuloConnector implements Connector {
     private final AccumuloHandleResolver handleResolver;
     private final AccumuloPageSinkProvider pageSinkProvider;
     private final AccumuloSessionProperties sessionProperties;
+    private final AccumuloTableProperties tableProperties;
 
     @Inject
     public AccumuloConnector(LifeCycleManager lifeCycleManager,
@@ -58,7 +48,8 @@ public class AccumuloConnector implements Connector {
             AccumuloRecordSetProvider recordSetProvider,
             AccumuloHandleResolver handleResolver,
             AccumuloPageSinkProvider pageSinkProvider,
-            AccumuloSessionProperties sessionProperties) {
+            AccumuloSessionProperties sessionProperties,
+            AccumuloTableProperties tableProperties) {
         this.lifeCycleManager = requireNonNull(lifeCycleManager,
                 "lifeCycleManager is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -72,6 +63,8 @@ public class AccumuloConnector implements Connector {
                 "pageSinkProvider is null");
         this.sessionProperties = requireNonNull(sessionProperties,
                 "sessionProperties is null");
+        this.tableProperties = requireNonNull(tableProperties,
+                "tableProperties is null");
     }
 
     @Override
@@ -96,40 +89,7 @@ public class AccumuloConnector implements Connector {
 
     @Override
     public List<PropertyMetadata<?>> getTableProperties() {
-        List<PropertyMetadata<?>> properties = new ArrayList<>();
-
-        properties.add(new PropertyMetadata<String>(PROP_COLUMN_MAPPING,
-                "Comma-delimited list of column metadata: col_name:col_family:col_qualifier,[...]",
-                VarcharType.VARCHAR, String.class, null, false,
-                value -> ((String) value).toLowerCase()));
-
-        properties.add(new PropertyMetadata<Boolean>(PROP_INTERNAL,
-                "If true, a DROP TABLE statement WILL delete the corresponding Accumulo table.  Default false.",
-                BooleanType.BOOLEAN, Boolean.class, false, false));
-
-        properties.add(new PropertyMetadata<Boolean>(PROP_METADATA_ONLY,
-                "True to only create metadata about the Accumulo table vs. actually creating the table",
-                BooleanType.BOOLEAN, Boolean.class, false, false));
-
-        properties.add(new PropertyMetadata<String>(PROP_ROW_ID,
-                "Set the column name of the Accumulo row ID.  Default is the first column",
-                VarcharType.VARCHAR, String.class, null, false,
-                value -> ((String) value).toLowerCase()));
-
-        properties.add(new PropertyMetadata<String>(PROP_SERIALIZER,
-                "Serializer for Accumulo data encodings.  Can either be 'default', 'string', 'lexicoder', or a Java class name.  Default is 'default', i.e. the value from AccumuloRowSerializer.getDefault()",
-                VarcharType.VARCHAR, String.class,
-                AccumuloRowSerializer.getDefault().getClass().getName(), false,
-                x -> x.equals("default")
-                        ? AccumuloRowSerializer.getDefault().getClass()
-                                .getName()
-                        : (x.equals("string")
-                                ? StringRowSerializer.class.getName()
-                                : (x.equals("lexicoder")
-                                        ? LexicoderRowSerializer.class.getName()
-                                        : (String) x))));
-
-        return properties;
+        return tableProperties.getTableProperties();
     }
 
     @Override
