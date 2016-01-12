@@ -56,7 +56,7 @@ public class TcphDBGenIngest extends Configured implements Tool {
     private static final RowSchema LINEITEM_SCHEMA = RowSchema.newInstance()
             .addColumn("orderkey", null, null, BIGINT)
             .addColumn("partkey", "md", "partkey", BIGINT)
-            .addColumn("suppkey", "md", "suppkey", VARCHAR)
+            .addColumn("suppkey", "md", "suppkey", BIGINT)
             .addColumn("linenumber", "md", "linenumber", BIGINT)
             .addColumn("quantity", "md", "quantity", BIGINT)
             .addColumn("extendedprice", "md", "extendedprice", DOUBLE)
@@ -121,7 +121,8 @@ public class TcphDBGenIngest extends Configured implements Tool {
             .addColumn("comment", "md", "comment", VARCHAR);
 
     public static void main(String[] args) throws Exception {
-        System.exit(ToolRunner.run(new Configuration(), new TcphDBGenIngest(), args));
+        System.exit(ToolRunner.run(new Configuration(), new TcphDBGenIngest(),
+                args));
     }
 
     @Override
@@ -179,6 +180,10 @@ public class TcphDBGenIngest extends Configured implements Tool {
                             .getClass().getCanonicalName());
 
             mgr.createTableMetadata(table);
+
+            if (!conn.namespaceOperations().exists(schema)) {
+                conn.namespaceOperations().create(schema);
+            }
 
             conn.tableOperations().create(fullTableName);
 
