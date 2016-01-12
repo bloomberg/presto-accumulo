@@ -59,10 +59,6 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         String schemaName = tableHandle.getSchemaName();
         String tableName = tableHandle.getTableName();
         String rowIdName = tableHandle.getRowIdName();
-        Domain rDom = getRangeDomain(rowIdName, layoutHandle.getConstraint());
-
-        List<TabletSplitMetadata> tSplits = client.getTabletSplits(schemaName,
-                tableName, rDom);
 
         List<AccumuloColumnConstraint> constraints;
         if (AccumuloSessionProperties.isOptimizeColumnFiltersEnabled(session)) {
@@ -73,22 +69,36 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         }
 
         List<ConnectorSplit> cSplits = new ArrayList<>();
-        if (tSplits.size() > 0) {
-            for (TabletSplitMetadata smd : tSplits) {
+        if (AccumuloSessionProperties.isOptimizeRangeSplitsEnabled(session)) {
+            Domain rDom = getRangeDomain(rowIdName,
+                    layoutHandle.getConstraint());
+
+            List<TabletSplitMetadata> tSplits = client
+                    .getTabletSplits(schemaName, tableName, rDom);
+
+            if (tSplits.size() > 0) {
+                for (TabletSplitMetadata smd : tSplits) {
+                    AccumuloSplit accSplit = new AccumuloSplit(connectorId,
+                            schemaName, tableName, rowIdName,
+                            tableHandle.getSerializerClassName(),
+                            smd.getRangeHandle(), constraints);
+                    cSplits.add(accSplit);
+                }
+            } else {
                 AccumuloSplit accSplit = new AccumuloSplit(connectorId,
                         schemaName, tableName, rowIdName,
                         tableHandle.getSerializerClassName(),
-                        smd.getRangeHandle(), constraints);
+                        new RangeHandle(null, true, null, true), constraints);
                 cSplits.add(accSplit);
             }
+
+            Collections.shuffle(cSplits);
         } else {
             AccumuloSplit accSplit = new AccumuloSplit(connectorId, schemaName,
                     tableName, rowIdName, tableHandle.getSerializerClassName(),
                     new RangeHandle(null, true, null, true), constraints);
             cSplits.add(accSplit);
         }
-
-        Collections.shuffle(cSplits);
 
         return new FixedSplitSource(connectorId, cSplits);
     }
