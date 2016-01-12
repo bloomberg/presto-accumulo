@@ -53,6 +53,8 @@ public class AccumuloModule implements Module {
         binder.bind(AccumuloRecordSetProvider.class).in(Scopes.SINGLETON);
         binder.bind(AccumuloPageSinkProvider.class).in(Scopes.SINGLETON);
         binder.bind(AccumuloHandleResolver.class).in(Scopes.SINGLETON);
+        binder.bind(AccumuloSessionProperties.class).in(Scopes.SINGLETON);
+        
         configBinder(binder).bindConfig(AccumuloConfig.class);
 
         jsonBinder(binder).addDeserializerBinding(Type.class)

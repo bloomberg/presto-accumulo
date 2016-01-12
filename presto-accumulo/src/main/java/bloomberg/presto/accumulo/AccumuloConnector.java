@@ -13,7 +13,6 @@
  */
 package bloomberg.presto.accumulo;
 
-import static com.facebook.presto.spi.session.PropertyMetadata.booleanSessionProperty;
 import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
@@ -43,7 +42,6 @@ public class AccumuloConnector implements Connector {
     public static final String PROP_METADATA_ONLY = "metadata_only";
     public static final String PROP_SERIALIZER = "serializer";
     public static final String PROP_ROW_ID = "row_id";
-    public static final String SESSION_PROP_COLUMN_FILTER_OPTIMIZATIONS_ENABLED = "column_filter_optimizations_enabled";
     private static final Logger LOG = Logger.get(AccumuloConnector.class);
 
     private final LifeCycleManager lifeCycleManager;
@@ -52,14 +50,15 @@ public class AccumuloConnector implements Connector {
     private final AccumuloRecordSetProvider recordSetProvider;
     private final AccumuloHandleResolver handleResolver;
     private final AccumuloPageSinkProvider pageSinkProvider;
-    private final List<PropertyMetadata<?>> sessionProperties = new ArrayList<>();
+    private final AccumuloSessionProperties sessionProperties;
 
     @Inject
     public AccumuloConnector(LifeCycleManager lifeCycleManager,
             AccumuloMetadata metadata, AccumuloSplitManager splitManager,
             AccumuloRecordSetProvider recordSetProvider,
             AccumuloHandleResolver handleResolver,
-            AccumuloPageSinkProvider pageSinkProvider) {
+            AccumuloPageSinkProvider pageSinkProvider,
+            AccumuloSessionProperties sessionProperties) {
         this.lifeCycleManager = requireNonNull(lifeCycleManager,
                 "lifeCycleManager is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -71,11 +70,8 @@ public class AccumuloConnector implements Connector {
                 "handleResolver is null");
         this.pageSinkProvider = requireNonNull(pageSinkProvider,
                 "pageSinkProvider is null");
-
-        sessionProperties.add(booleanSessionProperty(
-                SESSION_PROP_COLUMN_FILTER_OPTIMIZATIONS_ENABLED,
-                "Set to true to enable the column value filter pushdowns.  Default true.",
-                true, false));
+        this.sessionProperties = requireNonNull(sessionProperties,
+                "sessionProperties is null");
     }
 
     @Override
@@ -138,7 +134,7 @@ public class AccumuloConnector implements Connector {
 
     @Override
     public List<PropertyMetadata<?>> getSessionProperties() {
-        return sessionProperties;
+        return sessionProperties.getSessionProperties();
     }
 
     @Override

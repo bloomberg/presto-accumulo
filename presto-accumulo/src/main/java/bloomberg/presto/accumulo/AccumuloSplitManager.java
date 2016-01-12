@@ -65,9 +65,7 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
                 tableName, rDom);
 
         List<AccumuloColumnConstraint> constraints;
-        if (session.getProperty(
-                AccumuloConnector.SESSION_PROP_COLUMN_FILTER_OPTIMIZATIONS_ENABLED,
-                Boolean.class)) {
+        if (AccumuloSessionProperties.isOptimizeColumnFiltersEnabled(session)) {
             constraints = getColumnConstraints(rowIdName,
                     layoutHandle.getConstraint());
         } else {

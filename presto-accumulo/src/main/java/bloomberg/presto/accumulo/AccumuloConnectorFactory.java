@@ -14,8 +14,6 @@
 package bloomberg.presto.accumulo;
 
 import static java.util.Objects.requireNonNull;
-import io.airlift.bootstrap.Bootstrap;
-import io.airlift.json.JsonModule;
 
 import java.util.Map;
 
@@ -25,6 +23,9 @@ import com.facebook.presto.spi.type.TypeManager;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
+
+import io.airlift.bootstrap.Bootstrap;
+import io.airlift.json.JsonModule;
 
 public class AccumuloConnectorFactory implements ConnectorFactory {
     private final TypeManager typeManager;
