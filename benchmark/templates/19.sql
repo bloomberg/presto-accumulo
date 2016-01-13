@@ -3,6 +3,8 @@
 -- Functional Query Definition
 -- Approved February 1998
 
+SET SESSION accumulo.optimize_column_filters_enabled = false;
+
 select
 	sum(l.extendedprice* (1 - l.discount)) as revenue
 from
