@@ -35,6 +35,7 @@ import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 public class AccumuloSplit implements ConnectorSplit {
     private final boolean remotelyAccessible;
     private final String connectorId;
+    private final String hostPort;
     private final String rowIdName;
     private final String schemaName;
     private final String tableName;
@@ -50,13 +51,15 @@ public class AccumuloSplit implements ConnectorSplit {
             @JsonProperty("rowIdName") String rowIdName,
             @JsonProperty("serializerClassName") String serializerClassName,
             @JsonProperty("rHandle") RangeHandle rHandle,
-            @JsonProperty("constraints") List<AccumuloColumnConstraint> constraints) {
+            @JsonProperty("constraints") List<AccumuloColumnConstraint> constraints,
+            @JsonProperty("hostPort") String hostPort) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.rowIdName = requireNonNull(rowIdName, "rowIdName is null");
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         this.tableName = requireNonNull(tableName, "tableName is null");
         this.serializerClassName = serializerClassName;
         this.constraints = requireNonNull(constraints, "constraints is null");
+        this.hostPort = requireNonNull(hostPort, "hostPort is null");
 
         // do not "requireNotNull" this field, jackson parses and sets
         // AccumuloSplit, then parses the nested RangeHandle object and will
@@ -64,12 +67,17 @@ public class AccumuloSplit implements ConnectorSplit {
         this.rHandle = rHandle;
 
         remotelyAccessible = true;
-        addresses = newArrayList(HostAddress.fromString("127.0.0.1"));
+        addresses = newArrayList(HostAddress.fromString(hostPort));
     }
 
     @JsonProperty
     public String getConnectorId() {
         return connectorId;
+    }
+
+    @JsonProperty
+    public String getHostPort() {
+        return hostPort;
     }
 
     @JsonProperty
@@ -142,6 +150,7 @@ public class AccumuloSplit implements ConnectorSplit {
                 .add("serializerClassName", serializerClassName)
                 .add("remotelyAccessible", remotelyAccessible)
                 .add("addresses", addresses).add("rHandle", rHandle)
-                .add("constraints", constraints).toString();
+                .add("constraints", constraints).add("hostPort", hostPort)
+                .toString();
     }
 }

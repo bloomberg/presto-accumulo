@@ -76,19 +76,11 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
             List<TabletSplitMetadata> tSplits = client
                     .getTabletSplits(schemaName, tableName, rDom);
 
-            if (tSplits.size() > 0) {
-                for (TabletSplitMetadata smd : tSplits) {
-                    AccumuloSplit accSplit = new AccumuloSplit(connectorId,
-                            schemaName, tableName, rowIdName,
-                            tableHandle.getSerializerClassName(),
-                            smd.getRangeHandle(), constraints);
-                    cSplits.add(accSplit);
-                }
-            } else {
+            for (TabletSplitMetadata smd : tSplits) {
                 AccumuloSplit accSplit = new AccumuloSplit(connectorId,
                         schemaName, tableName, rowIdName,
                         tableHandle.getSerializerClassName(),
-                        new RangeHandle(null, true, null, true), constraints);
+                        smd.getRangeHandle(), constraints, smd.getHostPort());
                 cSplits.add(accSplit);
             }
 
@@ -96,7 +88,9 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         } else {
             AccumuloSplit accSplit = new AccumuloSplit(connectorId, schemaName,
                     tableName, rowIdName, tableHandle.getSerializerClassName(),
-                    new RangeHandle(null, true, null, true), constraints);
+                    new RangeHandle(null, true, null, true), constraints,
+                    client.getDefaultTabletLocation(AccumuloClient
+                            .getFullTableName(schemaName, tableName)));
             cSplits.add(accSplit);
         }
 

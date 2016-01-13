@@ -10,35 +10,29 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 
 public class TabletSplitMetadata {
-    private final String split;
-    private final String host;
-    private final int port;
+    private final byte[] split;
+    private final String strSplit;
+    private final String hostPort;
     private RangeHandle rHandle;
 
     @JsonCreator
-    public TabletSplitMetadata(@JsonProperty("split") String split,
-            @JsonProperty("host") String host,
-            @JsonProperty("port") Integer port,
+    public TabletSplitMetadata(@JsonProperty("split") byte[] split,
+            @JsonProperty("hostPort") String hostPort,
             @JsonProperty("rHandle") RangeHandle rHandle) {
         this.split = split;
-        this.host = requireNonNull(host, "host is null");
-        this.port = requireNonNull(port, "port is null");
+        this.strSplit = this.split != null ? new String(this.split) : null;
+        this.hostPort = requireNonNull(hostPort, "hostPort is null");
         this.rHandle = rHandle;
     }
 
     @JsonProperty
-    public String getSplit() {
+    public byte[] getSplit() {
         return split;
     }
 
     @JsonProperty
-    public String getHost() {
-        return host;
-    }
-
-    @JsonProperty
-    public int getPort() {
-        return port;
+    public String getHostPort() {
+        return hostPort;
     }
 
     @JsonProperty
@@ -53,7 +47,7 @@ public class TabletSplitMetadata {
 
     @Override
     public int hashCode() {
-        return Objects.hash(split, host, port);
+        return Objects.hash(strSplit, hostPort);
     }
 
     @Override
@@ -67,15 +61,14 @@ public class TabletSplitMetadata {
         }
 
         TabletSplitMetadata other = (TabletSplitMetadata) obj;
-        return Objects.equals(this.split, other.split)
-                && Objects.equals(this.host, other.host)
-                && Objects.equals(this.port, other.port)
+        return Objects.equals(this.strSplit, other.strSplit)
+                && Objects.equals(this.hostPort, other.hostPort)
                 && Objects.equals(this.rHandle, other.rHandle);
     }
 
     @Override
     public String toString() {
-        return toStringHelper(this).add("split", split).add("host", host)
-                .add("port", port).add("range", rHandle).toString();
+        return toStringHelper(this).add("split", strSplit)
+                .add("hostPort", hostPort).add("range", rHandle).toString();
     }
 }

@@ -6,32 +6,37 @@ import static java.util.Objects.requireNonNull;
 import java.util.Objects;
 
 import org.apache.accumulo.core.data.Range;
+import org.apache.hadoop.io.Text;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class RangeHandle {
-    private final String startKey;
+    private final byte[] startKey;
+    private final Text startKeyText;
     private final Boolean startKeyInclusive;
-    private final String endKey;
+    private final byte[] endKey;
+    private final Text endKeyText;
     private final Boolean endKeyInclusive;
 
     @JsonCreator
-    public RangeHandle(@JsonProperty("startKey") String startKey,
+    public RangeHandle(@JsonProperty("startKey") byte[] startKey,
             @JsonProperty("startKeyInclusive") Boolean startKeyInclusive,
-            @JsonProperty("endKey") String endKey,
+            @JsonProperty("endKey") byte[] endKey,
             @JsonProperty("endKeyInclusive") Boolean endKeyInclusive) {
         this.startKey = startKey;
+        this.startKeyText = startKey != null ? new Text(startKey) : null;
         this.startKeyInclusive = requireNonNull(startKeyInclusive,
                 "startKeyInclusive is null");
         this.endKey = endKey;
+        this.endKeyText = endKey != null ? new Text(endKey) : null;
         this.endKeyInclusive = requireNonNull(endKeyInclusive,
                 "endKeyInclusive is null");
     }
 
     @JsonProperty
-    public String getStartKey() {
+    public byte[] getStartKey() {
         return startKey;
     }
 
@@ -41,7 +46,7 @@ public final class RangeHandle {
     }
 
     @JsonProperty
-    public String getEndKey() {
+    public byte[] getEndKey() {
         return endKey;
     }
 
@@ -52,20 +57,20 @@ public final class RangeHandle {
 
     @JsonIgnore
     public Range getRange() {
-        if (startKey == null && endKey == null) {
+        if (startKeyText == null && endKeyText == null) {
             return new Range();
-        } else if (startKey != null && endKey != null
-                && startKey.equals(endKey)) {
-            return new Range(startKey);
+        } else if (startKeyText != null && endKeyText != null
+                && startKeyText.equals(endKeyText)) {
+            return new Range(startKeyText);
         } else {
-            return new Range(startKey, startKeyInclusive, endKey,
+            return new Range(startKeyText, startKeyInclusive, endKeyText,
                     endKeyInclusive);
         }
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(startKey, startKeyInclusive, endKey,
+        return Objects.hash(startKeyText, startKeyInclusive, endKeyText,
                 endKeyInclusive);
     }
 
@@ -80,18 +85,18 @@ public final class RangeHandle {
         }
 
         RangeHandle other = (RangeHandle) obj;
-        return Objects.equals(this.startKey, other.startKey)
+        return Objects.equals(this.startKeyText, other.startKeyText)
                 && Objects.equals(this.startKeyInclusive,
                         other.startKeyInclusive)
-                && Objects.equals(this.endKey, other.endKey)
+                && Objects.equals(this.endKeyText, other.endKeyText)
                 && Objects.equals(this.endKeyInclusive, other.endKeyInclusive);
     }
 
     @Override
     public String toString() {
-        return toStringHelper(this).add("startKey", startKey)
+        return toStringHelper(this).add("startKey", startKeyText)
                 .add("startKeyInclusive", startKeyInclusive)
-                .add("endKey", endKey).add("endKeyInclusive", endKeyInclusive)
-                .toString();
+                .add("endKey", endKeyText)
+                .add("endKeyInclusive", endKeyInclusive).toString();
     }
 }

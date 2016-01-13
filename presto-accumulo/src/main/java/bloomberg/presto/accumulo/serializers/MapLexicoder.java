@@ -5,9 +5,9 @@ import static org.apache.accumulo.core.client.lexicoder.impl.ByteUtils.escape;
 import static org.apache.accumulo.core.client.lexicoder.impl.ByteUtils.split;
 import static org.apache.accumulo.core.client.lexicoder.impl.ByteUtils.unescape;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import org.apache.accumulo.core.client.lexicoder.Lexicoder;
 
@@ -36,7 +36,7 @@ public class MapLexicoder<KT, VT> implements Lexicoder<Map<KT, VT>> {
     @Override
     public Map<KT, VT> decode(byte[] b) {
         byte[][] escapedElements = split(b);
-        Map<KT, VT> ret = new TreeMap<KT, VT>();
+        Map<KT, VT> ret = new HashMap<KT, VT>();
 
         for (int i = 0; i < escapedElements.length; i += 2) {
             KT key = keyLexicoder.decode(unescape(escapedElements[i]));

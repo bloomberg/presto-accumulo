@@ -35,6 +35,7 @@ import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.PartialKey;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.commons.lang3.tuple.Pair;
@@ -42,7 +43,6 @@ import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.ConnectorTableMetadata;
-import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.StandardErrorCode;
@@ -51,9 +51,9 @@ import com.facebook.presto.spi.predicate.Marker.Bound;
 
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
-import io.airlift.slice.Slice;
 
 public class AccumuloClient {
     private static final Logger LOG = Logger.get(AccumuloClient.class);
@@ -251,34 +251,43 @@ public class AccumuloClient {
 
         List<TabletSplitMetadata> tabletSplits = new ArrayList<>();
 
-        Range preSplitRange;
+        final Range preSplitRange;
         if (pRange.isAll()) {
+            LOG.debug("SPLITS ARE ALL");
             preSplitRange = new Range();
         } else if (pRange.isSingleValue()) {
-            preSplitRange = new Range(
-                    ((Slice) pRange.getSingleValue()).toStringUtf8());
+            LOG.debug("SINGLE SPLIT IS %s", pRange.getSingleValue());
+            Text split = new Text(LexicoderRowSerializer
+                    .encode(pRange.getType(), pRange.getSingleValue()));
+            preSplitRange = new Range(split);
         } else {
             if (pRange.getLow().isLowerUnbounded()) {
+                LOG.debug("SPLITS ARE %s and %s", null,
+                        pRange.getHigh().getValue());
                 boolean inclusive = pRange.getHigh()
                         .getBound() == Bound.EXACTLY;
-                String split = ((Slice) pRange.getHigh().getValue())
-                        .toStringUtf8();
+                Text split = new Text(LexicoderRowSerializer
+                        .encode(pRange.getType(), pRange.getHigh().getValue()));
                 preSplitRange = new Range(null, false, split, inclusive);
             } else if (pRange.getHigh().isUpperUnbounded()) {
+                LOG.debug("SPLITS ARE %s and %s", pRange.getLow().getValue(),
+                        null);
                 boolean inclusive = pRange.getLow().getBound() == Bound.EXACTLY;
-                String split = ((Slice) pRange.getLow().getValue())
-                        .toStringUtf8();
+                Text split = new Text(LexicoderRowSerializer
+                        .encode(pRange.getType(), pRange.getLow().getValue()));
                 preSplitRange = new Range(split, inclusive, null, false);
             } else {
+                LOG.debug("SPLITS ARE %s and %s", pRange.getLow().getValue(),
+                        pRange.getHigh().getValue());
                 boolean startKeyInclusive = pRange.getLow()
                         .getBound() == Bound.EXACTLY;
-                String startSplit = ((Slice) pRange.getLow().getValue())
-                        .toStringUtf8();
+                Text startSplit = new Text(LexicoderRowSerializer
+                        .encode(pRange.getType(), pRange.getLow().getValue()));
 
                 boolean endKeyInclusive = pRange.getHigh()
                         .getBound() == Bound.EXACTLY;
-                String endSplit = ((Slice) pRange.getHigh().getValue())
-                        .toStringUtf8();
+                Text endSplit = new Text(LexicoderRowSerializer
+                        .encode(pRange.getType(), pRange.getHigh().getValue()));
                 preSplitRange = new Range(startSplit, startKeyInclusive,
                         endSplit, endKeyInclusive);
             }
@@ -296,17 +305,15 @@ public class AccumuloClient {
             Range range) throws TableNotFoundException, AccumuloException,
                     AccumuloSecurityException {
 
-        String startKey = range.getStartKey() != null
-                ? range.getStartKey().getRow().toString() : null;
-        String endKey = range.getEndKey() != null
-                ? range.getEndKey().getRow().toString() : null;
+        byte[] startKey = range.getStartKey() != null
+                ? range.getStartKey().getRow().copyBytes() : null;
+        byte[] endKey = range.getEndKey() != null
+                ? range.getEndKey().getRow().copyBytes() : null;
 
         RangeHandle rHandle = new RangeHandle(startKey,
                 range.isStartKeyInclusive(), endKey, range.isEndKeyInclusive());
         String loc = this.getTabletLocation(fulltable, endKey);
-        String host = HostAddress.fromString(loc).getHostText();
-        int port = HostAddress.fromString(loc).getPort();
-        return new TabletSplitMetadata(endKey, host, port, rHandle);
+        return new TabletSplitMetadata(endKey, loc, rHandle);
     }
 
     /**
@@ -323,36 +330,80 @@ public class AccumuloClient {
      * @throws AccumuloException
      * @throws TableNotFoundException
      */
-    public String getTabletLocation(String fulltable, String split)
-            throws TableNotFoundException, AccumuloException,
-            AccumuloSecurityException {
-        String tableId = conn.tableOperations().tableIdMap().get(fulltable);
-        Scanner scan = conn.createScanner("accumulo.metadata",
-                conn.securityOperations()
-                        .getUserAuthorizations(conf.getUsername()));
+    public String getTabletLocation(String fulltable, byte[] key) {
+        try {
+            if (key != null) {
+                String tableId = conn.tableOperations().tableIdMap()
+                        .get(fulltable);
+                Scanner scan = conn.createScanner("accumulo.metadata",
+                        conn.securityOperations()
+                                .getUserAuthorizations(conf.getUsername()));
 
-        if (split != null) {
-            scan.setRange(new Range(tableId + ';' + split));
-        } else {
+                scan.fetchColumnFamily(new Text("loc"));
+
+                Key defaultTabletRow = new Key(tableId + '<');
+                Text splitCompareKey = new Text();
+                Text scannedCompareKey = new Text();
+
+                splitCompareKey.set(key, 0, key.length - 1);
+
+                Key start = new Key(tableId);
+                Key end = defaultTabletRow.followingKey(PartialKey.ROW);
+                scan.setRange(new Range(start, end));
+
+                String location = null;
+                for (Entry<Key, Value> kvp : scan) {
+                    byte[] keyBytes = kvp.getKey().getRow().copyBytes();
+                    scannedCompareKey.set(keyBytes, 3, keyBytes.length - 3);
+                    if (scannedCompareKey.getLength() > 0) {
+                        int compareTo = splitCompareKey
+                                .compareTo(scannedCompareKey);
+                        if (compareTo <= 0) {
+                            location = kvp.getValue().toString();
+                        }
+                    }
+                }
+                scan.close();
+
+                if (location != null) {
+                    LOG.debug(String.format(
+                            "Location of split %s for table %s is %s",
+                            location, fulltable, location));
+                    return location;
+                }
+            }
+
+            return getDefaultTabletLocation(fulltable);
+        } catch (Exception e) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "Failed to get tablet location");
+        }
+    }
+
+    public String getDefaultTabletLocation(String fulltable) {
+        try {
+            String tableId = conn.tableOperations().tableIdMap().get(fulltable);
+            Scanner scan = conn.createScanner("accumulo.metadata",
+                    conn.securityOperations()
+                            .getUserAuthorizations(conf.getUsername()));
+
+            scan.fetchColumnFamily(new Text("loc"));
             scan.setRange(new Range(tableId + '<'));
-        }
 
-        scan.fetchColumnFamily(new Text("loc"));
+            String location = null;
+            for (Entry<Key, Value> kvp : scan) {
+                assert location == null;
+                location = kvp.getValue().toString();
+            }
+            scan.close();
 
-        String location = null;
-        for (Entry<Key, Value> kvp : scan) {
-            assert location == null;
-            location = kvp.getValue().toString();
-        }
-
-        LOG.debug(String.format("Location of split %s for table %s is %s",
-                split, fulltable, location));
-        if (location == null) {
-            // TODO need to locate a split based on what tablet it would be in,
-            // then find that tablet location
-            return "localhost:9997";
-        } else {
+            LOG.debug(String.format(
+                    "Location of default table for table %s is %s", fulltable,
+                    location));
             return location;
+        } catch (Exception e) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "Failed to get tablet location");
         }
     }
 
