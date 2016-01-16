@@ -339,9 +339,18 @@ public class QueryDriver {
         // delete the accumulo table
         if (this.getSchema().equals("default")) {
             conn.tableOperations().delete(this.getAccumuloTable());
+
+            if (hasIndex()) {
+                conn.tableOperations().delete(this.getAccumuloTable() + "_idx");
+            }
         } else {
             conn.tableOperations()
                     .delete(this.getSchema() + "." + this.getAccumuloTable());
+
+            if (hasIndex()) {
+                conn.tableOperations().delete(this.getSchema() + "."
+                        + this.getAccumuloTable() + "_idx");
+            }
         }
 
         // cleanup metadata folder
@@ -419,6 +428,15 @@ public class QueryDriver {
                 throw new RuntimeException(e);
             }
         }
+
+        if (this.hasIndex()) {
+            conn.tableOperations().create(fulltable + "_idx");
+        }
+    }
+
+    private boolean hasIndex() {
+        return inputSchema.getColumns().stream().filter(x -> x.isIndexed())
+                .count() > 0;
     }
 
     protected void pushInput() throws Exception {

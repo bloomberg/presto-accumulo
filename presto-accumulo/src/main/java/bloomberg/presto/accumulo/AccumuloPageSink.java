@@ -2,9 +2,14 @@ package bloomberg.presto.accumulo;
 
 import static java.util.Objects.requireNonNull;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
@@ -25,6 +30,7 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeUtils;
 import com.google.common.collect.ImmutableList;
 
+import bloomberg.presto.accumulo.index.Utils;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Field;
 import bloomberg.presto.accumulo.model.Row;
@@ -32,10 +38,13 @@ import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import io.airlift.slice.Slice;
 
 public class AccumuloPageSink implements ConnectorPageSink {
-    private final BatchWriter wrtr;
-    private final List<Row> rows = new ArrayList<>();
-    private final List<AccumuloColumnHandle> types;
     private final AccumuloRowSerializer serializer;
+    private final BatchWriter wrtr;
+    private final BatchWriter indexWrtr;
+    private final List<AccumuloColumnHandle> types;
+    private final List<Mutation> idxMutations = new ArrayList<>();
+    private final List<Row> rows = new ArrayList<>();
+    private final Map<ByteBuffer, Set<ByteBuffer>> indexColumns = new HashMap<>();
     private final String rowIdName;
 
     public AccumuloPageSink(Connector conn, AccumuloTable table) {
@@ -52,6 +61,28 @@ public class AccumuloPageSink implements ConnectorPageSink {
         try {
             wrtr = conn.createBatchWriter(table.getFullTableName(),
                     new BatchWriterConfig());
+
+            if (table.isIndexed()) {
+                indexWrtr = conn.createBatchWriter(table.getIndexTableName(),
+                        new BatchWriterConfig());
+                table.getColumns().stream().forEach(x ->
+                    {
+                        if (x.isIndexed()) {
+                            ByteBuffer cf = ByteBuffer
+                                    .wrap(x.getColumnFamily().getBytes());
+                            ByteBuffer cq = ByteBuffer
+                                    .wrap(x.getColumnQualifier().getBytes());
+                            Set<ByteBuffer> qualifiers = indexColumns.get(cf);
+                            if (qualifiers == null) {
+                                qualifiers = new HashSet<>();
+                                indexColumns.put(cf, qualifiers);
+                            }
+                            qualifiers.add(cq);
+                        }
+                    });
+            } else {
+                indexWrtr = null;
+            }
         } catch (TableNotFoundException e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
@@ -79,12 +110,23 @@ public class AccumuloPageSink implements ConnectorPageSink {
                 Mutation m = toMutation(row, rowIdName, types, serializer);
                 if (m.size() > 0) {
                     wrtr.addMutation(m);
+
+                    if (indexWrtr != null) {
+                        Utils.indexMutation(m, indexColumns, idxMutations);
+                        indexWrtr.addMutations(idxMutations);
+                        idxMutations.clear();
+                    }
                 } else {
                     throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
                             "At least one non-recordkey column must contain a non-null value");
                 }
             }
+
             wrtr.close();
+
+            if (indexWrtr != null) {
+                indexWrtr.close();
+            }
         } catch (MutationsRejectedException e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }

@@ -16,8 +16,11 @@
  */
 package bloomberg.presto.accumulo;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.facebook.presto.spi.session.PropertyMetadata;
 import com.facebook.presto.spi.type.BooleanType;
@@ -33,6 +36,7 @@ public final class AccumuloTableProperties {
 
     private static final String COLUMN_MAPPING = "column_mapping";
     private static final String INTERNAL = "internal";
+    private static final String INDEX_COLUMNS = "index_columns";
     private static final String METADATA_ONLY = "metadata_only";
     private static final String SERIALIZER = "serializer";
     private static final String ROW_ID = "row_id";
@@ -45,6 +49,10 @@ public final class AccumuloTableProperties {
                 new PropertyMetadata<String>(COLUMN_MAPPING,
                         "Comma-delimited list of column metadata: col_name:col_family:col_qualifier,[...]",
                         VarcharType.VARCHAR, String.class, null, false,
+                        value -> ((String) value).toLowerCase()),
+                new PropertyMetadata<String>(INDEX_COLUMNS,
+                        "A comma-delimited list of Presto columns that are indexed in this table's corresponding index table.  Default is no indexed columns.",
+                        VarcharType.VARCHAR, String.class, "", false,
                         value -> ((String) value).toLowerCase()),
                 new PropertyMetadata<Boolean>(INTERNAL,
                         "If true, a DROP TABLE statement WILL delete the corresponding Accumulo table.  Default false.",
@@ -79,6 +87,12 @@ public final class AccumuloTableProperties {
 
     public static String getColumnMapping(Map<String, Object> tableProperties) {
         return (String) tableProperties.get(COLUMN_MAPPING);
+    }
+
+    public static List<String> getIndexColumns(
+            Map<String, Object> tableProperties) {
+        return Arrays.asList(StringUtils
+                .split((String) tableProperties.get(INDEX_COLUMNS), ','));
     }
 
     public static String getSerializerClass(

@@ -25,10 +25,16 @@ import io.airlift.slice.Slice;
 public class Field {
     private Object value;
     private Type type;
+    private boolean indexed;
 
     public Field(Object v, Type t) {
+        this(v, t, false);
+    }
+
+    public Field(Object v, Type t, boolean indexed) {
         this.value = Field.cleanObject(v, t);
         this.type = t;
+        this.indexed = indexed;
     }
 
     public Field(Field f) {
@@ -140,6 +146,10 @@ public class Field {
 
     public String getVarchar() {
         return (String) value;
+    }
+
+    public boolean isIndexed() {
+        return indexed;
     }
 
     public boolean isNull() {

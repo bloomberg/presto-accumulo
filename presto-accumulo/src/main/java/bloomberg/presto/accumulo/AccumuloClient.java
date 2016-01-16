@@ -131,6 +131,9 @@ public class AccumuloClient {
             }
         }
 
+        List<String> indexedColumns = AccumuloTableProperties
+                .getIndexColumns(tableProperties);
+
         // And now we parse the configured columns and create handles for the
         // metadata manager, adding the special row ID column first
         List<AccumuloColumnHandle> columns = new ArrayList<>();
@@ -139,17 +142,19 @@ public class AccumuloClient {
             ColumnMetadata cm = meta.getColumns().get(i);
             if (cm.getName().toLowerCase().equals(rowIdColumn)) {
                 columns.add(new AccumuloColumnHandle("accumulo", rowIdColumn,
-                        null, null, cm.getType(), i, "Accumulo row ID"));
+                        null, null, cm.getType(), i, "Accumulo row ID", false));
             } else {
                 try {
                     Pair<String, String> famqual = mapping.get(cm.getName());
-                    columns.add(
-                            new AccumuloColumnHandle("accumulo", cm.getName(),
+                    columns.add(new AccumuloColumnHandle("accumulo",
+                            cm.getName(), famqual.getLeft(), famqual.getRight(),
+                            cm.getType(), i,
+                            String.format("Accumulo column %s:%s. Indexed: %b",
                                     famqual.getLeft(), famqual.getRight(),
-                                    cm.getType(), i,
-                                    String.format("Accumulo column %s:%s",
-                                            famqual.getLeft(),
-                                            famqual.getRight())));
+                                    indexedColumns.contains(
+                                            cm.getName().toLowerCase())),
+                            indexedColumns
+                                    .contains(cm.getName().toLowerCase())));
                 } catch (NullPointerException e) {
                     throw new InvalidParameterException(String.format(
                             "Misconfigured mapping for presto column %s",
@@ -168,18 +173,23 @@ public class AccumuloClient {
 
         if (!metaOnly) {
             try {
-                if (meta.getTable().getSchemaName().equals("default")) {
-                    conn.tableOperations()
-                            .create(meta.getTable().getTableName());
-                } else {
-                    if (!conn.namespaceOperations()
-                            .exists(meta.getTable().getSchemaName())) {
-                        conn.namespaceOperations()
-                                .create(meta.getTable().getSchemaName());
-                    }
-
-                    conn.tableOperations().create(meta.getTable().toString());
+                if (!table.getSchemaName().equals("default") && !conn
+                        .namespaceOperations().exists(table.getSchemaName())) {
+                    LOG.debug("Creating namespace %s", table.getSchemaName());
+                    conn.namespaceOperations().create(table.getSchemaName());
                 }
+
+                LOG.debug("Creating table %s", table.getFullTableName());
+                conn.tableOperations().create(table.getFullTableName());
+
+                if (table.isIndexed()) {
+                    LOG.debug("Creating index table %s",
+                            table.getIndexTableName());
+                    conn.tableOperations().create(table.getIndexTableName());
+                } else {
+                    LOG.debug("Table %s is not indexed");
+                }
+
             } catch (Exception e) {
                 throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
                         "Accumulo error when creating table", e);
@@ -367,8 +377,8 @@ public class AccumuloClient {
 
                 if (location != null) {
                     LOG.debug(String.format(
-                            "Location of split %s for table %s is %s",
-                            location, fulltable, location));
+                            "Location of split %s for table %s is %s", location,
+                            fulltable, location));
                     return location;
                 }
             }

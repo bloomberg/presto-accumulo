@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class AccumuloColumnHandle
         implements ColumnHandle, Comparable<AccumuloColumnHandle> {
+    private final boolean indexed;
     private final String connectorId;
     private final String name;
     private final String columnFamily;
@@ -41,7 +42,8 @@ public final class AccumuloColumnHandle
             @JsonProperty("columnQualifier") String columnQualifier,
             @JsonProperty("type") Type type,
             @JsonProperty("ordinal") int ordinal,
-            @JsonProperty("comment") String comment) {
+            @JsonProperty("comment") String comment,
+            @JsonProperty("indexed") boolean indexed) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.name = requireNonNull(name, "name is null");
         this.columnFamily = columnFamily;
@@ -49,6 +51,7 @@ public final class AccumuloColumnHandle
         this.type = requireNonNull(type, "type is null");
         this.ordinal = requireNonNull(ordinal, "type is null");
         this.comment = requireNonNull(comment, "comment is null");
+        this.indexed = requireNonNull(indexed, "indexed is null");
     }
 
     @JsonProperty
@@ -90,10 +93,15 @@ public final class AccumuloColumnHandle
         return new ColumnMetadata(name, type, false, comment, false);
     }
 
+    @JsonProperty
+    public boolean isIndexed() {
+        return indexed;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(connectorId, name, columnFamily, columnQualifier,
-                type, ordinal, comment);
+                type, ordinal, comment, indexed);
     }
 
     @Override
@@ -112,7 +120,8 @@ public final class AccumuloColumnHandle
                 && Objects.equals(this.columnQualifier, other.columnQualifier)
                 && Objects.equals(this.type, other.type)
                 && Objects.equals(this.ordinal, other.ordinal)
-                && Objects.equals(this.comment, other.comment);
+                && Objects.equals(this.comment, other.comment)
+                && Objects.equals(this.indexed, other.indexed);
     }
 
     @Override
@@ -120,7 +129,8 @@ public final class AccumuloColumnHandle
         return toStringHelper(this).add("connectorId", connectorId)
                 .add("name", name).add("columnFamily", columnFamily)
                 .add("columnQualifier", columnQualifier).add("type", type)
-                .add("ordinal", ordinal).add("comment", comment).toString();
+                .add("ordinal", ordinal).add("comment", comment)
+                .add("indexed", indexed).toString();
     }
 
     @Override

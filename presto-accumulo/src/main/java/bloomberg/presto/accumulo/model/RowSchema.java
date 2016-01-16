@@ -20,15 +20,23 @@ public class RowSchema {
         }
 
         columns.add(new AccumuloColumnHandle("accumulo", "recordkey", null,
-                null, VarcharType.VARCHAR, columns.size(), "Accumulo row ID"));
+                null, VarcharType.VARCHAR, columns.size(), "Accumulo row ID",
+                false));
         return this;
     }
 
     public RowSchema addColumn(String prestoName, String columnFamily,
             String columnQualifier, Type type) {
+        return addColumn(prestoName, columnFamily, columnQualifier, type,
+                false);
+    }
+
+    public RowSchema addColumn(String prestoName, String columnFamily,
+            String columnQualifier, Type type, boolean indexed) {
         columns.add(new AccumuloColumnHandle("accumulo", prestoName,
                 columnFamily, columnQualifier, type, columns.size(),
-                "Accumulo column " + columnFamily + ":" + columnQualifier));
+                "Accumulo column " + columnFamily + ":" + columnQualifier,
+                indexed));
         return this;
     }
 

@@ -80,6 +80,11 @@ public class AccumuloTable {
     }
 
     @JsonIgnore
+    public String getIndexTableName() {
+        return getFullTableName() + "_idx";
+    }
+
+    @JsonIgnore
     public String getFullTableName() {
         return schemaName.equals("default") ? tableName
                 : schemaName + "." + tableName;
@@ -103,6 +108,11 @@ public class AccumuloTable {
     @JsonProperty
     public boolean isInternal() {
         return internal;
+    }
+
+    @JsonIgnore
+    public boolean isIndexed() {
+        return columns.stream().filter(x -> x.isIndexed()).count() > 0;
     }
 
     @SuppressWarnings("unchecked")

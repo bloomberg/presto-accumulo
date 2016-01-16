@@ -41,6 +41,20 @@ public class LargeDataTest {
             .addColumn("favorite_color", "metadata", "favorite_color",
                     VarcharType.VARCHAR);
 
+    private static final RowSchema INDEXED_SCHEMA = RowSchema.newInstance()
+            .addRowId()
+            .addColumn("first_name", "metadata", "first_name",
+                    VarcharType.VARCHAR, true)
+            .addColumn("last_name", "metadata", "last_name",
+                    VarcharType.VARCHAR)
+            .addColumn("address", "metadata", "address", VarcharType.VARCHAR)
+            .addColumn("city", "metadata", "city", VarcharType.VARCHAR)
+            .addColumn("state", "metadata", "state", VarcharType.VARCHAR)
+            .addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT)
+            .addColumn("birthday", "metadata", "birthday", DateType.DATE)
+            .addColumn("favorite_color", "metadata", "favorite_color",
+                    VarcharType.VARCHAR);
+
     private static final Integer NUM_RECORDS = 100000;
     private static final QueryDriver DRIVER, DRIVER2;
 
@@ -68,6 +82,10 @@ public class LargeDataTest {
         DRIVER2.withHost("localhost").withPort(8080).withSchema("default")
                 .withTable("testmyothertable").withInputSchema(INPUT_SCHEMA)
                 .withInputFile(OTHER_INPUT_FILE).initialize();
+
+        DRIVER.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmyindexedtable").withInputSchema(INDEXED_SCHEMA)
+                .withInputFile(INPUT_FILE).initialize();
     }
 
     @AfterClass
@@ -100,6 +118,16 @@ public class LargeDataTest {
                 + "WHERE first_name = 'Darla'";
 
         DRIVER.withOutputSchema(INPUT_SCHEMA).withQuery(query)
+                .withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
+    }
+
+    @Test
+    public void testSelectWhereFirstNameEqualsWithIndex() throws Exception {
+
+        String query = "SELECT * FROM testmyindexedtable "
+                + "WHERE first_name = 'Darla'";
+
+        DRIVER.withOutputSchema(INDEXED_SCHEMA).withQuery(query)
                 .withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
     }
 
