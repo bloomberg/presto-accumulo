@@ -18,7 +18,6 @@ import static java.util.Objects.requireNonNull;
 import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -233,33 +232,38 @@ public class AccumuloClient {
             String table, Domain rDom) {
         try {
             String fulltable = getFullTableName(schema, table);
-            List<TabletSplitMetadata> tabletSplits = new ArrayList<>();
-            if (rDom != null) {
-                Logger.get(getClass()).debug("COLUMN recordkey HAS %d RANGES",
-                        rDom.getValues().getRanges().getRangeCount());
+
+            List<Range> preSplitRanges = new ArrayList<>();
+            // if we have no predicate pushdown, use the full range
+            if (rDom == null) {
+                preSplitRanges.add(new Range());
+            } else {
+                // else, add the ranges based on the predicate pushdown
                 for (com.facebook.presto.spi.predicate.Range r : rDom
                         .getValues().getRanges().getOrderedRanges()) {
-                    tabletSplits.addAll(getTabletsFromRange(fulltable, r));
-                }
-            } else {
-                for (Range r : conn.tableOperations().splitRangeByTablets(
-                        fulltable, new Range(), Integer.MAX_VALUE)) {
-                    tabletSplits.add(getTableSplitMetadata(fulltable, r));
+                    preSplitRanges.add(getRangeFromPrestoRange(fulltable, r));
                 }
             }
-            return tabletSplits;
+
+            List<TabletSplitMetadata> splits = new ArrayList<>();
+            for (Range psr : preSplitRanges) {
+                for (Range r : conn.tableOperations().splitRangeByTablets(
+                        fulltable, psr, Integer.MAX_VALUE)) {
+                    splits.add(getTableSplitMetadata(fulltable, r));
+                }
+            }
+
+            return splits;
         } catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
                     "Failed to get splits", e);
         }
     }
 
-    private Collection<? extends TabletSplitMetadata> getTabletsFromRange(
-            String fulltable, com.facebook.presto.spi.predicate.Range pRange)
+    private Range getRangeFromPrestoRange(String fulltable,
+            com.facebook.presto.spi.predicate.Range pRange)
                     throws AccumuloException, AccumuloSecurityException,
                     TableNotFoundException {
-
-        List<TabletSplitMetadata> tabletSplits = new ArrayList<>();
 
         final Range preSplitRange;
         if (pRange.isAll()) {
@@ -303,12 +307,7 @@ public class AccumuloClient {
             }
         }
 
-        for (Range r : conn.tableOperations().splitRangeByTablets(fulltable,
-                preSplitRange, Integer.MAX_VALUE)) {
-            tabletSplits.add(getTableSplitMetadata(fulltable, r));
-        }
-
-        return tabletSplits;
+        return preSplitRange;
     }
 
     private TabletSplitMetadata getTableSplitMetadata(String fulltable,
