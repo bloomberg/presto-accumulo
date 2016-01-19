@@ -73,8 +73,9 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
             Domain rDom = getRangeDomain(rowIdName,
                     layoutHandle.getConstraint());
 
-            List<TabletSplitMetadata> tSplits = client
-                    .getTabletSplits(schemaName, tableName, rDom);
+            List<TabletSplitMetadata> tSplits = client.getTabletSplits(session,
+                    schemaName, tableName, rDom, getColumnConstraints(rowIdName,
+                            layoutHandle.getConstraint()));
 
             for (TabletSplitMetadata smd : tSplits) {
                 AccumuloSplit accSplit = new AccumuloSplit(connectorId,
@@ -122,7 +123,7 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
             if (!col.getName().equals(rowIdName)) {
                 acc.add(new AccumuloColumnConstraint(col.getName(),
                         col.getColumnFamily(), col.getColumnQualifier(),
-                        cd.getDomain()));
+                        cd.getDomain(), col.isIndexed()));
             }
         }
 

@@ -29,6 +29,7 @@ public final class AccumuloSessionProperties {
 
     private static final String OPTIMIZE_COLUMN_FILTERS_ENABLED = "optimize_column_filters_enabled";
     private static final String OPTIMIZE_RANGE_SPLITS_ENABLED = "optimize_range_splits_enabled";
+    private static final String SECONDARY_INDEX_ENABLED = "secondary_index_enabled";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -40,6 +41,9 @@ public final class AccumuloSessionProperties {
                         true, false),
                 booleanSessionProperty(OPTIMIZE_RANGE_SPLITS_ENABLED,
                         "Set to true to enable splitting the query by tablets.  Typically for testing only.  Default true.",
+                        true, false),
+                booleanSessionProperty(SECONDARY_INDEX_ENABLED,
+                        "Set to true to enable usage of the secondary index on query.  Typically for testing only.  Default true.",
                         true, false));
     }
 
@@ -57,5 +61,9 @@ public final class AccumuloSessionProperties {
             ConnectorSession session) {
         return session.getProperty(OPTIMIZE_RANGE_SPLITS_ENABLED,
                 Boolean.class);
+    }
+
+    public static boolean isSecondaryIndexEnabled(ConnectorSession session) {
+        return session.getProperty(SECONDARY_INDEX_ENABLED, Boolean.class);
     }
 }

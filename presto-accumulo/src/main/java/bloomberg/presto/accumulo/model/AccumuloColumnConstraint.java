@@ -12,17 +12,25 @@ public class AccumuloColumnConstraint {
     private final String name;
     private final String family;
     private final String qualifier;
+    private final boolean indexed;
     private Domain domain;
 
     @JsonCreator
     public AccumuloColumnConstraint(@JsonProperty("name") String name,
             @JsonProperty("family") String family,
             @JsonProperty("qualifier") String qualifier,
-            @JsonProperty("domain") Domain domain) {
+            @JsonProperty("domain") Domain domain,
+            @JsonProperty("indexed") boolean indexed) {
         this.name = requireNonNull(name, "name is null");
         this.family = requireNonNull(family, "family is null");
         this.qualifier = requireNonNull(qualifier, "qualifier is null");
+        this.indexed = requireNonNull(indexed, "indexed is null");
         this.domain = domain;
+    }
+
+    @JsonProperty
+    public boolean isIndexed() {
+        return indexed;
     }
 
     @JsonProperty

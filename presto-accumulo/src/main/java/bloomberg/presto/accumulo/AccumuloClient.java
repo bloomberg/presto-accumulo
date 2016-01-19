@@ -23,11 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
+import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.TableNotFoundException;
@@ -37,10 +39,13 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.PartialKey;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.security.Authorizations;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.io.Text;
 
 import com.facebook.presto.spi.ColumnMetadata;
+import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
@@ -49,6 +54,7 @@ import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
 
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
+import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import io.airlift.json.JsonCodec;
@@ -186,7 +192,8 @@ public class AccumuloClient {
                             table.getIndexTableName());
                     conn.tableOperations().create(table.getIndexTableName());
                 } else {
-                    LOG.debug("Table %s is not indexed");
+                    LOG.debug("Table %s is not indexed",
+                            table.getFullTableName());
                 }
 
             } catch (Exception e) {
@@ -228,25 +235,74 @@ public class AccumuloClient {
         return metaManager.getTable(table);
     }
 
-    public List<TabletSplitMetadata> getTabletSplits(String schema,
-            String table, Domain rDom) {
+    public List<TabletSplitMetadata> getTabletSplits(ConnectorSession session,
+            String schema, String table, Domain rDom,
+            List<AccumuloColumnConstraint> constraints) {
         try {
             String fulltable = getFullTableName(schema, table);
+            String indexTable = getIndexTableName(schema, table);
 
-            List<Range> preSplitRanges = new ArrayList<>();
+            List<Range> predicatePushdownRanges = new ArrayList<>();
             // if we have no predicate pushdown, use the full range
             if (rDom == null) {
-                preSplitRanges.add(new Range());
+                predicatePushdownRanges.add(new Range());
             } else {
                 // else, add the ranges based on the predicate pushdown
                 for (com.facebook.presto.spi.predicate.Range r : rDom
                         .getValues().getRanges().getOrderedRanges()) {
-                    preSplitRanges.add(getRangeFromPrestoRange(fulltable, r));
+                    predicatePushdownRanges
+                            .add(getRangeFromPrestoRange(fulltable, r));
                 }
             }
 
+            // And now we move on to our secondary indexes
+            List<Range> columnPushdownRanges = new ArrayList<>();
+            if (AccumuloSessionProperties.isSecondaryIndexEnabled(session)) {
+                List<Range> indexRanges = new ArrayList<>();
+                Authorizations indexScanAuths = conn.securityOperations()
+                        .getUserAuthorizations(conf.getUsername());
+                Text cq = new Text();
+                for (AccumuloColumnConstraint acc : constraints.stream()
+                        .filter(x -> x.isIndexed())
+                        .collect(Collectors.toList())) {
+
+                    for (com.facebook.presto.spi.predicate.Range r : acc
+                            .getDomain().getValues().getRanges()
+                            .getOrderedRanges()) {
+                        indexRanges.add(getRangeFromPrestoRange(fulltable, r));
+                    }
+
+                    BatchScanner scan = conn.createBatchScanner(indexTable,
+                            indexScanAuths, 10);
+                    scan.setRanges(indexRanges);
+                    scan.fetchColumnFamily(new Text(
+                            acc.getFamily() + "_" + acc.getQualifier()));
+                    for (Entry<Key, Value> entry : scan) {
+                        entry.getKey().getColumnQualifier(cq);
+
+                        if (inRange(cq, predicatePushdownRanges)) {
+                            LOG.debug("Added row ID %s from index ",
+                                    Hex.encodeHexString(cq.copyBytes()));
+                            columnPushdownRanges.add(new Range(cq));
+                        } else {
+                            LOG.debug("Rejecting row ID %s, not in range",
+                                    Hex.encodeHexString(cq.copyBytes()));
+                        }
+                    }
+                    scan.close();
+                }
+            }
+
+            List<Range> finalRanges = new ArrayList<>();
+            if (columnPushdownRanges.size() > 0) {
+                finalRanges.addAll(columnPushdownRanges);
+            } else {
+                finalRanges.addAll(predicatePushdownRanges);
+            }
+
+            // Finally, split the ranges on tablet boundaries
             List<TabletSplitMetadata> splits = new ArrayList<>();
-            for (Range psr : preSplitRanges) {
+            for (Range psr : finalRanges) {
                 for (Range r : conn.tableOperations().splitRangeByTablets(
                         fulltable, psr, Integer.MAX_VALUE)) {
                     splits.add(getTableSplitMetadata(fulltable, r));
@@ -258,6 +314,16 @@ public class AccumuloClient {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
                     "Failed to get splits", e);
         }
+    }
+
+    private boolean inRange(Text cq, List<Range> preSplitRanges) {
+        Key kCq = new Key(cq);
+        for (Range r : preSplitRanges) {
+            if (!r.beforeStartKey(kCq) && !r.afterEndKey(kCq)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Range getRangeFromPrestoRange(String fulltable,
@@ -376,8 +442,8 @@ public class AccumuloClient {
 
                 if (location != null) {
                     LOG.debug(String.format(
-                            "Location of split %s for table %s is %s", location,
-                            fulltable, location));
+                            "Location of split %s for table %s is %s",
+                            Hex.encodeHexString(key), fulltable, location));
                     return location;
                 }
             }
@@ -418,6 +484,11 @@ public class AccumuloClient {
 
     public static String getFullTableName(String schema, String table) {
         return schema.equals("default") ? table : schema + '.' + table;
+    }
+
+    public static String getIndexTableName(String schema, String table) {
+        return schema.equals("default") ? table + "_idx"
+                : schema + '.' + table + "_idx";
     }
 
     public static String getFullTableName(SchemaTableName stName) {
