@@ -13,6 +13,7 @@ import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +32,9 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import com.google.common.collect.ImmutableMap;
-
 import bloomberg.presto.accumulo.index.Utils;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
@@ -58,7 +58,7 @@ public class TcphDBGenIngest extends Configured implements Tool {
             .addColumn("nationkey", "md", "nationkey", BIGINT)
             .addColumn("phone", "md", "phone", VARCHAR)
             .addColumn("acctbal", "md", "acctbal", DOUBLE)
-            .addColumn("mktsegment", "md", "mktsegment", VARCHAR)
+            .addColumn("mktsegment", "md", "mktsegment", VARCHAR, true)
             .addColumn("comment", "md", "comment", VARCHAR);
 
     private static final RowSchema LINEITEM_SCHEMA = RowSchema.newInstance()
@@ -66,17 +66,17 @@ public class TcphDBGenIngest extends Configured implements Tool {
             .addColumn("partkey", "md", "partkey", BIGINT)
             .addColumn("suppkey", "md", "suppkey", BIGINT)
             .addColumn("linenumber", "md", "linenumber", BIGINT)
-            .addColumn("quantity", "md", "quantity", BIGINT)
+            .addColumn("quantity", "md", "quantity", BIGINT, true)
             .addColumn("extendedprice", "md", "extendedprice", DOUBLE)
-            .addColumn("discount", "md", "discount", DOUBLE)
+            .addColumn("discount", "md", "discount", DOUBLE, true)
             .addColumn("tax", "md", "tax", DOUBLE)
-            .addColumn("returnflag", "md", "returnflag", VARCHAR)
+            .addColumn("returnflag", "md", "returnflag", VARCHAR, true)
             .addColumn("linestatus", "md", "linestatus", VARCHAR)
-            .addColumn("shipdate", "md", "shipdate", DATE)
+            .addColumn("shipdate", "md", "shipdate", DATE, true)
             .addColumn("commitdate", "md", "commitdate", DATE)
-            .addColumn("receiptdate", "md", "receiptdate", DATE)
-            .addColumn("shipinstruct", "md", "shipinstruct", VARCHAR)
-            .addColumn("shipmode", "md", "shipmode", VARCHAR)
+            .addColumn("receiptdate", "md", "receiptdate", DATE, true)
+            .addColumn("shipinstruct", "md", "shipinstruct", VARCHAR, true)
+            .addColumn("shipmode", "md", "shipmode", VARCHAR, true)
             .addColumn("comment", "md", "comment", VARCHAR);
 
     private static final RowSchema NATION_SCHEMA = RowSchema.newInstance()
@@ -90,7 +90,7 @@ public class TcphDBGenIngest extends Configured implements Tool {
             .addColumn("custkey", "md", "custkey", BIGINT)
             .addColumn("orderstatus", "md", "orderstatus", VARCHAR)
             .addColumn("totalprice", "md", "totalprice", DOUBLE)
-            .addColumn("orderdate", "md", "orderdate", DATE)
+            .addColumn("orderdate", "md", "orderdate", DATE, true)
             .addColumn("orderpriority", "md", "orderpriority", VARCHAR)
             .addColumn("clerk", "md", "clerk", VARCHAR)
             .addColumn("shippriority", "md", "shippriority", BIGINT)
@@ -100,10 +100,10 @@ public class TcphDBGenIngest extends Configured implements Tool {
             .addColumn("partkey", null, null, BIGINT)
             .addColumn("name", "md", "name", VARCHAR)
             .addColumn("mfgr", "md", "mfgr", VARCHAR)
-            .addColumn("brand", "md", "brand", VARCHAR)
-            .addColumn("type", "md", "type", VARCHAR)
-            .addColumn("size", "md", "size", BIGINT)
-            .addColumn("container", "md", "container", VARCHAR)
+            .addColumn("brand", "md", "brand", VARCHAR, true)
+            .addColumn("type", "md", "type", VARCHAR, true)
+            .addColumn("size", "md", "size", BIGINT, true)
+            .addColumn("container", "md", "container", VARCHAR, true)
             .addColumn("retailprice", "md", "retailprice", DOUBLE)
             .addColumn("comment", "md", "comment", VARCHAR);
 
@@ -127,36 +127,6 @@ public class TcphDBGenIngest extends Configured implements Tool {
             .addColumn("phone", "md", "phone", VARCHAR)
             .addColumn("acctbal", "md", "acctbal", DOUBLE)
             .addColumn("comment", "md", "comment", VARCHAR);
-
-    private static final ByteBuffer bb(String w) {
-        return ByteBuffer.wrap(w.getBytes());
-    }
-
-    private static final Set<ByteBuffer> bbs(String... w) {
-        HashSet<ByteBuffer> bb = new HashSet<>();
-        for (String s : w) {
-            bb.add(bb(s));
-        }
-        return bb;
-    }
-
-    private static final Map<ByteBuffer, Set<ByteBuffer>> CUSTOMER_INDEX_COLUMNS = ImmutableMap
-            .of(bb("md"), bbs("mktsegment"));
-    private static final Map<ByteBuffer, Set<ByteBuffer>> LINEITEM_INDEX_COLUMNS = ImmutableMap
-            .of(bb("md"), bbs("discount", "quantity", "receiptdate",
-                    "returnflag", "shipdate", "shipinstruct", "shipmode"));
-    private static final Map<ByteBuffer, Set<ByteBuffer>> NATION_INDEX_COLUMNS = ImmutableMap
-            .of();
-    private static final Map<ByteBuffer, Set<ByteBuffer>> ORDERS_INDEX_COLUMNS = ImmutableMap
-            .of(bb("md"), bbs("orderdate"));
-    private static final Map<ByteBuffer, Set<ByteBuffer>> PART_INDEX_COLUMNS = ImmutableMap
-            .of(bb("md"), bbs("brand", "container", "type", "size"));
-    private static final Map<ByteBuffer, Set<ByteBuffer>> PARTSUPP_INDEX_COLUMNS = ImmutableMap
-            .of();
-    private static final Map<ByteBuffer, Set<ByteBuffer>> REGION_INDEX_COLUMNS = ImmutableMap
-            .of(bb("md"), bbs("name"));
-    private static final Map<ByteBuffer, Set<ByteBuffer>> SUPPLIER_INDEX_COLUMNS = ImmutableMap
-            .of();
 
     public static void main(String[] args) throws Exception {
         System.exit(ToolRunner.run(new Configuration(), new TcphDBGenIngest(),
@@ -278,27 +248,21 @@ public class TcphDBGenIngest extends Configured implements Tool {
 
     private Map<ByteBuffer, Set<ByteBuffer>> indexColumnsFromFile(
             String tableName) {
-        switch (tableName) {
-        case "customer":
-            return CUSTOMER_INDEX_COLUMNS;
-        case "lineitem":
-            return LINEITEM_INDEX_COLUMNS;
-        case "nation":
-            return NATION_INDEX_COLUMNS;
-        case "orders":
-            return ORDERS_INDEX_COLUMNS;
-        case "part":
-            return PART_INDEX_COLUMNS;
-        case "partsupp":
-            return PARTSUPP_INDEX_COLUMNS;
-        case "region":
-            return REGION_INDEX_COLUMNS;
-        case "supplier":
-            return SUPPLIER_INDEX_COLUMNS;
-        default:
-            throw new InvalidParameterException(
-                    "Unknown row ID for table " + tableName);
+        RowSchema schema = schemaFromFile(tableName);
+        Map<ByteBuffer, Set<ByteBuffer>> indexColumns = new HashMap<>();
+
+        for (AccumuloColumnHandle col : schema.getColumns().stream()
+                .filter(x -> x.isIndexed()).collect(Collectors.toList())) {
+            ByteBuffer cf = ByteBuffer.wrap(col.getColumnFamily().getBytes());
+            Set<ByteBuffer> qualifies = indexColumns.get(cf);
+            if (qualifies == null) {
+                qualifies = new HashSet<>();
+                indexColumns.put(cf, qualifies);
+            }
+            qualifies.add(ByteBuffer.wrap(col.getColumnQualifier().getBytes()));
         }
+
+        return indexColumns;
     }
 
     private String rowIdFromFile(String tableName) {
