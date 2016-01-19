@@ -9,9 +9,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.accumulo.core.client.BatchWriter;
@@ -26,6 +31,9 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
+import com.google.common.collect.ImmutableMap;
+
+import bloomberg.presto.accumulo.index.Utils;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
@@ -120,6 +128,36 @@ public class TcphDBGenIngest extends Configured implements Tool {
             .addColumn("acctbal", "md", "acctbal", DOUBLE)
             .addColumn("comment", "md", "comment", VARCHAR);
 
+    private static final ByteBuffer bb(String w) {
+        return ByteBuffer.wrap(w.getBytes());
+    }
+
+    private static final Set<ByteBuffer> bbs(String... w) {
+        HashSet<ByteBuffer> bb = new HashSet<>();
+        for (String s : w) {
+            bb.add(bb(s));
+        }
+        return bb;
+    }
+
+    private static final Map<ByteBuffer, Set<ByteBuffer>> CUSTOMER_INDEX_COLUMNS = ImmutableMap
+            .of(bb("md"), bbs("mktsegment"));
+    private static final Map<ByteBuffer, Set<ByteBuffer>> LINEITEM_INDEX_COLUMNS = ImmutableMap
+            .of(bb("md"), bbs("discount", "quantity", "receiptdate",
+                    "returnflag", "shipdate", "shipinstruct", "shipmode"));
+    private static final Map<ByteBuffer, Set<ByteBuffer>> NATION_INDEX_COLUMNS = ImmutableMap
+            .of();
+    private static final Map<ByteBuffer, Set<ByteBuffer>> ORDERS_INDEX_COLUMNS = ImmutableMap
+            .of(bb("md"), bbs("orderdate"));
+    private static final Map<ByteBuffer, Set<ByteBuffer>> PART_INDEX_COLUMNS = ImmutableMap
+            .of(bb("md"), bbs("brand", "container", "type", "size"));
+    private static final Map<ByteBuffer, Set<ByteBuffer>> PARTSUPP_INDEX_COLUMNS = ImmutableMap
+            .of();
+    private static final Map<ByteBuffer, Set<ByteBuffer>> REGION_INDEX_COLUMNS = ImmutableMap
+            .of(bb("md"), bbs("name"));
+    private static final Map<ByteBuffer, Set<ByteBuffer>> SUPPLIER_INDEX_COLUMNS = ImmutableMap
+            .of();
+
     public static void main(String[] args) throws Exception {
         System.exit(ToolRunner.run(new Configuration(), new TcphDBGenIngest(),
                 args));
@@ -129,8 +167,8 @@ public class TcphDBGenIngest extends Configured implements Tool {
     public int run(String[] args) throws Exception {
 
         if (args.length != 6) {
-            System.err
-                    .println("Usage: [instance] [zookeepers] [user] [passwd] [presto.schema] [tpch.dir]");
+            System.err.println(
+                    "Usage: [instance] [zookeepers] [user] [passwd] [presto.schema] [tpch.dir]");
 
             return 1;
         }
@@ -162,8 +200,8 @@ public class TcphDBGenIngest extends Configured implements Tool {
         accConfig.setUsername(user);
         accConfig.setZooKeepers(zookeepers);
 
-        AccumuloMetadataManager mgr = AccumuloMetadataManager.getDefault(
-                "accumulo", accConfig);
+        AccumuloMetadataManager mgr = AccumuloMetadataManager
+                .getDefault("accumulo", accConfig);
 
         ZooKeeperInstance inst = new ZooKeeperInstance(instance, zookeepers);
         Connector conn = inst.getConnector(user, new PasswordToken(passwd));
@@ -171,13 +209,16 @@ public class TcphDBGenIngest extends Configured implements Tool {
         for (File df : dataFiles) {
             String tableName = FilenameUtils.removeExtension(df.getName());
             String fullTableName = schema + '.' + tableName;
+            String indexTableName = fullTableName + "_idx";
 
             RowSchema rowSchema = schemaFromFile(tableName);
             String rowIdName = rowIdFromFile(tableName);
+            Map<ByteBuffer, Set<ByteBuffer>> indexColumns = indexColumnsFromFile(
+                    tableName);
 
             AccumuloTable table = new AccumuloTable(schema, tableName,
-                    rowSchema.getColumns(), rowIdName, true, serializer
-                            .getClass().getCanonicalName());
+                    rowSchema.getColumns(), rowIdName, true,
+                    serializer.getClass().getCanonicalName());
 
             mgr.createTableMetadata(table);
 
@@ -195,8 +236,16 @@ public class TcphDBGenIngest extends Configured implements Tool {
             BufferedReader rdr = new BufferedReader(new FileReader(df));
             BatchWriterConfig bwc = new BatchWriterConfig();
             BatchWriter wrtr = conn.createBatchWriter(fullTableName, bwc);
+
+            BatchWriter idxWrtr = null;
+            if (indexColumns.size() > 0) {
+                conn.tableOperations().create(indexTableName);
+                idxWrtr = conn.createBatchWriter(indexTableName, bwc);
+            }
+
             String line;
             int numRows = 0;
+            Collection<Mutation> updates = new HashSet<>();
             while ((line = rdr.readLine()) != null) {
 
                 Row r = Row.fromString(rowSchema, line, DELIMITER);
@@ -205,6 +254,13 @@ public class TcphDBGenIngest extends Configured implements Tool {
                         rowSchema.getColumns(), serializer);
 
                 wrtr.addMutation(m);
+                
+                if (idxWrtr != null) {
+                    Utils.indexMutation(m, indexColumns, updates);
+                    idxWrtr.addMutations(updates);
+                    updates.clear();
+                }
+
                 ++numRows;
             }
 
@@ -216,6 +272,31 @@ public class TcphDBGenIngest extends Configured implements Tool {
         }
 
         return 0;
+    }
+
+    private Map<ByteBuffer, Set<ByteBuffer>> indexColumnsFromFile(
+            String tableName) {
+        switch (tableName) {
+        case "customer":
+            return CUSTOMER_INDEX_COLUMNS;
+        case "lineitem":
+            return LINEITEM_INDEX_COLUMNS;
+        case "nation":
+            return NATION_INDEX_COLUMNS;
+        case "orders":
+            return ORDERS_INDEX_COLUMNS;
+        case "part":
+            return PART_INDEX_COLUMNS;
+        case "partsupp":
+            return PARTSUPP_INDEX_COLUMNS;
+        case "region":
+            return REGION_INDEX_COLUMNS;
+        case "supplier":
+            return SUPPLIER_INDEX_COLUMNS;
+        default:
+            throw new InvalidParameterException(
+                    "Unknown row ID for table " + tableName);
+        }
     }
 
     private String rowIdFromFile(String tableName) {
@@ -237,8 +318,8 @@ public class TcphDBGenIngest extends Configured implements Tool {
         case "supplier":
             return SUPPLIER_ROW_ID;
         default:
-            throw new InvalidParameterException("Unknown row ID for table "
-                    + tableName);
+            throw new InvalidParameterException(
+                    "Unknown row ID for table " + tableName);
         }
     }
 
@@ -261,8 +342,8 @@ public class TcphDBGenIngest extends Configured implements Tool {
         case "supplier":
             return SUPPLIER_SCHEMA;
         default:
-            throw new InvalidParameterException("Unknown schema for table "
-                    + tableName);
+            throw new InvalidParameterException(
+                    "Unknown schema for table " + tableName);
         }
     }
 }
