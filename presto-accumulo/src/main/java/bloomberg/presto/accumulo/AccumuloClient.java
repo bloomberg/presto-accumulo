@@ -206,6 +206,12 @@ public class AccumuloClient {
             if (conn.tableOperations().exists(tn)) {
                 try {
                     conn.tableOperations().delete(tn);
+
+                    String indexTable = getIndexTableName(stName);
+                    if (conn.tableOperations().exists(indexTable)) {
+                        conn.tableOperations().delete(indexTable);
+                    }
+
                 } catch (Exception e) {
                     throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
                             "Failed to delete table");
@@ -511,12 +517,16 @@ public class AccumuloClient {
         return schema.equals("default") ? table : schema + '.' + table;
     }
 
+    public static String getFullTableName(SchemaTableName stName) {
+        return getFullTableName(stName.getSchemaName(), stName.getTableName());
+    }
+
     public static String getIndexTableName(String schema, String table) {
         return schema.equals("default") ? table + "_idx"
                 : schema + '.' + table + "_idx";
     }
 
-    public static String getFullTableName(SchemaTableName stName) {
-        return getFullTableName(stName.getSchemaName(), stName.getTableName());
+    public static String getIndexTableName(SchemaTableName stName) {
+        return getIndexTableName(stName.getSchemaName(), stName.getTableName());
     }
 }
