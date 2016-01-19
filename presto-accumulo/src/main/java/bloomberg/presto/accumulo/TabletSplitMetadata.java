@@ -3,6 +3,7 @@ package bloomberg.presto.accumulo;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
+import java.util.List;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -10,24 +11,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 
 public class TabletSplitMetadata {
-    private final byte[] split;
-    private final String strSplit;
     private final String hostPort;
-    private RangeHandle rHandle;
+    private List<RangeHandle> rHandles;
 
     @JsonCreator
-    public TabletSplitMetadata(@JsonProperty("split") byte[] split,
-            @JsonProperty("hostPort") String hostPort,
-            @JsonProperty("rHandle") RangeHandle rHandle) {
-        this.split = split;
-        this.strSplit = this.split != null ? new String(this.split) : null;
+    public TabletSplitMetadata(@JsonProperty("hostPort") String hostPort,
+            @JsonProperty("rHandles") List<RangeHandle> rHandles) {
         this.hostPort = requireNonNull(hostPort, "hostPort is null");
-        this.rHandle = rHandle;
-    }
-
-    @JsonProperty
-    public byte[] getSplit() {
-        return split;
+        this.rHandles = rHandles;
     }
 
     @JsonProperty
@@ -36,18 +27,18 @@ public class TabletSplitMetadata {
     }
 
     @JsonProperty
-    public RangeHandle getRangeHandle() {
-        return rHandle;
+    public List<RangeHandle> getRangeHandles() {
+        return rHandles;
     }
 
     @JsonSetter
-    public void setRangeHandle(RangeHandle rHandle) {
-        this.rHandle = rHandle;
+    public void setRangeHandles(List<RangeHandle> rHandles) {
+        this.rHandles = rHandles;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(strSplit, hostPort);
+        return Objects.hash(hostPort, rHandles);
     }
 
     @Override
@@ -61,14 +52,13 @@ public class TabletSplitMetadata {
         }
 
         TabletSplitMetadata other = (TabletSplitMetadata) obj;
-        return Objects.equals(this.strSplit, other.strSplit)
-                && Objects.equals(this.hostPort, other.hostPort)
-                && Objects.equals(this.rHandle, other.rHandle);
+        return Objects.equals(this.hostPort, other.hostPort)
+                && Objects.equals(this.rHandles, other.rHandles);
     }
 
     @Override
     public String toString() {
-        return toStringHelper(this).add("split", strSplit)
-                .add("hostPort", hostPort).add("range", rHandle).toString();
+        return toStringHelper(this).add("hostPort", hostPort)
+                .add("rHandles", rHandles).toString();
     }
 }

@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.IteratorSetting;
-import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
@@ -67,15 +67,16 @@ public class AccumuloRecordCursor implements RecordCursor {
 
     // TODO totalBytes stuff
     private final long totalBytes = 0L;
-    private final Scanner scan;
+    private final BatchScanner scan;
     private final Iterator<Entry<Key, Value>> iterator;
     private final AccumuloRowSerializer serializer;
     private Entry<Key, Value> prevKV;
     private Text prevRowID = new Text();
     private Text rowID = new Text();
 
-    public AccumuloRecordCursor(AccumuloRowSerializer serializer, Scanner scan,
-            String rowIdName, List<AccumuloColumnHandle> cHandles,
+    public AccumuloRecordCursor(AccumuloRowSerializer serializer,
+            BatchScanner scan, String rowIdName,
+            List<AccumuloColumnHandle> cHandles,
             List<AccumuloColumnConstraint> constraints) {
         this.cHandles = requireNonNull(cHandles, "cHandles is null");
         this.scan = requireNonNull(scan, "scan is null");

@@ -18,7 +18,10 @@ import static java.util.Objects.requireNonNull;
 import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,7 +43,6 @@ import org.apache.accumulo.core.data.PartialKey;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.io.Text;
 
@@ -58,10 +60,8 @@ import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import io.airlift.json.JsonCodec;
-import io.airlift.log.Logger;
 
 public class AccumuloClient {
-    private static final Logger LOG = Logger.get(AccumuloClient.class);
     private ZooKeeperInstance inst = null;
     private AccumuloConfig conf = null;
     private Connector conn = null;
@@ -180,20 +180,13 @@ public class AccumuloClient {
             try {
                 if (!table.getSchemaName().equals("default") && !conn
                         .namespaceOperations().exists(table.getSchemaName())) {
-                    LOG.debug("Creating namespace %s", table.getSchemaName());
                     conn.namespaceOperations().create(table.getSchemaName());
                 }
 
-                LOG.debug("Creating table %s", table.getFullTableName());
                 conn.tableOperations().create(table.getFullTableName());
 
                 if (table.isIndexed()) {
-                    LOG.debug("Creating index table %s",
-                            table.getIndexTableName());
                     conn.tableOperations().create(table.getIndexTableName());
-                } else {
-                    LOG.debug("Table %s is not indexed",
-                            table.getFullTableName());
                 }
 
             } catch (Exception e) {
@@ -239,84 +232,145 @@ public class AccumuloClient {
             String schema, String table, Domain rDom,
             List<AccumuloColumnConstraint> constraints) {
         try {
-            String fulltable = getFullTableName(schema, table);
+            String tableName = getFullTableName(schema, table);
             String indexTable = getIndexTableName(schema, table);
 
-            List<Range> predicatePushdownRanges = new ArrayList<>();
-            // if we have no predicate pushdown, use the full range
-            if (rDom == null) {
+            // get the range based on predicate pushdown
+            final Collection<Range> predicatePushdownRanges;
+            if (AccumuloSessionProperties
+                    .isOptimizeRangePredicatePushdownEnabled(session)) {
+                predicatePushdownRanges = getPredicatePushdownRanges(tableName,
+                        rDom);
+            } else {
+                predicatePushdownRanges = new HashSet<>();
                 predicatePushdownRanges.add(new Range());
-            } else {
-                // else, add the ranges based on the predicate pushdown
-                for (com.facebook.presto.spi.predicate.Range r : rDom
-                        .getValues().getRanges().getOrderedRanges()) {
-                    predicatePushdownRanges
-                            .add(getRangeFromPrestoRange(fulltable, r));
-                }
             }
 
-            // And now we move on to our secondary indexes
-            List<Range> columnPushdownRanges = new ArrayList<>();
+            // Get ranges from any secondary index tables, ensuring the ranges
+            // via the index are within at least one predicate pushdown range
+            final Collection<Range> columnPushdownRanges;
             if (AccumuloSessionProperties.isSecondaryIndexEnabled(session)) {
-                List<Range> indexRanges = new ArrayList<>();
-                Authorizations indexScanAuths = conn.securityOperations()
-                        .getUserAuthorizations(conf.getUsername());
-                Text cq = new Text();
-                for (AccumuloColumnConstraint acc : constraints.stream()
-                        .filter(x -> x.isIndexed())
-                        .collect(Collectors.toList())) {
-
-                    for (com.facebook.presto.spi.predicate.Range r : acc
-                            .getDomain().getValues().getRanges()
-                            .getOrderedRanges()) {
-                        indexRanges.add(getRangeFromPrestoRange(fulltable, r));
-                    }
-
-                    BatchScanner scan = conn.createBatchScanner(indexTable,
-                            indexScanAuths, 10);
-                    scan.setRanges(indexRanges);
-                    scan.fetchColumnFamily(new Text(
-                            acc.getFamily() + "_" + acc.getQualifier()));
-                    for (Entry<Key, Value> entry : scan) {
-                        entry.getKey().getColumnQualifier(cq);
-
-                        if (inRange(cq, predicatePushdownRanges)) {
-                            LOG.debug("Added row ID %s from index ",
-                                    Hex.encodeHexString(cq.copyBytes()));
-                            columnPushdownRanges.add(new Range(cq));
-                        } else {
-                            LOG.debug("Rejecting row ID %s, not in range",
-                                    Hex.encodeHexString(cq.copyBytes()));
-                        }
-                    }
-                    scan.close();
-                }
-            }
-
-            List<Range> finalRanges = new ArrayList<>();
-            if (columnPushdownRanges.size() > 0) {
-                finalRanges.addAll(columnPushdownRanges);
+                columnPushdownRanges = applySecondaryIndex(tableName,
+                        indexTable, constraints, predicatePushdownRanges);
             } else {
-                finalRanges.addAll(predicatePushdownRanges);
+                columnPushdownRanges = new HashSet<>();
             }
 
-            // Finally, split the ranges on tablet boundaries
-            List<TabletSplitMetadata> splits = new ArrayList<>();
-            for (Range psr : finalRanges) {
-                for (Range r : conn.tableOperations().splitRangeByTablets(
-                        fulltable, psr, Integer.MAX_VALUE)) {
-                    splits.add(getTableSplitMetadata(session, fulltable, r));
-                }
+            // choose the set of ranges to use, the finer-grained ranges from
+            // the result of the secondary index, or the original ones
+            final Collection<Range> finalRanges;
+            if (columnPushdownRanges.size() > 0) {
+                finalRanges = columnPushdownRanges;
+            } else {
+                finalRanges = predicatePushdownRanges;
             }
 
-            return splits;
+            // Split the ranges on tablet boundaries
+            final Collection<Range> splitRanges;
+            if (AccumuloSessionProperties
+                    .isOptimizeRangeSplitsEnabled(session)) {
+                splitRanges = splitByTabletBoundaries(tableName, finalRanges);
+            } else {
+                splitRanges = finalRanges;
+            }
+
+            // and now bin all the ranges into presto splits
+            return binRanges(splitRanges);
         } catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
                     "Failed to get splits", e);
         }
     }
 
-    private boolean inRange(Text cq, List<Range> preSplitRanges) {
+    private Collection<Range> getPredicatePushdownRanges(String fulltable,
+            Domain rDom) throws AccumuloException, AccumuloSecurityException,
+                    TableNotFoundException {
+
+        Set<Range> ranges = new HashSet<>();
+        // if we have no predicate pushdown, use the full range
+        if (rDom == null) {
+            ranges.add(new Range());
+        } else {
+            // else, add the ranges based on the predicate pushdown
+            for (com.facebook.presto.spi.predicate.Range r : rDom.getValues()
+                    .getRanges().getOrderedRanges()) {
+                ranges.add(getRangeFromPrestoRange(fulltable, r));
+            }
+        }
+        return ranges;
+    }
+
+    private Collection<Range> applySecondaryIndex(String fulltable,
+            String indexTable, Collection<AccumuloColumnConstraint> constraints,
+            Collection<Range> predicatePushdownRanges) throws AccumuloException,
+                    AccumuloSecurityException, TableNotFoundException {
+        Set<Range> columnPushdownRanges = new HashSet<>();
+        List<Range> indexRanges = new ArrayList<>();
+        Authorizations indexScanAuths = conn.securityOperations()
+                .getUserAuthorizations(conf.getUsername());
+        Text cq = new Text();
+        for (AccumuloColumnConstraint acc : constraints.stream()
+                .filter(x -> x.isIndexed()).collect(Collectors.toList())) {
+
+            for (com.facebook.presto.spi.predicate.Range r : acc.getDomain()
+                    .getValues().getRanges().getOrderedRanges()) {
+                indexRanges.add(getRangeFromPrestoRange(fulltable, r));
+            }
+
+            BatchScanner scan = conn.createBatchScanner(indexTable,
+                    indexScanAuths, 10);
+            scan.setRanges(indexRanges);
+            scan.fetchColumnFamily(
+                    new Text(acc.getFamily() + "_" + acc.getQualifier()));
+            for (Entry<Key, Value> entry : scan) {
+                entry.getKey().getColumnQualifier(cq);
+
+                if (inRange(cq, predicatePushdownRanges)) {
+                    columnPushdownRanges.add(new Range(cq));
+                }
+            }
+            scan.close();
+        }
+        return columnPushdownRanges;
+    }
+
+    private Collection<Range> splitByTabletBoundaries(String tableName,
+            Collection<Range> ranges) throws TableNotFoundException,
+                    AccumuloException, AccumuloSecurityException {
+        Set<Range> splitRanges = new HashSet<>();
+        for (Range r : ranges) {
+            splitRanges.addAll(conn.tableOperations()
+                    .splitRangeByTablets(tableName, r, Integer.MAX_VALUE));
+        }
+        return splitRanges;
+    }
+
+    private List<TabletSplitMetadata> binRanges(Collection<Range> splitRanges) {
+
+        List<TabletSplitMetadata> prestoSplits = new ArrayList<>();
+
+        // convert Ranges to RangeHandles
+        List<RangeHandle> rHandles = new ArrayList<>();
+        splitRanges.stream().forEach(x -> rHandles.add(RangeHandle.from(x)));
+
+        // Bin them together into splits
+        Collections.shuffle(rHandles);
+
+        String loc = "localhost:9997";
+        int toAdd = rHandles.size();
+        int fromIndex = 0;
+        int toIndex = Math.min(toAdd, 1000);
+        do {
+            prestoSplits.add(new TabletSplitMetadata(loc,
+                    rHandles.subList(fromIndex, toIndex)));
+            toAdd -= toIndex - fromIndex;
+            fromIndex = toIndex;
+            toIndex += Math.min(toAdd, 1000);
+        } while (toAdd > 0);
+        return prestoSplits;
+    }
+
+    private boolean inRange(Text cq, Collection<Range> preSplitRanges) {
         Key kCq = new Key(cq);
         for (Range r : preSplitRanges) {
             if (!r.beforeStartKey(kCq) && !r.afterEndKey(kCq)) {
@@ -333,32 +387,24 @@ public class AccumuloClient {
 
         final Range preSplitRange;
         if (pRange.isAll()) {
-            LOG.debug("SPLITS ARE ALL");
             preSplitRange = new Range();
         } else if (pRange.isSingleValue()) {
-            LOG.debug("SINGLE SPLIT IS %s", pRange.getSingleValue());
             Text split = new Text(LexicoderRowSerializer
                     .encode(pRange.getType(), pRange.getSingleValue()));
             preSplitRange = new Range(split);
         } else {
             if (pRange.getLow().isLowerUnbounded()) {
-                LOG.debug("SPLITS ARE %s and %s", null,
-                        pRange.getHigh().getValue());
                 boolean inclusive = pRange.getHigh()
                         .getBound() == Bound.EXACTLY;
                 Text split = new Text(LexicoderRowSerializer
                         .encode(pRange.getType(), pRange.getHigh().getValue()));
                 preSplitRange = new Range(null, false, split, inclusive);
             } else if (pRange.getHigh().isUpperUnbounded()) {
-                LOG.debug("SPLITS ARE %s and %s", pRange.getLow().getValue(),
-                        null);
                 boolean inclusive = pRange.getLow().getBound() == Bound.EXACTLY;
                 Text split = new Text(LexicoderRowSerializer
                         .encode(pRange.getType(), pRange.getLow().getValue()));
                 preSplitRange = new Range(split, inclusive, null, false);
             } else {
-                LOG.debug("SPLITS ARE %s and %s", pRange.getLow().getValue(),
-                        pRange.getHigh().getValue());
                 boolean startKeyInclusive = pRange.getLow()
                         .getBound() == Bound.EXACTLY;
                 Text startSplit = new Text(LexicoderRowSerializer
@@ -374,28 +420,6 @@ public class AccumuloClient {
         }
 
         return preSplitRange;
-    }
-
-    private TabletSplitMetadata getTableSplitMetadata(ConnectorSession session,
-            String fulltable, Range range) throws TableNotFoundException,
-                    AccumuloException, AccumuloSecurityException {
-
-        byte[] startKey = range.getStartKey() != null
-                ? range.getStartKey().getRow().copyBytes() : null;
-        byte[] endKey = range.getEndKey() != null
-                ? range.getEndKey().getRow().copyBytes() : null;
-
-        RangeHandle rHandle = new RangeHandle(startKey,
-                range.isStartKeyInclusive(), endKey, range.isEndKeyInclusive());
-
-        String loc;
-        if (AccumuloSessionProperties.isOptimizeLocalityEnabled(session)) {
-            loc = this.getTabletLocation(fulltable, endKey);
-        } else {
-            loc = "localhost:9997";
-        }
-
-        return new TabletSplitMetadata(endKey, loc, rHandle);
     }
 
     /**
@@ -448,9 +472,6 @@ public class AccumuloClient {
                 scan.close();
 
                 if (location != null) {
-                    LOG.debug(String.format(
-                            "Location of split %s for table %s is %s",
-                            Hex.encodeHexString(key), fulltable, location));
                     return location;
                 }
             }
@@ -479,9 +500,6 @@ public class AccumuloClient {
             }
             scan.close();
 
-            LOG.debug(String.format(
-                    "Location of default table for table %s is %s", fulltable,
-                    location));
             return location;
         } catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,

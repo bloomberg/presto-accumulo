@@ -99,4 +99,13 @@ public final class RangeHandle {
                 .add("endKey", endKeyText)
                 .add("endKeyInclusive", endKeyInclusive).toString();
     }
+
+    public static RangeHandle from(Range range) {
+        byte[] startKey = range.getStartKey() != null
+                ? range.getStartKey().getRow().copyBytes() : null;
+        byte[] endKey = range.getEndKey() != null
+                ? range.getEndKey().getRow().copyBytes() : null;
+        return new RangeHandle(startKey, range.isStartKeyInclusive(), endKey,
+                range.isEndKeyInclusive());
+    }
 }

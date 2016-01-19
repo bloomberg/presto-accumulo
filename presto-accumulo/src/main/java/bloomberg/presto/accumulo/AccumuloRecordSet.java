@@ -17,8 +17,8 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.List;
 
+import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.Connector;
-import org.apache.accumulo.core.client.Scanner;
 
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
@@ -37,7 +37,7 @@ public class AccumuloRecordSet implements RecordSet {
     private final List<AccumuloColumnConstraint> constraints;
     private final List<Type> columnTypes;
     private final AccumuloRowSerializer serializer;
-    private final Scanner scan;
+    private final BatchScanner scan;
     private final String rowIdName;
 
     public AccumuloRecordSet(ConnectorSession session, AccumuloConfig config,
@@ -65,14 +65,12 @@ public class AccumuloRecordSet implements RecordSet {
         this.columnTypes = types.build();
 
         try {
-            scan = conn.createScanner(
-                    (split.getSchemaName().equals("default") ? ""
-                            : split.getSchemaName() + ".")
-                            + split.getTableName(),
+            scan = conn.createBatchScanner(split.getFullTableName(),
                     conn.securityOperations()
-                            .getUserAuthorizations(config.getUsername()));
+                            .getUserAuthorizations(config.getUsername()),
+                    10);
 
-            scan.setRange(split.getRangeHandle().getRange());
+            scan.setRanges(split.getRanges());
         } catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }

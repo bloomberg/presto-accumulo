@@ -69,37 +69,20 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         }
 
         List<ConnectorSplit> cSplits = new ArrayList<>();
-        if (AccumuloSessionProperties.isOptimizeRangeSplitsEnabled(session)) {
-            Domain rDom = getRangeDomain(rowIdName,
-                    layoutHandle.getConstraint());
+        Domain rDom = getRangeDomain(rowIdName, layoutHandle.getConstraint());
 
-            List<TabletSplitMetadata> tSplits = client.getTabletSplits(session,
-                    schemaName, tableName, rDom, getColumnConstraints(rowIdName,
-                            layoutHandle.getConstraint()));
+        List<TabletSplitMetadata> tSplits = client.getTabletSplits(session,
+                schemaName, tableName, rDom,
+                getColumnConstraints(rowIdName, layoutHandle.getConstraint()));
 
-            for (TabletSplitMetadata smd : tSplits) {
-                AccumuloSplit accSplit = new AccumuloSplit(connectorId,
-                        schemaName, tableName, rowIdName,
-                        tableHandle.getSerializerClassName(),
-                        smd.getRangeHandle(), constraints, smd.getHostPort());
-                cSplits.add(accSplit);
-            }
-
-            Collections.shuffle(cSplits);
-        } else {
-            String loc;
-            if (AccumuloSessionProperties.isOptimizeLocalityEnabled(session)) {
-                loc = client.getDefaultTabletLocation(
-                        AccumuloClient.getFullTableName(schemaName, tableName));
-            } else {
-                loc = "localhost:9997";
-            }
-
+        for (TabletSplitMetadata smd : tSplits) {
             AccumuloSplit accSplit = new AccumuloSplit(connectorId, schemaName,
                     tableName, rowIdName, tableHandle.getSerializerClassName(),
-                    new RangeHandle(null, true, null, true), constraints, loc);
+                    smd.getRangeHandles(), constraints, smd.getHostPort());
             cSplits.add(accSplit);
         }
+
+        Collections.shuffle(cSplits);
 
         return new FixedSplitSource(connectorId, cSplits);
     }

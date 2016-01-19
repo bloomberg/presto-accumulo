@@ -17,7 +17,10 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Objects.requireNonNull;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.accumulo.core.data.Range;
 
 import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.HostAddress;
@@ -41,7 +44,7 @@ public class AccumuloSplit implements ConnectorSplit {
     private final String tableName;
     private String serializerClassName;
     private final List<HostAddress> addresses;
-    private RangeHandle rHandle;
+    private List<RangeHandle> rHandles;
     private List<AccumuloColumnConstraint> constraints;
 
     @JsonCreator
@@ -50,7 +53,7 @@ public class AccumuloSplit implements ConnectorSplit {
             @JsonProperty("tableName") String tableName,
             @JsonProperty("rowIdName") String rowIdName,
             @JsonProperty("serializerClassName") String serializerClassName,
-            @JsonProperty("rHandle") RangeHandle rHandle,
+            @JsonProperty("rHandles") List<RangeHandle> rHandles,
             @JsonProperty("constraints") List<AccumuloColumnConstraint> constraints,
             @JsonProperty("hostPort") String hostPort) {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
@@ -64,7 +67,7 @@ public class AccumuloSplit implements ConnectorSplit {
         // do not "requireNotNull" this field, jackson parses and sets
         // AccumuloSplit, then parses the nested RangeHandle object and will
         // call setRangeHandle, flagged as a JsonSetter
-        this.rHandle = rHandle;
+        this.rHandles = rHandles;
 
         remotelyAccessible = true;
         addresses = newArrayList(HostAddress.fromString(hostPort));
@@ -90,6 +93,12 @@ public class AccumuloSplit implements ConnectorSplit {
         return schemaName;
     }
 
+    @JsonIgnore
+    public String getFullTableName() {
+        return (this.getSchemaName().equals("default") ? ""
+                : this.getSchemaName() + ".") + this.getTableName();
+    }
+
     @JsonProperty
     public String getTableName() {
         return tableName;
@@ -101,13 +110,20 @@ public class AccumuloSplit implements ConnectorSplit {
     }
 
     @JsonProperty
-    public RangeHandle getRangeHandle() {
-        return rHandle;
+    public List<RangeHandle> getRangeHandles() {
+        return rHandles;
+    }
+
+    @JsonIgnore
+    public List<Range> getRanges() {
+        List<Range> ranges = new ArrayList<>();
+        rHandles.stream().forEach(x -> ranges.add(x.getRange()));
+        return ranges;
     }
 
     @JsonSetter
-    public void setRangeHandle(RangeHandle rhandle) {
-        this.rHandle = rhandle;
+    public void setRangeHandles(List<RangeHandle> rhandles) {
+        this.rHandles = rhandles;
     }
 
     @JsonProperty
@@ -149,7 +165,7 @@ public class AccumuloSplit implements ConnectorSplit {
                 .add("rowIdName", rowIdName)
                 .add("serializerClassName", serializerClassName)
                 .add("remotelyAccessible", remotelyAccessible)
-                .add("addresses", addresses).add("rHandle", rHandle)
+                .add("addresses", addresses).add("numHandles", rHandles.size())
                 .add("constraints", constraints).add("hostPort", hostPort)
                 .toString();
     }
