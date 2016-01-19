@@ -244,7 +244,7 @@ public class TcphDBGenIngest extends Configured implements Tool {
             }
 
             String line;
-            int numRows = 0;
+            int numRows = 0, numIdxRows = 0;
             Collection<Mutation> updates = new HashSet<>();
             while ((line = rdr.readLine()) != null) {
 
@@ -254,10 +254,11 @@ public class TcphDBGenIngest extends Configured implements Tool {
                         rowSchema.getColumns(), serializer);
 
                 wrtr.addMutation(m);
-                
+
                 if (idxWrtr != null) {
                     Utils.indexMutation(m, indexColumns, updates);
                     idxWrtr.addMutations(updates);
+                    numIdxRows += updates.size();
                     updates.clear();
                 }
 
@@ -268,7 +269,8 @@ public class TcphDBGenIngest extends Configured implements Tool {
             wrtr.close();
 
             rdr.close();
-            System.out.println(String.format("Wrote %d rows", numRows));
+            System.out.println(String.format("Wrote %d rows, %d index rows",
+                    numRows, numIdxRows));
         }
 
         return 0;
