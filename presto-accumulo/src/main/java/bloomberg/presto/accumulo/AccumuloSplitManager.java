@@ -87,11 +87,17 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
 
             Collections.shuffle(cSplits);
         } else {
+            String loc;
+            if (AccumuloSessionProperties.isOptimizeLocalityEnabled(session)) {
+                loc = client.getDefaultTabletLocation(
+                        AccumuloClient.getFullTableName(schemaName, tableName));
+            } else {
+                loc = "localhost:9997";
+            }
+
             AccumuloSplit accSplit = new AccumuloSplit(connectorId, schemaName,
                     tableName, rowIdName, tableHandle.getSerializerClassName(),
-                    new RangeHandle(null, true, null, true), constraints,
-                    client.getDefaultTabletLocation(AccumuloClient
-                            .getFullTableName(schemaName, tableName)));
+                    new RangeHandle(null, true, null, true), constraints, loc);
             cSplits.add(accSplit);
         }
 

@@ -305,7 +305,7 @@ public class AccumuloClient {
             for (Range psr : finalRanges) {
                 for (Range r : conn.tableOperations().splitRangeByTablets(
                         fulltable, psr, Integer.MAX_VALUE)) {
-                    splits.add(getTableSplitMetadata(fulltable, r));
+                    splits.add(getTableSplitMetadata(session, fulltable, r));
                 }
             }
 
@@ -376,9 +376,9 @@ public class AccumuloClient {
         return preSplitRange;
     }
 
-    private TabletSplitMetadata getTableSplitMetadata(String fulltable,
-            Range range) throws TableNotFoundException, AccumuloException,
-                    AccumuloSecurityException {
+    private TabletSplitMetadata getTableSplitMetadata(ConnectorSession session,
+            String fulltable, Range range) throws TableNotFoundException,
+                    AccumuloException, AccumuloSecurityException {
 
         byte[] startKey = range.getStartKey() != null
                 ? range.getStartKey().getRow().copyBytes() : null;
@@ -387,7 +387,14 @@ public class AccumuloClient {
 
         RangeHandle rHandle = new RangeHandle(startKey,
                 range.isStartKeyInclusive(), endKey, range.isEndKeyInclusive());
-        String loc = this.getTabletLocation(fulltable, endKey);
+
+        String loc;
+        if (AccumuloSessionProperties.isOptimizeLocalityEnabled(session)) {
+            loc = this.getTabletLocation(fulltable, endKey);
+        } else {
+            loc = "localhost:9997";
+        }
+
         return new TabletSplitMetadata(endKey, loc, rHandle);
     }
 
