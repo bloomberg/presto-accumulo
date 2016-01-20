@@ -3,11 +3,6 @@
 -- Functional Query Definition
 -- Approved February 1998
 
-SET SESSION accumulo.optimize_column_filters_enabled = false;
-SET SESSION accumulo.optimize_range_predicate_pushdown_enabled = true;
-SET SESSION accumulo.optimize_range_splits_enabled = true;
-SET SESSION accumulo.secondary_index_enabled = true;
-
 select
 	p.brand,
 	p.type,
@@ -37,4 +32,4 @@ order by
 	supplier_cnt desc,
 	p.brand,
 	p.type,
-	p.size;
+	p.size

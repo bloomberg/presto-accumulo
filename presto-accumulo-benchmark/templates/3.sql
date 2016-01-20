@@ -3,11 +3,6 @@
 -- Functional Query Definition
 -- Approved February 1998
 
-SET SESSION accumulo.optimize_column_filters_enabled = false;
-SET SESSION accumulo.optimize_range_predicate_pushdown_enabled = true;
-SET SESSION accumulo.optimize_range_splits_enabled = true;
-SET SESSION accumulo.secondary_index_enabled = true;
-
 select
 	l.orderkey,
 	sum(l.extendedprice * (1 - l.discount)) as revenue,
@@ -29,4 +24,4 @@ group by
 	o.shippriority
 order by
 	revenue desc,
-	o.orderdate;
+	o.orderdate

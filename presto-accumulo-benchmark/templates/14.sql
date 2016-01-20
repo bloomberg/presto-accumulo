@@ -3,11 +3,6 @@
 -- Functional Query Definition
 -- Approved February 1998
 
-SET SESSION accumulo.optimize_column_filters_enabled = false;
-SET SESSION accumulo.optimize_range_predicate_pushdown_enabled = true;
-SET SESSION accumulo.optimize_range_splits_enabled = true;
-SET SESSION accumulo.secondary_index_enabled = true;
-
 select
 	100.00 * sum(case
 		when p.type like 'PROMO%'
@@ -20,5 +15,4 @@ from
 where
 	l.partkey = p.partkey
 	and l.shipdate >= date '1995-09-01'
-	and l.shipdate < date '1995-09-01' + interval '1' month;
-
+	and l.shipdate < date '1995-09-01' + interval '1' month
