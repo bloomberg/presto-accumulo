@@ -17,14 +17,14 @@ mvn clean install -DskipTests
 check_exit_code
 
 echo "Copying jar to Accumulo lib directory..."
-sudo cp target/presto-accumulo-iterators-0.*.jar $ACCUMULO_HOME/lib
+sudo cp target/presto-accumulo-iterators-0.*.jar $ACCUMULO_HOME/lib/ext
 check_exit_code
 
-echo "Restarting Accumulo..."
-$ACCUMULO_HOME/bin/stop-here.sh
-sudo rm -rf $ACCUMULO_HOME/logs/*
-$ACCUMULO_HOME/bin/start-here.sh
-check_exit_code
+#echo "Restarting Accumulo..."
+#$ACCUMULO_HOME/bin/stop-here.sh
+#sudo rm -rf $ACCUMULO_HOME/logs/*
+#$ACCUMULO_HOME/bin/start-here.sh
+#check_exit_code
 
 echo "Done."
 
