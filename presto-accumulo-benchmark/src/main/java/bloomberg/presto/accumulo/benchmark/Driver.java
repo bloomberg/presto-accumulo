@@ -2,6 +2,8 @@ package bloomberg.presto.accumulo.benchmark;
 
 import java.io.File;
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
@@ -11,6 +13,7 @@ import org.apache.hadoop.util.ToolRunner;
 
 import com.google.common.collect.ImmutableList;
 
+import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.AccumuloConfig;
 
 public class Driver extends Configured implements Tool {
@@ -24,7 +27,7 @@ public class Driver extends Configured implements Tool {
 
         if (args.length != 8) {
             System.err.println(
-                    "Usage: [instance] [zookeepers] [user] [passwd] [dbgen.dir] [host] [port] [scripts.dir]");
+                    "Usage: [instance] [zookeepers] [user] [passwd] [dbgen.dir] [host] [port] [benchmark.dir]");
             return 1;
         }
 
@@ -34,7 +37,8 @@ public class Driver extends Configured implements Tool {
         File dbgendir = new File(args[4]);
         String host = args[5];
         int port = Integer.parseInt(args[6]);
-        File scriptsDir = new File(args[7]);
+        File benchmarkDir = new File(args[7]);
+        File scriptsDir = new File(benchmarkDir, "scripts");
 
         if (!dbgendir.exists() || dbgendir.isFile()) {
             throw new InvalidParameterException(
@@ -49,36 +53,58 @@ public class Driver extends Configured implements Tool {
         String[] splittableTables = { "customer", "lineitem", "orders", "part",
                 "partsupp", "supplier" };
 
-        ImmutableList<Pair<String, Float>> scales = ImmutableList.of(
+        ImmutableList<Pair<String, Float>> schemaScalePairs = ImmutableList.of(
                 Pair.of("tiny", .01f), Pair.of("small", .1f),
                 Pair.of("sf1", 1f), Pair.of("sf10", 10f),
                 Pair.of("sf100", 100f));
 
+        List<QueryMetrics> metrics = new ArrayList<>();
+
         Integer[] numSplits = { 0, 1, 3, 5, 9, 15 };
         // for each schema
-        for (Pair<String, Float> s : scales) {
-            TpchDBGenInvoker.run(dbgendir, s.getRight());
-            TpchDBGenIngest.run(accConf, s.getLeft(), dbgendir);
+        for (Pair<String, Float> s : schemaScalePairs) {
+            String schema = s.getLeft();
+            float scale = s.getRight();
+            TpchDBGenInvoker.run(dbgendir, scale);
+            TpchDBGenIngest.run(accConf, schema, dbgendir);
+            QueryFormatter.run(s.getLeft(), benchmarkDir);
 
             // for each number of splits
             for (int ns : numSplits) {
                 // split each table
                 for (String tableName : splittableTables) {
-                    Splitter.run(accConf, tableName, s.getRight(), ns);
+                    Splitter.run(accConf, schema, tableName, scale, ns);
                 }
 
                 // Run queries
-                TpchQueryExecutor.run(accConf, host, port, s.getLeft(),
-                        scriptsDir);
+                List<QueryMetrics> qm =
+
+                TpchQueryExecutor.run(accConf, host, port, schema, scriptsDir);
+
+                qm.stream().forEach(x -> {
+                    x.scale = scale;
+                    x.numSplits = ns;
+                    x.schema = schema;
+                });
+
+                metrics.addAll(qm);
+
+                for (QueryMetrics t : metrics) {
+                    System.out.println(t);
+                }
 
                 // Merge tables
                 for (String tableName : splittableTables) {
-                    Merger.run(accConf, tableName);
+                    Merger.run(accConf,
+                            AccumuloClient.getFullTableName(schema, tableName));
                 }
             }
         }
 
+        for (QueryMetrics qm : metrics) {
+            System.out.println(qm);
+        }
+
         return 0;
     }
-
 }

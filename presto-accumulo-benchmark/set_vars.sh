@@ -5,7 +5,7 @@ SCRIPT_DIR=scripts
 
 mkdir -p $SCRIPT_DIR
 
-SCHEMAS=("sf1" "sf100" "sf1000" "sf10000" "sf1000000" "sf300" "sf3000" "sf430000" "tiny")
+SCHEMAS=("sf1" "sf10" "sf100" "sf1000" "sf10000" "sf1000000" "sf300" "sf3000" "sf30000" "tiny" "small")
 
 NEW_SCHEMA=$1
 

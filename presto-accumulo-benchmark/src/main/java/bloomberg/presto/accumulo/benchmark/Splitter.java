@@ -1,7 +1,6 @@
 package bloomberg.presto.accumulo.benchmark;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -16,6 +15,7 @@ import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableMap;
 
+import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloTable;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
@@ -37,21 +37,22 @@ public class Splitter {
             .put("part", true).put("partsupp", true).put("region", false)
             .put("supplier", true).build();
 
-    public static void run(AccumuloConfig conf, String tableName, float scale,
-            int numSplits) throws Exception {
+    public static void run(AccumuloConfig conf, String schemaName,
+            String tableName, float scale, int numSplits) throws Exception {
 
         if (numSplits == 0) {
             return;
         }
 
+        SchemaTableName stn = new SchemaTableName(schemaName, tableName);
+        String fullTableName = AccumuloClient.getFullTableName(stn);
         ZooKeeperInstance inst = new ZooKeeperInstance(conf.getInstance(),
                 conf.getZooKeepers());
         Connector conn = inst.getConnector(conf.getUsername(),
                 new PasswordToken(conf.getPassword()));
 
         AccumuloTable table = AccumuloMetadataManager
-                .getDefault("accumulo", conf)
-                .getTable(SchemaTableName.valueOf(tableName));
+                .getDefault("accumulo", conf).getTable(stn);
 
         Type rowIdType = null;
 
@@ -62,26 +63,26 @@ public class Splitter {
             }
         }
 
-        String[] splits = getSplits(tableName, numSplits, scale);
+        double[] splits = getSplits(tableName, numSplits, scale);
 
         SortedSet<Text> tableSplits = new TreeSet<>();
-        for (String s : splits) {
+        for (Double s : splits) {
             if (rowIdType == BigintType.BIGINT) {
                 tableSplits.add(new Text(LexicoderRowSerializer
-                        .encode(rowIdType, Long.parseLong(s))));
+                        .encode(rowIdType, s.longValue())));
             } else {
                 throw new UnsupportedOperationException(
                         "Type " + rowIdType + " is not supported");
             }
         }
 
-        conn.tableOperations().addSplits(tableName, tableSplits);
+        conn.tableOperations().addSplits(fullTableName, tableSplits);
 
         System.out.println("Splits added, compacting");
-        conn.tableOperations().compact(tableName, null, null, true, true);
+        conn.tableOperations().compact(fullTableName, null, null, true, true);
 
         System.out.println("Splits are ");
-        for (Text s : conn.tableOperations().listSplits(tableName)) {
+        for (Text s : conn.tableOperations().listSplits(fullTableName)) {
             if (rowIdType == BigintType.BIGINT) {
                 System.out.println((Long) LexicoderRowSerializer
                         .decode(rowIdType, s.copyBytes()));
@@ -92,29 +93,24 @@ public class Splitter {
         }
     }
 
-    private static String[] getSplits(String tableName, int numSplits,
+    private static double[] getSplits(String tableName, int numSplits,
             float scale) {
         long maxRowId = MAX_ROW_ID_BY_TABLE.get(tableName);
 
         final long endId = TABLE_SCALES.get(tableName)
                 ? (long) (maxRowId * scale) : maxRowId;
 
-        List<Double> splits = linspace(1, endId, numSplits + 2);
-        String[] strSplits = new String[numSplits];
-        for (int i = 1; i < numSplits - 1; ++i) {
-            strSplits[i - 1] = Double.toString(splits.get(i));
-        }
-
-        return strSplits;
+        return Arrays.copyOfRange(linspace(1, endId, numSplits + 2), 1,
+                numSplits + 1);
     }
 
-    private static List<Double> linspace(double start, double stop, int n) {
-        List<Double> result = new ArrayList<Double>();
-        double step = (stop - start) / (n - 1);
-        for (int i = 0; i <= n - 2; ++i) {
-            result.add(start + (i * step));
+    private static double[] linspace(double start, double stop, int n) {
+        double[] values = new double[n];
+        double dx = (stop - start) / (double) (n - 1);
+        for (int i = 0; i < n; ++i) {
+            values[i] = start + ((double) i) * dx;
         }
-        result.add(stop);
-        return result;
+
+        return values;
     }
 }
