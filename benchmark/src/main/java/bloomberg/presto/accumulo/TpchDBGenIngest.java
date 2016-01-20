@@ -13,7 +13,6 @@ import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,19 +26,14 @@ import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.util.Tool;
-import org.apache.hadoop.util.ToolRunner;
 
 import bloomberg.presto.accumulo.index.Utils;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 
-public class TcphDBGenIngest extends Configured implements Tool {
+public class TpchDBGenIngest {
 
     private static final char DELIMITER = '|';
     private static final String CUSTOMER_ROW_ID = "custkey";
@@ -128,34 +122,15 @@ public class TcphDBGenIngest extends Configured implements Tool {
             .addColumn("acctbal", "md", "acctbal", DOUBLE)
             .addColumn("comment", "md", "comment", VARCHAR);
 
-    public static void main(String[] args) throws Exception {
-        System.exit(ToolRunner.run(new Configuration(), new TcphDBGenIngest(),
-                args));
-    }
+    public static void run(AccumuloConfig accConfig, String schema,
+            File dbgenDir) throws Exception {
 
-    @Override
-    public int run(String[] args) throws Exception {
-
-        if (args.length != 6) {
-            System.err.println(
-                    "Usage: [instance] [zookeepers] [user] [passwd] [presto.schema] [tpch.dir]");
-
-            return 1;
-        }
-
-        String instance = args[0];
-        String zookeepers = args[1];
-        String user = args[2];
-        String passwd = args[3];
-        String schema = args[4];
-        File tpchDir = new File(args[5]);
-
-        if (!tpchDir.exists()) {
+        if (!dbgenDir.exists()) {
             throw new FileNotFoundException(
                     "Given datagen directory does not exist");
         }
 
-        List<File> dataFiles = Arrays.asList(tpchDir.listFiles()).stream()
+        List<File> dataFiles = Arrays.asList(dbgenDir.listFiles()).stream()
                 .filter(x -> x.getName().endsWith(".tbl"))
                 .collect(Collectors.toList());
 
@@ -164,17 +139,13 @@ public class TcphDBGenIngest extends Configured implements Tool {
                     "No table files found in datagen directory");
         }
 
-        AccumuloConfig accConfig = new AccumuloConfig();
-        accConfig.setInstance(instance);
-        accConfig.setPassword(passwd);
-        accConfig.setUsername(user);
-        accConfig.setZooKeepers(zookeepers);
-
         AccumuloMetadataManager mgr = AccumuloMetadataManager
                 .getDefault("accumulo", accConfig);
 
-        ZooKeeperInstance inst = new ZooKeeperInstance(instance, zookeepers);
-        Connector conn = inst.getConnector(user, new PasswordToken(passwd));
+        ZooKeeperInstance inst = new ZooKeeperInstance(accConfig.getInstance(),
+                accConfig.getZooKeepers());
+        Connector conn = inst.getConnector(accConfig.getUsername(),
+                new PasswordToken(accConfig.getPassword()));
         AccumuloRowSerializer serializer = AccumuloRowSerializer.getDefault();
         for (File df : dataFiles) {
             String tableName = FilenameUtils.removeExtension(df.getName());
@@ -242,30 +213,15 @@ public class TcphDBGenIngest extends Configured implements Tool {
             System.out.println(String.format("Wrote %d rows, %d index rows",
                     numRows, numIdxRows));
         }
-
-        return 0;
     }
 
-    private Map<ByteBuffer, Set<ByteBuffer>> indexColumnsFromFile(
+    private static Map<ByteBuffer, Set<ByteBuffer>> indexColumnsFromFile(
             String tableName) {
-        RowSchema schema = schemaFromFile(tableName);
-        Map<ByteBuffer, Set<ByteBuffer>> indexColumns = new HashMap<>();
-
-        for (AccumuloColumnHandle col : schema.getColumns().stream()
-                .filter(x -> x.isIndexed()).collect(Collectors.toList())) {
-            ByteBuffer cf = ByteBuffer.wrap(col.getColumnFamily().getBytes());
-            Set<ByteBuffer> qualifies = indexColumns.get(cf);
-            if (qualifies == null) {
-                qualifies = new HashSet<>();
-                indexColumns.put(cf, qualifies);
-            }
-            qualifies.add(ByteBuffer.wrap(col.getColumnQualifier().getBytes()));
-        }
-
-        return indexColumns;
+        return Utils
+                .getMapOfIndexedColumns(schemaFromFile(tableName).getColumns());
     }
 
-    private String rowIdFromFile(String tableName) {
+    private static String rowIdFromFile(String tableName) {
         switch (tableName) {
         case "customer":
             return CUSTOMER_ROW_ID;
@@ -289,7 +245,7 @@ public class TcphDBGenIngest extends Configured implements Tool {
         }
     }
 
-    private RowSchema schemaFromFile(String tableName) {
+    private static RowSchema schemaFromFile(String tableName) {
         switch (tableName) {
         case "customer":
             return CUSTOMER_SCHEMA;
