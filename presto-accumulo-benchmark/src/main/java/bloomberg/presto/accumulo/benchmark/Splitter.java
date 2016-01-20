@@ -40,6 +40,10 @@ public class Splitter {
     public static void run(AccumuloConfig conf, String tableName, float scale,
             int numSplits) throws Exception {
 
+        if (numSplits == 0) {
+            return;
+        }
+
         ZooKeeperInstance inst = new ZooKeeperInstance(conf.getInstance(),
                 conf.getZooKeepers());
         Connector conn = inst.getConnector(conf.getUsername(),
@@ -111,7 +115,6 @@ public class Splitter {
             result.add(start + (i * step));
         }
         result.add(stop);
-
         return result;
     }
 }

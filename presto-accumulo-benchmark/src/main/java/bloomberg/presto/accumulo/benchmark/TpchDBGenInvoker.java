@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.security.InvalidParameterException;
 
 import org.apache.log4j.Logger;
 
@@ -12,11 +11,6 @@ public class TpchDBGenInvoker {
     private static final Logger LOG = Logger.getLogger(TpchDBGenInvoker.class);
 
     public static void run(File dbgendir, float scale) throws Exception {
-
-        if (!dbgendir.exists() || dbgendir.isFile()) {
-            throw new InvalidParameterException(
-                    dbgendir + " does not exist or is not a directory");
-        }
 
         ProcessBuilder bldr = new ProcessBuilder("./dbgen", "-vf", "-s",
                 Float.toString(scale));
