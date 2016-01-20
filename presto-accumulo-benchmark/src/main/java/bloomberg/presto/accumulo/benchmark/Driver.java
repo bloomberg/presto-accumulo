@@ -37,6 +37,29 @@ public class Driver extends Configured implements Tool {
         TpchDBGenInvoker.run(dbgendir, scale);
         TpchDBGenIngest.run(accConf, schema, dbgendir);
 
+        String[] splittableTables = { "customer", "lineitem", "orders", "part",
+                "partsupp", "supplier" };
+
+        Float[] scales = { .01f, .1f, 1f, 10f, 100f };
+        Integer[] numSplits = { 1, 3, 5, 9, 15 };
+        // test the scales
+        for (float s : scales) {
+            // test the various splits
+            for (int ns : numSplits) {
+                // split each table
+                for (String tableName : splittableTables) {
+                    Splitter.run(accConf, tableName, s, ns);
+                }
+
+                // Run queries
+
+                // Merge tables
+                for (String tableName : splittableTables) {
+                    Merger.run(accConf, tableName);
+                }
+            }
+        }
+
         return 0;
     }
 
