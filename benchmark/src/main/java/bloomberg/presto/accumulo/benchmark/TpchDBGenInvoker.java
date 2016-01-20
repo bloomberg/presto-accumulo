@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo;
+package bloomberg.presto.accumulo.benchmark;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -6,19 +6,22 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.security.InvalidParameterException;
 
-import io.airlift.log.Logger;
+import org.apache.log4j.Logger;
 
 public class TpchDBGenInvoker {
+    private static final Logger LOG = Logger.getLogger(TpchDBGenInvoker.class);
 
-    public static void run(File dbgendir, String scale) throws Exception {
+    public static void run(File dbgendir, float scale) throws Exception {
 
         if (!dbgendir.exists() || dbgendir.isFile()) {
             throw new InvalidParameterException(
                     dbgendir + " does not exist or is not a directory");
         }
 
-        ProcessBuilder bldr = new ProcessBuilder("dbgen", "-vf", "-s", scale);
+        ProcessBuilder bldr = new ProcessBuilder("./dbgen", "-vf", "-s",
+                Float.toString(scale));
         bldr.directory(dbgendir);
+        bldr.redirectErrorStream(true);
 
         final Process p = bldr.start();
 
@@ -31,7 +34,7 @@ public class TpchDBGenInvoker {
                 String line;
                 try {
                     while ((line = rdr.readLine()) != null) {
-                        Logger.get(getClass()).info(line);
+                        LOG.info(line);
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -40,7 +43,9 @@ public class TpchDBGenInvoker {
         });
         t.start();
         int c = p.waitFor();
-        if (c != 0) {
+        if (c == 0) {
+            LOG.info("Finished data generation");
+        } else {
             throw new RuntimeException(
                     "Process exited with non-zero return code: " + c);
         }

@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo;
+package bloomberg.presto.accumulo.benchmark;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.DateType.DATE;
@@ -27,6 +27,9 @@ import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.commons.io.FilenameUtils;
 
+import bloomberg.presto.accumulo.AccumuloConfig;
+import bloomberg.presto.accumulo.AccumuloPageSink;
+import bloomberg.presto.accumulo.AccumuloTable;
 import bloomberg.presto.accumulo.index.Utils;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.Row;

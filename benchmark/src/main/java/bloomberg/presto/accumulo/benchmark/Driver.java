@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo;
+package bloomberg.presto.accumulo.benchmark;
 
 import java.io.File;
 
@@ -6,6 +6,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+
+import bloomberg.presto.accumulo.AccumuloConfig;
 
 public class Driver extends Configured implements Tool {
 
@@ -27,9 +29,12 @@ public class Driver extends Configured implements Tool {
                 .setPassword(args[3]);
 
         String schema = args[4];
+        float scale = schema.equals("tiny") ? .01f
+                : (schema.equals("small") ? .1f
+                        : Float.parseFloat(schema.replaceAll("\\D", "")));
         File dbgendir = new File(args[5]);
 
-        TpchDBGenInvoker.run(dbgendir, schema);
+        TpchDBGenInvoker.run(dbgendir, scale);
         TpchDBGenIngest.run(accConf, schema, dbgendir);
 
         return 0;
