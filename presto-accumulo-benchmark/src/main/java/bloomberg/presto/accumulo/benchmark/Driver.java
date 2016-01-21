@@ -1,5 +1,7 @@
 package bloomberg.presto.accumulo.benchmark;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -12,11 +14,23 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.log4j.Logger;
+
+import com.google.common.collect.ImmutableList;
 
 import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.AccumuloConfig;
 
 public class Driver extends Configured implements Tool {
+
+    private static final Logger LOG = Logger.getLogger(Driver.class);
+    private static List<String> BLACKLIST = ImmutableList
+            .copyOf(new String[] { "2.sql", "4.sql", "11.sql", "13.sql",
+                    "15.sql", "17.sql", "20.sql", "21.sql", "22.sql" });
+    private int numQueries = 0;
+    private int ranQueries = 0;
+    private List<QueryMetrics> metrics = new ArrayList<>();
+    private List<File> queryFiles;
 
     public static void main(String[] args) throws Exception {
         System.exit(ToolRunner.run(new Configuration(), new Driver(), args));
@@ -60,10 +74,14 @@ public class Driver extends Configured implements Tool {
                     scriptsDir + " does not exist or is not a directory");
         }
 
+        queryFiles = Arrays.asList(scriptsDir.listFiles()).stream()
+                .filter(x -> !BLACKLIST.contains(x.getName())
+                        && x.getName().matches("[0-9]+.sql"))
+                .collect(Collectors.toList());
+
         String[] splittableTables = { "customer", "lineitem", "orders", "part",
                 "partsupp", "supplier" };
 
-        final List<QueryMetrics> metrics = new ArrayList<>();
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 
             @Override
@@ -75,8 +93,9 @@ public class Driver extends Configured implements Tool {
             }
         }));
 
-        int numRounds = 16 * numSplits.size() * schemaScalePairs.size();
-        int ranRounds = 0;
+        numQueries = 16 * numSplits.size() * schemaScalePairs.size()
+                * queryFiles.size();
+        ranQueries = 0;
         // for each schema
         for (Pair<String, Float> s : schemaScalePairs) {
             String schema = s.getLeft();
@@ -98,27 +117,14 @@ public class Driver extends Configured implements Tool {
                     for (boolean optimizeRangePredicatePushdownEnabled : bvalues) {
                         for (boolean optimizeRangeSplitsEnabled : bvalues) {
                             for (boolean secondaryIndexEnabled : bvalues) {
-                                runQuery(accConf, host, port, schema,
-                                        scriptsDir, scale, ns, metrics,
-                                        optimizeColumnFiltersEnabled,
+                                runQueries(accConf, host, port, schema, scale,
+                                        ns, optimizeColumnFiltersEnabled,
                                         optimizeRangePredicatePushdownEnabled,
                                         optimizeRangeSplitsEnabled,
                                         secondaryIndexEnabled, timeout);
-                                ++ranRounds;
-                                System.out.println(String
-                                        .format("Ran rounds: %d\tTotal rounds: %d\tProgress: %2f",
-                                                ranRounds, numRounds,
-                                                +((float) ranRounds
-                                                        / (float) numRounds
-                                                        * 100.0f)));
                             }
                         }
                     }
-                }
-
-                System.out.println(QueryMetrics.getHeader());
-                for (QueryMetrics t : metrics) {
-                    System.out.println(t);
                 }
 
                 // Merge tables
@@ -132,26 +138,29 @@ public class Driver extends Configured implements Tool {
         return 0;
     }
 
-    private void runQuery(AccumuloConfig accConf, String host, int port,
-            String schema, File scriptsDir, float scale, int numSplits,
-            List<QueryMetrics> metrics, boolean optimizeColumnFiltersEnabled,
+    private void runQueries(AccumuloConfig accConf, String host, int port,
+            String schema, float scale, int numSplits,
+            boolean optimizeColumnFiltersEnabled,
             boolean optimizeRangePredicatePushdownEnabled,
             boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled,
             int timeout) throws Exception {
 
-        List<QueryMetrics> qm = TpchQueryExecutor.run(accConf, host, port,
-                schema, scriptsDir, optimizeColumnFiltersEnabled,
-                optimizeRangePredicatePushdownEnabled,
-                optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
+        for (File qf : queryFiles) {
+            QueryMetrics qm = TpchQueryExecutor.run(accConf, qf, host, port,
+                    schema, optimizeColumnFiltersEnabled,
+                    optimizeRangePredicatePushdownEnabled,
+                    optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
 
-        qm.stream().forEach(x ->
-            {
-                x.scale = scale;
-                x.numAccumuloSplits = numSplits;
-                x.schema = schema;
-            });
+            qm.scale = scale;
+            qm.numAccumuloSplits = numSplits;
+            qm.schema = schema;
+            metrics.add(qm);
 
-        metrics.addAll(qm);
-
+            LOG.info(qm);
+            LOG.info(format(
+                    "Query Progress: Executed %d\tTotal: %d\tProgress: %2f",
+                    ++ranQueries, numQueries,
+                    +((float) ranQueries / (float) numQueries * 100.0f)));
+        }
     }
 }

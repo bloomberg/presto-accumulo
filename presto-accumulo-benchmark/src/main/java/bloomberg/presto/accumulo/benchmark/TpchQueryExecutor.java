@@ -1,40 +1,35 @@
 package bloomberg.presto.accumulo.benchmark;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.sql.DriverManager;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
+
+import org.apache.log4j.Logger;
 
 import com.facebook.presto.jdbc.PrestoConnection;
 import com.facebook.presto.jdbc.PrestoResultSet;
-import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloSessionProperties;
-import io.airlift.log.Logger;
 
 public class TpchQueryExecutor {
 
-    private static final Logger LOG = Logger.get(TpchQueryExecutor.class);
+    private static final Logger LOG = Logger.getLogger(TpchQueryExecutor.class);
     private static final String JDBC_DRIVER = "com.facebook.presto.jdbc.PrestoDriver";
     private static final String SCHEME = "jdbc:presto://";
     private static final String CATALOG = "accumulo";
-    private static List<String> BLACKLIST = ImmutableList
-            .copyOf(new String[] { "2.sql", "4.sql", "11.sql", "13.sql",
-                    "15.sql", "17.sql", "20.sql", "21.sql", "22.sql" });
 
     static {
         try {
@@ -44,14 +39,12 @@ public class TpchQueryExecutor {
         }
     }
 
-    public static List<QueryMetrics> run(AccumuloConfig accConfig, String host,
-            int port, String schema, File scriptsDir,
+    public static QueryMetrics run(AccumuloConfig accConfig, File qf,
+            String host, int port, String schema,
             boolean optimizeColumnFiltersEnabled,
             boolean optimizeRangePredicatePushdownEnabled,
             boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled,
             int timeout) throws Exception {
-
-        List<QueryMetrics> metrics = new ArrayList<>();
 
         String dbUrl = String.format("%s%s:%d/%s/%s", SCHEME, host, port,
                 CATALOG, schema);
@@ -73,66 +66,60 @@ public class TpchQueryExecutor {
                 AccumuloSessionProperties.SECONDARY_INDEX_ENABLED,
                 Boolean.toString(secondaryIndexEnabled));
 
-        List<File> queryFiles = Arrays.asList(scriptsDir.listFiles()).stream()
-                .filter(x -> !BLACKLIST.contains(x.getName())
-                        && x.getName().matches("[0-9]+.sql"))
-                .collect(Collectors.toList());
+        QueryMetrics qm = new QueryMetrics();
+        qm.script = qf.getName();
+        qm.optimizeColumnFiltersEnabled = optimizeColumnFiltersEnabled;
+        qm.optimizeRangePredicatePushdownEnabled = optimizeRangePredicatePushdownEnabled;
+        qm.optimizeRangeSplitsEnabled = optimizeRangeSplitsEnabled;
+        qm.secondaryIndexEnabled = secondaryIndexEnabled;
 
-        for (File qf : queryFiles) {
-            QueryMetrics qm = new QueryMetrics();
-            qm.script = qf.getName();
-            qm.optimizeColumnFiltersEnabled = optimizeColumnFiltersEnabled;
-            qm.optimizeRangePredicatePushdownEnabled = optimizeRangePredicatePushdownEnabled;
-            qm.optimizeRangeSplitsEnabled = optimizeRangeSplitsEnabled;
-            qm.secondaryIndexEnabled = secondaryIndexEnabled;
+        String query = Files.toString(qf, StandardCharsets.UTF_8);
+        LOG.info(format("Executing query %s\n%s", qf.getName(), query));
+        Statement stmt = conn.createStatement();
+        long start = System.currentTimeMillis();
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Future<?> future = ex.submit(new Runnable() {
 
-            String query = Files.toString(qf, StandardCharsets.UTF_8);
-            LOG.info("Executing query %s\n%s", qf.getName(), query);
-            Statement stmt = conn.createStatement();
-            long start = System.currentTimeMillis();
-            ExecutorService ex = Executors.newSingleThreadExecutor();
-            Future<?> future = ex.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    PrestoResultSet rs = (PrestoResultSet) stmt
+                            .executeQuery(query);
+                    qm.queryId = rs.getQueryId();
 
-                @Override
-                public void run() {
-                    try {
-                        PrestoResultSet rs = (PrestoResultSet) stmt
-                                .executeQuery(query);
-                        qm.queryId = rs.getQueryId();
-
-                        ResultSetMetaData rsmd = rs.getMetaData();
-                        int columnsNumber = rsmd.getColumnCount();
-                        while (rs.next()) {
-                            for (int i = 1; i <= columnsNumber; i++) {
-                                if (i > 1) {
-                                    System.out.print("|");
-                                }
-                                System.out.print(rs.getString(i));
+                    ResultSetMetaData rsmd = rs.getMetaData();
+                    int columnsNumber = rsmd.getColumnCount();
+                    while (rs.next()) {
+                        for (int i = 1; i <= columnsNumber; i++) {
+                            if (i > 1) {
+                                System.out.print("|");
                             }
-                            System.out.println();
+                            System.out.print(rs.getString(i));
                         }
-                        qm.queryStats = rs.getStats();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                        qm.error = true;
+                        System.out.println();
                     }
+                    qm.queryStats = rs.getStats();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    qm.error = true;
                 }
-            });
-
-            try {
-                future.get(timeout, TimeUnit.MINUTES);
-            } catch (TimeoutException e) {
-                future.cancel(true);
-                qm.timedout = true;
-                LOG.warn("Query hit timeout threshold, cancelling thread");
             }
+        });
 
-            long end = System.currentTimeMillis();
-            LOG.info("Query %s executed in %d ms", qf.getName(), (end - start));
-            qm.queryTimeMS = new Long(end - start);
-            metrics.add(qm);
+        try {
+            future.get(timeout, TimeUnit.MINUTES);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            qm.timedout = true;
+            LOG.warn("Query hit timeout threshold, cancelling thread");
         }
+
+        long end = System.currentTimeMillis();
+        LOG.info(format("Query %s executed in %d ms", qf.getName(),
+                (end - start)));
+        qm.queryTimeMS = new Long(end - start);
         conn.close();
-        return metrics;
+
+        return qm;
     }
 }
