@@ -25,9 +25,9 @@ public class Driver extends Configured implements Tool {
     @Override
     public int run(String[] args) throws Exception {
 
-        if (args.length != 10) {
+        if (args.length != 11) {
             System.err.println(
-                    "Usage: [instance] [zookeepers] [user] [passwd] [dbgen.dir] [presto.host] [presto.port] [benchmark.dir] [csv.schemas] [num.splits]");
+                    "Usage: [instance] [zookeepers] [user] [passwd] [dbgen.dir] [presto.host] [presto.port] [benchmark.dir] [csv.schemas] [num.splits] [timeout]");
             return 1;
         }
 
@@ -48,6 +48,8 @@ public class Driver extends Configured implements Tool {
         List<Integer> numSplits = Arrays.asList(args[9].split(",")).stream()
                 .map(x -> Integer.parseInt(x)).collect(Collectors.toList());
 
+        int timeout = Integer.parseInt(args[10]);
+
         if (!dbgendir.exists() || dbgendir.isFile()) {
             throw new InvalidParameterException(
                     dbgendir + " does not exist or is not a directory");
@@ -61,10 +63,20 @@ public class Driver extends Configured implements Tool {
         String[] splittableTables = { "customer", "lineitem", "orders", "part",
                 "partsupp", "supplier" };
 
-        List<QueryMetrics> metrics = new ArrayList<>();
+        final List<QueryMetrics> metrics = new ArrayList<>();
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 
-        int numQueries = 16 * numSplits.size() * schemaScalePairs.size();
-        int ranQueries = 0;
+            @Override
+            public void run() {
+                System.out.println(QueryMetrics.getHeader());
+                for (QueryMetrics qm : metrics) {
+                    System.out.println(qm);
+                }
+            }
+        }));
+
+        int numRounds = 16 * numSplits.size() * schemaScalePairs.size();
+        int ranRounds = 0;
         // for each schema
         for (Pair<String, Float> s : schemaScalePairs) {
             String schema = s.getLeft();
@@ -91,19 +103,20 @@ public class Driver extends Configured implements Tool {
                                         optimizeColumnFiltersEnabled,
                                         optimizeRangePredicatePushdownEnabled,
                                         optimizeRangeSplitsEnabled,
-                                        secondaryIndexEnabled);
-                                ++ranQueries;
-                                System.out.println(String.format(
-                                        "Ran queries: %d\tTotal queries: %d\tProgress: %f",
-                                        ranQueries, numQueries,
-                                        +((float) ranQueries
-                                                / (float) numQueries
-                                                * 100.0f)));
+                                        secondaryIndexEnabled, timeout);
+                                ++ranRounds;
+                                System.out.println(String
+                                        .format("Ran rounds: %d\tTotal rounds: %d\tProgress: %2f",
+                                                ranRounds, numRounds,
+                                                +((float) ranRounds
+                                                        / (float) numRounds
+                                                        * 100.0f)));
                             }
                         }
                     }
                 }
 
+                System.out.println(QueryMetrics.getHeader());
                 for (QueryMetrics t : metrics) {
                     System.out.println(t);
                 }
@@ -116,10 +129,6 @@ public class Driver extends Configured implements Tool {
             }
         }
 
-        for (QueryMetrics qm : metrics) {
-            System.out.println(qm);
-        }
-
         return 0;
     }
 
@@ -127,18 +136,18 @@ public class Driver extends Configured implements Tool {
             String schema, File scriptsDir, float scale, int numSplits,
             List<QueryMetrics> metrics, boolean optimizeColumnFiltersEnabled,
             boolean optimizeRangePredicatePushdownEnabled,
-            boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled)
-                    throws Exception {
+            boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled,
+            int timeout) throws Exception {
 
         List<QueryMetrics> qm = TpchQueryExecutor.run(accConf, host, port,
                 schema, scriptsDir, optimizeColumnFiltersEnabled,
                 optimizeRangePredicatePushdownEnabled,
-                optimizeRangeSplitsEnabled, secondaryIndexEnabled);
+                optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
 
         qm.stream().forEach(x ->
             {
                 x.scale = scale;
-                x.numSplits = numSplits;
+                x.numAccumuloSplits = numSplits;
                 x.schema = schema;
             });
 

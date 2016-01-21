@@ -3,7 +3,6 @@ package bloomberg.presto.accumulo.benchmark;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -11,9 +10,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import com.facebook.presto.jdbc.PrestoConnection;
+import com.facebook.presto.jdbc.PrestoResultSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
@@ -43,8 +48,8 @@ public class TpchQueryExecutor {
             int port, String schema, File scriptsDir,
             boolean optimizeColumnFiltersEnabled,
             boolean optimizeRangePredicatePushdownEnabled,
-            boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled)
-                    throws Exception {
+            boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled,
+            int timeout) throws Exception {
 
         List<QueryMetrics> metrics = new ArrayList<>();
 
@@ -81,35 +86,51 @@ public class TpchQueryExecutor {
             qm.optimizeRangeSplitsEnabled = optimizeRangeSplitsEnabled;
             qm.secondaryIndexEnabled = secondaryIndexEnabled;
 
-            try {
-                String query = Files.toString(qf, StandardCharsets.UTF_8);
-                LOG.info("Executing query %s\n%s", qf.getName(), query);
-                Statement stmt = conn.createStatement();
-                long start = System.currentTimeMillis();
-                ResultSet rs = stmt.executeQuery(query);
+            String query = Files.toString(qf, StandardCharsets.UTF_8);
+            LOG.info("Executing query %s\n%s", qf.getName(), query);
+            Statement stmt = conn.createStatement();
+            long start = System.currentTimeMillis();
+            ExecutorService ex = Executors.newSingleThreadExecutor();
+            Future<?> future = ex.submit(new Runnable() {
 
-                ResultSetMetaData rsmd = rs.getMetaData();
-                int columnsNumber = rsmd.getColumnCount();
-                while (rs.next()) {
-                    for (int i = 1; i <= columnsNumber; i++) {
-                        if (i > 1) {
-                            System.out.print("|");
+                @Override
+                public void run() {
+                    try {
+                        PrestoResultSet rs = (PrestoResultSet) stmt
+                                .executeQuery(query);
+                        qm.queryId = rs.getQueryId();
+
+                        ResultSetMetaData rsmd = rs.getMetaData();
+                        int columnsNumber = rsmd.getColumnCount();
+                        while (rs.next()) {
+                            for (int i = 1; i <= columnsNumber; i++) {
+                                if (i > 1) {
+                                    System.out.print("|");
+                                }
+                                System.out.print(rs.getString(i));
+                            }
+                            System.out.println();
                         }
-                        System.out.print(rs.getString(i));
+                        qm.queryStats = rs.getStats();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        qm.error = true;
                     }
-                    System.out.println();
                 }
+            });
 
-                long end = System.currentTimeMillis();
-                LOG.info("Query %s executed in %d ms", qf.getName(),
-                        (end - start));
-                qm.queryTimeMS = new Long(end - start);
-            } catch (SQLException e) {
-                e.printStackTrace();
-                qm.error = true;
+            try {
+                future.get(timeout, TimeUnit.MINUTES);
+            } catch (TimeoutException e) {
+                future.cancel(true);
+                qm.timedout = true;
+                LOG.warn("Query hit timeout threshold, cancelling thread");
             }
+
+            long end = System.currentTimeMillis();
+            LOG.info("Query %s executed in %d ms", qf.getName(), (end - start));
+            qm.queryTimeMS = new Long(end - start);
             metrics.add(qm);
-            System.out.println(qm);
         }
         conn.close();
         return metrics;
