@@ -54,6 +54,7 @@ import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
+import com.google.common.collect.ImmutableSet;
 
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
@@ -187,6 +188,19 @@ public class AccumuloClient {
 
                 if (table.isIndexed()) {
                     conn.tableOperations().create(table.getIndexTableName());
+
+                    Map<String, Set<Text>> groups = new HashMap<>();
+                    for (AccumuloColumnHandle acc : table.getColumns().stream()
+                            .filter(x -> x.isIndexed())
+                            .collect(Collectors.toList())) {
+                        Text indexColumnFamily = new Text(acc.getColumnFamily()
+                                + "_" + acc.getColumnQualifier());
+                        groups.put(indexColumnFamily.toString(),
+                                ImmutableSet.of(indexColumnFamily));
+                    }
+
+                    conn.tableOperations().setLocalityGroups(
+                            table.getIndexTableName(), groups);
                 }
 
             } catch (Exception e) {

@@ -13,6 +13,7 @@ import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,12 +27,16 @@ import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.hadoop.io.Text;
+
+import com.google.common.collect.ImmutableSet;
 
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloPageSink;
 import bloomberg.presto.accumulo.AccumuloTable;
 import bloomberg.presto.accumulo.index.Utils;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
@@ -184,6 +189,20 @@ public class TpchDBGenIngest {
             BatchWriter idxWrtr = null;
             if (indexColumns.size() > 0) {
                 conn.tableOperations().create(indexTableName);
+
+                Map<String, Set<Text>> groups = new HashMap<>();
+                for (AccumuloColumnHandle acc : table.getColumns().stream()
+                        .filter(x -> x.isIndexed())
+                        .collect(Collectors.toList())) {
+                    Text indexColumnFamily = new Text(acc.getColumnFamily()
+                            + "_" + acc.getColumnQualifier());
+                    groups.put(indexColumnFamily.toString(),
+                            ImmutableSet.of(indexColumnFamily));
+                }
+
+                conn.tableOperations()
+                        .setLocalityGroups(table.getIndexTableName(), groups);
+
                 idxWrtr = conn.createBatchWriter(indexTableName, bwc);
             }
 
