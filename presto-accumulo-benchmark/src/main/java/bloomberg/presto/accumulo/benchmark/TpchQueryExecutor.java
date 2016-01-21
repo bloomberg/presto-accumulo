@@ -76,6 +76,11 @@ public class TpchQueryExecutor {
         for (File qf : queryFiles) {
             QueryMetrics qm = new QueryMetrics();
             qm.script = qf.getName();
+            qm.optimizeColumnFiltersEnabled = optimizeColumnFiltersEnabled;
+            qm.optimizeRangePredicatePushdownEnabled = optimizeRangePredicatePushdownEnabled;
+            qm.optimizeRangeSplitsEnabled = optimizeRangeSplitsEnabled;
+            qm.secondaryIndexEnabled = secondaryIndexEnabled;
+
             try {
                 String query = Files.toString(qf, StandardCharsets.UTF_8);
                 LOG.info("Executing query %s\n%s", qf.getName(), query);
@@ -104,6 +109,7 @@ public class TpchQueryExecutor {
                 qm.error = true;
             }
             metrics.add(qm);
+            System.out.println(qm);
         }
         conn.close();
         return metrics;

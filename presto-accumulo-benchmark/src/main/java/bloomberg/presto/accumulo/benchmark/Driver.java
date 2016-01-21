@@ -93,10 +93,12 @@ public class Driver extends Configured implements Tool {
                                         optimizeRangeSplitsEnabled,
                                         secondaryIndexEnabled);
                                 ++ranQueries;
-                                System.out.println("Progress: "
-                                        + ((float) ranQueries
-                                                / (float) numQueries * 100.0f)
-                                        + "%");
+                                System.out.println(String.format(
+                                        "Ran queries: %d\tTotal queries: %d\tProgress: %f",
+                                        ranQueries, numQueries,
+                                        +((float) ranQueries
+                                                / (float) numQueries
+                                                * 100.0f)));
                             }
                         }
                     }
@@ -138,10 +140,6 @@ public class Driver extends Configured implements Tool {
                 x.scale = scale;
                 x.numSplits = numSplits;
                 x.schema = schema;
-                x.optimizeColumnFiltersEnabled = optimizeColumnFiltersEnabled;
-                x.optimizeRangePredicatePushdownEnabled = optimizeRangePredicatePushdownEnabled;
-                x.optimizeRangeSplitsEnabled = optimizeRangeSplitsEnabled;
-                x.secondaryIndexEnabled = secondaryIndexEnabled;
             });
 
         metrics.addAll(qm);
