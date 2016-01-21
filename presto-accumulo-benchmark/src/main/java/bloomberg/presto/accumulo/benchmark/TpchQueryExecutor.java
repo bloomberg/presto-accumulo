@@ -2,8 +2,9 @@ package bloomberg.presto.accumulo.benchmark;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -12,10 +13,12 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import com.facebook.presto.jdbc.PrestoConnection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
 import bloomberg.presto.accumulo.AccumuloConfig;
+import bloomberg.presto.accumulo.AccumuloSessionProperties;
 import io.airlift.log.Logger;
 
 public class TpchQueryExecutor {
@@ -37,7 +40,11 @@ public class TpchQueryExecutor {
     }
 
     public static List<QueryMetrics> run(AccumuloConfig accConfig, String host,
-            int port, String schema, File scriptsDir) throws Exception {
+            int port, String schema, File scriptsDir,
+            boolean optimizeColumnFiltersEnabled,
+            boolean optimizeRangePredicatePushdownEnabled,
+            boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled)
+                    throws Exception {
 
         List<QueryMetrics> metrics = new ArrayList<>();
 
@@ -46,7 +53,20 @@ public class TpchQueryExecutor {
 
         Properties props = new Properties();
         props.setProperty("user", "root");
-        Connection conn = DriverManager.getConnection(dbUrl, props);
+        PrestoConnection conn = (PrestoConnection) DriverManager
+                .getConnection(dbUrl, props);
+        conn.setSessionProperty(
+                AccumuloSessionProperties.OPTIMIZE_COLUMN_FILTERS_ENABLED,
+                Boolean.toString(optimizeColumnFiltersEnabled));
+        conn.setSessionProperty(
+                AccumuloSessionProperties.OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED,
+                Boolean.toString(optimizeRangePredicatePushdownEnabled));
+        conn.setSessionProperty(
+                AccumuloSessionProperties.OPTIMIZE_RANGE_SPLITS_ENABLED,
+                Boolean.toString(optimizeRangeSplitsEnabled));
+        conn.setSessionProperty(
+                AccumuloSessionProperties.SECONDARY_INDEX_ENABLED,
+                Boolean.toString(secondaryIndexEnabled));
 
         List<File> queryFiles = Arrays.asList(scriptsDir.listFiles()).stream()
                 .filter(x -> !BLACKLIST.contains(x.getName())
@@ -61,7 +81,20 @@ public class TpchQueryExecutor {
                 LOG.info("Executing query %s\n%s", qf.getName(), query);
                 Statement stmt = conn.createStatement();
                 long start = System.currentTimeMillis();
-                stmt.execute(query);
+                ResultSet rs = stmt.executeQuery(query);
+
+                ResultSetMetaData rsmd = rs.getMetaData();
+                int columnsNumber = rsmd.getColumnCount();
+                while (rs.next()) {
+                    for (int i = 1; i <= columnsNumber; i++) {
+                        if (i > 1) {
+                            System.out.print("|");
+                        }
+                        System.out.print(rs.getString(i));
+                    }
+                    System.out.println();
+                }
+
                 long end = System.currentTimeMillis();
                 LOG.info("Query %s executed in %d ms", qf.getName(),
                         (end - start));
@@ -72,6 +105,7 @@ public class TpchQueryExecutor {
             }
             metrics.add(qm);
         }
+        conn.close();
         return metrics;
     }
 }

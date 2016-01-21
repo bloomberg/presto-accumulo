@@ -27,31 +27,42 @@ import com.google.inject.Inject;
 
 public final class AccumuloSessionProperties {
 
-    private static final String OPTIMIZE_COLUMN_FILTERS_ENABLED = "optimize_column_filters_enabled";
-    private static final String OPTIMIZE_LOCALITY_ENABLED = "optimize_locality_enabled";
-    private static final String OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED = "optimize_range_predicate_pushdown_enabled";
-    private static final String OPTIMIZE_RANGE_SPLITS_ENABLED = "optimize_range_splits_enabled";
-    private static final String SECONDARY_INDEX_ENABLED = "secondary_index_enabled";
+    private static final String INT_OPTIMIZE_COLUMN_FILTERS_ENABLED = "optimize_column_filters_enabled";
+    private static final String INT_OPTIMIZE_LOCALITY_ENABLED = "optimize_locality_enabled";
+    private static final String INT_OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED = "optimize_range_predicate_pushdown_enabled";
+    private static final String INT_OPTIMIZE_RANGE_SPLITS_ENABLED = "optimize_range_splits_enabled";
+    private static final String INT_SECONDARY_INDEX_ENABLED = "secondary_index_enabled";
+
+    public static final String OPTIMIZE_COLUMN_FILTERS_ENABLED = "accumulo."
+            + INT_OPTIMIZE_COLUMN_FILTERS_ENABLED;
+    public static final String OPTIMIZE_LOCALITY_ENABLED = "accumulo."
+            + INT_OPTIMIZE_LOCALITY_ENABLED;
+    public static final String OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED = "accumulo."
+            + INT_OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED;
+    public static final String OPTIMIZE_RANGE_SPLITS_ENABLED = "accumulo."
+            + INT_OPTIMIZE_RANGE_SPLITS_ENABLED;
+    public static final String SECONDARY_INDEX_ENABLED = "accumulo."
+            + INT_SECONDARY_INDEX_ENABLED;
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
     @Inject
     public AccumuloSessionProperties(AccumuloConfig config) {
         sessionProperties = ImmutableList.of(
-                booleanSessionProperty(OPTIMIZE_COLUMN_FILTERS_ENABLED,
+                booleanSessionProperty(INT_OPTIMIZE_COLUMN_FILTERS_ENABLED,
                         "Set to true to enable the column value filter pushdowns.  Default true.",
                         true, false),
-                booleanSessionProperty(OPTIMIZE_LOCALITY_ENABLED,
+                booleanSessionProperty(INT_OPTIMIZE_LOCALITY_ENABLED,
                         "Set to true to enable data locality lookups for scan ranges.  Default true.",
                         true, false),
                 booleanSessionProperty(
-                        OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED,
+                        INT_OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED,
                         "Set to true to enable using predicate pushdowns on row ID.  Typically for testing only.  Default true.",
                         true, false),
-                booleanSessionProperty(OPTIMIZE_RANGE_SPLITS_ENABLED,
+                booleanSessionProperty(INT_OPTIMIZE_RANGE_SPLITS_ENABLED,
                         "Set to true to enable splitting the query by tablets.  Typically for testing only.  Default true.",
                         true, false),
-                booleanSessionProperty(SECONDARY_INDEX_ENABLED,
+                booleanSessionProperty(INT_SECONDARY_INDEX_ENABLED,
                         "Set to true to enable usage of the secondary index on query.  Typically for testing only.  Default true.",
                         true, false));
     }
@@ -62,27 +73,28 @@ public final class AccumuloSessionProperties {
 
     public static boolean isOptimizeColumnFiltersEnabled(
             ConnectorSession session) {
-        return session.getProperty(OPTIMIZE_COLUMN_FILTERS_ENABLED,
+        return session.getProperty(INT_OPTIMIZE_COLUMN_FILTERS_ENABLED,
                 Boolean.class);
     }
 
     public static boolean isOptimizeLocalityEnabled(ConnectorSession session) {
-        return session.getProperty(OPTIMIZE_LOCALITY_ENABLED, Boolean.class);
+        return session.getProperty(INT_OPTIMIZE_LOCALITY_ENABLED,
+                Boolean.class);
     }
 
     public static boolean isOptimizeRangePredicatePushdownEnabled(
             ConnectorSession session) {
-        return session.getProperty(OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED,
-                Boolean.class);
+        return session.getProperty(
+                INT_OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED, Boolean.class);
     }
 
     public static boolean isOptimizeRangeSplitsEnabled(
             ConnectorSession session) {
-        return session.getProperty(OPTIMIZE_RANGE_SPLITS_ENABLED,
+        return session.getProperty(INT_OPTIMIZE_RANGE_SPLITS_ENABLED,
                 Boolean.class);
     }
 
     public static boolean isSecondaryIndexEnabled(ConnectorSession session) {
-        return session.getProperty(SECONDARY_INDEX_ENABLED, Boolean.class);
+        return session.getProperty(INT_SECONDARY_INDEX_ENABLED, Boolean.class);
     }
 }

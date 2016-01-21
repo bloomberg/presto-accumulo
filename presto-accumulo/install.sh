@@ -13,7 +13,7 @@ function check_exit_code() {
 }
 
 echo "Building with Maven... Sorry."
-mvn clean package -DskipTests
+mvn clean install -DskipTests
 check_exit_code
 
 echo "Making plugin directory..."

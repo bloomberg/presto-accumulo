@@ -23,10 +23,17 @@ public class QueryMetrics {
     public Long queryTimeMS;
     public String schema;
     public String script;
+    public boolean optimizeColumnFiltersEnabled;
+    public boolean optimizeRangePredicatePushdownEnabled;
+    public boolean optimizeRangeSplitsEnabled;
+    public boolean secondaryIndexEnabled;
 
     @Override
     public String toString() {
-        return script + "|" + schema + "|" + scale + "|" + numSplits + "|"
-                + queryTimeMS + "|" + error;
+        return schema + "|" + scale + "|" + numSplits + "|" + script + "|"
+                + queryTimeMS + "|" + optimizeColumnFiltersEnabled + "|"
+                + optimizeRangePredicatePushdownEnabled + "|"
+                + optimizeRangeSplitsEnabled + "|" + secondaryIndexEnabled + "|"
+                + error;
     }
 }
