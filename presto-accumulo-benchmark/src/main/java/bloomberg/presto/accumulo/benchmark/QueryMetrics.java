@@ -19,7 +19,7 @@ package bloomberg.presto.accumulo.benchmark;
 import com.facebook.presto.jdbc.QueryStats;
 
 public class QueryMetrics {
-    public Boolean error = false;
+    public boolean error = false;
     public boolean timedout = false;
     public Float scale;
     public Integer numAccumuloSplits;
@@ -77,17 +77,22 @@ public class QueryMetrics {
         bldr.append(secondaryIndexEnabled).append(",");
         bldr.append(error).append(",");
         bldr.append(timedout).append(",");
-        bldr.append(queryStats.getCpuTimeMillis()).append(",");
-        bldr.append(queryStats.getUserTimeMillis()).append(",");
-        bldr.append(queryStats.getWallTimeMillis()).append(",");
-        bldr.append(queryStats.getNodes()).append(",");
-        bldr.append(queryStats.getProcessedBytes()).append(",");
-        bldr.append(queryStats.getProcessedRows()).append(",");
-        bldr.append(queryStats.getCompletedSplits()).append(",");
-        bldr.append(queryStats.getQueuedSplits()).append(",");
-        bldr.append(queryStats.getRunningSplits()).append(",");
-        bldr.append(queryStats.getTotalSplits()).append(",");
-        bldr.append(queryStats.getState());
+
+        if (queryStats != null) {
+            bldr.append(queryStats.getCpuTimeMillis()).append(",");
+            bldr.append(queryStats.getUserTimeMillis()).append(",");
+            bldr.append(queryStats.getWallTimeMillis()).append(",");
+            bldr.append(queryStats.getNodes()).append(",");
+            bldr.append(queryStats.getProcessedBytes()).append(",");
+            bldr.append(queryStats.getProcessedRows()).append(",");
+            bldr.append(queryStats.getCompletedSplits()).append(",");
+            bldr.append(queryStats.getQueuedSplits()).append(",");
+            bldr.append(queryStats.getRunningSplits()).append(",");
+            bldr.append(queryStats.getTotalSplits()).append(",");
+            bldr.append(queryStats.getState());
+        } else {
+            bldr.append(",,,,,,,,,,");
+        }
 
         return bldr.toString();
     }
