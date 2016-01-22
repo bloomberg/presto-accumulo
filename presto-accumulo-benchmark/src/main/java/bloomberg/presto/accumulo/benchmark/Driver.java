@@ -105,15 +105,15 @@ public class Driver
 
                 // Run queries flipping all of the optimization flags on and off
                 boolean[] bvalues = {false, true};
-                for (boolean optimizeColumnFiltersEnabled : bvalues) {
-                    for (boolean optimizeRangePredicatePushdownEnabled : bvalues) {
-                        for (boolean optimizeRangeSplitsEnabled : bvalues) {
-                            for (boolean secondaryIndexEnabled : bvalues) {
-                                runQueries(accConf, host, port, schema, scale, ns, optimizeColumnFiltersEnabled, optimizeRangePredicatePushdownEnabled, optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
-                            }
+                //for (boolean optimizeColumnFiltersEnabled : bvalues) {
+                for (boolean optimizeRangePredicatePushdownEnabled : bvalues) {
+                    for (boolean optimizeRangeSplitsEnabled : bvalues) {
+                        for (boolean secondaryIndexEnabled : bvalues) {
+                            runQueries(accConf, host, port, schema, scale, ns, false, optimizeRangePredicatePushdownEnabled, optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
                         }
                     }
                 }
+                //}
 
                 // Merge tables
                 for (String tableName : splittableTables) {
