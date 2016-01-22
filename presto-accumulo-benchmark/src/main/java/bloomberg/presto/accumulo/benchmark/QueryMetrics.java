@@ -18,7 +18,8 @@ package bloomberg.presto.accumulo.benchmark;
 
 import com.facebook.presto.jdbc.QueryStats;
 
-public class QueryMetrics {
+public class QueryMetrics
+{
     public boolean error = false;
     public boolean timedout = false;
     public Float scale;
@@ -33,7 +34,8 @@ public class QueryMetrics {
     public boolean secondaryIndexEnabled;
     public QueryStats queryStats;
 
-    public static String getHeader() {
+    public static String getHeader()
+    {
         StringBuilder bldr = new StringBuilder();
         bldr.append("Query ID").append(",");
         bldr.append("Script").append(",");
@@ -63,7 +65,8 @@ public class QueryMetrics {
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         StringBuilder bldr = new StringBuilder();
         bldr.append(queryId).append(",");
         bldr.append(script).append(",");
@@ -90,7 +93,8 @@ public class QueryMetrics {
             bldr.append(queryStats.getRunningSplits()).append(",");
             bldr.append(queryStats.getTotalSplits()).append(",");
             bldr.append(queryStats.getState());
-        } else {
+        }
+        else {
             bldr.append(",,,,,,,,,,");
         }
 

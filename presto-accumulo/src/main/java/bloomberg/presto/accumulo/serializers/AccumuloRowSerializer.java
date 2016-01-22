@@ -1,5 +1,20 @@
 package bloomberg.presto.accumulo.serializers;
 
+import bloomberg.presto.accumulo.Types;
+import com.facebook.presto.spi.block.Block;
+import com.facebook.presto.spi.block.BlockBuilder;
+import com.facebook.presto.spi.block.BlockBuilderStatus;
+import com.facebook.presto.spi.block.InterleavedBlockBuilder;
+import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.TypeUtils;
+import com.facebook.presto.spi.type.VarcharType;
+import com.facebook.presto.type.MapType;
+import com.google.common.collect.ImmutableList;
+import io.airlift.slice.Slice;
+import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Value;
+import org.apache.hadoop.io.Text;
+
 import java.io.IOException;
 import java.sql.Date;
 import java.sql.Time;
@@ -10,26 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.accumulo.core.data.Key;
-import org.apache.accumulo.core.data.Value;
-import org.apache.hadoop.io.Text;
-
-import com.facebook.presto.spi.block.Block;
-import com.facebook.presto.spi.block.BlockBuilder;
-import com.facebook.presto.spi.block.BlockBuilderStatus;
-import com.facebook.presto.spi.block.InterleavedBlockBuilder;
-import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.TypeUtils;
-import com.facebook.presto.spi.type.VarcharType;
-import com.facebook.presto.type.MapType;
-import com.google.common.collect.ImmutableList;
-
-import bloomberg.presto.accumulo.Types;
-import io.airlift.slice.Slice;
-
-public interface AccumuloRowSerializer {
-
-    public static AccumuloRowSerializer getDefault() {
+public interface AccumuloRowSerializer
+{
+    public static AccumuloRowSerializer getDefault()
+    {
         return new LexicoderRowSerializer();
     }
 
@@ -41,7 +40,8 @@ public interface AccumuloRowSerializer {
 
     public void reset();
 
-    public void deserialize(Entry<Key, Value> kvp) throws IOException;
+    public void deserialize(Entry<Key, Value> kvp)
+            throws IOException;
 
     public boolean isNull(String name);
 
@@ -85,8 +85,9 @@ public interface AccumuloRowSerializer {
 
     public void setVarchar(Text text, String value);
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static List getArrayFromBlock(Type elementType, Block block) {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static List getArrayFromBlock(Type elementType, Block block)
+    {
         List array = new ArrayList(block.getPositionCount());
         for (int i = 0; i < block.getPositionCount(); ++i) {
             array.add(readObject(elementType, block, i));
@@ -94,7 +95,8 @@ public interface AccumuloRowSerializer {
         return array;
     }
 
-    public static Map<Object, Object> getMapFromBlock(Type type, Block block) {
+    public static Map<Object, Object> getMapFromBlock(Type type, Block block)
+    {
         Map<Object, Object> map = new HashMap<>(block.getPositionCount() / 2);
         Type kt = Types.getKeyType(type);
         Type vt = Types.getValueType(type);
@@ -104,22 +106,21 @@ public interface AccumuloRowSerializer {
         return map;
     }
 
-    public static Block getBlockFromArray(Type elementType, List<?> array) {
-        BlockBuilder bldr = elementType
-                .createBlockBuilder(new BlockBuilderStatus(), array.size());
+    public static Block getBlockFromArray(Type elementType, List<?> array)
+    {
+        BlockBuilder bldr = elementType.createBlockBuilder(new BlockBuilderStatus(), array.size());
         for (Object item : (List<?>) array) {
             writeObject(bldr, elementType, item);
         }
         return bldr.build();
     }
 
-    public static Block getBlockFromMap(Type mapType, Map<?, ?> map) {
+    public static Block getBlockFromMap(Type mapType, Map<?, ?> map)
+    {
         Type keyType = mapType.getTypeParameters().get(0);
         Type valueType = mapType.getTypeParameters().get(1);
 
-        BlockBuilder bldr = new InterleavedBlockBuilder(
-                ImmutableList.of(keyType, valueType), new BlockBuilderStatus(),
-                map.size() * 2);
+        BlockBuilder bldr = new InterleavedBlockBuilder(ImmutableList.of(keyType, valueType), new BlockBuilderStatus(), map.size() * 2);
 
         for (Entry<?, ?> entry : map.entrySet()) {
             writeObject(bldr, keyType, entry.getKey());
@@ -128,8 +129,8 @@ public interface AccumuloRowSerializer {
         return bldr.build();
     }
 
-    public static void writeObject(BlockBuilder bldr, Type elementType,
-            Object o) {
+    public static void writeObject(BlockBuilder bldr, Type elementType, Object o)
+    {
         if (Types.isArrayType(elementType)) {
             BlockBuilder arrayBldr = bldr.beginBlockEntry();
             Type itemType = Types.getElementType(elementType);
@@ -137,7 +138,8 @@ public interface AccumuloRowSerializer {
                 writeObject(arrayBldr, itemType, item);
             }
             bldr.closeEntry();
-        } else if (Types.isMapType(elementType)) {
+        }
+        else if (Types.isMapType(elementType)) {
             Type kt = ((MapType) elementType).getKeyType();
             Type vt = ((MapType) elementType).getValueType();
             BlockBuilder mapBlockBuilder = bldr.beginBlockEntry();
@@ -146,26 +148,27 @@ public interface AccumuloRowSerializer {
                 writeObject(mapBlockBuilder, vt, entry.getValue());
             }
             bldr.closeEntry();
-        } else {
+        }
+        else {
             TypeUtils.writeNativeValue(elementType, bldr, o);
         }
     }
 
-    public static Object readObject(Type type, Block block, int position) {
+    public static Object readObject(Type type, Block block, int position)
+    {
         if (Types.isArrayType(type)) {
             Type elementType = Types.getElementType(type);
-            return getArrayFromBlock(elementType,
-                    block.getObject(position, Block.class));
-        } else if (Types.isMapType(type)) {
-            return getMapFromBlock(type,
-                    block.getObject(position, Block.class));
-        } else {
+            return getArrayFromBlock(elementType, block.getObject(position, Block.class));
+        }
+        else if (Types.isMapType(type)) {
+            return getMapFromBlock(type, block.getObject(position, Block.class));
+        }
+        else {
             if (type.getJavaType() == Slice.class) {
-                Slice slice = (Slice) TypeUtils.readNativeValue(type, block,
-                        position);
-                return type.equals(VarcharType.VARCHAR) ? slice.toStringUtf8()
-                        : slice.getBytes();
-            } else {
+                Slice slice = (Slice) TypeUtils.readNativeValue(type, block, position);
+                return type.equals(VarcharType.VARCHAR) ? slice.toStringUtf8() : slice.getBytes();
+            }
+            else {
                 return TypeUtils.readNativeValue(type, block, position);
             }
         }

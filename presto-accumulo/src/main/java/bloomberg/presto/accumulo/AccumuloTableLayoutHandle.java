@@ -13,40 +13,44 @@
  */
 package bloomberg.presto.accumulo;
 
-import static java.util.Objects.requireNonNull;
-
-import java.util.Objects;
-
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.predicate.TupleDomain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class AccumuloTableLayoutHandle implements ConnectorTableLayoutHandle {
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
+
+public class AccumuloTableLayoutHandle
+        implements ConnectorTableLayoutHandle
+{
     private final AccumuloTableHandle table;
     private final TupleDomain<ColumnHandle> constraint;
 
     @JsonCreator
-    public AccumuloTableLayoutHandle(
-            @JsonProperty("table") AccumuloTableHandle table,
-            @JsonProperty("constraint") TupleDomain<ColumnHandle> constraint) {
+    public AccumuloTableLayoutHandle(@JsonProperty("table") AccumuloTableHandle table, @JsonProperty("constraint") TupleDomain<ColumnHandle> constraint)
+    {
         this.table = table;
         this.constraint = requireNonNull(constraint, "constraint is null");
     }
 
     @JsonProperty
-    public AccumuloTableHandle getTable() {
+    public AccumuloTableHandle getTable()
+    {
         return table;
     }
 
     @JsonProperty
-    public TupleDomain<ColumnHandle> getConstraint() {
+    public TupleDomain<ColumnHandle> getConstraint()
+    {
         return constraint;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(Object o)
+    {
         if (this == o) {
             return true;
         }
@@ -58,12 +62,14 @@ public class AccumuloTableLayoutHandle implements ConnectorTableLayoutHandle {
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         return Objects.hash(table);
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return table.toString();
     }
 }

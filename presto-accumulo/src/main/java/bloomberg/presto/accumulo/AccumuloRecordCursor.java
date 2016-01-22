@@ -13,6 +13,41 @@
  */
 package bloomberg.presto.accumulo;
 
+import bloomberg.presto.accumulo.iterators.AndFilter;
+import bloomberg.presto.accumulo.iterators.NullRowFilter;
+import bloomberg.presto.accumulo.iterators.OrFilter;
+import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter;
+import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter.CompareOp;
+import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
+import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.RecordCursor;
+import com.facebook.presto.spi.StandardErrorCode;
+import com.facebook.presto.spi.block.Block;
+import com.facebook.presto.spi.predicate.Domain;
+import com.facebook.presto.spi.predicate.Marker.Bound;
+import com.facebook.presto.spi.predicate.Range;
+import com.facebook.presto.spi.type.StandardTypes;
+import com.facebook.presto.spi.type.Type;
+import io.airlift.slice.Slice;
+import io.airlift.slice.Slices;
+import org.apache.accumulo.core.client.BatchScanner;
+import org.apache.accumulo.core.client.IteratorSetting;
+import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.io.Text;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.DateType.DATE;
@@ -24,44 +59,9 @@ import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.accumulo.core.client.BatchScanner;
-import org.apache.accumulo.core.client.IteratorSetting;
-import org.apache.accumulo.core.data.Key;
-import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.io.Text;
-
-import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.RecordCursor;
-import com.facebook.presto.spi.StandardErrorCode;
-import com.facebook.presto.spi.block.Block;
-import com.facebook.presto.spi.predicate.Domain;
-import com.facebook.presto.spi.predicate.Marker.Bound;
-import com.facebook.presto.spi.predicate.Range;
-import com.facebook.presto.spi.type.StandardTypes;
-import com.facebook.presto.spi.type.Type;
-
-import bloomberg.presto.accumulo.iterators.AndFilter;
-import bloomberg.presto.accumulo.iterators.NullRowFilter;
-import bloomberg.presto.accumulo.iterators.OrFilter;
-import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter;
-import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter.CompareOp;
-import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
-import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
-import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
-import io.airlift.slice.Slice;
-import io.airlift.slice.Slices;
-
-public class AccumuloRecordCursor implements RecordCursor {
+public class AccumuloRecordCursor
+        implements RecordCursor
+{
     private final List<AccumuloColumnHandle> cHandles;
     private final String[] fieldToColumnName;
 
@@ -74,10 +74,8 @@ public class AccumuloRecordCursor implements RecordCursor {
     private Text prevRowID = new Text();
     private Text rowID = new Text();
 
-    public AccumuloRecordCursor(AccumuloRowSerializer serializer,
-            BatchScanner scan, String rowIdName,
-            List<AccumuloColumnHandle> cHandles,
-            List<AccumuloColumnConstraint> constraints) {
+    public AccumuloRecordCursor(AccumuloRowSerializer serializer, BatchScanner scan, String rowIdName, List<AccumuloColumnHandle> cHandles, List<AccumuloColumnConstraint> constraints)
+    {
         this.cHandles = requireNonNull(cHandles, "cHandles is null");
         this.scan = requireNonNull(scan, "scan is null");
 
@@ -86,16 +84,16 @@ public class AccumuloRecordCursor implements RecordCursor {
 
         // if there are no columns, or the only column is the row ID, then
         // configure a scan iterator to only return the row IDs
-        if (cHandles.size() == 0 || (cHandles.size() == 1
-                && cHandles.get(0).getName().equals(rowIdName))) {
-            this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter",
-                    FirstEntryInRowIterator.class));
+        if (cHandles.size() == 0 || (cHandles.size() == 1 && cHandles.get(0).getName().equals(rowIdName))) {
+            this.scan.addScanIterator(new IteratorSetting(1, "firstentryiter", FirstEntryInRowIterator.class));
 
             fieldToColumnName = new String[1];
             fieldToColumnName[0] = rowIdName;
             this.serializer.setRowOnly(true);
-        } else {
-            Text fam = new Text(), qual = new Text();
+        }
+        else {
+            Text fam = new Text();
+            Text qual = new Text();
             fieldToColumnName = new String[cHandles.size()];
 
             for (int i = 0; i < cHandles.size(); ++i) {
@@ -103,9 +101,7 @@ public class AccumuloRecordCursor implements RecordCursor {
                 fieldToColumnName[i] = cHandle.getName();
 
                 if (!cHandle.getName().equals(rowIdName)) {
-                    this.serializer.setMapping(cHandle.getName(),
-                            cHandle.getColumnFamily(),
-                            cHandle.getColumnQualifier());
+                    this.serializer.setMapping(cHandle.getName(), cHandle.getColumnFamily(), cHandle.getColumnQualifier());
 
                     fam.set(cHandle.getColumnFamily());
                     qual.set(cHandle.getColumnQualifier());
@@ -120,28 +116,33 @@ public class AccumuloRecordCursor implements RecordCursor {
     }
 
     @Override
-    public long getTotalBytes() {
+    public long getTotalBytes()
+    {
         return totalBytes;
     }
 
     @Override
-    public long getCompletedBytes() {
+    public long getCompletedBytes()
+    {
         return totalBytes;
     }
 
     @Override
-    public long getReadTimeNanos() {
+    public long getReadTimeNanos()
+    {
         return 0;
     }
 
     @Override
-    public Type getType(int field) {
+    public Type getType(int field)
+    {
         checkArgument(field < cHandles.size(), "Invalid field index");
         return cHandles.get(field).getType();
     }
 
     @Override
-    public boolean advanceNextPosition() {
+    public boolean advanceNextPosition()
+    {
         try {
             // if the iterator doesn't have any more values
             if (!iterator.hasNext()) {
@@ -153,7 +154,8 @@ public class AccumuloRecordCursor implements RecordCursor {
                     serializer.deserialize(prevKV);
                     prevKV = null;
                     return true;
-                } else {
+                }
+                else {
                     // else we are super done
                     return false;
                 }
@@ -174,7 +176,8 @@ public class AccumuloRecordCursor implements RecordCursor {
                 // ID), deserialize the KV pairs
                 if (rowID.equals(prevRowID) || prevRowID.getLength() == 0) {
                     serializer.deserialize(kv);
-                } else {
+                }
+                else {
                     // if they are different, we need to break out of the loop
                     braek = true;
                 }
@@ -191,81 +194,87 @@ public class AccumuloRecordCursor implements RecordCursor {
 
             // return true to process the row
             return true;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
 
     @Override
-    public boolean isNull(int field) {
+    public boolean isNull(int field)
+    {
         checkArgument(field < cHandles.size(), "Invalid field index");
         return serializer.isNull(fieldToColumnName[field]);
     }
 
     @Override
-    public boolean getBoolean(int field) {
+    public boolean getBoolean(int field)
+    {
         checkFieldType(field, BOOLEAN);
         return serializer.getBoolean(fieldToColumnName[field]);
     }
 
     @Override
-    public double getDouble(int field) {
+    public double getDouble(int field)
+    {
         checkFieldType(field, DOUBLE);
         return serializer.getDouble(fieldToColumnName[field]);
     }
 
     @Override
-    public long getLong(int field) {
+    public long getLong(int field)
+    {
         checkFieldType(field, BIGINT, DATE, TIME, TIMESTAMP);
         switch (getType(field).getDisplayName()) {
-        case StandardTypes.BIGINT:
-            return serializer.getLong(fieldToColumnName[field]);
-        case StandardTypes.DATE:
-            return serializer.getDate(fieldToColumnName[field]).getTime();
-        case StandardTypes.TIME:
-            return serializer.getTime(fieldToColumnName[field]).getTime();
-        case StandardTypes.TIMESTAMP:
-            return serializer.getTimestamp(fieldToColumnName[field]).getTime();
-        default:
-            throw new RuntimeException("Unsupported type " + getType(field));
+            case StandardTypes.BIGINT:
+                return serializer.getLong(fieldToColumnName[field]);
+            case StandardTypes.DATE:
+                return serializer.getDate(fieldToColumnName[field]).getTime();
+            case StandardTypes.TIME:
+                return serializer.getTime(fieldToColumnName[field]).getTime();
+            case StandardTypes.TIMESTAMP:
+                return serializer.getTimestamp(fieldToColumnName[field]).getTime();
+            default:
+                throw new RuntimeException("Unsupported type " + getType(field));
         }
     }
 
     @Override
-    public Object getObject(int field) {
+    public Object getObject(int field)
+    {
         Type type = getType(field);
-        checkArgument(Types.isArrayType(type) || Types.isMapType(type),
-                "Expected field %s to be a type of array or map but is %s",
-                field, type);
+        checkArgument(Types.isArrayType(type) || Types.isMapType(type), "Expected field %s to be a type of array or map but is %s", field, type);
 
         if (Types.isArrayType(type)) {
             return serializer.getArray(fieldToColumnName[field], type);
-        } else {
+        }
+        else {
             return serializer.getMap(fieldToColumnName[field], type);
         }
     }
 
     @Override
-    public Slice getSlice(int field) {
+    public Slice getSlice(int field)
+    {
         checkFieldType(field, VARBINARY, VARCHAR);
         switch (getType(field).getDisplayName()) {
-        case StandardTypes.VARBINARY:
-            return Slices.wrappedBuffer(
-                    serializer.getVarbinary(fieldToColumnName[field]));
-        case StandardTypes.VARCHAR:
-            return Slices
-                    .utf8Slice(serializer.getVarchar(fieldToColumnName[field]));
-        default:
-            throw new RuntimeException("Unsupported type " + getType(field));
+            case StandardTypes.VARBINARY:
+                return Slices.wrappedBuffer(serializer.getVarbinary(fieldToColumnName[field]));
+            case StandardTypes.VARCHAR:
+                return Slices.utf8Slice(serializer.getVarchar(fieldToColumnName[field]));
+            default:
+                throw new RuntimeException("Unsupported type " + getType(field));
         }
     }
 
     @Override
-    public void close() {
+    public void close()
+    {
         scan.close();
     }
 
-    private void checkFieldType(int field, Type... expected) {
+    private void checkFieldType(int field, Type... expected)
+    {
         Type actual = getType(field);
 
         boolean equivalent = false;
@@ -273,13 +282,11 @@ public class AccumuloRecordCursor implements RecordCursor {
             equivalent |= actual.equals(t);
         }
 
-        checkArgument(equivalent,
-                "Expected field %s to be a type of %s but is %s", field,
-                StringUtils.join(expected, ","), actual);
+        checkArgument(equivalent, "Expected field %s to be a type of %s but is %s", field, StringUtils.join(expected, ","), actual);
     }
 
-    private void addColumnIterators(
-            List<AccumuloColumnConstraint> constraints) {
+    private void addColumnIterators(List<AccumuloColumnConstraint> constraints)
+    {
         AtomicInteger priority = new AtomicInteger(1);
         List<IteratorSetting> allSettings = new ArrayList<>();
         for (AccumuloColumnConstraint col : constraints) {
@@ -292,19 +299,17 @@ public class AccumuloRecordCursor implements RecordCursor {
 
             if (Types.isMapType(dom.getType())) {
                 // map types are discrete values
-                for (Object o : dom.getValues().getDiscreteValues()
-                        .getValues()) {
-                    IteratorSetting cfg = getIteratorSetting(priority, col,
-                            CompareOp.EQUAL, dom.getType(), (Block) o);
+                for (Object o : dom.getValues().getDiscreteValues().getValues()) {
+                    IteratorSetting cfg = getIteratorSetting(priority, col, CompareOp.EQUAL, dom.getType(), (Block) o);
                     if (cfg != null) {
                         colSettings.add(cfg);
                     }
                 }
-            } else {
+            }
+            else {
                 // for non-map types (or so it seems), all ranges are ordered
                 for (Range r : dom.getValues().getRanges().getOrderedRanges()) {
-                    IteratorSetting cfg = getFilterSettingFromRange(col, r,
-                            priority);
+                    IteratorSetting cfg = getFilterSettingFromRange(col, r, priority);
                     if (cfg != null) {
                         colSettings.add(cfg);
                     }
@@ -313,82 +318,68 @@ public class AccumuloRecordCursor implements RecordCursor {
 
             if (colSettings.size() == 1) {
                 allSettings.add(colSettings.get(0));
-            } else if (colSettings.size() > 0) {
-                IteratorSetting ore = OrFilter.orFilters(
-                        priority.getAndIncrement(),
-                        colSettings.toArray(new IteratorSetting[0]));
+            }
+            else if (colSettings.size() > 0) {
+                IteratorSetting ore = OrFilter.orFilters(priority.getAndIncrement(), colSettings.toArray(new IteratorSetting[0]));
                 allSettings.add(ore);
             } // else no-op
         }
 
         if (allSettings.size() == 1) {
             this.scan.addScanIterator(allSettings.get(0));
-        } else if (allSettings.size() > 0) {
+        }
+        else if (allSettings.size() > 0) {
             this.scan.addScanIterator(AndFilter.andFilters(1, allSettings));
         }
     }
 
-    private IteratorSetting getNullFilterSetting(AccumuloColumnConstraint col,
-            AtomicInteger priority) {
-
+    private IteratorSetting getNullFilterSetting(AccumuloColumnConstraint col, AtomicInteger priority)
+    {
         String name = String.format("%s:%d", col.getName(), priority.get());
-        return new IteratorSetting(priority.getAndIncrement(), name,
-                NullRowFilter.class, NullRowFilter
-                        .getProperties(col.getFamily(), col.getQualifier()));
+        return new IteratorSetting(priority.getAndIncrement(), name, NullRowFilter.class, NullRowFilter.getProperties(col.getFamily(), col.getQualifier()));
     }
 
-    private IteratorSetting getFilterSettingFromRange(
-            AccumuloColumnConstraint col, Range r, AtomicInteger priority) {
-
+    private IteratorSetting getFilterSettingFromRange(AccumuloColumnConstraint col, Range r, AtomicInteger priority)
+    {
         if (r.isAll()) {
             // [min, max]
             return null;
-        } else if (r.isSingleValue()) {
+        }
+        else if (r.isSingleValue()) {
             // value = value
-            return getIteratorSetting(priority, col, CompareOp.EQUAL,
-                    r.getType(), r.getSingleValue());
-        } else {
+            return getIteratorSetting(priority, col, CompareOp.EQUAL, r.getType(), r.getSingleValue());
+        }
+        else {
             if (r.getLow().isLowerUnbounded()) {
                 // (min, x] WHERE x < 10
-                CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
-                        ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
-                return getIteratorSetting(priority, col, op, r.getType(),
-                        r.getHigh().getValue());
-            } else if (r.getHigh().isUpperUnbounded()) {
+                CompareOp op = r.getHigh().getBound() == Bound.EXACTLY ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
+                return getIteratorSetting(priority, col, op, r.getType(), r.getHigh().getValue());
+            }
+            else if (r.getHigh().isUpperUnbounded()) {
                 // [(x, max] WHERE x > 10
-                CompareOp op = r.getLow().getBound() == Bound.EXACTLY
-                        ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
-                return getIteratorSetting(priority, col, op, r.getType(),
-                        r.getLow().getValue());
-            } else {
+                CompareOp op = r.getLow().getBound() == Bound.EXACTLY ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
+                return getIteratorSetting(priority, col, op, r.getType(), r.getLow().getValue());
+            }
+            else {
                 // WHERE x > 10 AND x < 20
-                CompareOp op = r.getHigh().getBound() == Bound.EXACTLY
-                        ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
+                CompareOp op = r.getHigh().getBound() == Bound.EXACTLY ? CompareOp.LESS_OR_EQUAL : CompareOp.LESS;
 
-                IteratorSetting high = getIteratorSetting(priority, col, op,
-                        r.getType(), r.getHigh().getValue());
+                IteratorSetting high = getIteratorSetting(priority, col, op, r.getType(), r.getHigh().getValue());
 
-                op = r.getLow().getBound() == Bound.EXACTLY
-                        ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
+                op = r.getLow().getBound() == Bound.EXACTLY ? CompareOp.GREATER_OR_EQUAL : CompareOp.GREATER;
 
-                IteratorSetting low = getIteratorSetting(priority, col, op,
-                        r.getType(), r.getLow().getValue());
+                IteratorSetting low = getIteratorSetting(priority, col, op, r.getType(), r.getLow().getValue());
 
-                return AndFilter.andFilters(priority.getAndIncrement(), high,
-                        low);
+                return AndFilter.andFilters(priority.getAndIncrement(), high, low);
             }
         }
     }
 
-    private IteratorSetting getIteratorSetting(AtomicInteger priority,
-            AccumuloColumnConstraint col, CompareOp op, Type type,
-            Object value) {
+    private IteratorSetting getIteratorSetting(AtomicInteger priority, AccumuloColumnConstraint col, CompareOp op, Type type, Object value)
+    {
         String name = String.format("%s:%d", col.getName(), priority.get());
         byte[] valueBytes = LexicoderRowSerializer.encode(type, value);
 
-        return new IteratorSetting(priority.getAndIncrement(), name,
-                SingleColumnValueFilter.class,
-                SingleColumnValueFilter.getProperties(col.getFamily(),
-                        col.getQualifier(), op, valueBytes));
+        return new IteratorSetting(priority.getAndIncrement(), name, SingleColumnValueFilter.class, SingleColumnValueFilter.getProperties(col.getFamily(), col.getQualifier(), op, valueBytes));
     }
 }

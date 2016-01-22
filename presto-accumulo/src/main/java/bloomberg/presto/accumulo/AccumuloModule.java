@@ -13,16 +13,6 @@
  */
 package bloomberg.presto.accumulo;
 
-import static com.facebook.presto.spi.type.TypeSignature.parseTypeSignature;
-import static com.google.common.base.Preconditions.checkArgument;
-import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.json.JsonBinder.jsonBinder;
-import static io.airlift.json.JsonCodec.listJsonCodec;
-import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
-import static java.util.Objects.requireNonNull;
-
-import javax.inject.Inject;
-
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeManager;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -31,22 +21,35 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 
-public class AccumuloModule implements Module {
+import javax.inject.Inject;
+
+import static com.facebook.presto.spi.type.TypeSignature.parseTypeSignature;
+import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.json.JsonBinder.jsonBinder;
+import static io.airlift.json.JsonCodec.listJsonCodec;
+import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
+import static java.util.Objects.requireNonNull;
+
+public class AccumuloModule
+        implements Module
+{
     private final String connectorId;
     private final TypeManager typeManager;
 
-    public AccumuloModule(String connectorId, TypeManager typeManager) {
+    public AccumuloModule(String connectorId, TypeManager typeManager)
+    {
         this.connectorId = requireNonNull(connectorId, "connector id is null");
         this.typeManager = requireNonNull(typeManager, "typeManager is null");
     }
 
     @Override
-    public void configure(Binder binder) {
+    public void configure(Binder binder)
+    {
         binder.bind(TypeManager.class).toInstance(typeManager);
 
         binder.bind(AccumuloConnector.class).in(Scopes.SINGLETON);
-        binder.bind(AccumuloConnectorId.class)
-                .toInstance(new AccumuloConnectorId(connectorId));
+        binder.bind(AccumuloConnectorId.class).toInstance(new AccumuloConnectorId(connectorId));
         binder.bind(AccumuloMetadata.class).in(Scopes.SINGLETON);
         binder.bind(AccumuloClient.class).in(Scopes.SINGLETON);
         binder.bind(AccumuloSplitManager.class).in(Scopes.SINGLETON);
@@ -58,27 +61,26 @@ public class AccumuloModule implements Module {
 
         configBinder(binder).bindConfig(AccumuloConfig.class);
 
-        jsonBinder(binder).addDeserializerBinding(Type.class)
-                .to(TypeDeserializer.class);
-        jsonCodecBinder(binder).bindMapJsonCodec(String.class,
-                listJsonCodec(AccumuloTable.class));
+        jsonBinder(binder).addDeserializerBinding(Type.class).to(TypeDeserializer.class);
+        jsonCodecBinder(binder).bindMapJsonCodec(String.class, listJsonCodec(AccumuloTable.class));
     }
 
     public static final class TypeDeserializer
-            extends FromStringDeserializer<Type> {
+            extends FromStringDeserializer<Type>
+    {
         private static final long serialVersionUID = -3547534717872348558L;
         private final TypeManager typeManager;
 
         @Inject
-        public TypeDeserializer(TypeManager typeManager) {
+        public TypeDeserializer(TypeManager typeManager)
+        {
             super(Type.class);
-            this.typeManager = requireNonNull(typeManager,
-                    "typeManager is null");
+            this.typeManager = requireNonNull(typeManager, "typeManager is null");
         }
 
         @Override
-        protected Type _deserialize(String value,
-                DeserializationContext context) {
+        protected Type _deserialize(String value, DeserializationContext context)
+        {
             Type type = typeManager.getType(parseTypeSignature(value));
             checkArgument(type != null, "Unknown type %s", value);
             return type;

@@ -1,6 +1,11 @@
 package bloomberg.presto.accumulo.benchmark;
 
-import static java.lang.String.format;
+import bloomberg.presto.accumulo.AccumuloConfig;
+import bloomberg.presto.accumulo.AccumuloSessionProperties;
+import com.facebook.presto.jdbc.PrestoConnection;
+import com.facebook.presto.jdbc.PrestoResultSet;
+import com.google.common.io.Files;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -15,16 +20,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.log4j.Logger;
+import static java.lang.String.format;
 
-import com.facebook.presto.jdbc.PrestoConnection;
-import com.facebook.presto.jdbc.PrestoResultSet;
-import com.google.common.io.Files;
-
-import bloomberg.presto.accumulo.AccumuloConfig;
-import bloomberg.presto.accumulo.AccumuloSessionProperties;
-
-public class TpchQueryExecutor {
+public class TpchQueryExecutor
+{
 
     private static final Logger LOG = Logger.getLogger(TpchQueryExecutor.class);
     private static final String JDBC_DRIVER = "com.facebook.presto.jdbc.PrestoDriver";
@@ -34,37 +33,25 @@ public class TpchQueryExecutor {
     static {
         try {
             Class.forName(JDBC_DRIVER);
-        } catch (ClassNotFoundException e) {
+        }
+        catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static QueryMetrics run(AccumuloConfig accConfig, File qf,
-            String host, int port, String schema,
-            boolean optimizeColumnFiltersEnabled,
-            boolean optimizeRangePredicatePushdownEnabled,
-            boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled,
-            int timeout) throws Exception {
+    public static QueryMetrics run(AccumuloConfig accConfig, File qf, String host, int port, String schema, boolean optimizeColumnFiltersEnabled, boolean optimizeRangePredicatePushdownEnabled, boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled, int timeout)
+            throws Exception
+    {
 
-        String dbUrl = String.format("%s%s:%d/%s/%s", SCHEME, host, port,
-                CATALOG, schema);
+        String dbUrl = String.format("%s%s:%d/%s/%s", SCHEME, host, port, CATALOG, schema);
 
         Properties props = new Properties();
         props.setProperty("user", "root");
-        PrestoConnection conn = (PrestoConnection) DriverManager
-                .getConnection(dbUrl, props);
-        conn.setSessionProperty(
-                AccumuloSessionProperties.OPTIMIZE_COLUMN_FILTERS_ENABLED,
-                Boolean.toString(optimizeColumnFiltersEnabled));
-        conn.setSessionProperty(
-                AccumuloSessionProperties.OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED,
-                Boolean.toString(optimizeRangePredicatePushdownEnabled));
-        conn.setSessionProperty(
-                AccumuloSessionProperties.OPTIMIZE_RANGE_SPLITS_ENABLED,
-                Boolean.toString(optimizeRangeSplitsEnabled));
-        conn.setSessionProperty(
-                AccumuloSessionProperties.SECONDARY_INDEX_ENABLED,
-                Boolean.toString(secondaryIndexEnabled));
+        PrestoConnection conn = (PrestoConnection) DriverManager.getConnection(dbUrl, props);
+        conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_COLUMN_FILTERS_ENABLED, Boolean.toString(optimizeColumnFiltersEnabled));
+        conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED, Boolean.toString(optimizeRangePredicatePushdownEnabled));
+        conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_RANGE_SPLITS_ENABLED, Boolean.toString(optimizeRangeSplitsEnabled));
+        conn.setSessionProperty(AccumuloSessionProperties.SECONDARY_INDEX_ENABLED, Boolean.toString(secondaryIndexEnabled));
 
         QueryMetrics qm = new QueryMetrics();
         qm.script = qf.getName();
@@ -78,13 +65,14 @@ public class TpchQueryExecutor {
         Statement stmt = conn.createStatement();
         long start = System.currentTimeMillis();
         ExecutorService ex = Executors.newSingleThreadExecutor();
-        Future<?> future = ex.submit(new Runnable() {
+        Future<?> future = ex.submit(new Runnable()
+        {
 
             @Override
-            public void run() {
+            public void run()
+            {
                 try {
-                    PrestoResultSet rs = (PrestoResultSet) stmt
-                            .executeQuery(query);
+                    PrestoResultSet rs = (PrestoResultSet) stmt.executeQuery(query);
                     qm.queryId = rs.getQueryId();
 
                     ResultSetMetaData rsmd = rs.getMetaData();
@@ -99,7 +87,8 @@ public class TpchQueryExecutor {
                         System.out.println();
                     }
                     qm.queryStats = rs.getStats();
-                } catch (SQLException e) {
+                }
+                catch (SQLException e) {
                     e.printStackTrace();
                     qm.error = true;
                 }
@@ -108,15 +97,15 @@ public class TpchQueryExecutor {
 
         try {
             future.get(timeout, TimeUnit.MINUTES);
-        } catch (TimeoutException e) {
+        }
+        catch (TimeoutException e) {
             future.cancel(true);
             qm.timedout = true;
             LOG.warn("Query hit timeout threshold, cancelling thread");
         }
 
         long end = System.currentTimeMillis();
-        LOG.info(format("Query %s executed in %d ms", qf.getName(),
-                (end - start)));
+        LOG.info(format("Query %s executed in %d ms", qf.getName(), (end - start)));
         qm.queryTimeMS = new Long(end - start);
         conn.close();
 

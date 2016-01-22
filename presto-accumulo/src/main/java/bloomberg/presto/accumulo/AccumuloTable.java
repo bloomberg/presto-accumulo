@@ -13,11 +13,8 @@
  */
 package bloomberg.presto.accumulo;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static java.util.Objects.requireNonNull;
-
-import java.util.List;
-
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
@@ -28,10 +25,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
-import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
+import java.util.List;
 
-public class AccumuloTable {
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
+
+public class AccumuloTable
+{
     private final boolean internal;
     private final String rowIdName;
     private final String schemaName;
@@ -41,23 +41,16 @@ public class AccumuloTable {
     private final String serializerClassName;
 
     @JsonCreator
-    public AccumuloTable(@JsonProperty("schemaName") String schemaName,
-            @JsonProperty("tableName") String tableName,
-            @JsonProperty("columns") List<AccumuloColumnHandle> columns,
-            @JsonProperty("rowIdName") String rowIdName,
-            @JsonProperty("internal") boolean internal,
-            @JsonProperty("serializerClassName") String serializerClassName) {
+    public AccumuloTable(@JsonProperty("schemaName") String schemaName, @JsonProperty("tableName") String tableName, @JsonProperty("columns") List<AccumuloColumnHandle> columns, @JsonProperty("rowIdName") String rowIdName, @JsonProperty("internal") boolean internal, @JsonProperty("serializerClassName") String serializerClassName)
+    {
         this.internal = requireNonNull(internal, "internal is null");
         this.rowIdName = requireNonNull(rowIdName, "rowIdName is null");
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         this.tableName = requireNonNull(tableName, "tableName is null");
-        this.columns = ImmutableList
-                .copyOf(requireNonNull(columns, "columns are null"));
-        this.serializerClassName = requireNonNull(serializerClassName,
-                "serializerClassName is null");
+        this.columns = ImmutableList.copyOf(requireNonNull(columns, "columns are null"));
+        this.serializerClassName = requireNonNull(serializerClassName, "serializerClassName is null");
 
-        ImmutableList.Builder<ColumnMetadata> columnsMetadata = ImmutableList
-                .builder();
+        ImmutableList.Builder<ColumnMetadata> columnsMetadata = ImmutableList.builder();
         for (AccumuloColumnHandle column : this.columns) {
             columnsMetadata.add(column.getColumnMetadata());
         }
@@ -65,77 +58,85 @@ public class AccumuloTable {
     }
 
     @JsonProperty
-    public String getRowIdName() {
+    public String getRowIdName()
+    {
         return rowIdName;
     }
 
     @JsonProperty
-    public String getSchemaName() {
+    public String getSchemaName()
+    {
         return schemaName;
     }
 
     @JsonProperty
-    public String getTableName() {
+    public String getTableName()
+    {
         return tableName;
     }
 
     @JsonIgnore
-    public String getIndexTableName() {
+    public String getIndexTableName()
+    {
         return getFullTableName() + "_idx";
     }
 
     @JsonIgnore
-    public String getFullTableName() {
-        return schemaName.equals("default") ? tableName
-                : schemaName + "." + tableName;
+    public String getFullTableName()
+    {
+        return schemaName.equals("default") ? tableName : schemaName + "." + tableName;
     }
 
     @JsonProperty
-    public List<AccumuloColumnHandle> getColumns() {
+    public List<AccumuloColumnHandle> getColumns()
+    {
         return columns;
     }
 
     @JsonGetter
-    public String getSerializerClassName() {
+    public String getSerializerClassName()
+    {
         return serializerClassName;
     }
 
     @JsonIgnore
-    public List<ColumnMetadata> getColumnsMetadata() {
+    public List<ColumnMetadata> getColumnsMetadata()
+    {
         return columnsMetadata;
     }
 
     @JsonProperty
-    public boolean isInternal() {
+    public boolean isInternal()
+    {
         return internal;
     }
 
     @JsonIgnore
-    public boolean isIndexed() {
+    public boolean isIndexed()
+    {
         return columns.stream().filter(x -> x.isIndexed()).count() > 0;
     }
 
     @SuppressWarnings("unchecked")
     @JsonIgnore
-    public Class<? extends AccumuloRowSerializer> getSerializerClass() {
+    public Class<? extends AccumuloRowSerializer> getSerializerClass()
+    {
         try {
-            return (Class<? extends AccumuloRowSerializer>) Class
-                    .forName(serializerClassName);
-        } catch (ClassNotFoundException e) {
-            throw new PrestoException(StandardErrorCode.USER_ERROR,
-                    "Configured serializer class not found", e);
+            return (Class<? extends AccumuloRowSerializer>) Class.forName(serializerClassName);
+        }
+        catch (ClassNotFoundException e) {
+            throw new PrestoException(StandardErrorCode.USER_ERROR, "Configured serializer class not found", e);
         }
     }
 
-    public SchemaTableName toSchemaTableName() {
+    public SchemaTableName toSchemaTableName()
+    {
         return new SchemaTableName(schemaName, tableName);
     }
 
     @Override
-    public String toString() {
-        return toStringHelper(this).add("schemaName", schemaName)
-                .add("tableName", tableName).add("columns", columns)
-                .add("rowIdName", rowIdName).add("internal", internal)
-                .add("serializerClassName", serializerClassName).toString();
+    public String toString()
+    {
+        return toStringHelper(this).add("schemaName", schemaName).add("tableName", tableName).add("columns", columns).add("rowIdName", rowIdName).add("internal", internal).add("serializerClassName", serializerClassName).toString();
     }
 }

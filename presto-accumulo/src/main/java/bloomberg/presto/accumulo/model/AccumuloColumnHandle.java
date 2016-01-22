@@ -13,19 +13,20 @@
  */
 package bloomberg.presto.accumulo.model;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static java.util.Objects.requireNonNull;
-
-import java.util.Objects;
-
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.type.Type;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Objects;
+
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
+
 public final class AccumuloColumnHandle
-        implements ColumnHandle, Comparable<AccumuloColumnHandle> {
+        implements ColumnHandle, Comparable<AccumuloColumnHandle>
+{
     private final boolean indexed;
     private final String connectorId;
     private final String name;
@@ -36,14 +37,8 @@ public final class AccumuloColumnHandle
     private final String comment;
 
     @JsonCreator
-    public AccumuloColumnHandle(@JsonProperty("connectorId") String connectorId,
-            @JsonProperty("name") String name,
-            @JsonProperty("columnFamily") String columnFamily,
-            @JsonProperty("columnQualifier") String columnQualifier,
-            @JsonProperty("type") Type type,
-            @JsonProperty("ordinal") int ordinal,
-            @JsonProperty("comment") String comment,
-            @JsonProperty("indexed") boolean indexed) {
+    public AccumuloColumnHandle(@JsonProperty("connectorId") String connectorId, @JsonProperty("name") String name, @JsonProperty("columnFamily") String columnFamily, @JsonProperty("columnQualifier") String columnQualifier, @JsonProperty("type") Type type, @JsonProperty("ordinal") int ordinal, @JsonProperty("comment") String comment, @JsonProperty("indexed") boolean indexed)
+    {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.name = requireNonNull(name, "name is null");
         this.columnFamily = columnFamily;
@@ -55,57 +50,67 @@ public final class AccumuloColumnHandle
     }
 
     @JsonProperty
-    public String getConnectorId() {
+    public String getConnectorId()
+    {
         return connectorId;
     }
 
     @JsonProperty
-    public String getName() {
+    public String getName()
+    {
         return name;
     }
 
     @JsonProperty
-    public String getColumnFamily() {
+    public String getColumnFamily()
+    {
         return columnFamily;
     }
 
     @JsonProperty
-    public String getColumnQualifier() {
+    public String getColumnQualifier()
+    {
         return columnQualifier;
     }
 
     @JsonProperty
-    public Type getType() {
+    public Type getType()
+    {
         return type;
     }
 
     @JsonProperty
-    public int getOrdinal() {
+    public int getOrdinal()
+    {
         return ordinal;
     }
 
     @JsonProperty
-    public String getComment() {
+    public String getComment()
+    {
         return comment;
     }
 
-    public ColumnMetadata getColumnMetadata() {
+    public ColumnMetadata getColumnMetadata()
+    {
         return new ColumnMetadata(name, type, false, comment, false);
     }
 
     @JsonProperty
-    public boolean isIndexed() {
+    public boolean isIndexed()
+    {
         return indexed;
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(connectorId, name, columnFamily, columnQualifier,
-                type, ordinal, comment, indexed);
+    public int hashCode()
+    {
+        return Objects.hash(connectorId, name, columnFamily, columnQualifier, type, ordinal, comment, indexed);
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(Object obj)
+    {
         if (this == obj) {
             return true;
         }
@@ -114,27 +119,18 @@ public final class AccumuloColumnHandle
         }
 
         AccumuloColumnHandle other = (AccumuloColumnHandle) obj;
-        return Objects.equals(this.connectorId, other.connectorId)
-                && Objects.equals(this.name, other.name)
-                && Objects.equals(this.columnFamily, other.columnFamily)
-                && Objects.equals(this.columnQualifier, other.columnQualifier)
-                && Objects.equals(this.type, other.type)
-                && Objects.equals(this.ordinal, other.ordinal)
-                && Objects.equals(this.comment, other.comment)
-                && Objects.equals(this.indexed, other.indexed);
+        return Objects.equals(this.connectorId, other.connectorId) && Objects.equals(this.name, other.name) && Objects.equals(this.columnFamily, other.columnFamily) && Objects.equals(this.columnQualifier, other.columnQualifier) && Objects.equals(this.type, other.type) && Objects.equals(this.ordinal, other.ordinal) && Objects.equals(this.comment, other.comment) && Objects.equals(this.indexed, other.indexed);
     }
 
     @Override
-    public String toString() {
-        return toStringHelper(this).add("connectorId", connectorId)
-                .add("name", name).add("columnFamily", columnFamily)
-                .add("columnQualifier", columnQualifier).add("type", type)
-                .add("ordinal", ordinal).add("comment", comment)
-                .add("indexed", indexed).toString();
+    public String toString()
+    {
+        return toStringHelper(this).add("connectorId", connectorId).add("name", name).add("columnFamily", columnFamily).add("columnQualifier", columnQualifier).add("type", type).add("ordinal", ordinal).add("comment", comment).add("indexed", indexed).toString();
     }
 
     @Override
-    public int compareTo(AccumuloColumnHandle o) {
+    public int compareTo(AccumuloColumnHandle o)
+    {
         return Integer.compare(this.getOrdinal(), o.getOrdinal());
     }
 }

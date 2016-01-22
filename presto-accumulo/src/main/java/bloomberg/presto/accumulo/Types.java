@@ -13,43 +13,48 @@
  */
 package bloomberg.presto.accumulo;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.lang.String.format;
-
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 
-public final class Types {
-    private Types() {
-    }
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.String.format;
 
-    public static <A, B extends A> B checkType(A value, Class<B> target,
-            String name) {
+public final class Types
+{
+    private Types()
+    {}
+
+    public static <A, B extends A> B checkType(A value, Class<B> target, String name)
+    {
         if (value == null) {
             throw new NullPointerException(format("%s is null", name));
         }
-        checkArgument(target.isInstance(value), "%s must be of type %s, not %s",
-                name, target.getName(), value.getClass().getName());
+        checkArgument(target.isInstance(value), "%s must be of type %s, not %s", name, target.getName(), value.getClass().getName());
         return target.cast(value);
     }
 
-    public static boolean isArrayType(Type type) {
+    public static boolean isArrayType(Type type)
+    {
         return type.getTypeSignature().getBase().equals(StandardTypes.ARRAY);
     }
 
-    public static boolean isMapType(Type type) {
+    public static boolean isMapType(Type type)
+    {
         return type.getTypeSignature().getBase().equals(StandardTypes.MAP);
     }
 
-    public static Type getElementType(Type type) {
+    public static Type getElementType(Type type)
+    {
         return type.getTypeParameters().get(0);
     }
 
-    public static Type getKeyType(Type type) {
+    public static Type getKeyType(Type type)
+    {
         return type.getTypeParameters().get(0);
     }
 
-    public static Type getValueType(Type type) {
+    public static Type getValueType(Type type)
+    {
         return type.getTypeParameters().get(1);
     }
 }

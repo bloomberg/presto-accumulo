@@ -13,27 +13,27 @@
  */
 package bloomberg.presto.accumulo.metadata;
 
-import static java.util.Objects.requireNonNull;
+import bloomberg.presto.accumulo.AccumuloConfig;
+import bloomberg.presto.accumulo.AccumuloTable;
+import com.facebook.presto.spi.SchemaTableName;
 
 import java.util.Set;
 
-import com.facebook.presto.spi.SchemaTableName;
+import static java.util.Objects.requireNonNull;
 
-import bloomberg.presto.accumulo.AccumuloConfig;
-import bloomberg.presto.accumulo.AccumuloTable;
-
-public abstract class AccumuloMetadataManager {
-
+public abstract class AccumuloMetadataManager
+{
     protected final String connectorId;
     protected final AccumuloConfig config;
 
-    public AccumuloMetadataManager(String connectorId, AccumuloConfig config) {
+    public AccumuloMetadataManager(String connectorId, AccumuloConfig config)
+    {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.config = requireNonNull(config, "config is null");
     }
 
-    public static AccumuloMetadataManager getDefault(String connectorId,
-            AccumuloConfig config) {
+    public static AccumuloMetadataManager getDefault(String connectorId, AccumuloConfig config)
+    {
         return new ZooKeeperMetadataManager(connectorId, config);
     }
 

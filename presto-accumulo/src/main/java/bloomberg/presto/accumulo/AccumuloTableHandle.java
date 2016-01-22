@@ -13,11 +13,6 @@
  */
 package bloomberg.presto.accumulo;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static java.util.Objects.requireNonNull;
-
-import java.util.Objects;
-
 import com.facebook.presto.spi.ConnectorInsertTableHandle;
 import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorTableHandle;
@@ -25,8 +20,15 @@ import com.facebook.presto.spi.SchemaTableName;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
-        ConnectorOutputTableHandle, ConnectorTableHandle {
+import java.util.Objects;
+
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
+
+public final class AccumuloTableHandle
+        implements ConnectorInsertTableHandle,
+        ConnectorOutputTableHandle, ConnectorTableHandle
+{
     private final boolean internal;
     private final String connectorId;
     private final String rowIdName;
@@ -35,63 +37,66 @@ public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
     private final String tableName;
 
     @JsonCreator
-    public AccumuloTableHandle(@JsonProperty("connectorId") String connectorId,
-            @JsonProperty("schemaName") String schemaName,
-            @JsonProperty("tableName") String tableName,
-            @JsonProperty("rowIdName") String rowIdName,
-            @JsonProperty("internal") boolean internal,
-            @JsonProperty("serializerClassName") String serializerClassName) {
+    public AccumuloTableHandle(@JsonProperty("connectorId") String connectorId, @JsonProperty("schemaName") String schemaName, @JsonProperty("tableName") String tableName, @JsonProperty("rowIdName") String rowIdName, @JsonProperty("internal") boolean internal, @JsonProperty("serializerClassName") String serializerClassName)
+    {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.internal = requireNonNull(internal, "internal is null");
         this.rowIdName = requireNonNull(rowIdName, "rowIdName is null");
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
-        this.serializerClassName = requireNonNull(serializerClassName,
-                "serializerClassName is null");
+        this.serializerClassName = requireNonNull(serializerClassName, "serializerClassName is null");
         this.tableName = requireNonNull(tableName, "tableName is null");
     }
 
     @JsonProperty
-    public String getConnectorId() {
+    public String getConnectorId()
+    {
         return connectorId;
     }
 
     @JsonProperty
-    public String getRowIdName() {
+    public String getRowIdName()
+    {
         return rowIdName;
     }
 
     @JsonProperty
-    public String getSchemaName() {
+    public String getSchemaName()
+    {
         return schemaName;
     }
 
     @JsonProperty
-    public String getSerializerClassName() {
+    public String getSerializerClassName()
+    {
         return serializerClassName;
     }
 
     @JsonProperty
-    public String getTableName() {
+    public String getTableName()
+    {
         return tableName;
     }
 
     @JsonProperty
-    public boolean isInternal() {
+    public boolean isInternal()
+    {
         return internal;
     }
 
-    public SchemaTableName toSchemaTableName() {
+    public SchemaTableName toSchemaTableName()
+    {
         return new SchemaTableName(schemaName, tableName);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(connectorId, schemaName, tableName, rowIdName,
-                internal, serializerClassName);
+    public int hashCode()
+    {
+        return Objects.hash(connectorId, schemaName, tableName, rowIdName, internal, serializerClassName);
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(Object obj)
+    {
         if (this == obj) {
             return true;
         }
@@ -100,20 +105,12 @@ public final class AccumuloTableHandle implements ConnectorInsertTableHandle,
         }
 
         AccumuloTableHandle other = (AccumuloTableHandle) obj;
-        return Objects.equals(this.connectorId, other.connectorId)
-                && Objects.equals(this.schemaName, other.schemaName)
-                && Objects.equals(this.tableName, other.tableName)
-                && Objects.equals(this.rowIdName, other.rowIdName)
-                && Objects.equals(this.internal, other.internal)
-                && Objects.equals(this.serializerClassName,
-                        other.serializerClassName);
+        return Objects.equals(this.connectorId, other.connectorId) && Objects.equals(this.schemaName, other.schemaName) && Objects.equals(this.tableName, other.tableName) && Objects.equals(this.rowIdName, other.rowIdName) && Objects.equals(this.internal, other.internal) && Objects.equals(this.serializerClassName, other.serializerClassName);
     }
 
     @Override
-    public String toString() {
-        return toStringHelper(this).add("connectorId", connectorId)
-                .add("schemaName", schemaName).add("tableName", tableName)
-                .add("rowIdName", rowIdName).add("internal", internal)
-                .add("serializerClassName", serializerClassName).toString();
+    public String toString()
+    {
+        return toStringHelper(this).add("connectorId", connectorId).add("schemaName", schemaName).add("tableName", tableName).add("rowIdName", rowIdName).add("internal", internal).add("serializerClassName", serializerClassName).toString();
     }
 }

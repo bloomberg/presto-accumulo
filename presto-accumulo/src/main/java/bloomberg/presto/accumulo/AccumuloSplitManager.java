@@ -13,15 +13,8 @@
  */
 package bloomberg.presto.accumulo;
 
-import static bloomberg.presto.accumulo.Types.checkType;
-import static java.util.Objects.requireNonNull;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import javax.inject.Inject;
-
+import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorSplit;
@@ -34,26 +27,32 @@ import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.predicate.TupleDomain.ColumnDomain;
 import com.google.common.collect.ImmutableList;
 
-import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import javax.inject.Inject;
 
-public class AccumuloSplitManager implements ConnectorSplitManager {
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import static bloomberg.presto.accumulo.Types.checkType;
+import static java.util.Objects.requireNonNull;
+
+public class AccumuloSplitManager
+        implements ConnectorSplitManager
+{
     private final String connectorId;
     private final AccumuloClient client;
 
     @Inject
-    public AccumuloSplitManager(AccumuloConnectorId connectorId,
-            AccumuloClient client) {
-        this.connectorId = requireNonNull(connectorId, "connectorId is null")
-                .toString();
+    public AccumuloSplitManager(AccumuloConnectorId connectorId, AccumuloClient client)
+    {
+        this.connectorId = requireNonNull(connectorId, "connectorId is null").toString();
         this.client = requireNonNull(client, "client is null");
     }
 
     @Override
-    public ConnectorSplitSource getSplits(ConnectorSession session,
-            ConnectorTableLayoutHandle layout) {
-        AccumuloTableLayoutHandle layoutHandle = checkType(layout,
-                AccumuloTableLayoutHandle.class, "layout");
+    public ConnectorSplitSource getSplits(ConnectorSession session, ConnectorTableLayoutHandle layout)
+    {
+        AccumuloTableLayoutHandle layoutHandle = checkType(layout, AccumuloTableLayoutHandle.class, "layout");
         AccumuloTableHandle tableHandle = layoutHandle.getTable();
 
         String schemaName = tableHandle.getSchemaName();
@@ -62,23 +61,19 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
 
         List<AccumuloColumnConstraint> constraints;
         if (AccumuloSessionProperties.isOptimizeColumnFiltersEnabled(session)) {
-            constraints = getColumnConstraints(rowIdName,
-                    layoutHandle.getConstraint());
-        } else {
+            constraints = getColumnConstraints(rowIdName, layoutHandle.getConstraint());
+        }
+        else {
             constraints = ImmutableList.of();
         }
 
         List<ConnectorSplit> cSplits = new ArrayList<>();
         Domain rDom = getRangeDomain(rowIdName, layoutHandle.getConstraint());
 
-        List<TabletSplitMetadata> tSplits = client.getTabletSplits(session,
-                schemaName, tableName, rDom,
-                getColumnConstraints(rowIdName, layoutHandle.getConstraint()));
+        List<TabletSplitMetadata> tSplits = client.getTabletSplits(session, schemaName, tableName, rDom, getColumnConstraints(rowIdName, layoutHandle.getConstraint()));
 
         for (TabletSplitMetadata smd : tSplits) {
-            AccumuloSplit accSplit = new AccumuloSplit(connectorId, schemaName,
-                    tableName, rowIdName, tableHandle.getSerializerClassName(),
-                    smd.getRangeHandles(), constraints, smd.getHostPort());
+            AccumuloSplit accSplit = new AccumuloSplit(connectorId, schemaName, tableName, rowIdName, tableHandle.getSerializerClassName(), smd.getRangeHandles(), constraints, smd.getHostPort());
             cSplits.add(accSplit);
         }
 
@@ -87,13 +82,10 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         return new FixedSplitSource(connectorId, cSplits);
     }
 
-    private Domain getRangeDomain(String rowIdName,
-            TupleDomain<ColumnHandle> constraint) {
-        for (ColumnDomain<ColumnHandle> cd : constraint.getColumnDomains()
-                .get()) {
-
-            AccumuloColumnHandle col = checkType(cd.getColumn(),
-                    AccumuloColumnHandle.class, "column handle");
+    private Domain getRangeDomain(String rowIdName, TupleDomain<ColumnHandle> constraint)
+    {
+        for (ColumnDomain<ColumnHandle> cd : constraint.getColumnDomains().get()) {
+            AccumuloColumnHandle col = checkType(cd.getColumn(), AccumuloColumnHandle.class, "column handle");
             if (col.getName().equals(rowIdName)) {
                 return cd.getDomain();
             }
@@ -101,18 +93,14 @@ public class AccumuloSplitManager implements ConnectorSplitManager {
         return null;
     }
 
-    private List<AccumuloColumnConstraint> getColumnConstraints(
-            String rowIdName, TupleDomain<ColumnHandle> constraint) {
+    private List<AccumuloColumnConstraint> getColumnConstraints(String rowIdName, TupleDomain<ColumnHandle> constraint)
+    {
         List<AccumuloColumnConstraint> acc = new ArrayList<>();
-        for (ColumnDomain<ColumnHandle> cd : constraint.getColumnDomains()
-                .get()) {
-            AccumuloColumnHandle col = checkType(cd.getColumn(),
-                    AccumuloColumnHandle.class, "column handle");
+        for (ColumnDomain<ColumnHandle> cd : constraint.getColumnDomains().get()) {
+            AccumuloColumnHandle col = checkType(cd.getColumn(), AccumuloColumnHandle.class, "column handle");
 
             if (!col.getName().equals(rowIdName)) {
-                acc.add(new AccumuloColumnConstraint(col.getName(),
-                        col.getColumnFamily(), col.getColumnQualifier(),
-                        cd.getDomain(), col.isIndexed()));
+                acc.add(new AccumuloColumnConstraint(col.getName(), col.getColumnFamily(), col.getColumnQualifier(), cd.getDomain(), col.isIndexed()));
             }
         }
 

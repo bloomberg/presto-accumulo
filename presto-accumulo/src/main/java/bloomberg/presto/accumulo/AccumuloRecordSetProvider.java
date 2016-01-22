@@ -13,18 +13,7 @@
  */
 package bloomberg.presto.accumulo;
 
-import static bloomberg.presto.accumulo.Types.checkType;
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
-
-import java.util.List;
-
-import javax.inject.Inject;
-
-import org.apache.accumulo.core.client.Connector;
-import org.apache.accumulo.core.client.ZooKeeperInstance;
-import org.apache.accumulo.core.client.security.tokens.PasswordToken;
-
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.ConnectorSession;
@@ -33,47 +22,52 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordSet;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.google.common.collect.ImmutableList;
+import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.ZooKeeperInstance;
+import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import javax.inject.Inject;
 
-public class AccumuloRecordSetProvider implements ConnectorRecordSetProvider {
+import java.util.List;
+
+import static bloomberg.presto.accumulo.Types.checkType;
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
+public class AccumuloRecordSetProvider
+        implements ConnectorRecordSetProvider
+{
     private final String connectorId;
     private final AccumuloConfig config;
     private final Connector conn;
 
     @Inject
-    public AccumuloRecordSetProvider(AccumuloConnectorId connectorId,
-            AccumuloConfig config) {
-        this.connectorId = requireNonNull(connectorId, "connectorId is null")
-                .toString();
+    public AccumuloRecordSetProvider(AccumuloConnectorId connectorId, AccumuloConfig config)
+    {
+        this.connectorId = requireNonNull(connectorId, "connectorId is null").toString();
         this.config = requireNonNull(config, "config is null");
 
-        ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(),
-                config.getZooKeepers());
+        ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
         try {
-            conn = inst.getConnector(config.getUsername(),
-                    new PasswordToken(config.getPassword().getBytes()));
-        } catch (Exception e) {
+            conn = inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword().getBytes()));
+        }
+        catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
 
     @Override
-    public RecordSet getRecordSet(ConnectorSession session,
-            ConnectorSplit split, List<? extends ColumnHandle> columns) {
+    public RecordSet getRecordSet(ConnectorSession session, ConnectorSplit split, List<? extends ColumnHandle> columns)
+    {
         requireNonNull(split, "partitionChunk is null");
         AccumuloSplit accSplit = checkType(split, AccumuloSplit.class, "split");
-        checkArgument(accSplit.getConnectorId().equals(connectorId),
-                "split is not for this connector");
+        checkArgument(accSplit.getConnectorId().equals(connectorId), "split is not for this connector");
 
-        ImmutableList.Builder<AccumuloColumnHandle> handles = ImmutableList
-                .builder();
+        ImmutableList.Builder<AccumuloColumnHandle> handles = ImmutableList.builder();
         for (ColumnHandle handle : columns) {
-            handles.add(
-                    checkType(handle, AccumuloColumnHandle.class, "handle"));
+            handles.add(checkType(handle, AccumuloColumnHandle.class, "handle"));
         }
 
-        return new AccumuloRecordSet(session, config, accSplit, handles.build(),
-                conn);
+        return new AccumuloRecordSet(session, config, accSplit, handles.build(), conn);
     }
 }

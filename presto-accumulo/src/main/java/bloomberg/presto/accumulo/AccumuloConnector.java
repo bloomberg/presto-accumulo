@@ -13,12 +13,6 @@
  */
 package bloomberg.presto.accumulo;
 
-import static java.util.Objects.requireNonNull;
-
-import java.util.List;
-
-import javax.inject.Inject;
-
 import com.facebook.presto.spi.Connector;
 import com.facebook.presto.spi.ConnectorHandleResolver;
 import com.facebook.presto.spi.ConnectorMetadata;
@@ -26,11 +20,18 @@ import com.facebook.presto.spi.ConnectorPageSinkProvider;
 import com.facebook.presto.spi.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.ConnectorSplitManager;
 import com.facebook.presto.spi.session.PropertyMetadata;
-
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.log.Logger;
 
-public class AccumuloConnector implements Connector {
+import javax.inject.Inject;
+
+import java.util.List;
+
+import static java.util.Objects.requireNonNull;
+
+public class AccumuloConnector
+        implements Connector
+{
     private static final Logger LOG = Logger.get(AccumuloConnector.class);
 
     private final LifeCycleManager lifeCycleManager;
@@ -43,70 +44,67 @@ public class AccumuloConnector implements Connector {
     private final AccumuloTableProperties tableProperties;
 
     @Inject
-    public AccumuloConnector(LifeCycleManager lifeCycleManager,
-            AccumuloMetadata metadata, AccumuloSplitManager splitManager,
-            AccumuloRecordSetProvider recordSetProvider,
-            AccumuloHandleResolver handleResolver,
-            AccumuloPageSinkProvider pageSinkProvider,
-            AccumuloSessionProperties sessionProperties,
-            AccumuloTableProperties tableProperties) {
-        this.lifeCycleManager = requireNonNull(lifeCycleManager,
-                "lifeCycleManager is null");
+    public AccumuloConnector(LifeCycleManager lifeCycleManager, AccumuloMetadata metadata, AccumuloSplitManager splitManager, AccumuloRecordSetProvider recordSetProvider, AccumuloHandleResolver handleResolver, AccumuloPageSinkProvider pageSinkProvider, AccumuloSessionProperties sessionProperties, AccumuloTableProperties tableProperties)
+    {
+        this.lifeCycleManager = requireNonNull(lifeCycleManager, "lifeCycleManager is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
-        this.splitManager = requireNonNull(splitManager,
-                "splitManager is null");
-        this.recordSetProvider = requireNonNull(recordSetProvider,
-                "recordSetProvider is null");
-        this.handleResolver = requireNonNull(handleResolver,
-                "handleResolver is null");
-        this.pageSinkProvider = requireNonNull(pageSinkProvider,
-                "pageSinkProvider is null");
-        this.sessionProperties = requireNonNull(sessionProperties,
-                "sessionProperties is null");
-        this.tableProperties = requireNonNull(tableProperties,
-                "tableProperties is null");
+        this.splitManager = requireNonNull(splitManager, "splitManager is null");
+        this.recordSetProvider = requireNonNull(recordSetProvider, "recordSetProvider is null");
+        this.handleResolver = requireNonNull(handleResolver, "handleResolver is null");
+        this.pageSinkProvider = requireNonNull(pageSinkProvider, "pageSinkProvider is null");
+        this.sessionProperties = requireNonNull(sessionProperties, "sessionProperties is null");
+        this.tableProperties = requireNonNull(tableProperties, "tableProperties is null");
     }
 
     @Override
-    public ConnectorMetadata getMetadata() {
+    public ConnectorMetadata getMetadata()
+    {
         return metadata;
     }
 
     @Override
-    public ConnectorSplitManager getSplitManager() {
+    public ConnectorSplitManager getSplitManager()
+    {
         return splitManager;
     }
 
     @Override
-    public ConnectorRecordSetProvider getRecordSetProvider() {
+    public ConnectorRecordSetProvider getRecordSetProvider()
+    {
         return recordSetProvider;
     }
 
     @Override
-    public ConnectorPageSinkProvider getPageSinkProvider() {
+    public ConnectorPageSinkProvider getPageSinkProvider()
+    {
         return pageSinkProvider;
     }
 
     @Override
-    public List<PropertyMetadata<?>> getTableProperties() {
+    public List<PropertyMetadata<?>> getTableProperties()
+    {
         return tableProperties.getTableProperties();
     }
 
     @Override
-    public List<PropertyMetadata<?>> getSessionProperties() {
+    public List<PropertyMetadata<?>> getSessionProperties()
+    {
         return sessionProperties.getSessionProperties();
     }
 
     @Override
-    public ConnectorHandleResolver getHandleResolver() {
+    public ConnectorHandleResolver getHandleResolver()
+    {
         return handleResolver;
     }
 
     @Override
-    public final void shutdown() {
+    public final void shutdown()
+    {
         try {
             lifeCycleManager.stop();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             LOG.error(e, "Error shutting down connector");
         }
     }

@@ -13,17 +13,6 @@
  */
 package bloomberg.presto.accumulo;
 
-import static bloomberg.presto.accumulo.Types.checkType;
-import static java.util.Objects.requireNonNull;
-
-import javax.inject.Inject;
-
-import org.apache.accumulo.core.client.AccumuloException;
-import org.apache.accumulo.core.client.AccumuloSecurityException;
-import org.apache.accumulo.core.client.Connector;
-import org.apache.accumulo.core.client.ZooKeeperInstance;
-import org.apache.accumulo.core.client.security.tokens.PasswordToken;
-
 import com.facebook.presto.spi.ConnectorInsertTableHandle;
 import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorPageSink;
@@ -31,41 +20,50 @@ import com.facebook.presto.spi.ConnectorPageSinkProvider;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
+import org.apache.accumulo.core.client.AccumuloException;
+import org.apache.accumulo.core.client.AccumuloSecurityException;
+import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.ZooKeeperInstance;
+import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 
-public class AccumuloPageSinkProvider implements ConnectorPageSinkProvider {
+import javax.inject.Inject;
+
+import static bloomberg.presto.accumulo.Types.checkType;
+import static java.util.Objects.requireNonNull;
+
+public class AccumuloPageSinkProvider
+        implements ConnectorPageSinkProvider
+{
     private final AccumuloClient client;
     private final Connector conn;
 
     @Inject
-    public AccumuloPageSinkProvider(AccumuloConfig config,
-            AccumuloClient client) {
+    public AccumuloPageSinkProvider(AccumuloConfig config, AccumuloClient client)
+    {
         this.client = requireNonNull(client, "client is null");
         requireNonNull(config, "config is null");
 
-        ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(),
-                config.getZooKeepers());
+        ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
         try {
-            conn = inst.getConnector(config.getUsername(),
-                    new PasswordToken(config.getPassword().getBytes()));
-        } catch (AccumuloException | AccumuloSecurityException e) {
+            conn = inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword().getBytes()));
+        }
+        catch (AccumuloException | AccumuloSecurityException e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
 
     @Override
-    public ConnectorPageSink createPageSink(ConnectorSession session,
-            ConnectorOutputTableHandle outputTableHandle) {
-        AccumuloTableHandle tHandle = checkType(outputTableHandle,
-                AccumuloTableHandle.class, "table");
+    public ConnectorPageSink createPageSink(ConnectorSession session, ConnectorOutputTableHandle outputTableHandle)
+    {
+        AccumuloTableHandle tHandle = checkType(outputTableHandle, AccumuloTableHandle.class, "table");
         AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
         return new AccumuloPageSink(conn, table);
     }
 
     @Override
-    public ConnectorPageSink createPageSink(ConnectorSession session,
-            ConnectorInsertTableHandle insertTableHandle) {
-        AccumuloTableHandle tHandle = checkType(insertTableHandle,
-                AccumuloTableHandle.class, "table");
+    public ConnectorPageSink createPageSink(ConnectorSession session, ConnectorInsertTableHandle insertTableHandle)
+    {
+        AccumuloTableHandle tHandle = checkType(insertTableHandle, AccumuloTableHandle.class, "table");
         AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
         return new AccumuloPageSink(conn, table);
     }

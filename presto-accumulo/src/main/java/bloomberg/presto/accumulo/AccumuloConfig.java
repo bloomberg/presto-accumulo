@@ -13,11 +13,12 @@
  */
 package bloomberg.presto.accumulo;
 
-import javax.validation.constraints.NotNull;
-
 import io.airlift.configuration.Config;
 
-public class AccumuloConfig {
+import javax.validation.constraints.NotNull;
+
+public class AccumuloConfig
+{
     private String instance;
     private String zooKeepers;
     private String username;
@@ -25,56 +26,66 @@ public class AccumuloConfig {
     private String zkMetadataRoot;
 
     @NotNull
-    public String getInstance() {
+    public String getInstance()
+    {
         return this.instance;
     }
 
     @Config("instance")
-    public AccumuloConfig setInstance(String instance) {
+    public AccumuloConfig setInstance(String instance)
+    {
         this.instance = instance;
         return this;
     }
 
     @NotNull
-    public String getZooKeepers() {
+    public String getZooKeepers()
+    {
         return this.zooKeepers;
     }
 
     @Config("zookeepers")
-    public AccumuloConfig setZooKeepers(String zooKeepers) {
+    public AccumuloConfig setZooKeepers(String zooKeepers)
+    {
         this.zooKeepers = zooKeepers;
         return this;
     }
 
     @NotNull
-    public String getUsername() {
+    public String getUsername()
+    {
         return this.username;
     }
 
     @Config("username")
-    public AccumuloConfig setUsername(String username) {
+    public AccumuloConfig setUsername(String username)
+    {
         this.username = username;
         return this;
     }
 
     @NotNull
-    public String getPassword() {
+    public String getPassword()
+    {
         return this.password;
     }
 
     @Config("password")
-    public AccumuloConfig setPassword(String password) {
+    public AccumuloConfig setPassword(String password)
+    {
         this.password = password;
         return this;
     }
 
     @NotNull
-    public String getZkMetadataRoot() {
+    public String getZkMetadataRoot()
+    {
         return zkMetadataRoot == null ? "/presto-accumulo" : zkMetadataRoot;
     }
 
     @Config("zookeeper.metadata.root")
-    public void setZkMetadataRoot(String zkMetadataRoot) {
+    public void setZkMetadataRoot(String zkMetadataRoot)
+    {
         this.zkMetadataRoot = zkMetadataRoot;
     }
 }

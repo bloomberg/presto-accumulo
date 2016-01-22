@@ -13,15 +13,8 @@
  */
 package bloomberg.presto.accumulo;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.collect.Lists.newArrayList;
-import static java.util.Objects.requireNonNull;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.accumulo.core.data.Range;
-
+import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.PrestoException;
@@ -31,11 +24,18 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import org.apache.accumulo.core.data.Range;
 
-import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
-import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
+import java.util.ArrayList;
+import java.util.List;
 
-public class AccumuloSplit implements ConnectorSplit {
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.collect.Lists.newArrayList;
+import static java.util.Objects.requireNonNull;
+
+public class AccumuloSplit
+        implements ConnectorSplit
+{
     private final boolean remotelyAccessible;
     private final String connectorId;
     private final String hostPort;
@@ -48,14 +48,8 @@ public class AccumuloSplit implements ConnectorSplit {
     private List<AccumuloColumnConstraint> constraints;
 
     @JsonCreator
-    public AccumuloSplit(@JsonProperty("connectorId") String connectorId,
-            @JsonProperty("schemaName") String schemaName,
-            @JsonProperty("tableName") String tableName,
-            @JsonProperty("rowIdName") String rowIdName,
-            @JsonProperty("serializerClassName") String serializerClassName,
-            @JsonProperty("rHandles") List<RangeHandle> rHandles,
-            @JsonProperty("constraints") List<AccumuloColumnConstraint> constraints,
-            @JsonProperty("hostPort") String hostPort) {
+    public AccumuloSplit(@JsonProperty("connectorId") String connectorId, @JsonProperty("schemaName") String schemaName, @JsonProperty("tableName") String tableName, @JsonProperty("rowIdName") String rowIdName, @JsonProperty("serializerClassName") String serializerClassName, @JsonProperty("rHandles") List<RangeHandle> rHandles, @JsonProperty("constraints") List<AccumuloColumnConstraint> constraints, @JsonProperty("hostPort") String hostPort)
+    {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.rowIdName = requireNonNull(rowIdName, "rowIdName is null");
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
@@ -74,99 +68,106 @@ public class AccumuloSplit implements ConnectorSplit {
     }
 
     @JsonProperty
-    public String getConnectorId() {
+    public String getConnectorId()
+    {
         return connectorId;
     }
 
     @JsonProperty
-    public String getHostPort() {
+    public String getHostPort()
+    {
         return hostPort;
     }
 
     @JsonProperty
-    public String getRowIdName() {
+    public String getRowIdName()
+    {
         return rowIdName;
     }
 
     @JsonProperty
-    public String getSchemaName() {
+    public String getSchemaName()
+    {
         return schemaName;
     }
 
     @JsonIgnore
-    public String getFullTableName() {
-        return (this.getSchemaName().equals("default") ? ""
-                : this.getSchemaName() + ".") + this.getTableName();
+    public String getFullTableName()
+    {
+        return (this.getSchemaName().equals("default") ? "" : this.getSchemaName() + ".") + this.getTableName();
     }
 
     @JsonProperty
-    public String getTableName() {
+    public String getTableName()
+    {
         return tableName;
     }
 
     @JsonGetter
-    public String getSerializerClassName() {
+    public String getSerializerClassName()
+    {
         return this.serializerClassName;
     }
 
     @JsonProperty
-    public List<RangeHandle> getRangeHandles() {
+    public List<RangeHandle> getRangeHandles()
+    {
         return rHandles;
     }
 
     @JsonIgnore
-    public List<Range> getRanges() {
+    public List<Range> getRanges()
+    {
         List<Range> ranges = new ArrayList<>();
         rHandles.stream().forEach(x -> ranges.add(x.getRange()));
         return ranges;
     }
 
     @JsonSetter
-    public void setRangeHandles(List<RangeHandle> rhandles) {
+    public void setRangeHandles(List<RangeHandle> rhandles)
+    {
         this.rHandles = rhandles;
     }
 
     @JsonProperty
-    public List<AccumuloColumnConstraint> getConstraints() {
+    public List<AccumuloColumnConstraint> getConstraints()
+    {
         return constraints;
     }
 
     @SuppressWarnings("unchecked")
     @JsonIgnore
-    public Class<? extends AccumuloRowSerializer> getSerializerClass() {
+    public Class<? extends AccumuloRowSerializer> getSerializerClass()
+    {
         try {
-            return (Class<? extends AccumuloRowSerializer>) Class
-                    .forName(serializerClassName);
-        } catch (ClassNotFoundException e) {
-            throw new PrestoException(StandardErrorCode.USER_ERROR,
-                    "Configured serializer class not found", e);
+            return (Class<? extends AccumuloRowSerializer>) Class.forName(serializerClassName);
+        }
+        catch (ClassNotFoundException e) {
+            throw new PrestoException(StandardErrorCode.USER_ERROR, "Configured serializer class not found", e);
         }
     }
 
     @Override
-    public boolean isRemotelyAccessible() {
+    public boolean isRemotelyAccessible()
+    {
         return remotelyAccessible;
     }
 
     @Override
-    public List<HostAddress> getAddresses() {
+    public List<HostAddress> getAddresses()
+    {
         return addresses;
     }
 
     @Override
-    public Object getInfo() {
+    public Object getInfo()
+    {
         return this;
     }
 
     @Override
-    public String toString() {
-        return toStringHelper(this).add("connectorId", connectorId)
-                .add("schemaName", schemaName).add("tableName", tableName)
-                .add("rowIdName", rowIdName)
-                .add("serializerClassName", serializerClassName)
-                .add("remotelyAccessible", remotelyAccessible)
-                .add("addresses", addresses).add("numHandles", rHandles.size())
-                .add("constraints", constraints).add("hostPort", hostPort)
-                .toString();
+    public String toString()
+    {
+        return toStringHelper(this).add("connectorId", connectorId).add("schemaName", schemaName).add("tableName", tableName).add("rowIdName", rowIdName).add("serializerClassName", serializerClassName).add("remotelyAccessible", remotelyAccessible).add("addresses", addresses).add("numHandles", rHandles.size()).add("constraints", constraints).add("hostPort", hostPort).toString();
     }
 }

@@ -1,5 +1,10 @@
 package bloomberg.presto.accumulo.index;
 
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import org.apache.accumulo.core.data.ColumnUpdate;
+import org.apache.accumulo.core.data.Mutation;
+import org.apache.commons.lang.ArrayUtils;
+
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,23 +14,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.accumulo.core.data.ColumnUpdate;
-import org.apache.accumulo.core.data.Mutation;
-import org.apache.commons.lang.ArrayUtils;
-
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
-
-public class Utils {
+public class Utils
+{
     private static final byte[] EMPTY_BYTES = new byte[0];
     private static final byte UNDERSCORE = '_';
 
-    public static void indexMutation(final Mutation m,
-            final Map<ByteBuffer, Set<ByteBuffer>> indexColumns,
-            final Collection<Mutation> updates) {
+    private Utils()
+    {}
 
+    public static void indexMutation(final Mutation m, final Map<ByteBuffer, Set<ByteBuffer>> indexColumns, final Collection<Mutation> updates)
+    {
         // for each column update in this mutation
         for (ColumnUpdate cu : m.getUpdates()) {
-
             // get the column qualifiers we want to index for this column family
             // (if any)
             ByteBuffer cf = ByteBuffer.wrap(cu.getColumnFamily());
@@ -44,9 +44,7 @@ public class Utils {
 
                     // create the mutation and add it to the given collection
                     Mutation mIdx = new Mutation(cu.getValue());
-                    mIdx.put(ArrayUtils.addAll(
-                            ArrayUtils.add(cu.getColumnFamily(), UNDERSCORE),
-                            cu.getColumnQualifier()), m.getRow(), EMPTY_BYTES);
+                    mIdx.put(ArrayUtils.addAll(ArrayUtils.add(cu.getColumnFamily(), UNDERSCORE), cu.getColumnQualifier()), m.getRow(), EMPTY_BYTES);
 
                     updates.add(mIdx);
                 }
@@ -54,12 +52,11 @@ public class Utils {
         }
     }
 
-    public static Map<ByteBuffer, Set<ByteBuffer>> getMapOfIndexedColumns(
-            List<AccumuloColumnHandle> columns) {
+    public static Map<ByteBuffer, Set<ByteBuffer>> getMapOfIndexedColumns(List<AccumuloColumnHandle> columns)
+    {
         Map<ByteBuffer, Set<ByteBuffer>> indexColumns = new HashMap<>();
 
-        for (AccumuloColumnHandle col : columns.stream()
-                .filter(x -> x.isIndexed()).collect(Collectors.toList())) {
+        for (AccumuloColumnHandle col : columns.stream().filter(x -> x.isIndexed()).collect(Collectors.toList())) {
             ByteBuffer cf = ByteBuffer.wrap(col.getColumnFamily().getBytes());
             Set<ByteBuffer> qualifies = indexColumns.get(cf);
             if (qualifies == null) {

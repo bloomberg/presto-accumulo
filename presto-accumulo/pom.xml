@@ -11,6 +11,10 @@
 
     <properties>
         <accumulo.version>1.6.2</accumulo.version>
+        <air.build.jvmsize>1024m</air.build.jvmsize>
+        <air.check.fail-checkstyle>true</air.check.fail-checkstyle>
+        <air.check.skip-checkstyle>false</air.check.skip-checkstyle>
+        <air.javadoc.lint>all</air.javadoc.lint>
         <curator.version>2.9.1</curator.version>
         <jackson.version>2.4.4</jackson.version>
         <javax.inject.version>1</javax.inject.version>
@@ -18,6 +22,7 @@
         <mavenPluginPluginVersion>3.2</mavenPluginPluginVersion>
         <presto.version>0.131</presto.version>
         <project.build.targetJdk>1.8</project.build.targetJdk>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <zookeeper.version>3.4.6</zookeeper.version>
     </properties>
 
@@ -38,6 +43,54 @@
                 <artifactId>presto-maven-plugin</artifactId>
                 <version>0.1.6</version>
                 <extensions>true</extensions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.16</version>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${air.check.skip-checkstyle}</skip>
+                            <failOnViolation>${air.check.fail-checkstyle}</failOnViolation>
+                            <consoleOutput>true</consoleOutput>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                            <configLocation>${project.basedir}/src/checkstyle/checks.xml</configLocation>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>6.11.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9</version>
+                <configuration>
+                    <source>${project.build.targetJdk}</source>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <maxmemory>${air.build.jvmsize}</maxmemory>
+                    <additionalparam>-Xdoclint:${air.javadoc.lint}</additionalparam>
+                    <verbose>true</verbose>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

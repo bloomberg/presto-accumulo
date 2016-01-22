@@ -13,29 +13,34 @@
  */
 package bloomberg.presto.accumulo;
 
-import static java.util.Objects.requireNonNull;
-
 import java.util.Objects;
 
-public final class AccumuloConnectorId {
+import static java.util.Objects.requireNonNull;
+
+public final class AccumuloConnectorId
+{
     private final String id;
 
-    public AccumuloConnectorId(String id) {
+    public AccumuloConnectorId(String id)
+    {
         this.id = requireNonNull(id, "id is null");
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return id;
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         return Objects.hash(id);
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(Object obj)
+    {
         if (this == obj) {
             return true;
         }

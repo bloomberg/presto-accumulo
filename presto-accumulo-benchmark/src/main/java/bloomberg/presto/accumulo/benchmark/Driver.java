@@ -1,6 +1,14 @@
 package bloomberg.presto.accumulo.benchmark;
 
-import static java.lang.String.format;
+import bloomberg.presto.accumulo.AccumuloClient;
+import bloomberg.presto.accumulo.AccumuloConfig;
+import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.security.InvalidParameterException;
@@ -9,83 +17,68 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.util.Tool;
-import org.apache.hadoop.util.ToolRunner;
-import org.apache.log4j.Logger;
+import static java.lang.String.format;
 
-import com.google.common.collect.ImmutableList;
-
-import bloomberg.presto.accumulo.AccumuloClient;
-import bloomberg.presto.accumulo.AccumuloConfig;
-
-public class Driver extends Configured implements Tool {
+public class Driver
+        extends Configured
+        implements Tool
+{
 
     private static final Logger LOG = Logger.getLogger(Driver.class);
-    private static List<String> BLACKLIST = ImmutableList
-            .copyOf(new String[] { "2.sql", "4.sql", "11.sql", "13.sql",
-                    "15.sql", "17.sql", "20.sql", "21.sql", "22.sql" });
+    private static List<String> BLACKLIST = ImmutableList.copyOf(new String[] {"2.sql", "4.sql", "11.sql", "13.sql", "15.sql", "17.sql", "20.sql", "21.sql", "22.sql"});
     private int numQueries = 0;
     private int ranQueries = 0;
     private List<QueryMetrics> metrics = new ArrayList<>();
     private List<File> queryFiles;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args)
+            throws Exception
+    {
         System.exit(ToolRunner.run(new Configuration(), new Driver(), args));
     }
 
     @Override
-    public int run(String[] args) throws Exception {
+    public int run(String[] args)
+            throws Exception
+    {
 
         if (args.length != 11) {
-            System.err.println(
-                    "Usage: [instance] [zookeepers] [user] [passwd] [dbgen.dir] [presto.host] [presto.port] [benchmark.dir] [csv.schemas] [num.splits] [timeout]");
+            System.err.println("Usage: [instance] [zookeepers] [user] [passwd] [dbgen.dir] [presto.host] [presto.port] [benchmark.dir] [csv.schemas] [num.splits] [timeout]");
             return 1;
         }
 
         AccumuloConfig accConf = new AccumuloConfig();
-        accConf.setInstance(args[0]).setZooKeepers(args[1]).setUsername(args[2])
-                .setPassword(args[3]);
+        accConf.setInstance(args[0]).setZooKeepers(args[1]).setUsername(args[2]).setPassword(args[3]);
         File dbgendir = new File(args[4]);
         String host = args[5];
         int port = Integer.parseInt(args[6]);
         File benchmarkDir = new File(args[7]);
         File scriptsDir = new File(benchmarkDir, "scripts");
 
-        List<Pair<String, Float>> schemaScalePairs = Arrays
-                .asList(args[8].split(",")).stream().map(x -> x.split(":"))
-                .map(x -> Pair.of(x[0], Float.parseFloat(x[1])))
-                .collect(Collectors.toList());
+        List<Pair<String, Float>> schemaScalePairs = Arrays.asList(args[8].split(",")).stream().map(x -> x.split(":")).map(x -> Pair.of(x[0], Float.parseFloat(x[1]))).collect(Collectors.toList());
 
-        List<Integer> numSplits = Arrays.asList(args[9].split(",")).stream()
-                .map(x -> Integer.parseInt(x)).collect(Collectors.toList());
+        List<Integer> numSplits = Arrays.asList(args[9].split(",")).stream().map(x -> Integer.parseInt(x)).collect(Collectors.toList());
 
         int timeout = Integer.parseInt(args[10]);
 
         if (!dbgendir.exists() || dbgendir.isFile()) {
-            throw new InvalidParameterException(
-                    dbgendir + " does not exist or is not a directory");
+            throw new InvalidParameterException(dbgendir + " does not exist or is not a directory");
         }
 
         if (!scriptsDir.exists() || scriptsDir.isFile()) {
-            throw new InvalidParameterException(
-                    scriptsDir + " does not exist or is not a directory");
+            throw new InvalidParameterException(scriptsDir + " does not exist or is not a directory");
         }
 
-        queryFiles = Arrays.asList(scriptsDir.listFiles()).stream()
-                .filter(x -> !BLACKLIST.contains(x.getName())
-                        && x.getName().matches("[0-9]+.sql"))
-                .collect(Collectors.toList());
+        queryFiles = Arrays.asList(scriptsDir.listFiles()).stream().filter(x -> !BLACKLIST.contains(x.getName()) && x.getName().matches("[0-9]+.sql")).collect(Collectors.toList());
 
-        String[] splittableTables = { "customer", "lineitem", "orders", "part",
-                "partsupp", "supplier" };
+        String[] splittableTables = {"customer", "lineitem", "orders", "part", "partsupp", "supplier"};
 
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable()
+        {
 
             @Override
-            public void run() {
+            public void run()
+            {
                 System.out.println(QueryMetrics.getHeader());
                 for (QueryMetrics qm : metrics) {
                     System.out.println(qm);
@@ -93,8 +86,7 @@ public class Driver extends Configured implements Tool {
             }
         }));
 
-        numQueries = 16 * numSplits.size() * schemaScalePairs.size()
-                * queryFiles.size();
+        numQueries = 16 * numSplits.size() * schemaScalePairs.size() * queryFiles.size();
         ranQueries = 0;
         // for each schema
         for (Pair<String, Float> s : schemaScalePairs) {
@@ -112,16 +104,12 @@ public class Driver extends Configured implements Tool {
                 }
 
                 // Run queries flipping all of the optimization flags on and off
-                boolean[] bvalues = { false, true };
+                boolean[] bvalues = {false, true};
                 for (boolean optimizeColumnFiltersEnabled : bvalues) {
                     for (boolean optimizeRangePredicatePushdownEnabled : bvalues) {
                         for (boolean optimizeRangeSplitsEnabled : bvalues) {
                             for (boolean secondaryIndexEnabled : bvalues) {
-                                runQueries(accConf, host, port, schema, scale,
-                                        ns, optimizeColumnFiltersEnabled,
-                                        optimizeRangePredicatePushdownEnabled,
-                                        optimizeRangeSplitsEnabled,
-                                        secondaryIndexEnabled, timeout);
+                                runQueries(accConf, host, port, schema, scale, ns, optimizeColumnFiltersEnabled, optimizeRangePredicatePushdownEnabled, optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
                             }
                         }
                     }
@@ -129,8 +117,7 @@ public class Driver extends Configured implements Tool {
 
                 // Merge tables
                 for (String tableName : splittableTables) {
-                    Merger.run(accConf,
-                            AccumuloClient.getFullTableName(schema, tableName));
+                    Merger.run(accConf, AccumuloClient.getFullTableName(schema, tableName));
                 }
             }
         }
@@ -138,18 +125,12 @@ public class Driver extends Configured implements Tool {
         return 0;
     }
 
-    private void runQueries(AccumuloConfig accConf, String host, int port,
-            String schema, float scale, int numSplits,
-            boolean optimizeColumnFiltersEnabled,
-            boolean optimizeRangePredicatePushdownEnabled,
-            boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled,
-            int timeout) throws Exception {
+    private void runQueries(AccumuloConfig accConf, String host, int port, String schema, float scale, int numSplits, boolean optimizeColumnFiltersEnabled, boolean optimizeRangePredicatePushdownEnabled, boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled, int timeout)
+            throws Exception
+    {
 
         for (File qf : queryFiles) {
-            QueryMetrics qm = TpchQueryExecutor.run(accConf, qf, host, port,
-                    schema, optimizeColumnFiltersEnabled,
-                    optimizeRangePredicatePushdownEnabled,
-                    optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
+            QueryMetrics qm = TpchQueryExecutor.run(accConf, qf, host, port, schema, optimizeColumnFiltersEnabled, optimizeRangePredicatePushdownEnabled, optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
 
             qm.scale = scale;
             qm.numAccumuloSplits = numSplits;
@@ -157,10 +138,7 @@ public class Driver extends Configured implements Tool {
             metrics.add(qm);
 
             LOG.info(qm);
-            LOG.info(format(
-                    "Query Progress: Executed %d\tTotal: %d\tProgress: %2f",
-                    ++ranQueries, numQueries,
-                    +((float) ranQueries / (float) numQueries * 100.0f)));
+            LOG.info(format("Query Progress: Executed %d\tTotal: %d\tProgress: %2f", ++ranQueries, numQueries, +((float) ranQueries / (float) numQueries * 100.0f)));
         }
     }
 }
