@@ -13,6 +13,7 @@
  */
 package bloomberg.presto.accumulo;
 
+import com.facebook.presto.metadata.FunctionFactory;
 import com.facebook.presto.spi.ConnectorFactory;
 import com.facebook.presto.spi.Plugin;
 import com.facebook.presto.spi.type.TypeManager;
@@ -55,6 +56,11 @@ public class AccumuloPlugin
         if (type == ConnectorFactory.class) {
             return ImmutableList.of(type.cast(new AccumuloConnectorFactory(typeManager, getOptionalConfig())));
         }
+
+        if (type == FunctionFactory.class) {
+            return ImmutableList.of(type.cast(new AccumuloFunctionFactory(typeManager)));
+        }
+
         return ImmutableList.of();
     }
 }
