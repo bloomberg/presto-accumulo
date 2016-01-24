@@ -9,11 +9,11 @@ SELECT * FROM tpch.${SCHEMA}.customer;
 
 CREATE TABLE accumulo.${SCHEMA}.lineitem 
 WITH (
-	column_mapping = 'partkey:md:partkey,suppkey:md:suppkey,linenumber:md:linenumber,quantity:md:quantity,extendedprice:md:extendedprice,discount:md:discount,tax:md:tax,returnflag:md:returnflag,linestatus:md:linestatus,shipdate:md:shipdate,commitdate:md:commitdate,receiptdate:md:receiptdate,shipinstruct:md:shipinstruct,shipmode:md:shipmode,comment:md:comment',
+	column_mapping = 'orderkey:md:orderkey,partkey:md:partkey,suppkey:md:suppkey,linenumber:md:linenumber,quantity:md:quantity,extendedprice:md:extendedprice,discount:md:discount,tax:md:tax,returnflag:md:returnflag,linestatus:md:linestatus,shipdate:md:shipdate,commitdate:md:commitdate,receiptdate:md:receiptdate,shipinstruct:md:shipinstruct,shipmode:md:shipmode,comment:md:comment',
 	internal = true,
 	index_columns = 'discount,quantity,receiptdate,returnflag,shipdate,shipinstruct,shipmode'
 ) AS 
-SELECT * FROM tpch.${SCHEMA}.lineitem;
+SELECT UUID() AS uuid, * FROM tpch.${SCHEMA}.lineitem;
 
 
 CREATE TABLE accumulo.${SCHEMA}.nation 
@@ -44,10 +44,10 @@ SELECT * FROM tpch.${SCHEMA}.part;
 
 CREATE TABLE accumulo.${SCHEMA}.partsupp
 WITH (
-	column_mapping = 'suppkey:md:suppkey,availqty:md:availqty,supplycost:md:supplycost,comment:md:comment',
+	column_mapping = 'partkey:md:partkey,suppkey:md:suppkey,availqty:md:availqty,supplycost:md:supplycost,comment:md:comment',
 	internal = true
 ) AS 
-SELECT * FROM tpch.${SCHEMA}.partsupp;
+SELECT UUID() AS uuid, * FROM tpch.${SCHEMA}.partsupp;
 
 
 CREATE TABLE accumulo.${SCHEMA}.region 

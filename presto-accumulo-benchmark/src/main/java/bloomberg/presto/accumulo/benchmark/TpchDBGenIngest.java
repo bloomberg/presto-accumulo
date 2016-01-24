@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
@@ -44,17 +45,17 @@ public class TpchDBGenIngest
 
     private static final char DELIMITER = '|';
     private static final String CUSTOMER_ROW_ID = "custkey";
-    private static final String LINEITEM_ROW_ID = "orderkey";
+    private static final String LINEITEM_ROW_ID = "uuid";
     private static final String NATION_ROW_ID = "nationkey";
     private static final String ORDERS_ROW_ID = "orderkey";
     private static final String PART_ROW_ID = "partkey";
-    private static final String PARTSUPP_ROW_ID = "partkey";
+    private static final String PARTSUPP_ROW_ID = "uuid";
     private static final String REGION_ROW_ID = "regionkey";
     private static final String SUPPLIER_ROW_ID = "suppkey";
 
     private static final RowSchema CUSTOMER_SCHEMA = RowSchema.newInstance().addColumn("custkey", null, null, BIGINT).addColumn("name", "md", "name", VARCHAR).addColumn("address", "md", "address", VARCHAR).addColumn("nationkey", "md", "nationkey", BIGINT).addColumn("phone", "md", "phone", VARCHAR).addColumn("acctbal", "md", "acctbal", DOUBLE).addColumn("mktsegment", "md", "mktsegment", VARCHAR, true).addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema LINEITEM_SCHEMA = RowSchema.newInstance().addColumn("orderkey", null, null, BIGINT).addColumn("partkey", "md", "partkey", BIGINT).addColumn("suppkey", "md", "suppkey", BIGINT).addColumn("linenumber", "md", "linenumber", BIGINT).addColumn("quantity", "md", "quantity", BIGINT, true).addColumn("extendedprice", "md", "extendedprice", DOUBLE).addColumn("discount", "md", "discount", DOUBLE, true).addColumn("tax", "md", "tax", DOUBLE).addColumn("returnflag", "md", "returnflag", VARCHAR, true).addColumn("linestatus", "md", "linestatus", VARCHAR).addColumn("shipdate", "md", "shipdate", DATE, true).addColumn("commitdate", "md", "commitdate", DATE).addColumn("receiptdate", "md", "receiptdate", DATE, true).addColumn("shipinstruct", "md", "shipinstruct", VARCHAR, true).addColumn("shipmode", "md", "shipmode", VARCHAR, true).addColumn("comment", "md", "comment", VARCHAR);
+    private static final RowSchema LINEITEM_SCHEMA = RowSchema.newInstance().addColumn("uuid", null, null, VARCHAR).addColumn("orderkey", "md", "orderkey", BIGINT).addColumn("partkey", "md", "partkey", BIGINT).addColumn("suppkey", "md", "suppkey", BIGINT).addColumn("linenumber", "md", "linenumber", BIGINT).addColumn("quantity", "md", "quantity", BIGINT, true).addColumn("extendedprice", "md", "extendedprice", DOUBLE).addColumn("discount", "md", "discount", DOUBLE, true).addColumn("tax", "md", "tax", DOUBLE).addColumn("returnflag", "md", "returnflag", VARCHAR, true).addColumn("linestatus", "md", "linestatus", VARCHAR).addColumn("shipdate", "md", "shipdate", DATE, true).addColumn("commitdate", "md", "commitdate", DATE).addColumn("receiptdate", "md", "receiptdate", DATE, true).addColumn("shipinstruct", "md", "shipinstruct", VARCHAR, true).addColumn("shipmode", "md", "shipmode", VARCHAR, true).addColumn("comment", "md", "comment", VARCHAR);
 
     private static final RowSchema NATION_SCHEMA = RowSchema.newInstance().addColumn("nationkey", null, null, BIGINT).addColumn("name", "md", "name", VARCHAR).addColumn("regionkey", "md", "regionkey", BIGINT).addColumn("comment", "md", "comment", VARCHAR);
 
@@ -62,7 +63,7 @@ public class TpchDBGenIngest
 
     private static final RowSchema PART_SCHEMA = RowSchema.newInstance().addColumn("partkey", null, null, BIGINT).addColumn("name", "md", "name", VARCHAR).addColumn("mfgr", "md", "mfgr", VARCHAR).addColumn("brand", "md", "brand", VARCHAR, true).addColumn("type", "md", "type", VARCHAR, true).addColumn("size", "md", "size", BIGINT, true).addColumn("container", "md", "container", VARCHAR, true).addColumn("retailprice", "md", "retailprice", DOUBLE).addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema PARTSUPP_SCHEMA = RowSchema.newInstance().addColumn("partkey", null, null, BIGINT).addColumn("suppkey", "md", "suppkey", BIGINT).addColumn("availqty", "md", "availqty", BIGINT).addColumn("supplycost", "md", "supplycost", DOUBLE).addColumn("comment", "md", "comment", VARCHAR);
+    private static final RowSchema PARTSUPP_SCHEMA = RowSchema.newInstance().addColumn("uuid", null, null, VARCHAR).addColumn("partkey", "md", "partkey", BIGINT).addColumn("suppkey", "md", "suppkey", BIGINT).addColumn("availqty", "md", "availqty", BIGINT).addColumn("supplycost", "md", "supplycost", DOUBLE).addColumn("comment", "md", "comment", VARCHAR);
 
     private static final RowSchema REGION_SCHEMA = RowSchema.newInstance().addColumn("regionkey", null, null, BIGINT).addColumn("name", "md", "name", VARCHAR).addColumn("comment", "md", "comment", VARCHAR);
 
@@ -131,7 +132,13 @@ public class TpchDBGenIngest
             String line;
             int numRows = 0, numIdxRows = 0;
             Collection<Mutation> updates = new HashSet<>();
+            boolean hasUuid = hasUuid(tableName);
             while ((line = rdr.readLine()) != null) {
+
+                // append a UUID to the line if this table has one
+                if (hasUuid) {
+                    line = UUID.randomUUID().toString() + DELIMITER + line;
+                }
 
                 Row r = Row.fromString(rowSchema, line, DELIMITER);
 
@@ -154,6 +161,17 @@ public class TpchDBGenIngest
 
             rdr.close();
             System.out.println(String.format("Wrote %d rows, %d index rows", numRows, numIdxRows));
+        }
+    }
+
+    private static boolean hasUuid(String tableName)
+    {
+        switch (tableName) {
+            case "lineitem":
+            case "partsupp":
+                return true;
+            default:
+                return false;
         }
     }
 
