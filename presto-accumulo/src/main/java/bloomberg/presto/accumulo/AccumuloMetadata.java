@@ -59,6 +59,7 @@ public class AccumuloMetadata
         this.client = requireNonNull(client, "client is null");
     }
 
+    @Override
     public ConnectorOutputTableHandle beginCreateTable(ConnectorSession session, ConnectorTableMetadata tableMetadata)
     {
         SchemaTableName stName = tableMetadata.getTable();
@@ -66,11 +67,13 @@ public class AccumuloMetadata
         return new AccumuloTableHandle(connectorId, stName.getSchemaName(), stName.getTableName(), table.getRowIdName(), table.isInternal(), table.getSerializerClass().getName());
     }
 
+    @Override
     public void commitCreateTable(ConnectorSession session, ConnectorOutputTableHandle tableHandle, Collection<Slice> fragments)
     {
         // no-op?
     }
 
+    @Override
     public void rollbackCreateTable(ConnectorSession session, ConnectorOutputTableHandle tableHandle)
     {
         AccumuloTableHandle th = checkType(tableHandle, AccumuloTableHandle.class, "table");

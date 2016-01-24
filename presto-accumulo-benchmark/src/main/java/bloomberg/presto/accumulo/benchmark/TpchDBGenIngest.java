@@ -5,11 +5,9 @@ import bloomberg.presto.accumulo.AccumuloPageSink;
 import bloomberg.presto.accumulo.AccumuloTable;
 import bloomberg.presto.accumulo.index.Utils;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
-import com.google.common.collect.ImmutableSet;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
@@ -27,12 +25,12 @@ import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
@@ -91,7 +89,6 @@ public class TpchDBGenIngest
         for (File df : dataFiles) {
             String tableName = FilenameUtils.removeExtension(df.getName());
             String fullTableName = schema + '.' + tableName;
-            String indexTableName = fullTableName + "_idx";
 
             RowSchema rowSchema = schemaFromFile(tableName);
             String rowIdName = rowIdFromFile(tableName);
@@ -116,22 +113,23 @@ public class TpchDBGenIngest
 
             BatchWriter idxWrtr = null;
             if (indexColumns.size() > 0) {
-                conn.tableOperations().create(indexTableName);
+                conn.tableOperations().create(table.getIndexTableName());
 
-                Map<String, Set<Text>> groups = new HashMap<>();
-                for (AccumuloColumnHandle acc : table.getColumns().stream().filter(x -> x.isIndexed()).collect(Collectors.toList())) {
-                    Text indexColumnFamily = new Text(acc.getColumnFamily() + "_" + acc.getColumnQualifier());
-                    groups.put(indexColumnFamily.toString(), ImmutableSet.of(indexColumnFamily));
-                }
+                Map<String, Set<Text>> groups = Utils.getLocalityGroups(table);
 
                 conn.tableOperations().setLocalityGroups(table.getIndexTableName(), groups);
 
-                idxWrtr = conn.createBatchWriter(indexTableName, bwc);
+                idxWrtr = conn.createBatchWriter(table.getIndexTableName(), bwc);
+
+                conn.tableOperations().create(table.getMetricsTableName());
+                conn.tableOperations().attachIterator(table.getMetricsTableName(), Utils.getMetricIterator());
+                conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), groups);
             }
 
             String line;
             int numRows = 0, numIdxRows = 0;
-            Collection<Mutation> updates = new HashSet<>();
+            Collection<Mutation> idxMutations = new HashSet<>();
+            Map<ByteBuffer, Map<ByteBuffer, AtomicLong>> metrics = Utils.getMetricsDataStructure();
             boolean hasUuid = hasUuid(tableName);
             while ((line = rdr.readLine()) != null) {
 
@@ -147,10 +145,10 @@ public class TpchDBGenIngest
                 wrtr.addMutation(m);
 
                 if (idxWrtr != null) {
-                    Utils.indexMutation(m, indexColumns, updates);
-                    idxWrtr.addMutations(updates);
-                    numIdxRows += updates.size();
-                    updates.clear();
+                    Utils.indexMutation(m, indexColumns, idxMutations, metrics);
+                    idxWrtr.addMutations(idxMutations);
+                    numIdxRows += idxMutations.size();
+                    idxMutations.clear();
                 }
 
                 ++numRows;
@@ -158,6 +156,12 @@ public class TpchDBGenIngest
 
             wrtr.flush();
             wrtr.close();
+
+            if (idxWrtr != null) {
+                BatchWriter metricsWrtr = conn.createBatchWriter(table.getMetricsTableName(), bwc);
+                metricsWrtr.addMutations(Utils.getMetricsMutations(metrics));
+                metricsWrtr.close();
+            }
 
             rdr.close();
             System.out.println(String.format("Wrote %d rows, %d index rows", numRows, numIdxRows));

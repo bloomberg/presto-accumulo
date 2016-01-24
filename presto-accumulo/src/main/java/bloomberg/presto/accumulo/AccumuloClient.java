@@ -13,6 +13,7 @@
  */
 package bloomberg.presto.accumulo;
 
+import bloomberg.presto.accumulo.index.Utils;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
@@ -25,7 +26,6 @@ import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
-import com.google.common.collect.ImmutableSet;
 import io.airlift.json.JsonCodec;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
@@ -159,17 +159,16 @@ public class AccumuloClient
                 conn.tableOperations().create(table.getFullTableName());
 
                 if (table.isIndexed()) {
+                    // Create index table and set the locality groups
+                    Map<String, Set<Text>> groups = Utils.getLocalityGroups(table);
                     conn.tableOperations().create(table.getIndexTableName());
-
-                    Map<String, Set<Text>> groups = new HashMap<>();
-                    for (AccumuloColumnHandle acc : table.getColumns().stream().filter(x -> x.isIndexed()).collect(Collectors.toList())) {
-                        Text indexColumnFamily = new Text(acc.getColumnFamily() + "_" + acc.getColumnQualifier());
-                        groups.put(indexColumnFamily.toString(), ImmutableSet.of(indexColumnFamily));
-                    }
-
                     conn.tableOperations().setLocalityGroups(table.getIndexTableName(), groups);
-                }
 
+                    // Create index metrics table, attach iterators, and set locality groups
+                    conn.tableOperations().create(table.getMetricsTableName());
+                    conn.tableOperations().attachIterator(table.getMetricsTableName(), Utils.getMetricIterator());
+                    conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), groups);
+                }
             }
             catch (Exception e) {
                 throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Accumulo error when creating table", e);
@@ -189,11 +188,15 @@ public class AccumuloClient
                 try {
                     conn.tableOperations().delete(tn);
 
-                    String indexTable = getIndexTableName(stName);
+                    String indexTable = Utils.getIndexTableName(stName);
                     if (conn.tableOperations().exists(indexTable)) {
                         conn.tableOperations().delete(indexTable);
                     }
 
+                    String metricsTable = Utils.getMetricsTableName(stName);
+                    if (conn.tableOperations().exists(metricsTable)) {
+                        conn.tableOperations().delete(metricsTable);
+                    }
                 }
                 catch (Exception e) {
                     throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to delete table");
@@ -223,7 +226,7 @@ public class AccumuloClient
     {
         try {
             String tableName = getFullTableName(schema, table);
-            String indexTable = getIndexTableName(schema, table);
+            String indexTable = Utils.getIndexTableName(schema, table);
 
             // get the range based on predicate pushdown
             final Collection<Range> predicatePushdownRanges;
@@ -476,15 +479,5 @@ public class AccumuloClient
     public static String getFullTableName(SchemaTableName stName)
     {
         return getFullTableName(stName.getSchemaName(), stName.getTableName());
-    }
-
-    public static String getIndexTableName(String schema, String table)
-    {
-        return schema.equals("default") ? table + "_idx" : schema + '.' + table + "_idx";
-    }
-
-    public static String getIndexTableName(SchemaTableName stName)
-    {
-        return getIndexTableName(stName.getSchemaName(), stName.getTableName());
     }
 }

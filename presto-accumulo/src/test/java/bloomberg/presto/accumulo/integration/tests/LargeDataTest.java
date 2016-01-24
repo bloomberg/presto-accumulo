@@ -27,8 +27,9 @@ public class LargeDataTest
     private static final RowSchema INDEXED_SCHEMA = RowSchema.newInstance().addRowId().addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR, true).addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR).addColumn("address", "metadata", "address", VarcharType.VARCHAR).addColumn("city", "metadata", "city", VarcharType.VARCHAR).addColumn("state", "metadata", "state", VarcharType.VARCHAR).addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT).addColumn("birthday", "metadata", "birthday", DateType.DATE).addColumn("favorite_color", "metadata", "favorite_color", VarcharType.VARCHAR);
 
     private static final Integer NUM_RECORDS = 100000;
-    private static final QueryDriver DRIVER;
+    private static final QueryDriver DRIVER1;
     private static final QueryDriver DRIVER2;
+    private static final QueryDriver DRIVER3;
 
     private static final AccumuloConfig ACCUMULO_CONFIG = new AccumuloConfig();
 
@@ -38,8 +39,9 @@ public class LargeDataTest
             ACCUMULO_CONFIG.setZooKeepers("localhost:2181");
             ACCUMULO_CONFIG.setUsername("root");
             ACCUMULO_CONFIG.setPassword("secret");
-            DRIVER = new QueryDriver(ACCUMULO_CONFIG);
+            DRIVER1 = new QueryDriver(ACCUMULO_CONFIG);
             DRIVER2 = new QueryDriver(ACCUMULO_CONFIG);
+            DRIVER3 = new QueryDriver(ACCUMULO_CONFIG);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -50,19 +52,20 @@ public class LargeDataTest
     public static void setupClass()
             throws Exception
     {
-        DRIVER.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withInputSchema(INPUT_SCHEMA).withInputFile(INPUT_FILE).initialize();
+        DRIVER1.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withInputSchema(INPUT_SCHEMA).withInputFile(INPUT_FILE).initialize();
 
         DRIVER2.withHost("localhost").withPort(8080).withSchema("default").withTable("testmyothertable").withInputSchema(INPUT_SCHEMA).withInputFile(OTHER_INPUT_FILE).initialize();
 
-        DRIVER.withHost("localhost").withPort(8080).withSchema("default").withTable("testmyindexedtable").withInputSchema(INDEXED_SCHEMA).withInputFile(INPUT_FILE).initialize();
+        DRIVER3.withHost("localhost").withPort(8080).withSchema("default").withTable("testmyindexedtable").withInputSchema(INDEXED_SCHEMA).withInputFile(INPUT_FILE).initialize();
     }
 
     @AfterClass
     public static void cleanupClass()
             throws Exception
     {
-        DRIVER.cleanup();
+        DRIVER1.cleanup();
         DRIVER2.cleanup();
+        DRIVER3.cleanup();
     }
 
     @Test
@@ -70,7 +73,7 @@ public class LargeDataTest
             throws Exception
     {
         Row r1 = Row.newInstance().addField(NUM_RECORDS, BigintType.BIGINT);
-        DRIVER.withQuery("SELECT COUNT(*) FROM testmytable").withOutput(r1).runTest();
+        DRIVER1.withQuery("SELECT COUNT(*) FROM testmytable").withOutput(r1).runTest();
     }
 
     @Test
@@ -79,7 +82,7 @@ public class LargeDataTest
     {
         String query = "SELECT * FROM testmytable " + "WHERE first_name in ('Darla')";
 
-        DRIVER.withOutputSchema(INPUT_SCHEMA).withQuery(query).withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
+        DRIVER1.withOutputSchema(INPUT_SCHEMA).withQuery(query).withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
     }
 
     @Test
@@ -88,7 +91,7 @@ public class LargeDataTest
     {
         String query = "SELECT * FROM testmytable " + "WHERE first_name = 'Darla'";
 
-        DRIVER.withOutputSchema(INPUT_SCHEMA).withQuery(query).withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
+        DRIVER1.withOutputSchema(INPUT_SCHEMA).withQuery(query).withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
     }
 
     @Test
@@ -97,7 +100,7 @@ public class LargeDataTest
     {
         String query = "SELECT * FROM testmyindexedtable " + "WHERE first_name = 'Darla'";
 
-        DRIVER.withOutputSchema(INDEXED_SCHEMA).withQuery(query).withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
+        DRIVER1.withOutputSchema(INDEXED_SCHEMA).withQuery(query).withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
     }
 
     @Test
@@ -108,7 +111,7 @@ public class LargeDataTest
 
         String query = "SELECT COUNT(*) AS count, MIN(birthday), MAX(birthday) FROM testmytable " + "WHERE first_name = 'Darla'";
 
-        DRIVER.withQuery(query).withOutput(r1).runTest();
+        DRIVER1.withQuery(query).withOutput(r1).runTest();
     }
 
     @Test
@@ -119,6 +122,6 @@ public class LargeDataTest
 
         String query = "SELECT COUNT(*) AS count FROM testmytable tmt, testmyothertable tmot " + "WHERE tmt.zipcode = tmot.zipcode AND " + "tmt.birthday = tmot.birthday";
 
-        DRIVER.withQuery(query).withOutput(r1).runTest();
+        DRIVER1.withQuery(query).withOutput(r1).runTest();
     }
 }

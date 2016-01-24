@@ -1,7 +1,9 @@
 package bloomberg.presto.accumulo.integration.tests;
 
+import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloTable;
+import bloomberg.presto.accumulo.index.Utils;
 import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
@@ -351,20 +353,12 @@ public class QueryDriver
     public void cleanup()
             throws Exception
     {
-        // delete the accumulo table
-        if (this.getSchema().equals("default")) {
-            conn.tableOperations().delete(this.getAccumuloTable());
+        // delete the accumulo table and any index tables
+        conn.tableOperations().delete(AccumuloClient.getFullTableName(schema, tableName));
 
-            if (hasIndex()) {
-                conn.tableOperations().delete(this.getAccumuloTable() + "_idx");
-            }
-        }
-        else {
-            conn.tableOperations().delete(this.getSchema() + "." + this.getAccumuloTable());
-
-            if (hasIndex()) {
-                conn.tableOperations().delete(this.getSchema() + "." + this.getAccumuloTable() + "_idx");
-            }
+        if (hasIndex()) {
+            conn.tableOperations().delete(Utils.getIndexTableName(schema, tableName));
+            conn.tableOperations().delete(Utils.getMetricsTableName(schema, tableName));
         }
 
         // cleanup metadata folder
@@ -421,7 +415,7 @@ public class QueryDriver
 
     protected void createTable()
             throws AccumuloException,
-            AccumuloSecurityException, TableExistsException
+            AccumuloSecurityException, TableExistsException, TableNotFoundException
     {
         String fulltable = this.getSchema().equals("default") ? this.getAccumuloTable() : this.getSchema() + "." + this.getAccumuloTable();
 
@@ -437,7 +431,9 @@ public class QueryDriver
         }
 
         if (this.hasIndex()) {
-            conn.tableOperations().create(fulltable + "_idx");
+            conn.tableOperations().create(Utils.getIndexTableName(schema, tableName));
+            conn.tableOperations().create(Utils.getMetricsTableName(schema, tableName));
+            conn.tableOperations().attachIterator(Utils.getMetricsTableName(schema, tableName), Utils.getMetricIterator());
         }
     }
 

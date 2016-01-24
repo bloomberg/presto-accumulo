@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,10 +42,12 @@ public class AccumuloPageSink
     private final AccumuloRowSerializer serializer;
     private final BatchWriter wrtr;
     private final BatchWriter indexWrtr;
+    private final BatchWriter metricsWrtr;
     private final List<AccumuloColumnHandle> types;
     private final List<Mutation> idxMutations = new ArrayList<>();
     private final List<Row> rows = new ArrayList<>();
     private final Map<ByteBuffer, Set<ByteBuffer>> indexColumns = new HashMap<>();
+    private final Map<ByteBuffer, Map<ByteBuffer, AtomicLong>> metrics;
     private final String rowIdName;
 
     public AccumuloPageSink(Connector conn, AccumuloTable table)
@@ -77,9 +80,14 @@ public class AccumuloPageSink
                         qualifiers.add(cq);
                     }
                 });
+
+                metricsWrtr = conn.createBatchWriter(table.getMetricsTableName(), new BatchWriterConfig());
+                metrics = Utils.getMetricsDataStructure();
             }
             else {
                 indexWrtr = null;
+                metricsWrtr = null;
+                metrics = null;
             }
         }
         catch (TableNotFoundException e) {
@@ -112,7 +120,7 @@ public class AccumuloPageSink
                     wrtr.addMutation(m);
 
                     if (indexWrtr != null) {
-                        Utils.indexMutation(m, indexColumns, idxMutations);
+                        Utils.indexMutation(m, indexColumns, idxMutations, metrics);
                         indexWrtr.addMutations(idxMutations);
                         idxMutations.clear();
                     }
@@ -126,6 +134,8 @@ public class AccumuloPageSink
 
             if (indexWrtr != null) {
                 indexWrtr.close();
+                metricsWrtr.addMutations(Utils.getMetricsMutations(metrics));
+                metricsWrtr.close();
             }
         }
         catch (MutationsRejectedException e) {
@@ -201,6 +211,5 @@ public class AccumuloPageSink
                     throw new UnsupportedOperationException("Unsupported type " + type);
             }
         }
-
     }
 }
