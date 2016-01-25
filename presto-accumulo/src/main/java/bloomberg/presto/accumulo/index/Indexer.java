@@ -1,10 +1,13 @@
 package bloomberg.presto.accumulo.index;
 
 import bloomberg.presto.accumulo.AccumuloTable;
+import bloomberg.presto.accumulo.Types;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.StandardErrorCode;
+import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.accumulo.core.client.BatchWriter;
@@ -52,6 +55,7 @@ public class Indexer
     private final Connector conn;
     private final Map<ByteBuffer, Map<ByteBuffer, AtomicLong>> metrics = new HashMap<>();
     private final Map<ByteBuffer, Set<ByteBuffer>> indexColumns = new HashMap<>();
+    private final Map<ByteBuffer, Map<ByteBuffer, Type>> indexColumnTypes = new HashMap<>();
 
     public Indexer(Connector conn, AccumuloTable table)
             throws TableNotFoundException
@@ -65,12 +69,22 @@ public class Indexer
             if (x.isIndexed()) {
                 ByteBuffer cf = ByteBuffer.wrap(x.getColumnFamily().getBytes());
                 ByteBuffer cq = ByteBuffer.wrap(x.getColumnQualifier().getBytes());
+
+                // add metadata for this column being indexed
                 Set<ByteBuffer> qualifiers = indexColumns.get(cf);
                 if (qualifiers == null) {
                     qualifiers = new HashSet<>();
                     indexColumns.put(cf, qualifiers);
                 }
                 qualifiers.add(cq);
+
+                // add metadata for the column type
+                Map<ByteBuffer, Type> types = indexColumnTypes.get(cf);
+                if (types == null) {
+                    types = new HashMap<>();
+                    indexColumnTypes.put(cf, types);
+                }
+                types.put(cq, x.getType());
             }
         });
 
@@ -117,33 +131,47 @@ public class Indexer
                     // Column Qualifier = row ID
                     // Value = empty
 
-                    ByteBuffer idxRow = wrap(cu.getValue());
                     ByteBuffer idxCF = Indexer.getIndexColumnFamily(cu.getColumnFamily(), cu.getColumnQualifier());
 
-                    // create the mutation and add it to the given collection
-                    Mutation mIdx = new Mutation(idxRow.array());
-                    mIdx.put(idxCF.array(), m.getRow(), EMPTY_BYTES);
-                    try {
-                        indexWrtr.addMutation(mIdx);
+                    Type type = indexColumnTypes.get(cf).get(cq);
+                    if (Types.isArrayType(type)) {
+                        Type eType = Types.getElementType(type);
+                        List<?> array = LexicoderRowSerializer.decode(type, cu.getValue());
+                        for (Object v : array) {
+                            addIndexMutation(wrap(LexicoderRowSerializer.encode(eType, v)), idxCF, m.getRow());
+                        }
                     }
-                    catch (MutationsRejectedException e) {
-                        throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Invalid mutation added to index", e);
+                    else {
+                        addIndexMutation(wrap(cu.getValue()), idxCF, m.getRow());
                     }
-
-                    // Increment the metrics for this batch of index mutations
-                    if (!metrics.containsKey(idxRow)) {
-                        metrics.put(idxRow, new HashMap<>());
-                    }
-
-                    Map<ByteBuffer, AtomicLong> counter = metrics.get(idxRow);
-                    if (!counter.containsKey(idxCF)) {
-                        counter.put(idxCF, new AtomicLong(0));
-                    }
-
-                    counter.get(idxCF).incrementAndGet();
                 }
             }
         }
+    }
+
+    private void addIndexMutation(ByteBuffer row, ByteBuffer family, byte[] qualifier)
+    {
+        // create the mutation and add it to the given collection
+        Mutation mIdx = new Mutation(row.array());
+        mIdx.put(family.array(), qualifier, EMPTY_BYTES);
+        try {
+            indexWrtr.addMutation(mIdx);
+        }
+        catch (MutationsRejectedException e) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Invalid mutation added to index", e);
+        }
+
+        // Increment the metrics for this batch of index mutations
+        if (!metrics.containsKey(row)) {
+            metrics.put(row, new HashMap<>());
+        }
+
+        Map<ByteBuffer, AtomicLong> counter = metrics.get(row);
+        if (!counter.containsKey(family)) {
+            counter.put(family, new AtomicLong(0));
+        }
+
+        counter.get(family).incrementAndGet();
     }
 
     public void flush()

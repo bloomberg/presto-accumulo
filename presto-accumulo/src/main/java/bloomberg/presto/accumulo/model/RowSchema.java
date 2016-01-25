@@ -32,7 +32,7 @@ public class RowSchema
 
     public RowSchema addColumn(String prestoName, String columnFamily, String columnQualifier, Type type, boolean indexed)
     {
-        columns.add(new AccumuloColumnHandle("accumulo", prestoName, columnFamily, columnQualifier, type, columns.size(), "Accumulo column " + columnFamily + ":" + columnQualifier, indexed));
+        columns.add(new AccumuloColumnHandle("accumulo", prestoName, columnFamily, columnQualifier, type, columns.size(), String.format("Accumulo column %s:%s. Indexed: %b", columnFamily, columnQualifier, indexed), indexed));
         return this;
     }
 
