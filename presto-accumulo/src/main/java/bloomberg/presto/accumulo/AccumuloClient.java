@@ -13,7 +13,7 @@
  */
 package bloomberg.presto.accumulo;
 
-import bloomberg.presto.accumulo.index.Utils;
+import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
@@ -162,13 +162,13 @@ public class AccumuloClient
 
                 if (table.isIndexed()) {
                     // Create index table and set the locality groups
-                    Map<String, Set<Text>> groups = Utils.getLocalityGroups(table);
+                    Map<String, Set<Text>> groups = Indexer.getLocalityGroups(table);
                     conn.tableOperations().create(table.getIndexTableName());
                     conn.tableOperations().setLocalityGroups(table.getIndexTableName(), groups);
 
                     // Create index metrics table, attach iterators, and set locality groups
                     conn.tableOperations().create(table.getMetricsTableName());
-                    conn.tableOperations().attachIterator(table.getMetricsTableName(), Utils.getMetricIterator());
+                    conn.tableOperations().attachIterator(table.getMetricsTableName(), Indexer.getMetricIterator());
                     conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), groups);
                 }
             }
@@ -190,12 +190,12 @@ public class AccumuloClient
                 try {
                     conn.tableOperations().delete(tn);
 
-                    String indexTable = Utils.getIndexTableName(stName);
+                    String indexTable = Indexer.getIndexTableName(stName);
                     if (conn.tableOperations().exists(indexTable)) {
                         conn.tableOperations().delete(indexTable);
                     }
 
-                    String metricsTable = Utils.getMetricsTableName(stName);
+                    String metricsTable = Indexer.getMetricsTableName(stName);
                     if (conn.tableOperations().exists(metricsTable)) {
                         conn.tableOperations().delete(metricsTable);
                     }
@@ -229,8 +229,8 @@ public class AccumuloClient
         try {
             String tableName = getFullTableName(schema, table);
             LOG.debug("Getting tablet splits for table %s", tableName);
-            String indexTable = Utils.getIndexTableName(schema, table);
-            String metricsTable = Utils.getMetricsTableName(schema, table);
+            String indexTable = Indexer.getIndexTableName(schema, table);
+            String metricsTable = Indexer.getMetricsTableName(schema, table);
 
             // get the range based on predicate pushdown
             final Collection<Range> predicatePushdownRanges;
@@ -301,11 +301,11 @@ public class AccumuloClient
     private boolean shouldApplyIndex(String fulltable, String metricsTable, double threshold, Collection<AccumuloColumnConstraint> indexedConstraints)
             throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
-        Text cardQual = new Text(Utils.METRICS_COLUMN_QUALIFIER);
+        Text cardQual = new Text(Indexer.METRICS_COLUMN_QUALIFIER);
         Authorizations auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
         Scanner scan = conn.createScanner(metricsTable, auths);
-        scan.fetchColumn(new Text(Utils.METRICS_TABLE_NUM_ROWS_COLUMN_FAMILY.array()), cardQual);
-        scan.setRange(new Range(new Text(Utils.METRICS_TABLE_ROW_ID.array())));
+        scan.fetchColumn(new Text(Indexer.METRICS_TABLE_NUM_ROWS_COLUMN_FAMILY.array()), cardQual);
+        scan.setRange(new Range(new Text(Indexer.METRICS_TABLE_ROW_ID.array())));
 
         long numRows = -1;
         for (Entry<Key, Value> entry : scan) {
@@ -324,7 +324,7 @@ public class AccumuloClient
 
             BatchScanner bScanner = conn.createBatchScanner(metricsTable, auths, 10);
             bScanner.setRanges(indexRanges);
-            bScanner.fetchColumn(new Text(Utils.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()), cardQual);
+            bScanner.fetchColumn(new Text(Indexer.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()), cardQual);
             for (Entry<Key, Value> entry : bScanner) {
                 numEntries += Long.parseLong(entry.getValue().toString());
             }
@@ -351,7 +351,7 @@ public class AccumuloClient
 
             BatchScanner scan = conn.createBatchScanner(indexTable, indexScanAuths, 10);
             scan.setRanges(indexRanges);
-            scan.fetchColumnFamily(new Text(Utils.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()));
+            scan.fetchColumnFamily(new Text(Indexer.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()));
             for (Entry<Key, Value> entry : scan) {
                 entry.getKey().getColumnQualifier(cq);
 

@@ -77,14 +77,16 @@ public class TpchQueryExecutor
 
                     ResultSetMetaData rsmd = rs.getMetaData();
                     int columnsNumber = rsmd.getColumnCount();
+                    StringBuilder bldr = new StringBuilder();
                     while (rs.next()) {
+                        bldr.setLength(0);
                         for (int i = 1; i <= columnsNumber; i++) {
                             if (i > 1) {
-                                System.out.print("|");
+                                bldr.append('|');
                             }
-                            System.out.print(rs.getString(i));
+                            bldr.append(rs.getString(i));
                         }
-                        System.out.println();
+                        LOG.info(bldr.toString());
                     }
                     qm.queryStats = rs.getStats();
                 }

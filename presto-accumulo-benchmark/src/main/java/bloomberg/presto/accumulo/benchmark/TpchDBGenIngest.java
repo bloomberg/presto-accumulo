@@ -3,7 +3,7 @@ package bloomberg.presto.accumulo.benchmark;
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloPageSink;
 import bloomberg.presto.accumulo.AccumuloTable;
-import bloomberg.presto.accumulo.index.Utils;
+import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
@@ -21,16 +21,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
@@ -92,7 +88,6 @@ public class TpchDBGenIngest
 
             RowSchema rowSchema = schemaFromFile(tableName);
             String rowIdName = rowIdFromFile(tableName);
-            Map<ByteBuffer, Set<ByteBuffer>> indexColumns = indexColumnsFromFile(tableName);
 
             AccumuloTable table = new AccumuloTable(schema, tableName, rowSchema.getColumns(), rowIdName, true, serializer.getClass().getCanonicalName());
 
@@ -105,31 +100,33 @@ public class TpchDBGenIngest
             conn.tableOperations().create(fullTableName);
 
             System.out.println(String.format("Created table %s", table));
-            System.out.println(String.format("Reading rows from file %s, writing to table %s", df, fullTableName));
 
             BufferedReader rdr = new BufferedReader(new FileReader(df));
             BatchWriterConfig bwc = new BatchWriterConfig();
             BatchWriter wrtr = conn.createBatchWriter(fullTableName, bwc);
 
-            BatchWriter idxWrtr = null;
-            if (indexColumns.size() > 0) {
+            final Indexer indexer;
+            if (table.isIndexed()) {
+                Map<String, Set<Text>> groups = Indexer.getLocalityGroups(table);
+
                 conn.tableOperations().create(table.getIndexTableName());
-
-                Map<String, Set<Text>> groups = Utils.getLocalityGroups(table);
-
+                System.out.println(String.format("Created index table %s", table.getIndexTableName()));
                 conn.tableOperations().setLocalityGroups(table.getIndexTableName(), groups);
 
-                idxWrtr = conn.createBatchWriter(table.getIndexTableName(), bwc);
-
                 conn.tableOperations().create(table.getMetricsTableName());
-                conn.tableOperations().attachIterator(table.getMetricsTableName(), Utils.getMetricIterator());
+                conn.tableOperations().attachIterator(table.getMetricsTableName(), Indexer.getMetricIterator());
                 conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), groups);
+                System.out.println(String.format("Created index metrics table %s", table.getMetricsTableName()));
+
+                indexer = new Indexer(conn, table);
+            }
+            else {
+                indexer = null;
             }
 
+            System.out.println(String.format("Reading rows from file %s, writing to table %s", df, fullTableName));
             String line;
             int numRows = 0, numIdxRows = 0;
-            Collection<Mutation> idxMutations = new HashSet<>();
-            Map<ByteBuffer, Map<ByteBuffer, AtomicLong>> metrics = Utils.getMetricsDataStructure();
             boolean hasUuid = hasUuid(tableName);
             while ((line = rdr.readLine()) != null) {
 
@@ -144,11 +141,8 @@ public class TpchDBGenIngest
 
                 wrtr.addMutation(m);
 
-                if (idxWrtr != null) {
-                    Utils.indexMutation(m, indexColumns, idxMutations, metrics);
-                    idxWrtr.addMutations(idxMutations);
-                    numIdxRows += idxMutations.size();
-                    idxMutations.clear();
+                if (indexer != null) {
+                    indexer.index(m);
                 }
 
                 ++numRows;
@@ -157,10 +151,8 @@ public class TpchDBGenIngest
             wrtr.flush();
             wrtr.close();
 
-            if (idxWrtr != null) {
-                BatchWriter metricsWrtr = conn.createBatchWriter(table.getMetricsTableName(), bwc);
-                metricsWrtr.addMutations(Utils.getMetricsMutations(metrics));
-                metricsWrtr.close();
+            if (indexer != null) {
+                indexer.close();
             }
 
             rdr.close();
@@ -177,11 +169,6 @@ public class TpchDBGenIngest
             default:
                 return false;
         }
-    }
-
-    private static Map<ByteBuffer, Set<ByteBuffer>> indexColumnsFromFile(String tableName)
-    {
-        return Utils.getMapOfIndexedColumns(schemaFromFile(tableName).getColumns());
     }
 
     private static String rowIdFromFile(String tableName)

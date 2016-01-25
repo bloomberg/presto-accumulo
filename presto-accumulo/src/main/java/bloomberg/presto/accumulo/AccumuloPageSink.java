@@ -1,6 +1,6 @@
 package bloomberg.presto.accumulo;
 
-import bloomberg.presto.accumulo.index.Utils;
+import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Field;
 import bloomberg.presto.accumulo.model.Row;
@@ -24,15 +24,9 @@ import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,13 +35,9 @@ public class AccumuloPageSink
 {
     private final AccumuloRowSerializer serializer;
     private final BatchWriter wrtr;
-    private final BatchWriter indexWrtr;
-    private final BatchWriter metricsWrtr;
     private final List<AccumuloColumnHandle> types;
-    private final List<Mutation> idxMutations = new ArrayList<>();
+    private final Indexer indexer;
     private final List<Row> rows = new ArrayList<>();
-    private final Map<ByteBuffer, Set<ByteBuffer>> indexColumns = new HashMap<>();
-    private final Map<ByteBuffer, Map<ByteBuffer, AtomicLong>> metrics;
     private final String rowIdName;
 
     public AccumuloPageSink(Connector conn, AccumuloTable table)
@@ -67,27 +57,10 @@ public class AccumuloPageSink
             wrtr = conn.createBatchWriter(table.getFullTableName(), new BatchWriterConfig());
 
             if (table.isIndexed()) {
-                indexWrtr = conn.createBatchWriter(table.getIndexTableName(), new BatchWriterConfig());
-                table.getColumns().stream().forEach(x -> {
-                    if (x.isIndexed()) {
-                        ByteBuffer cf = ByteBuffer.wrap(x.getColumnFamily().getBytes());
-                        ByteBuffer cq = ByteBuffer.wrap(x.getColumnQualifier().getBytes());
-                        Set<ByteBuffer> qualifiers = indexColumns.get(cf);
-                        if (qualifiers == null) {
-                            qualifiers = new HashSet<>();
-                            indexColumns.put(cf, qualifiers);
-                        }
-                        qualifiers.add(cq);
-                    }
-                });
-
-                metricsWrtr = conn.createBatchWriter(table.getMetricsTableName(), new BatchWriterConfig());
-                metrics = Utils.getMetricsDataStructure();
+                indexer = new Indexer(conn, table);
             }
             else {
-                indexWrtr = null;
-                metricsWrtr = null;
-                metrics = null;
+                indexer = null;
             }
         }
         catch (TableNotFoundException e) {
@@ -119,10 +92,8 @@ public class AccumuloPageSink
                 if (m.size() > 0) {
                     wrtr.addMutation(m);
 
-                    if (indexWrtr != null) {
-                        Utils.indexMutation(m, indexColumns, idxMutations, metrics);
-                        indexWrtr.addMutations(idxMutations);
-                        idxMutations.clear();
+                    if (indexer != null) {
+                        indexer.index(m);
                     }
                 }
                 else {
@@ -132,10 +103,8 @@ public class AccumuloPageSink
 
             wrtr.close();
 
-            if (indexWrtr != null) {
-                indexWrtr.close();
-                metricsWrtr.addMutations(Utils.getMetricsMutations(metrics));
-                metricsWrtr.close();
+            if (indexer != null) {
+                indexer.close();
             }
         }
         catch (MutationsRejectedException e) {
@@ -150,25 +119,30 @@ public class AccumuloPageSink
 
     public static Mutation toMutation(Row row, String rowIdName, List<AccumuloColumnHandle> columns, AccumuloRowSerializer serializer)
     {
-        if (row.getField(0).isNull()) {
-            throw new PrestoException(StandardErrorCode.USER_ERROR, "Row recordkey cannot be null");
-        }
-
         // make a new mutation, passing in the row ID
         Text rowId = new Text();
-        columns.parallelStream().filter(x -> x.getName().equals(rowIdName)).forEach(x -> setText(serializer, rowId, x.getType(), row.getField(x.getOrdinal())));
+        for (AccumuloColumnHandle ach : columns) {
+            if (ach.getName().equals(rowIdName)) {
+                if (row.getField(ach.getOrdinal()).isNull()) {
+                    throw new PrestoException(StandardErrorCode.USER_ERROR, "Row recordkey cannot be null");
+                }
+
+                setText(serializer, rowId, ach.getType(), row.getField(ach.getOrdinal()));
+            }
+        }
 
         if (rowId.getLength() == 0) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to locate row ID in columns");
         }
 
         Mutation m = new Mutation(rowId);
-
         Text value = new Text();
-        columns.stream().filter(x -> !row.getField(x.getOrdinal()).isNull() && !x.getName().equals(rowIdName)).forEach(ach -> {
-            setText(serializer, value, ach.getType(), row.getField(ach.getOrdinal()));
-            m.put(ach.getColumnFamily(), ach.getColumnQualifier(), new Value(value.copyBytes()));
-        });
+        for (AccumuloColumnHandle ach : columns) {
+            if (!row.getField(ach.getOrdinal()).isNull() && !ach.getName().equals(rowIdName)) {
+                setText(serializer, value, ach.getType(), row.getField(ach.getOrdinal()));
+                m.put(ach.getColumnFamily(), ach.getColumnQualifier(), new Value(value.copyBytes()));
+            }
+        }
 
         return m;
     }

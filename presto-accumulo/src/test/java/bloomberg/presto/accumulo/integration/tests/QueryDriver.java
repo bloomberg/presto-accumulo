@@ -3,7 +3,7 @@ package bloomberg.presto.accumulo.integration.tests;
 import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.AccumuloConfig;
 import bloomberg.presto.accumulo.AccumuloTable;
-import bloomberg.presto.accumulo.index.Utils;
+import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
@@ -357,8 +357,8 @@ public class QueryDriver
         conn.tableOperations().delete(AccumuloClient.getFullTableName(schema, tableName));
 
         if (hasIndex()) {
-            conn.tableOperations().delete(Utils.getIndexTableName(schema, tableName));
-            conn.tableOperations().delete(Utils.getMetricsTableName(schema, tableName));
+            conn.tableOperations().delete(Indexer.getIndexTableName(schema, tableName));
+            conn.tableOperations().delete(Indexer.getMetricsTableName(schema, tableName));
         }
 
         // cleanup metadata folder
@@ -431,9 +431,9 @@ public class QueryDriver
         }
 
         if (this.hasIndex()) {
-            conn.tableOperations().create(Utils.getIndexTableName(schema, tableName));
-            conn.tableOperations().create(Utils.getMetricsTableName(schema, tableName));
-            conn.tableOperations().attachIterator(Utils.getMetricsTableName(schema, tableName), Utils.getMetricIterator());
+            conn.tableOperations().create(Indexer.getIndexTableName(schema, tableName));
+            conn.tableOperations().create(Indexer.getMetricsTableName(schema, tableName));
+            conn.tableOperations().attachIterator(Indexer.getMetricsTableName(schema, tableName), Indexer.getMetricIterator());
         }
     }
 

@@ -13,7 +13,7 @@
  */
 package bloomberg.presto.accumulo;
 
-import bloomberg.presto.accumulo.index.Utils;
+import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.ColumnMetadata;
@@ -79,12 +79,12 @@ public class AccumuloTable
     @JsonIgnore
     public String getIndexTableName()
     {
-        return Utils.getIndexTableName(schemaName, tableName);
+        return Indexer.getIndexTableName(schemaName, tableName);
     }
 
     public String getMetricsTableName()
     {
-        return Utils.getMetricsTableName(schemaName, tableName);
+        return Indexer.getMetricsTableName(schemaName, tableName);
     }
 
     @JsonIgnore
