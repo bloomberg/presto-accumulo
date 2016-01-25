@@ -382,10 +382,7 @@ public class AccumuloClient
 
         long numEntries = 0;
         for (Entry<Key, Value> entry : bScanner) {
-            if (numEntries > 0) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Should have received only one entry");
-            }
-            numEntries = Long.parseLong(entry.getValue().toString());
+            numEntries += Long.parseLong(entry.getValue().toString());
         }
         bScanner.close();
 
