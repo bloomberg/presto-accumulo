@@ -10,6 +10,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
@@ -132,7 +133,7 @@ public class Row
                 r.addField(Boolean.parseBoolean(fields[i]), BOOLEAN);
             }
             else if (type == DATE) {
-                r.addField(Date.valueOf(fields[i]), DATE);
+                r.addField(new Date(TimeUnit.MILLISECONDS.toDays(Date.valueOf(fields[i]).getTime())), DATE);
             }
             else if (type == DOUBLE) {
                 r.addField(Double.parseDouble(fields[i]), DOUBLE);

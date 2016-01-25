@@ -23,7 +23,6 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
@@ -319,7 +318,7 @@ public class LexicoderRowSerializer
             toEncode = v.equals(Boolean.TRUE) ? LexicoderRowSerializer.TRUE : LexicoderRowSerializer.FALSE;
         }
         else if (type.equals(DATE) && v instanceof Date) {
-            toEncode = TimeUnit.DAYS.convert(((Date) v).getTime(), TimeUnit.MILLISECONDS);
+            toEncode = ((Date) v).getTime();
         }
         else if (type.equals(TIME) && v instanceof Time) {
             toEncode = ((Time) v).getTime();
