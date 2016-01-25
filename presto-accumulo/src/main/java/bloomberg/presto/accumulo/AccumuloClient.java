@@ -26,6 +26,7 @@ import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
+import com.google.common.collect.ImmutableList;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.AccumuloException;
@@ -235,7 +236,7 @@ public class AccumuloClient
             // get the range based on predicate pushdown
             final Collection<Range> predicatePushdownRanges;
             if (AccumuloSessionProperties.isOptimizeRangePredicatePushdownEnabled(session)) {
-                predicatePushdownRanges = getPredicatePushdownRanges(tableName, rDom);
+                predicatePushdownRanges = getPredicatePushdownRanges(rDom);
             }
             else {
                 predicatePushdownRanges = new HashSet<>();
@@ -246,8 +247,52 @@ public class AccumuloClient
             // via the index are within at least one predicate pushdown range
             List<AccumuloColumnConstraint> indexedConstraints = constraints.stream().filter(x -> x.isIndexed()).collect(Collectors.toList());
             final Collection<Range> columnPushdownRanges;
-            if (AccumuloSessionProperties.isSecondaryIndexEnabled(session) && indexedConstraints.size() > 0 && shouldApplyIndex(tableName, metricsTable, AccumuloSessionProperties.getIndexRatio(session), indexedConstraints)) {
-                columnPushdownRanges = applySecondaryIndex(tableName, indexTable, indexedConstraints, predicatePushdownRanges);
+            if (AccumuloSessionProperties.isSecondaryIndexEnabled(session) && indexedConstraints.size() > 0) {
+                long numRows = getNumRowsInTable(metricsTable);
+                double threshold = AccumuloSessionProperties.getIndexRatio(session);
+
+                // if we have only one indexed restraint, check the cardinality and then fetch ranges if < threshold
+                if (indexedConstraints.size() == 1) {
+                    long numEntries = getColumnCardinality(metricsTable, indexedConstraints.get(0));
+                    LOG.debug("Only one index column with cardinality %d", numEntries);
+
+                    if (numEntries == 0) {
+                        LOG.debug("Query would return no results, returning empty set list");
+                        return ImmutableList.of();
+                    }
+
+                    double ratio = (double) numEntries / (double) numRows;
+                    LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, table);
+
+                    if (ratio < threshold) {
+                        columnPushdownRanges = getIndexRanges(tableName, indexTable, indexedConstraints, predicatePushdownRanges);
+                    }
+                    else {
+                        columnPushdownRanges = new HashSet<>();
+                    }
+                }
+                else {
+                    // we have multiple indexed columns
+                    // compute the intersection of the ranges prior to checking the threshold
+                    LOG.debug("%d indexed columns, interesecting ranges", indexedConstraints.size());
+                    Collection<Range> idxRanges = getIndexRanges(tableName, indexTable, indexedConstraints, predicatePushdownRanges);
+                    long numEntries = idxRanges.size();
+
+                    if (numEntries == 0) {
+                        LOG.debug("Query would return no results, returning empty set list");
+                        return ImmutableList.of();
+                    }
+
+                    double ratio = (double) numEntries / (double) numRows;
+                    LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, table);
+
+                    if (ratio < threshold) {
+                        columnPushdownRanges = idxRanges;
+                    }
+                    else {
+                        columnPushdownRanges = new HashSet<>();
+                    }
+                }
             }
             else {
                 columnPushdownRanges = new HashSet<>();
@@ -280,7 +325,7 @@ public class AccumuloClient
         }
     }
 
-    private Collection<Range> getPredicatePushdownRanges(String fulltable, Domain rDom)
+    private Collection<Range> getPredicatePushdownRanges(Domain rDom)
             throws AccumuloException, AccumuloSecurityException,
             TableNotFoundException
     {
@@ -292,13 +337,13 @@ public class AccumuloClient
         else {
             // else, add the ranges based on the predicate pushdown
             for (com.facebook.presto.spi.predicate.Range r : rDom.getValues().getRanges().getOrderedRanges()) {
-                ranges.add(getRangeFromPrestoRange(fulltable, r));
+                ranges.add(getRangeFromPrestoRange(r));
             }
         }
         return ranges;
     }
 
-    private boolean shouldApplyIndex(String fulltable, String metricsTable, double threshold, Collection<AccumuloColumnConstraint> indexedConstraints)
+    private long getNumRowsInTable(String metricsTable)
             throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
         Text cardQual = new Text(Indexer.METRICS_COLUMN_QUALIFIER);
@@ -314,56 +359,79 @@ public class AccumuloClient
             }
             numRows = Long.parseLong(entry.getValue().toString());
         }
+        scan.close();
 
-        List<Range> indexRanges = new ArrayList<>();
-        long numEntries = 0;
-        for (AccumuloColumnConstraint acc : indexedConstraints) {
-            for (com.facebook.presto.spi.predicate.Range r : acc.getDomain().getValues().getRanges().getOrderedRanges()) {
-                indexRanges.add(getRangeFromPrestoRange(fulltable, r));
-            }
-
-            BatchScanner bScanner = conn.createBatchScanner(metricsTable, auths, 10);
-            bScanner.setRanges(indexRanges);
-            bScanner.fetchColumn(new Text(Indexer.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()), cardQual);
-            for (Entry<Key, Value> entry : bScanner) {
-                numEntries += Long.parseLong(entry.getValue().toString());
-            }
-            bScanner.close();
-        }
-
-        double ratio = (double) numEntries / (double) numRows;
-        LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, fulltable);
-        return ratio < threshold;
+        LOG.debug("Number of rows in table is %d", numRows);
+        return numRows;
     }
 
-    private Collection<Range> applySecondaryIndex(String fulltable, String indexTable, Collection<AccumuloColumnConstraint> indexedConstraints, Collection<Range> predicatePushdownRanges)
+    private long getColumnCardinality(String metricsTable, AccumuloColumnConstraint acc)
+            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
+    {
+        Text cardQual = new Text(Indexer.METRICS_COLUMN_QUALIFIER);
+        List<Range> indexRanges = new ArrayList<>();
+
+        for (com.facebook.presto.spi.predicate.Range r : acc.getDomain().getValues().getRanges().getOrderedRanges()) {
+            indexRanges.add(getRangeFromPrestoRange(r));
+        }
+
+        Authorizations auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
+        BatchScanner bScanner = conn.createBatchScanner(metricsTable, auths, 10);
+        bScanner.setRanges(indexRanges);
+        bScanner.fetchColumn(new Text(Indexer.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()), cardQual);
+
+        long numEntries = 0;
+        for (Entry<Key, Value> entry : bScanner) {
+            if (numEntries > 0) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Should have received only one entry");
+            }
+            numEntries = Long.parseLong(entry.getValue().toString());
+        }
+        bScanner.close();
+
+        return numEntries;
+    }
+
+    private Collection<Range> getIndexRanges(String fulltable, String indexTable, Collection<AccumuloColumnConstraint> indexedConstraints, Collection<Range> predicatePushdownRanges)
             throws AccumuloException,
             AccumuloSecurityException, TableNotFoundException
     {
-        Set<Range> columnPushdownRanges = new HashSet<>();
+        Set<Range> finalRanges = null;
         List<Range> indexRanges = new ArrayList<>();
         Authorizations indexScanAuths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
         Text cq = new Text();
         for (AccumuloColumnConstraint acc : indexedConstraints) {
             for (com.facebook.presto.spi.predicate.Range r : acc.getDomain().getValues().getRanges().getOrderedRanges()) {
-                indexRanges.add(getRangeFromPrestoRange(fulltable, r));
+                indexRanges.add(getRangeFromPrestoRange(r));
             }
 
             BatchScanner scan = conn.createBatchScanner(indexTable, indexScanAuths, 10);
             scan.setRanges(indexRanges);
             scan.fetchColumnFamily(new Text(Indexer.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()));
+
+            Set<Range> columnRanges = new HashSet<>();
             for (Entry<Key, Value> entry : scan) {
                 entry.getKey().getColumnQualifier(cq);
 
                 if (inRange(cq, predicatePushdownRanges)) {
-                    columnPushdownRanges.add(new Range(cq));
+                    columnRanges.add(new Range(cq));
                 }
             }
+
+            LOG.debug("Retrieved %d ranges for column %s", columnRanges.size(), acc.getName());
+            if (finalRanges == null) {
+                finalRanges = new HashSet<>();
+                finalRanges.addAll(columnRanges);
+            }
+            else {
+                finalRanges.retainAll(columnRanges);
+            }
+
             scan.close();
         }
 
-        LOG.debug("Retrieved %d ranges from secondary index for table %s", columnPushdownRanges.size(), fulltable);
-        return columnPushdownRanges;
+        LOG.debug("Intersection results in %d ranges from secondary index for table %s", finalRanges.size(), fulltable);
+        return finalRanges;
     }
 
     private Collection<Range> splitByTabletBoundaries(String tableName, Collection<Range> ranges)
@@ -413,7 +481,7 @@ public class AccumuloClient
         return false;
     }
 
-    private Range getRangeFromPrestoRange(String fulltable, com.facebook.presto.spi.predicate.Range pRange)
+    private Range getRangeFromPrestoRange(com.facebook.presto.spi.predicate.Range pRange)
             throws AccumuloException, AccumuloSecurityException,
             TableNotFoundException
     {
