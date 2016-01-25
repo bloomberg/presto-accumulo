@@ -30,11 +30,12 @@ import static java.nio.ByteBuffer.wrap;
 
 public class Utils
 {
+    public static final ByteBuffer METRICS_TABLE_ROW_ID = wrap("METRICS_TABLE".getBytes());
+    public static final ByteBuffer METRICS_TABLE_NUM_ROWS_COLUMN_FAMILY = wrap("rows".getBytes());
+    public static final byte[] METRICS_COLUMN_QUALIFIER = "cardinality".getBytes();
+
     private static final byte[] EMPTY_BYTES = new byte[0];
-    private static final byte[] METRICS_COLUMN_QUALIFIER = "cardinality".getBytes();
     private static final byte UNDERSCORE = '_';
-    private static final ByteBuffer METRICS_TABLE_ROW_ID = wrap("METRICS_TABLE".getBytes());
-    private static final ByteBuffer METRICS_TABLE_NUM_ROWS_COLUMN_FAMILY = wrap("rows".getBytes());
     private static final TypedValueCombiner.Encoder<Long> ENCODER = new LongCombiner.StringEncoder();
 
     private Utils()

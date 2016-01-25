@@ -23,6 +23,7 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
@@ -318,7 +319,7 @@ public class LexicoderRowSerializer
             toEncode = v.equals(Boolean.TRUE) ? LexicoderRowSerializer.TRUE : LexicoderRowSerializer.FALSE;
         }
         else if (type.equals(DATE) && v instanceof Date) {
-            toEncode = ((Date) v).getTime();
+            toEncode = TimeUnit.DAYS.convert(((Date) v).getTime(), TimeUnit.MILLISECONDS);
         }
         else if (type.equals(TIME) && v instanceof Time) {
             toEncode = ((Time) v).getTime();
@@ -411,7 +412,7 @@ public class LexicoderRowSerializer
             return getMapLexicoder(type);
         }
         else {
-            Lexicoder l = (Lexicoder) lexicoderMap.get(type);
+            Lexicoder l = lexicoderMap.get(type);
             if (l == null) {
                 throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "No lexicoder for type " + type);
             }

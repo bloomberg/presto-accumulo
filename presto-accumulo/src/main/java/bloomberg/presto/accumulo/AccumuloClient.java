@@ -27,6 +27,7 @@ import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
 import io.airlift.json.JsonCodec;
+import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchScanner;
@@ -62,6 +63,7 @@ import static java.util.Objects.requireNonNull;
 
 public class AccumuloClient
 {
+    private static final Logger LOG = Logger.get(AccumuloClient.class);
     private ZooKeeperInstance inst = null;
     private AccumuloConfig conf = null;
     private Connector conn = null;
@@ -226,7 +228,9 @@ public class AccumuloClient
     {
         try {
             String tableName = getFullTableName(schema, table);
+            LOG.debug("Getting tablet splits for table %s", tableName);
             String indexTable = Utils.getIndexTableName(schema, table);
+            String metricsTable = Utils.getMetricsTableName(schema, table);
 
             // get the range based on predicate pushdown
             final Collection<Range> predicatePushdownRanges;
@@ -240,9 +244,10 @@ public class AccumuloClient
 
             // Get ranges from any secondary index tables, ensuring the ranges
             // via the index are within at least one predicate pushdown range
+            List<AccumuloColumnConstraint> indexedConstraints = constraints.stream().filter(x -> x.isIndexed()).collect(Collectors.toList());
             final Collection<Range> columnPushdownRanges;
-            if (AccumuloSessionProperties.isSecondaryIndexEnabled(session)) {
-                columnPushdownRanges = applySecondaryIndex(tableName, indexTable, constraints, predicatePushdownRanges);
+            if (AccumuloSessionProperties.isSecondaryIndexEnabled(session) && indexedConstraints.size() > 0 && shouldApplyIndex(tableName, metricsTable, AccumuloSessionProperties.getIndexRatio(session), indexedConstraints)) {
+                columnPushdownRanges = applySecondaryIndex(tableName, indexTable, indexedConstraints, predicatePushdownRanges);
             }
             else {
                 columnPushdownRanges = new HashSet<>();
@@ -268,7 +273,7 @@ public class AccumuloClient
             }
 
             // and now bin all the ranges into presto splits
-            return binRanges(splitRanges);
+            return binRanges(AccumuloSessionProperties.getRangesPerSplit(session), splitRanges);
         }
         catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to get splits", e);
@@ -293,7 +298,45 @@ public class AccumuloClient
         return ranges;
     }
 
-    private Collection<Range> applySecondaryIndex(String fulltable, String indexTable, Collection<AccumuloColumnConstraint> constraints, Collection<Range> predicatePushdownRanges)
+    private boolean shouldApplyIndex(String fulltable, String metricsTable, double threshold, Collection<AccumuloColumnConstraint> indexedConstraints)
+            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
+    {
+        Text cardQual = new Text(Utils.METRICS_COLUMN_QUALIFIER);
+        Authorizations auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
+        Scanner scan = conn.createScanner(metricsTable, auths);
+        scan.fetchColumn(new Text(Utils.METRICS_TABLE_NUM_ROWS_COLUMN_FAMILY.array()), cardQual);
+        scan.setRange(new Range(new Text(Utils.METRICS_TABLE_ROW_ID.array())));
+
+        long numRows = -1;
+        for (Entry<Key, Value> entry : scan) {
+            if (numRows > 0) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Should have received only one entry");
+            }
+            numRows = Long.parseLong(entry.getValue().toString());
+        }
+
+        List<Range> indexRanges = new ArrayList<>();
+        long numEntries = 0;
+        for (AccumuloColumnConstraint acc : indexedConstraints) {
+            for (com.facebook.presto.spi.predicate.Range r : acc.getDomain().getValues().getRanges().getOrderedRanges()) {
+                indexRanges.add(getRangeFromPrestoRange(fulltable, r));
+            }
+
+            BatchScanner bScanner = conn.createBatchScanner(metricsTable, auths, 10);
+            bScanner.setRanges(indexRanges);
+            bScanner.fetchColumn(new Text(Utils.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()), cardQual);
+            for (Entry<Key, Value> entry : bScanner) {
+                numEntries += Long.parseLong(entry.getValue().toString());
+            }
+            bScanner.close();
+        }
+
+        double ratio = (double) numEntries / (double) numRows;
+        LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, fulltable);
+        return ratio < threshold;
+    }
+
+    private Collection<Range> applySecondaryIndex(String fulltable, String indexTable, Collection<AccumuloColumnConstraint> indexedConstraints, Collection<Range> predicatePushdownRanges)
             throws AccumuloException,
             AccumuloSecurityException, TableNotFoundException
     {
@@ -301,14 +344,14 @@ public class AccumuloClient
         List<Range> indexRanges = new ArrayList<>();
         Authorizations indexScanAuths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
         Text cq = new Text();
-        for (AccumuloColumnConstraint acc : constraints.stream().filter(x -> x.isIndexed()).collect(Collectors.toList())) {
+        for (AccumuloColumnConstraint acc : indexedConstraints) {
             for (com.facebook.presto.spi.predicate.Range r : acc.getDomain().getValues().getRanges().getOrderedRanges()) {
                 indexRanges.add(getRangeFromPrestoRange(fulltable, r));
             }
 
             BatchScanner scan = conn.createBatchScanner(indexTable, indexScanAuths, 10);
             scan.setRanges(indexRanges);
-            scan.fetchColumnFamily(new Text(acc.getFamily() + "_" + acc.getQualifier()));
+            scan.fetchColumnFamily(new Text(Utils.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()));
             for (Entry<Key, Value> entry : scan) {
                 entry.getKey().getColumnQualifier(cq);
 
@@ -318,6 +361,8 @@ public class AccumuloClient
             }
             scan.close();
         }
+
+        LOG.debug("Retrieved %d ranges from secondary index for table %s", columnPushdownRanges.size(), fulltable);
         return columnPushdownRanges;
     }
 
@@ -332,7 +377,7 @@ public class AccumuloClient
         return splitRanges;
     }
 
-    private List<TabletSplitMetadata> binRanges(Collection<Range> splitRanges)
+    private List<TabletSplitMetadata> binRanges(int numRangesPerBin, Collection<Range> splitRanges)
     {
         List<TabletSplitMetadata> prestoSplits = new ArrayList<>();
 
@@ -346,12 +391,12 @@ public class AccumuloClient
         String loc = "localhost:9997";
         int toAdd = rHandles.size();
         int fromIndex = 0;
-        int toIndex = Math.min(toAdd, 1000);
+        int toIndex = Math.min(toAdd, numRangesPerBin);
         do {
             prestoSplits.add(new TabletSplitMetadata(loc, rHandles.subList(fromIndex, toIndex)));
             toAdd -= toIndex - fromIndex;
             fromIndex = toIndex;
-            toIndex += Math.min(toAdd, 1000);
+            toIndex += Math.min(toAdd, numRangesPerBin);
         }
         while (toAdd > 0);
         return prestoSplits;
@@ -374,24 +419,29 @@ public class AccumuloClient
     {
         final Range preSplitRange;
         if (pRange.isAll()) {
+            LOG.debug("Range is all");
             preSplitRange = new Range();
         }
         else if (pRange.isSingleValue()) {
+            LOG.debug("Range is single value: %s", pRange.getSingleValue());
             Text split = new Text(LexicoderRowSerializer.encode(pRange.getType(), pRange.getSingleValue()));
             preSplitRange = new Range(split);
         }
         else {
             if (pRange.getLow().isLowerUnbounded()) {
+                LOG.debug("Range is from -inf to %s", pRange.getHigh().getValue());
                 boolean inclusive = pRange.getHigh().getBound() == Bound.EXACTLY;
                 Text split = new Text(LexicoderRowSerializer.encode(pRange.getType(), pRange.getHigh().getValue()));
                 preSplitRange = new Range(null, false, split, inclusive);
             }
             else if (pRange.getHigh().isUpperUnbounded()) {
+                LOG.debug("Range is from %s to +inf", pRange.getLow().getValue());
                 boolean inclusive = pRange.getLow().getBound() == Bound.EXACTLY;
                 Text split = new Text(LexicoderRowSerializer.encode(pRange.getType(), pRange.getLow().getValue()));
                 preSplitRange = new Range(split, inclusive, null, false);
             }
             else {
+                LOG.debug("Range is from %s to %s", pRange.getLow().getValue(), pRange.getHigh().getValue());
                 boolean startKeyInclusive = pRange.getLow().getBound() == Bound.EXACTLY;
                 Text startSplit = new Text(LexicoderRowSerializer.encode(pRange.getType(), pRange.getLow().getValue()));
 

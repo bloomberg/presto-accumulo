@@ -25,7 +25,7 @@ public class Driver
 {
 
     private static final Logger LOG = Logger.getLogger(Driver.class);
-    private static List<String> BLACKLIST = ImmutableList.copyOf(new String[] {"2.sql", "4.sql", "11.sql", "13.sql", "15.sql", "17.sql", "20.sql", "21.sql", "22.sql"});
+    private static List<String> BLACKLIST = ImmutableList.copyOf(new String[] {"2.sql", "4.sql", "9.sql", "11.sql", "13.sql", "15.sql", "17.sql", "19.sql", "20.sql", "21.sql", "22.sql"});
     private int numQueries = 0;
     private int ranQueries = 0;
     private List<QueryMetrics> metrics = new ArrayList<>();

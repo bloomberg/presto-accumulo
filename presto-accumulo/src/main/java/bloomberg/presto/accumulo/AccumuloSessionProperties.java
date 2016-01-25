@@ -24,6 +24,8 @@ import com.google.inject.Inject;
 import java.util.List;
 
 import static com.facebook.presto.spi.session.PropertyMetadata.booleanSessionProperty;
+import static com.facebook.presto.spi.session.PropertyMetadata.doubleSessionProperty;
+import static com.facebook.presto.spi.session.PropertyMetadata.integerSessionProperty;
 
 public final class AccumuloSessionProperties
 {
@@ -32,19 +34,31 @@ public final class AccumuloSessionProperties
     private static final String INT_OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED = "optimize_range_predicate_pushdown_enabled";
     private static final String INT_OPTIMIZE_RANGE_SPLITS_ENABLED = "optimize_range_splits_enabled";
     private static final String INT_SECONDARY_INDEX_ENABLED = "secondary_index_enabled";
+    private static final String INT_RANGES_PER_SPLIT = "ranges_per_split";
+    private static final String INT_SECONDARY_INDEX_THRESHOLD = "secondary_index_threshold";
 
     public static final String OPTIMIZE_COLUMN_FILTERS_ENABLED = "accumulo." + INT_OPTIMIZE_COLUMN_FILTERS_ENABLED;
     public static final String OPTIMIZE_LOCALITY_ENABLED = "accumulo." + INT_OPTIMIZE_LOCALITY_ENABLED;
     public static final String OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED = "accumulo." + INT_OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED;
     public static final String OPTIMIZE_RANGE_SPLITS_ENABLED = "accumulo." + INT_OPTIMIZE_RANGE_SPLITS_ENABLED;
     public static final String SECONDARY_INDEX_ENABLED = "accumulo." + INT_SECONDARY_INDEX_ENABLED;
+    public static final String RANGES_PER_SPLIT = "accumulo." + INT_RANGES_PER_SPLIT;
+    public static final String SECONDARY_INDEX_THRESHOLD = "accumulo." + INT_SECONDARY_INDEX_THRESHOLD;
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
     @Inject
     public AccumuloSessionProperties(AccumuloConfig config)
     {
-        sessionProperties = ImmutableList.of(booleanSessionProperty(INT_OPTIMIZE_COLUMN_FILTERS_ENABLED, "Set to true to enable the column value filter pushdowns.  Default true.", true, false), booleanSessionProperty(INT_OPTIMIZE_LOCALITY_ENABLED, "Set to true to enable data locality lookups for scan ranges.  Default true.", true, false), booleanSessionProperty(INT_OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED, "Set to true to enable using predicate pushdowns on row ID.  Typically for testing only.  Default true.", true, false), booleanSessionProperty(INT_OPTIMIZE_RANGE_SPLITS_ENABLED, "Set to true to enable splitting the query by tablets.  Typically for testing only.  Default true.", true, false), booleanSessionProperty(INT_SECONDARY_INDEX_ENABLED, "Set to true to enable usage of the secondary index on query.  Typically for testing only.  Default true.", true, false));
+        PropertyMetadata<Boolean> s1 = booleanSessionProperty(INT_OPTIMIZE_COLUMN_FILTERS_ENABLED, "Set to true to enable the column value filter pushdowns.  Default true.", true, false);
+        PropertyMetadata<Boolean> s2 = booleanSessionProperty(INT_OPTIMIZE_LOCALITY_ENABLED, "Set to true to enable data locality lookups for scan ranges.  Default true.", true, false);
+        PropertyMetadata<Boolean> s3 = booleanSessionProperty(INT_OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED, "Set to true to enable using predicate pushdowns on row ID.  Default true.", true, false);
+        PropertyMetadata<Boolean> s4 = booleanSessionProperty(INT_OPTIMIZE_RANGE_SPLITS_ENABLED, "Set to true to enable splitting the query by tablets.  Default true.", true, false);
+        PropertyMetadata<Boolean> s5 = booleanSessionProperty(INT_SECONDARY_INDEX_ENABLED, "Set to true to enable usage of the secondary index on query.  Default true.", true, false);
+        PropertyMetadata<Integer> s6 = integerSessionProperty(INT_RANGES_PER_SPLIT, "The number of Accumulo ranges that are packed into a single Presto split.  Default 10000", 10000, false);
+        PropertyMetadata<Double> s7 = doubleSessionProperty(INT_SECONDARY_INDEX_THRESHOLD, "The ratio between number of rows to be scanned based on the secondary index over the total number of rows.  If the ratio is below this threshold, the secondary index will be used.  Default .05", .05, false);
+
+        sessionProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7);
     }
 
     public List<PropertyMetadata<?>> getSessionProperties()
@@ -75,5 +89,15 @@ public final class AccumuloSessionProperties
     public static boolean isSecondaryIndexEnabled(ConnectorSession session)
     {
         return session.getProperty(INT_SECONDARY_INDEX_ENABLED, Boolean.class);
+    }
+
+    public static double getIndexRatio(ConnectorSession session)
+    {
+        return session.getProperty(INT_SECONDARY_INDEX_THRESHOLD, Double.class);
+    }
+
+    public static int getRangesPerSplit(ConnectorSession session)
+    {
+        return session.getProperty(INT_RANGES_PER_SPLIT, Integer.class);
     }
 }
