@@ -54,10 +54,11 @@ public class AccumuloPageSink
         this.types = table.getColumns();
 
         try {
-            wrtr = conn.createBatchWriter(table.getFullTableName(), new BatchWriterConfig());
+            BatchWriterConfig conf = new BatchWriterConfig();
+            wrtr = conn.createBatchWriter(table.getFullTableName(), conf);
 
             if (table.isIndexed()) {
-                indexer = new Indexer(conn, table);
+                indexer = new Indexer(conn, table, conf);
             }
             else {
                 indexer = null;

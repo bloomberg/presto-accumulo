@@ -52,19 +52,21 @@ public class Indexer
 
     private final AccumuloTable table;
     private final BatchWriter indexWrtr;
+    private final BatchWriterConfig bwc;
     private final Connector conn;
     private final Map<ByteBuffer, Map<ByteBuffer, AtomicLong>> metrics = new HashMap<>();
     private final Map<ByteBuffer, Set<ByteBuffer>> indexColumns = new HashMap<>();
     private final Map<ByteBuffer, Map<ByteBuffer, Type>> indexColumnTypes = new HashMap<>();
 
-    public Indexer(Connector conn, AccumuloTable table)
+    public Indexer(Connector conn, AccumuloTable table, BatchWriterConfig bwc)
             throws TableNotFoundException
     {
         this.conn = conn;
         this.table = table;
+        this.bwc = bwc;
 
         // initialize batch writers
-        indexWrtr = conn.createBatchWriter(table.getIndexTableName(), new BatchWriterConfig());
+        indexWrtr = conn.createBatchWriter(table.getIndexTableName(), bwc);
         table.getColumns().stream().forEach(x -> {
             if (x.isIndexed()) {
                 ByteBuffer cf = ByteBuffer.wrap(x.getColumnFamily().getBytes());
@@ -149,6 +151,13 @@ public class Indexer
         }
     }
 
+    public void index(Iterable<Mutation> mutations)
+    {
+        for (Mutation m : mutations) {
+            index(m);
+        }
+    }
+
     private void addIndexMutation(ByteBuffer row, ByteBuffer family, byte[] qualifier)
     {
         // create the mutation and add it to the given collection
@@ -181,7 +190,7 @@ public class Indexer
             indexWrtr.flush();
 
             // write out metrics mutations
-            BatchWriter metricsWrtr = conn.createBatchWriter(table.getMetricsTableName(), new BatchWriterConfig());
+            BatchWriter metricsWrtr = conn.createBatchWriter(table.getMetricsTableName(), bwc);
             metricsWrtr.addMutations(getMetricsMutations());
             metricsWrtr.close();
 
@@ -202,7 +211,7 @@ public class Indexer
         try {
             indexWrtr.close();
 
-            BatchWriter metricsWrtr = conn.createBatchWriter(table.getMetricsTableName(), new BatchWriterConfig());
+            BatchWriter metricsWrtr = conn.createBatchWriter(table.getMetricsTableName(), bwc);
             metricsWrtr.addMutations(getMetricsMutations());
             metricsWrtr.close();
         }

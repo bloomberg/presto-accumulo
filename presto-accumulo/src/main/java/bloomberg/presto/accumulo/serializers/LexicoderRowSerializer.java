@@ -332,6 +332,9 @@ public class LexicoderRowSerializer
         else if (type.equals(VARCHAR) && v instanceof Slice) {
             toEncode = ((Slice) v).toStringUtf8();
         }
+        else if (type.equals(BIGINT) && v instanceof Integer) {
+            toEncode = ((Integer) v).longValue();
+        }
         else {
             toEncode = v;
         }
