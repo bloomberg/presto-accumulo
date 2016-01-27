@@ -27,6 +27,7 @@ import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.UnsignedBytes;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.AccumuloException;
@@ -320,8 +321,52 @@ public class AccumuloClient
                 splitRanges = finalRanges;
             }
 
+            final Collection<Range> artificialRanges;
+            if (conn.tableOperations().exists(metricsTable)) {
+                LOG.debug("Generating artificial ranges");
+                Scanner scan = conn.createScanner(metricsTable, conn.securityOperations().getUserAuthorizations(conf.getUsername()));
+                scan.setRange(new Range(new Text(Indexer.METRICS_TABLE_ROW_ID.array())));
+                Text cf = new Text(Indexer.METRICS_TABLE_ROWS_CF.array());
+                Text firstRowCQ = new Text(Indexer.METRICS_TABLE_FIRST_ROW_CQ.array());
+                Text lastRowCQ = new Text(Indexer.METRICS_TABLE_LAST_ROW_CQ.array());
+                scan.fetchColumn(cf, firstRowCQ);
+                scan.fetchColumn(cf, lastRowCQ);
+
+                byte[] firstRow = null;
+                byte[] lastRow = null;
+                for (Entry<Key, Value> e : scan) {
+                    if (e.getKey().compareColumnQualifier(firstRowCQ) == 0) {
+                        firstRow = e.getValue().get();
+                        LOG.debug("First row is " + e.getValue());
+                    }
+
+                    if (e.getKey().compareColumnQualifier(lastRowCQ) == 0) {
+                        lastRow = e.getValue().get();
+                        LOG.debug("Last row is " + e.getValue());
+                    }
+                }
+                scan.close();
+
+                if (firstRow != null && lastRow != null) {
+                    artificialRanges = generateArtificialSplits(firstRow, lastRow, AccumuloSessionProperties.getNumArtificialSplits(session), splitRanges);
+                }
+                else {
+                    LOG.debug("First row and/or last row is null, no artificial splits today");
+                    artificialRanges = splitRanges;
+                }
+            }
+            else {
+                LOG.debug("Table is not indexed, cannot generate artificial ranges");
+                artificialRanges = splitRanges;
+            }
+
             // and now bin all the ranges into presto splits
-            return binRanges(AccumuloSessionProperties.getRangesPerSplit(session), splitRanges);
+            List<TabletSplitMetadata> bRanges = binRanges(AccumuloSessionProperties.getRangesPerSplit(session), artificialRanges);
+            LOG.debug("Number of splits for table %s is %d with %d ranges", tableName, bRanges.size(), artificialRanges.size());
+            for (TabletSplitMetadata tsm : bRanges) {
+                LOG.debug(tsm.toString());
+            }
+            return bRanges;
         }
         catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to get splits", e);
@@ -443,6 +488,72 @@ public class AccumuloClient
             splitRanges.addAll(conn.tableOperations().splitRangeByTablets(tableName, r, Integer.MAX_VALUE));
         }
         return splitRanges;
+    }
+
+    private Collection<Range> generateArtificialSplits(byte[] firstRow, byte[] lastRow, int iterations, Collection<Range> ranges)
+    {
+        if (iterations == 0) {
+            return ranges;
+        }
+
+        Collection<Range> arties = new ArrayList<>();
+        Text start = new Text();
+        Text mid = new Text();
+        Text end = new Text();
+        for (Range r : ranges) {
+            if (r.getStartKey() == null) {
+                start.set(firstRow);
+            }
+            else {
+                r.getStartKey().getRow(start);
+            }
+
+            if (r.getEndKey() == null) {
+                end.set(lastRow);
+            }
+            else {
+                r.getEndKey().getRow(end);
+            }
+
+            if (start.compareTo(end) != 0) {
+                mid.set(midpoint(start.copyBytes(), end.copyBytes()));
+                arties.add(new Range(start, r.isStartKeyInclusive(), mid, false));
+                arties.add(new Range(mid, true, end, r.isEndKeyInclusive()));
+                LOG.debug("Added some artificial splits");
+            }
+            else {
+                arties.add(r);
+            }
+        }
+
+        if (iterations > 0) {
+            arties = generateArtificialSplits(firstRow, lastRow, iterations - 1, arties);
+        }
+
+        return arties;
+    }
+
+    private byte[] midpoint(byte[] start, byte[] end)
+    {
+        assert start.length == end.length;
+
+        byte[] midpoint = new byte[start.length];
+        int remainder = 0;
+        for (int i = 0; i < start.length; ++i) {
+            int intStart = UnsignedBytes.toInt(start[i]);
+            int intEnd = UnsignedBytes.toInt(end[i]);
+
+            if (intStart > intEnd) {
+                int tmp = intStart;
+                intStart = intEnd;
+                intEnd = tmp;
+            }
+
+            int mid = ((intEnd - intStart) / 2) + intStart + remainder;
+            remainder = ((intEnd - intStart) % 2) == 1 ? 128 : 0;
+            midpoint[i] = (byte) mid;
+        }
+        return midpoint;
     }
 
     private List<TabletSplitMetadata> binRanges(int numRangesPerBin, Collection<Range> splitRanges)
