@@ -11,6 +11,7 @@ import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
+import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.mock.MockInstance;
@@ -74,7 +75,9 @@ public class IndexerTest
         conn.tableOperations().create(table.getFullTableName());
         conn.tableOperations().create(table.getIndexTableName());
         conn.tableOperations().create(table.getMetricsTableName());
-        conn.tableOperations().attachIterator(table.getMetricsTableName(), Indexer.getMetricIterator());
+        for (IteratorSetting s : Indexer.getMetricIterators(table)) {
+            conn.tableOperations().attachIterator(table.getMetricsTableName(), s);
+        }
 
         m1.put(CF, AGE, AGE_VALUE);
         m1.put(CF, FIRSTNAME, M1_FNAME_VALUE);
@@ -85,7 +88,7 @@ public class IndexerTest
 
         auths = conn.securityOperations().getUserAuthorizations("root");
 
-        indexer = new Indexer(conn, table, new BatchWriterConfig());
+        indexer = new Indexer(conn, auths, table, new BatchWriterConfig());
     }
 
     @After
@@ -123,6 +126,8 @@ public class IndexerTest
         iter = scan.iterator();
         assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "cardinality", "1");
         assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "cardinality", "1");
+        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "first_row", "row1");
+        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "last_row", "row1");
         assertKeyValuePair(iter.next(), "abc".getBytes(), "cf_arr", "cardinality", "1");
         assertKeyValuePair(iter.next(), M1_FNAME_VALUE, "cf_firstname", "cardinality", "1");
         assertKeyValuePair(iter.next(), "def".getBytes(), "cf_arr", "cardinality", "1");
@@ -153,11 +158,12 @@ public class IndexerTest
 
         scan = conn.createScanner(table.getMetricsTableName(), auths);
         scan.setRange(new Range());
-        scan.addScanIterator(Indexer.getMetricIterator());
 
         iter = scan.iterator();
         assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "cardinality", "2");
         assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "cardinality", "2");
+        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "first_row", "row1");
+        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "last_row", "row2");
         assertKeyValuePair(iter.next(), "abc".getBytes(), "cf_arr", "cardinality", "2");
         assertKeyValuePair(iter.next(), M1_FNAME_VALUE, "cf_firstname", "cardinality", "1");
         assertKeyValuePair(iter.next(), M2_FNAME_VALUE, "cf_firstname", "cardinality", "1");

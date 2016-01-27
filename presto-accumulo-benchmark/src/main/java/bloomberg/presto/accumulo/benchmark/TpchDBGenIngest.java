@@ -11,6 +11,7 @@ import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Mutation;
@@ -36,7 +37,6 @@ import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 
 public class TpchDBGenIngest
 {
-
     private static final char DELIMITER = '|';
     private static final String CUSTOMER_ROW_ID = "custkey";
     private static final String LINEITEM_ROW_ID = "uuid";
@@ -114,11 +114,14 @@ public class TpchDBGenIngest
                 conn.tableOperations().setLocalityGroups(table.getIndexTableName(), groups);
 
                 conn.tableOperations().create(table.getMetricsTableName());
-                conn.tableOperations().attachIterator(table.getMetricsTableName(), Indexer.getMetricIterator());
                 conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), groups);
+                for (IteratorSetting s : Indexer.getMetricIterators(table)) {
+                    conn.tableOperations().attachIterator(table.getMetricsTableName(), s);
+                }
+
                 System.out.println(String.format("Created index metrics table %s", table.getMetricsTableName()));
 
-                indexer = new Indexer(conn, table);
+                indexer = new Indexer(conn, conn.securityOperations().getUserAuthorizations(accConfig.getUsername()), table, new BatchWriterConfig());
             }
             else {
                 indexer = null;

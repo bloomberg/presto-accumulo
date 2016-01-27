@@ -15,6 +15,8 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeUtils;
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Slice;
+import org.apache.accumulo.core.client.AccumuloException;
+import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
@@ -40,7 +42,7 @@ public class AccumuloPageSink
     private final List<Row> rows = new ArrayList<>();
     private final String rowIdName;
 
-    public AccumuloPageSink(Connector conn, AccumuloTable table)
+    public AccumuloPageSink(Connector conn, AccumuloConfig accConfig, AccumuloTable table)
     {
         requireNonNull(conn, "conn is null");
         requireNonNull(table, "tHandle is null");
@@ -48,7 +50,7 @@ public class AccumuloPageSink
             this.serializer = table.getSerializerClass().newInstance();
         }
         catch (Exception e) {
-            throw new RuntimeException("Failed to factory serializer class", e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to factory serializer class", e);
         }
 
         this.types = table.getColumns();
@@ -58,13 +60,13 @@ public class AccumuloPageSink
             wrtr = conn.createBatchWriter(table.getFullTableName(), conf);
 
             if (table.isIndexed()) {
-                indexer = new Indexer(conn, table, conf);
+                indexer = new Indexer(conn, conn.securityOperations().getUserAuthorizations(accConfig.getUsername()), table, conf);
             }
             else {
                 indexer = null;
             }
         }
-        catch (TableNotFoundException e) {
+        catch (TableNotFoundException | AccumuloException | AccumuloSecurityException e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
 

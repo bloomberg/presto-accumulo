@@ -33,6 +33,7 @@ import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
@@ -169,8 +170,10 @@ public class AccumuloClient
 
                     // Create index metrics table, attach iterators, and set locality groups
                     conn.tableOperations().create(table.getMetricsTableName());
-                    conn.tableOperations().attachIterator(table.getMetricsTableName(), Indexer.getMetricIterator());
                     conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), groups);
+                    for (IteratorSetting s : Indexer.getMetricIterators(table)) {
+                        conn.tableOperations().attachIterator(table.getMetricsTableName(), s);
+                    }
                 }
             }
             catch (Exception e) {
@@ -346,10 +349,10 @@ public class AccumuloClient
     private long getNumRowsInTable(String metricsTable)
             throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
-        Text cardQual = new Text(Indexer.METRICS_COLUMN_QUALIFIER);
+        Text cardQual = new Text(Indexer.CARDINALITY_CQ);
         Authorizations auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
         Scanner scan = conn.createScanner(metricsTable, auths);
-        scan.fetchColumn(new Text(Indexer.METRICS_TABLE_NUM_ROWS_COLUMN_FAMILY.array()), cardQual);
+        scan.fetchColumn(new Text(Indexer.METRICS_TABLE_ROWS_CF.array()), cardQual);
         scan.setRange(new Range(new Text(Indexer.METRICS_TABLE_ROW_ID.array())));
 
         long numRows = -1;
@@ -368,7 +371,7 @@ public class AccumuloClient
     private long getColumnCardinality(String metricsTable, AccumuloColumnConstraint acc)
             throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
-        Text cardQual = new Text(Indexer.METRICS_COLUMN_QUALIFIER);
+        Text cardQual = new Text(Indexer.CARDINALITY_CQ);
         List<Range> indexRanges = new ArrayList<>();
 
         for (com.facebook.presto.spi.predicate.Range r : acc.getDomain().getValues().getRanges().getOrderedRanges()) {

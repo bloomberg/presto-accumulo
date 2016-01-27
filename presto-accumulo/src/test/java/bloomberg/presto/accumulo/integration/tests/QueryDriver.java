@@ -8,6 +8,7 @@ import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
+import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.DateType;
@@ -25,6 +26,7 @@ import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.TableExistsException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
@@ -433,7 +435,9 @@ public class QueryDriver
         if (this.hasIndex()) {
             conn.tableOperations().create(Indexer.getIndexTableName(schema, tableName));
             conn.tableOperations().create(Indexer.getMetricsTableName(schema, tableName));
-            conn.tableOperations().attachIterator(Indexer.getMetricsTableName(schema, tableName), Indexer.getMetricIterator());
+            for (IteratorSetting s : Indexer.getMetricIterators(metaManager.getTable(new SchemaTableName(schema, tableName)))) {
+                conn.tableOperations().attachIterator(Indexer.getMetricsTableName(schema, tableName), s);
+            }
         }
     }
 

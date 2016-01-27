@@ -2,25 +2,36 @@ package bloomberg.presto.accumulo.index;
 
 import bloomberg.presto.accumulo.AccumuloTable;
 import bloomberg.presto.accumulo.Types;
+import bloomberg.presto.accumulo.iterators.MaxByteArrayCombiner;
+import bloomberg.presto.accumulo.iterators.MinByteArrayCombiner;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.Type;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.primitives.UnsignedBytes;
+import org.apache.accumulo.core.client.AccumuloException;
+import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.MutationsRejectedException;
+import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.data.ColumnUpdate;
+import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
+import org.apache.accumulo.core.data.Range;
+import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.LongCombiner;
 import org.apache.accumulo.core.iterators.TypedValueCombiner;
 import org.apache.accumulo.core.iterators.user.SummingCombiner;
+import org.apache.accumulo.core.security.Authorizations;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.io.Text;
 
@@ -28,6 +39,7 @@ import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,8 +55,10 @@ public class Indexer
         implements Closeable
 {
     public static final ByteBuffer METRICS_TABLE_ROW_ID = wrap("METRICS_TABLE".getBytes());
-    public static final ByteBuffer METRICS_TABLE_NUM_ROWS_COLUMN_FAMILY = wrap("rows".getBytes());
-    public static final byte[] METRICS_COLUMN_QUALIFIER = "cardinality".getBytes();
+    public static final ByteBuffer METRICS_TABLE_ROWS_CF = wrap("rows".getBytes());
+    public static final ByteBuffer METRICS_TABLE_FIRST_ROW_CQ = wrap("first_row".getBytes());
+    public static final ByteBuffer METRICS_TABLE_LAST_ROW_CQ = wrap("last_row".getBytes());
+    public static final byte[] CARDINALITY_CQ = "cardinality".getBytes();
 
     private static final byte[] EMPTY_BYTES = new byte[0];
     private static final byte UNDERSCORE = '_';
@@ -58,8 +72,12 @@ public class Indexer
     private final Map<ByteBuffer, Set<ByteBuffer>> indexColumns = new HashMap<>();
     private final Map<ByteBuffer, Map<ByteBuffer, Type>> indexColumnTypes = new HashMap<>();
 
-    public Indexer(Connector conn, AccumuloTable table, BatchWriterConfig bwc)
-            throws TableNotFoundException
+    private Comparator<byte[]> byteArrayComparator = UnsignedBytes.lexicographicalComparator();
+    private byte[] firstRow = null;
+    private byte[] lastRow = null;
+
+    public Indexer(Connector conn, Authorizations auths, AccumuloTable table, BatchWriterConfig bwc)
+            throws TableNotFoundException, AccumuloException, AccumuloSecurityException
     {
         this.conn = conn;
         this.table = table;
@@ -96,7 +114,7 @@ public class Indexer
 
         // initialize metrics map
         Map<ByteBuffer, AtomicLong> cfMap = new HashMap<>();
-        cfMap.put(METRICS_TABLE_NUM_ROWS_COLUMN_FAMILY, new AtomicLong(0));
+        cfMap.put(METRICS_TABLE_ROWS_CF, new AtomicLong(0));
         metrics.put(METRICS_TABLE_ROW_ID, cfMap);
 
         // initialize index columns data structure
@@ -109,11 +127,38 @@ public class Indexer
             }
             qualifies.add(wrap(col.getColumnQualifier().getBytes()));
         }
+
+        Scanner scan = conn.createScanner(table.getMetricsTableName(), auths);
+        scan.setRange(new Range(new Text(METRICS_TABLE_ROW_ID.array())));
+        Text cf = new Text(METRICS_TABLE_ROWS_CF.array());
+        Text firstRowCQ = new Text(METRICS_TABLE_FIRST_ROW_CQ.array());
+        Text lastRowCQ = new Text(METRICS_TABLE_LAST_ROW_CQ.array());
+        scan.fetchColumn(cf, firstRowCQ);
+        scan.fetchColumn(cf, lastRowCQ);
+
+        for (Entry<Key, Value> e : scan) {
+            if (e.getKey().compareColumnQualifier(firstRowCQ) == 0) {
+                firstRow = e.getValue().get();
+            }
+
+            if (e.getKey().compareColumnQualifier(lastRowCQ) == 0) {
+                lastRow = e.getValue().get();
+            }
+        }
+        scan.close();
     }
 
     public void index(final Mutation m)
     {
-        metrics.get(METRICS_TABLE_ROW_ID).get(METRICS_TABLE_NUM_ROWS_COLUMN_FAMILY).incrementAndGet();
+        metrics.get(METRICS_TABLE_ROW_ID).get(METRICS_TABLE_ROWS_CF).incrementAndGet();
+
+        if (firstRow == null || byteArrayComparator.compare(m.getRow(), firstRow) < 0) {
+            firstRow = m.getRow();
+        }
+
+        if (lastRow == null || byteArrayComparator.compare(m.getRow(), lastRow) > 0) {
+            lastRow = m.getRow();
+        }
 
         // for each column update in this mutation
         for (ColumnUpdate cu : m.getUpdates()) {
@@ -197,7 +242,7 @@ public class Indexer
             // re-initialize the metrics
             metrics.clear();
             Map<ByteBuffer, AtomicLong> cfMap = new HashMap<>();
-            cfMap.put(METRICS_TABLE_NUM_ROWS_COLUMN_FAMILY, new AtomicLong(0));
+            cfMap.put(METRICS_TABLE_ROWS_CF, new AtomicLong(0));
             metrics.put(METRICS_TABLE_ROW_ID, cfMap);
         }
         catch (MutationsRejectedException | TableNotFoundException e) {
@@ -209,13 +254,10 @@ public class Indexer
     public void close()
     {
         try {
+            flush();
             indexWrtr.close();
-
-            BatchWriter metricsWrtr = conn.createBatchWriter(table.getMetricsTableName(), bwc);
-            metricsWrtr.addMutations(getMetricsMutations());
-            metricsWrtr.close();
         }
-        catch (MutationsRejectedException | TableNotFoundException e) {
+        catch (MutationsRejectedException e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
@@ -228,17 +270,39 @@ public class Indexer
             // create new mutation
             Mutation mut = new Mutation(idxRow.array());
             for (Entry<ByteBuffer, AtomicLong> columnValues : m.getValue().entrySet()) {
-                mut.put(columnValues.getKey().array(), METRICS_COLUMN_QUALIFIER, ENCODER.encode(columnValues.getValue().get()));
+                mut.put(columnValues.getKey().array(), CARDINALITY_CQ, ENCODER.encode(columnValues.getValue().get()));
             }
             muts.add(mut);
+        }
+
+        if (firstRow != null && lastRow != null) {
+            Mutation flm = new Mutation(METRICS_TABLE_ROW_ID.array());
+            flm.put(METRICS_TABLE_ROWS_CF.array(), METRICS_TABLE_FIRST_ROW_CQ.array(), firstRow);
+            flm.put(METRICS_TABLE_ROWS_CF.array(), METRICS_TABLE_LAST_ROW_CQ.array(), lastRow);
+            muts.add(flm);
         }
 
         return muts;
     }
 
-    public static IteratorSetting getMetricIterator()
+    public static Collection<IteratorSetting> getMetricIterators(AccumuloTable table)
     {
-        return new IteratorSetting(1, SummingCombiner.class, ImmutableMap.of("all", "true", "type", "STRING"));
+        String cardCq = new String(CARDINALITY_CQ);
+        String rowsCf = new String(METRICS_TABLE_ROWS_CF.array());
+        StringBuilder cardBldr = new StringBuilder(rowsCf + ":" + cardCq + ",");
+        for (String s : getLocalityGroups(table).keySet()) {
+            cardBldr.append(s).append(":").append(cardCq).append(',');
+        }
+        cardBldr.deleteCharAt(cardBldr.length() - 1);
+
+        String firstRowColumn = rowsCf + ":" + new String(METRICS_TABLE_FIRST_ROW_CQ.array());
+        String lastRowColumn = rowsCf + ":" + new String(METRICS_TABLE_LAST_ROW_CQ.array());
+
+        IteratorSetting s1 = new IteratorSetting(1, SummingCombiner.class, ImmutableMap.of("columns", cardBldr.toString(), "type", "STRING"));
+        IteratorSetting s2 = new IteratorSetting(2, MinByteArrayCombiner.class, ImmutableMap.of("columns", firstRowColumn));
+        IteratorSetting s3 = new IteratorSetting(3, MaxByteArrayCombiner.class, ImmutableMap.of("columns", lastRowColumn));
+
+        return ImmutableList.of(s1, s2, s3);
     }
 
     public static ByteBuffer getIndexColumnFamily(byte[] columnFamily, byte[] columnQualifier)

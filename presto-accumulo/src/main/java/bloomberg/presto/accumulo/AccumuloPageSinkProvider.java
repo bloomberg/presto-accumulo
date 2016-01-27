@@ -35,13 +35,14 @@ public class AccumuloPageSinkProvider
         implements ConnectorPageSinkProvider
 {
     private final AccumuloClient client;
+    private final AccumuloConfig config;
     private final Connector conn;
 
     @Inject
     public AccumuloPageSinkProvider(AccumuloConfig config, AccumuloClient client)
     {
         this.client = requireNonNull(client, "client is null");
-        requireNonNull(config, "config is null");
+        this.config = requireNonNull(config, "config is null");
 
         ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
         try {
@@ -57,7 +58,7 @@ public class AccumuloPageSinkProvider
     {
         AccumuloTableHandle tHandle = checkType(outputTableHandle, AccumuloTableHandle.class, "table");
         AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
-        return new AccumuloPageSink(conn, table);
+        return new AccumuloPageSink(conn, config, table);
     }
 
     @Override
@@ -65,6 +66,6 @@ public class AccumuloPageSinkProvider
     {
         AccumuloTableHandle tHandle = checkType(insertTableHandle, AccumuloTableHandle.class, "table");
         AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
-        return new AccumuloPageSink(conn, table);
+        return new AccumuloPageSink(conn, config, table);
     }
 }
