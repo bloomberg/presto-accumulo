@@ -324,31 +324,13 @@ public class AccumuloClient
             final Collection<Range> artificialRanges;
             if (conn.tableOperations().exists(metricsTable)) {
                 LOG.debug("Generating artificial ranges");
-                Scanner scan = conn.createScanner(metricsTable, conn.securityOperations().getUserAuthorizations(conf.getUsername()));
-                scan.setRange(new Range(new Text(Indexer.METRICS_TABLE_ROW_ID.array())));
-                Text cf = new Text(Indexer.METRICS_TABLE_ROWS_CF.array());
-                Text firstRowCQ = new Text(Indexer.METRICS_TABLE_FIRST_ROW_CQ.array());
-                Text lastRowCQ = new Text(Indexer.METRICS_TABLE_LAST_ROW_CQ.array());
-                scan.fetchColumn(cf, firstRowCQ);
-                scan.fetchColumn(cf, lastRowCQ);
 
-                byte[] firstRow = null;
-                byte[] lastRow = null;
-                for (Entry<Key, Value> e : scan) {
-                    if (e.getKey().compareColumnQualifier(firstRowCQ) == 0) {
-                        firstRow = e.getValue().get();
-                        LOG.debug("First row is " + e.getValue());
-                    }
+                Pair<byte[], byte[]> firstLastRow = Indexer.getMinMaxRowIds(conn, metricsTable, conf.getUsername());
+                LOG.debug("First row is " + firstLastRow.getLeft());
+                LOG.debug("Last row is " + firstLastRow.getRight());
 
-                    if (e.getKey().compareColumnQualifier(lastRowCQ) == 0) {
-                        lastRow = e.getValue().get();
-                        LOG.debug("Last row is " + e.getValue());
-                    }
-                }
-                scan.close();
-
-                if (firstRow != null && lastRow != null) {
-                    artificialRanges = generateArtificialSplits(firstRow, lastRow, AccumuloSessionProperties.getNumArtificialSplits(session), splitRanges);
+                if (firstLastRow.getLeft() != null && firstLastRow.getRight() != null) {
+                    artificialRanges = generateArtificialSplits(firstLastRow.getLeft(), firstLastRow.getRight(), AccumuloSessionProperties.getNumArtificialSplits(session), splitRanges);
                 }
                 else {
                     LOG.debug("First row and/or last row is null, no artificial splits today");

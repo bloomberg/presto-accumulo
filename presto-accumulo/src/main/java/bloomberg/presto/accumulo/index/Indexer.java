@@ -33,6 +33,7 @@ import org.apache.accumulo.core.iterators.TypedValueCombiner;
 import org.apache.accumulo.core.iterators.user.SummingCombiner;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.io.Text;
 
 import java.io.Closeable;
@@ -338,5 +339,31 @@ public class Indexer
     public static String getMetricsTableName(SchemaTableName stName)
     {
         return getMetricsTableName(stName.getSchemaName(), stName.getTableName());
+    }
+
+    public static Pair<byte[], byte[]> getMinMaxRowIds(Connector conn, String metricsTable, String username)
+            throws TableNotFoundException, AccumuloException, AccumuloSecurityException
+    {
+        Scanner scan = conn.createScanner(metricsTable, conn.securityOperations().getUserAuthorizations(username));
+        scan.setRange(new Range(new Text(Indexer.METRICS_TABLE_ROW_ID.array())));
+        Text cf = new Text(Indexer.METRICS_TABLE_ROWS_CF.array());
+        Text firstRowCQ = new Text(Indexer.METRICS_TABLE_FIRST_ROW_CQ.array());
+        Text lastRowCQ = new Text(Indexer.METRICS_TABLE_LAST_ROW_CQ.array());
+        scan.fetchColumn(cf, firstRowCQ);
+        scan.fetchColumn(cf, lastRowCQ);
+
+        byte[] firstRow = null;
+        byte[] lastRow = null;
+        for (Entry<Key, Value> e : scan) {
+            if (e.getKey().compareColumnQualifier(firstRowCQ) == 0) {
+                firstRow = e.getValue().get();
+            }
+
+            if (e.getKey().compareColumnQualifier(lastRowCQ) == 0) {
+                lastRow = e.getValue().get();
+            }
+        }
+        scan.close();
+        return Pair.of(firstRow, lastRow);
     }
 }

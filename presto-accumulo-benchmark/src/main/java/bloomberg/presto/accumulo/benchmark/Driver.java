@@ -100,19 +100,19 @@ public class Driver
             for (int ns : numSplits) {
                 // split each table
                 for (String tableName : splittableTables) {
-                    Splitter.run(accConf, schema, tableName, scale, ns);
+                    Splitter.run(accConf, schema, tableName, ns);
                 }
 
                 // Run queries flipping all of the optimization flags on and off
                 boolean[] bvalues = {false, true};
                 //for (boolean optimizeColumnFiltersEnabled : bvalues) {
-                for (boolean optimizeRangePredicatePushdownEnabled : bvalues) {
-                    for (boolean optimizeRangeSplitsEnabled : bvalues) {
-                        for (boolean secondaryIndexEnabled : bvalues) {
-                            runQueries(accConf, host, port, schema, scale, ns, false, optimizeRangePredicatePushdownEnabled, optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
-                        }
-                    }
+                //for (boolean optimizeRangePredicatePushdownEnabled : bvalues) {
+                //  for (boolean optimizeRangeSplitsEnabled : bvalues) {
+                for (boolean secondaryIndexEnabled : bvalues) {
+                    runQueries(accConf, host, port, schema, scale, ns, false, false, false, secondaryIndexEnabled, timeout);
                 }
+                //}
+                //}
                 //}
 
                 // Merge tables

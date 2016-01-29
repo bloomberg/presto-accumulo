@@ -58,7 +58,7 @@ public final class AccumuloSessionProperties
         PropertyMetadata<Boolean> s4 = booleanSessionProperty(INT_OPTIMIZE_RANGE_SPLITS_ENABLED, "Set to true to enable splitting the query by tablets.  Default true.", true, false);
         PropertyMetadata<Boolean> s5 = booleanSessionProperty(INT_SECONDARY_INDEX_ENABLED, "Set to true to enable usage of the secondary index on query.  Default true.", true, false);
         PropertyMetadata<Integer> s6 = integerSessionProperty(INT_RANGES_PER_SPLIT, "The number of Accumulo ranges that are packed into a single Presto split.  Default 10000", 10000, false);
-        PropertyMetadata<Double> s7 = doubleSessionProperty(INT_SECONDARY_INDEX_THRESHOLD, "The ratio between number of rows to be scanned based on the secondary index over the total number of rows.  If the ratio is below this threshold, the secondary index will be used.  Default .05", .05, false);
+        PropertyMetadata<Double> s7 = doubleSessionProperty(INT_SECONDARY_INDEX_THRESHOLD, "The ratio between number of rows to be scanned based on the secondary index over the total number of rows.  If the ratio is below this threshold, the secondary index will be used.  Default .2", .2, false);
         PropertyMetadata<Integer> s8 = integerSessionProperty(INT_NUM_ARTIFICIAL_SPLITS, "The power-of-two for the number of artificial splits created for ranges of row IDs. A value of 0 is disabled, 1 is 2^1 splits or two splits per range, 2 is 2^2 or four splits per range, etc.  Default 0 (disabled)", 0, false);
 
         sessionProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7, s8);
