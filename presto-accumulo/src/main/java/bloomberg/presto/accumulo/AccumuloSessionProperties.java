@@ -37,6 +37,7 @@ public final class AccumuloSessionProperties
     private static final String INT_RANGES_PER_SPLIT = "ranges_per_split";
     private static final String INT_SECONDARY_INDEX_THRESHOLD = "secondary_index_threshold";
     private static final String INT_NUM_ARTIFICIAL_SPLITS = "num_artificial_splits";
+    private static final String INT_LOWEST_CARDINALITY_THRESHOLD = "lowest_cardinality_threshold";
 
     public static final String OPTIMIZE_COLUMN_FILTERS_ENABLED = "accumulo." + INT_OPTIMIZE_COLUMN_FILTERS_ENABLED;
     public static final String OPTIMIZE_LOCALITY_ENABLED = "accumulo." + INT_OPTIMIZE_LOCALITY_ENABLED;
@@ -46,6 +47,7 @@ public final class AccumuloSessionProperties
     public static final String RANGES_PER_SPLIT = "accumulo." + INT_RANGES_PER_SPLIT;
     public static final String SECONDARY_INDEX_THRESHOLD = "accumulo." + INT_SECONDARY_INDEX_THRESHOLD;
     public static final String NUM_ARTIFICIAL_SPLITS = "accumulo." + INT_NUM_ARTIFICIAL_SPLITS;
+    public static final String LOWEST_CARDINALITY_THRESHOLD = "accumulo." + INT_LOWEST_CARDINALITY_THRESHOLD;
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -60,8 +62,9 @@ public final class AccumuloSessionProperties
         PropertyMetadata<Integer> s6 = integerSessionProperty(INT_RANGES_PER_SPLIT, "The number of Accumulo ranges that are packed into a single Presto split.  Default 10000", 10000, false);
         PropertyMetadata<Double> s7 = doubleSessionProperty(INT_SECONDARY_INDEX_THRESHOLD, "The ratio between number of rows to be scanned based on the secondary index over the total number of rows.  If the ratio is below this threshold, the secondary index will be used.  Default .2", .2, false);
         PropertyMetadata<Integer> s8 = integerSessionProperty(INT_NUM_ARTIFICIAL_SPLITS, "The power-of-two for the number of artificial splits created for ranges of row IDs. A value of 0 is disabled, 1 is 2^1 splits or two splits per range, 2 is 2^2 or four splits per range, etc.  Default 0 (disabled)", 0, false);
+        PropertyMetadata<Double> s9 = doubleSessionProperty(INT_LOWEST_CARDINALITY_THRESHOLD, "The threshold where the column with the lowest cardinality will be used instead of computing an intersection of ranges in the secondary index.  Secondary index must be enabled.  Default .01", .01, false);
 
-        sessionProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7, s8);
+        sessionProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7, s8, s9);
     }
 
     public List<PropertyMetadata<?>> getSessionProperties()
@@ -107,5 +110,10 @@ public final class AccumuloSessionProperties
     public static int getNumArtificialSplits(ConnectorSession session)
     {
         return session.getProperty(INT_NUM_ARTIFICIAL_SPLITS, Integer.class);
+    }
+
+    public static double getLowestCardinalityThreshold(ConnectorSession session)
+    {
+        return session.getProperty(INT_LOWEST_CARDINALITY_THRESHOLD, Double.class);
     }
 }

@@ -54,6 +54,7 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -252,53 +253,54 @@ public class AccumuloClient
             List<AccumuloColumnConstraint> indexedConstraints = constraints.stream().filter(x -> x.isIndexed()).collect(Collectors.toList());
             final Collection<Range> columnPushdownRanges;
             if (AccumuloSessionProperties.isSecondaryIndexEnabled(session) && indexedConstraints.size() > 0) {
+                LOG.debug("Secondary index is enabled and we have indexed column constraints");
+                // get the cardinalities from the metrics table
+                List<Pair<AccumuloColumnConstraint, Long>> cardinalities = getColumnCardinalities(metricsTable, indexedConstraints);
+
+                // order by cardinality, ascending
+                Collections.sort(cardinalities, new Comparator<Pair<AccumuloColumnConstraint, Long>>()
+                {
+                    @Override
+                    public int compare(Pair<AccumuloColumnConstraint, Long> o1, Pair<AccumuloColumnConstraint, Long> o2)
+                    {
+                        return o1.getRight().compareTo(o2.getRight());
+                    }
+                });
+
+                // if first entry has cardinality zero, return empty list
+                if (cardinalities.get(0).getRight() == 0) {
+                    LOG.debug("Query would return no results, returning empty set list");
+                    return ImmutableList.of();
+                }
+
                 long numRows = getNumRowsInTable(metricsTable);
-                double threshold = AccumuloSessionProperties.getIndexRatio(session);
-
-                // if we have only one indexed restraint, check the cardinality and then fetch ranges if < threshold
-                if (indexedConstraints.size() == 1) {
-                    long numEntries = getColumnCardinality(metricsTable, indexedConstraints.get(0));
-                    LOG.debug("Only one index column with cardinality %d", numEntries);
-
-                    if (numEntries == 0) {
-                        LOG.debug("Query would return no results, returning empty set list");
-                        return ImmutableList.of();
-                    }
-
-                    double ratio = (double) numEntries / (double) numRows;
-                    LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, table);
-
-                    if (ratio < threshold) {
-                        columnPushdownRanges = getIndexRanges(tableName, indexTable, indexedConstraints, predicatePushdownRanges);
-                    }
-                    else {
-                        columnPushdownRanges = new HashSet<>();
-                    }
+                final Collection<Range> idxRanges;
+                // if we should use the intersection of the columns
+                if (useIntersection(session, numRows, cardinalities)) {
+                    // compute the intersection of the ranges prior to checking the threshold
+                    LOG.debug("%d indexed columns, intersecting ranges", indexedConstraints.size());
+                    idxRanges = getIndexRanges(indexTable, indexedConstraints, predicatePushdownRanges);
+                    LOG.debug("Intersection results in %d ranges from secondary index for table %s", idxRanges.size(), tableName);
                 }
                 else {
-                    // we have multiple indexed columns
-                    // compute the intersection of the ranges prior to checking the threshold
-                    LOG.debug("%d indexed columns, interesecting ranges", indexedConstraints.size());
-                    Collection<Range> idxRanges = getIndexRanges(tableName, indexTable, indexedConstraints, predicatePushdownRanges);
-                    long numEntries = idxRanges.size();
+                    LOG.debug("Not intersection columns, using column with lowest cardinality ");
+                    idxRanges = getIndexRanges(indexTable, ImmutableList.of(cardinalities.get(0).getLeft()), predicatePushdownRanges);
+                }
 
-                    if (numEntries == 0) {
-                        LOG.debug("Query would return no results, returning empty set list");
-                        return ImmutableList.of();
-                    }
+                long numEntries = idxRanges.size();
+                double threshold = AccumuloSessionProperties.getIndexRatio(session);
+                double ratio = (double) numEntries / (double) numRows;
+                LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, table);
 
-                    double ratio = (double) numEntries / (double) numRows;
-                    LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, table);
-
-                    if (ratio < threshold) {
-                        columnPushdownRanges = idxRanges;
-                    }
-                    else {
-                        columnPushdownRanges = new HashSet<>();
-                    }
+                if (ratio < threshold) {
+                    columnPushdownRanges = idxRanges;
+                }
+                else {
+                    columnPushdownRanges = new HashSet<>();
                 }
             }
             else {
+                LOG.debug("Secondary index is either disabled or there are no indexed column constraints");
                 columnPushdownRanges = new HashSet<>();
             }
 
@@ -356,6 +358,51 @@ public class AccumuloClient
         }
     }
 
+    private boolean useIntersection(ConnectorSession session, long numRows, List<Pair<AccumuloColumnConstraint, Long>> cardinalities)
+    {
+        long lowCard = cardinalities.get(0).getRight();
+        double ratio = ((double) lowCard / (double) numRows);
+        double threshold = AccumuloSessionProperties.getLowestCardinalityThreshold(session);
+        LOG.debug("Lowest cardinality is %d, num rows is %d, ratio is %2f with threshold of %f", lowCard, numRows, ratio, threshold);
+        return ratio > threshold;
+    }
+
+    private List<Pair<AccumuloColumnConstraint, Long>> getColumnCardinalities(String metricsTable, List<AccumuloColumnConstraint> indexedConstraints)
+            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
+    {
+        List<Pair<AccumuloColumnConstraint, Long>> retval = new ArrayList<>();
+        for (AccumuloColumnConstraint acc : indexedConstraints) {
+            long card = getColumnCardinality(metricsTable, acc);
+            LOG.debug("Cardinality for column %s is %d", acc.getName(), card);
+            retval.add(Pair.of(acc, card));
+        }
+        return retval;
+    }
+
+    private long getColumnCardinality(String metricsTable, AccumuloColumnConstraint acc)
+            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
+    {
+        Text cardQual = new Text(Indexer.CARDINALITY_CQ);
+        List<Range> indexRanges = new ArrayList<>();
+
+        for (com.facebook.presto.spi.predicate.Range r : acc.getDomain().getValues().getRanges().getOrderedRanges()) {
+            indexRanges.add(getRangeFromPrestoRange(r));
+        }
+
+        Authorizations auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
+        BatchScanner bScanner = conn.createBatchScanner(metricsTable, auths, 10);
+        bScanner.setRanges(indexRanges);
+        bScanner.fetchColumn(new Text(Indexer.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()), cardQual);
+
+        long numEntries = 0;
+        for (Entry<Key, Value> entry : bScanner) {
+            numEntries += Long.parseLong(entry.getValue().toString());
+        }
+        bScanner.close();
+
+        return numEntries;
+    }
+
     private Collection<Range> getPredicatePushdownRanges(Domain rDom)
             throws AccumuloException, AccumuloSecurityException,
             TableNotFoundException
@@ -396,31 +443,7 @@ public class AccumuloClient
         return numRows;
     }
 
-    private long getColumnCardinality(String metricsTable, AccumuloColumnConstraint acc)
-            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
-    {
-        Text cardQual = new Text(Indexer.CARDINALITY_CQ);
-        List<Range> indexRanges = new ArrayList<>();
-
-        for (com.facebook.presto.spi.predicate.Range r : acc.getDomain().getValues().getRanges().getOrderedRanges()) {
-            indexRanges.add(getRangeFromPrestoRange(r));
-        }
-
-        Authorizations auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
-        BatchScanner bScanner = conn.createBatchScanner(metricsTable, auths, 10);
-        bScanner.setRanges(indexRanges);
-        bScanner.fetchColumn(new Text(Indexer.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()), cardQual);
-
-        long numEntries = 0;
-        for (Entry<Key, Value> entry : bScanner) {
-            numEntries += Long.parseLong(entry.getValue().toString());
-        }
-        bScanner.close();
-
-        return numEntries;
-    }
-
-    private Collection<Range> getIndexRanges(String fulltable, String indexTable, Collection<AccumuloColumnConstraint> indexedConstraints, Collection<Range> predicatePushdownRanges)
+    private Collection<Range> getIndexRanges(String indexTable, Collection<AccumuloColumnConstraint> indexedConstraints, Collection<Range> predicatePushdownRanges)
             throws AccumuloException,
             AccumuloSecurityException, TableNotFoundException
     {
@@ -458,7 +481,6 @@ public class AccumuloClient
             scan.close();
         }
 
-        LOG.debug("Intersection results in %d ranges from secondary index for table %s", finalRanges.size(), fulltable);
         return finalRanges;
     }
 
@@ -468,7 +490,13 @@ public class AccumuloClient
     {
         Set<Range> splitRanges = new HashSet<>();
         for (Range r : ranges) {
-            splitRanges.addAll(conn.tableOperations().splitRangeByTablets(tableName, r, Integer.MAX_VALUE));
+            // if start and end key are equivalent,  no need to split the range
+            if (r.getStartKey() != null && r.getEndKey() != null && r.getStartKey().equals(r.getEndKey())) {
+                splitRanges.add(r);
+            }
+            else {
+                splitRanges.addAll(conn.tableOperations().splitRangeByTablets(tableName, r, Integer.MAX_VALUE));
+            }
         }
         return splitRanges;
     }
