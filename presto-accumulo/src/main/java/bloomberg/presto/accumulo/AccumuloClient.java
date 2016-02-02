@@ -321,8 +321,9 @@ public class AccumuloClient
                 splitRanges = finalRanges;
             }
 
+            int numArtificialSplits = AccumuloSessionProperties.getNumArtificialSplits(session);
             final Collection<Range> artificialRanges;
-            if (conn.tableOperations().exists(metricsTable)) {
+            if (numArtificialSplits > 0 && conn.tableOperations().exists(metricsTable)) {
                 LOG.debug("Generating artificial ranges");
 
                 Pair<byte[], byte[]> firstLastRow = Indexer.getMinMaxRowIds(conn, metricsTable, conf.getUsername());
@@ -330,7 +331,7 @@ public class AccumuloClient
                 LOG.debug("Last row is " + firstLastRow.getRight());
 
                 if (firstLastRow.getLeft() != null && firstLastRow.getRight() != null) {
-                    artificialRanges = generateArtificialSplits(firstLastRow.getLeft(), firstLastRow.getRight(), AccumuloSessionProperties.getNumArtificialSplits(session), splitRanges);
+                    artificialRanges = generateArtificialSplits(firstLastRow.getLeft(), firstLastRow.getRight(), numArtificialSplits, splitRanges);
                 }
                 else {
                     LOG.debug("First row and/or last row is null, no artificial splits today");
@@ -338,7 +339,7 @@ public class AccumuloClient
                 }
             }
             else {
-                LOG.debug("Table is not indexed, cannot generate artificial ranges");
+                LOG.debug("Number of artificial ranges is zero or table is not indexed, cannot generate artificial ranges");
                 artificialRanges = splitRanges;
             }
 

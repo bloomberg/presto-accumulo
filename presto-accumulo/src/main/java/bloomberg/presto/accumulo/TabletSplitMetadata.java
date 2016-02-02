@@ -64,6 +64,6 @@ public class TabletSplitMetadata
     @Override
     public String toString()
     {
-        return toStringHelper(this).add("hostPort", hostPort).add("rHandles", rHandles).toString();
+        return toStringHelper(this).add("hostPort", hostPort).add("numHandles", rHandles.size()).toString();
     }
 }
