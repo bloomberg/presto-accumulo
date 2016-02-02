@@ -86,7 +86,7 @@ public class Driver
             }
         }));
 
-        numQueries = 8 * numSplits.size() * schemaScalePairs.size() * queryFiles.size();
+        numQueries = 2 * numSplits.size() * schemaScalePairs.size() * queryFiles.size();
         ranQueries = 0;
         // for each schema
         for (Pair<String, Float> s : schemaScalePairs) {
