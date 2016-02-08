@@ -349,9 +349,6 @@ public class AccumuloClient
             // and now bin all the ranges into presto splits
             List<TabletSplitMetadata> bRanges = binRanges(AccumuloSessionProperties.getRangesPerSplit(session), artificialRanges);
             LOG.debug("Number of splits for table %s is %d with %d ranges", tableName, bRanges.size(), artificialRanges.size());
-            for (TabletSplitMetadata tsm : bRanges) {
-                LOG.debug(tsm.toString());
-            }
             return bRanges;
         }
         catch (Exception e) {
@@ -634,29 +631,24 @@ public class AccumuloClient
     {
         final Range preSplitRange;
         if (pRange.isAll()) {
-            LOG.debug("Range is all");
             preSplitRange = new Range();
         }
         else if (pRange.isSingleValue()) {
-            LOG.debug("Range is single value: %s", pRange.getSingleValue());
             Text split = new Text(LexicoderRowSerializer.encode(pRange.getType(), pRange.getSingleValue()));
             preSplitRange = new Range(split);
         }
         else {
             if (pRange.getLow().isLowerUnbounded()) {
-                LOG.debug("Range is from -inf to %s", pRange.getHigh().getValue());
                 boolean inclusive = pRange.getHigh().getBound() == Bound.EXACTLY;
                 Text split = new Text(LexicoderRowSerializer.encode(pRange.getType(), pRange.getHigh().getValue()));
                 preSplitRange = new Range(null, false, split, inclusive);
             }
             else if (pRange.getHigh().isUpperUnbounded()) {
-                LOG.debug("Range is from %s to +inf", pRange.getLow().getValue());
                 boolean inclusive = pRange.getLow().getBound() == Bound.EXACTLY;
                 Text split = new Text(LexicoderRowSerializer.encode(pRange.getType(), pRange.getLow().getValue()));
                 preSplitRange = new Range(split, inclusive, null, false);
             }
             else {
-                LOG.debug("Range is from %s to %s", pRange.getLow().getValue(), pRange.getHigh().getValue());
                 boolean startKeyInclusive = pRange.getLow().getBound() == Bound.EXACTLY;
                 Text startSplit = new Text(LexicoderRowSerializer.encode(pRange.getType(), pRange.getLow().getValue()));
 
