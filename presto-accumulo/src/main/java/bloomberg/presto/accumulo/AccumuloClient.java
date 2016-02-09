@@ -17,6 +17,7 @@ import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.ConnectorSession;
@@ -24,6 +25,7 @@ import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.StandardErrorCode;
+import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
 import com.facebook.presto.spi.type.Type;
@@ -381,20 +383,7 @@ public class AccumuloClient
             throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
         Text cardQual = new Text(Indexer.CARDINALITY_CQ);
-        List<Range> indexRanges = new ArrayList<>();
-
-        if (acc.getDomain().getValues().isAny()) {
-            Type t = acc.getDomain().getType();
-            for (Object o : acc.getDomain().getValues().getDiscreteValues().getValues()) {
-                indexRanges.add(new Range(new Text(LexicoderRowSerializer.encode(t, o))));
-            }
-        }
-        else {
-            for (com.facebook.presto.spi.predicate.Range r : acc.getDomain().getValues().getRanges().getOrderedRanges()) {
-                indexRanges.add(getRangeFromPrestoRange(r));
-            }
-        }
-
+        Collection<Range> indexRanges = getPredicatePushdownRanges(acc.getDomain());
         Authorizations auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
         BatchScanner bScanner = conn.createBatchScanner(metricsTable, auths, 10);
         bScanner.setRanges(indexRanges);
@@ -419,11 +408,20 @@ public class AccumuloClient
             ranges.add(new Range());
         }
         else {
-            // else, add the ranges based on the predicate pushdown
             if (rDom.getValues().isAny()) {
                 Type t = rDom.getType();
-                for (Object o : rDom.getValues().getDiscreteValues().getValues()) {
-                    ranges.add(new Range(new Text(LexicoderRowSerializer.encode(t, o))));
+                if (Types.isArrayType(t)) {
+                    for (Object arrayBlock : rDom.getValues().getDiscreteValues().getValues()) {
+                        Type elementType = Types.getElementType(t);
+                        for (Object o : AccumuloRowSerializer.getArrayFromBlock(elementType, (Block) arrayBlock)) {
+                            ranges.add(new Range(new Text(LexicoderRowSerializer.encode(elementType, o))));
+                        }
+                    }
+                }
+                else {
+                    for (Object o : rDom.getValues().getDiscreteValues().getValues()) {
+                        ranges.add(new Range(new Text(LexicoderRowSerializer.encode(t, o))));
+                    }
                 }
             }
             else {
@@ -432,6 +430,7 @@ public class AccumuloClient
                 }
             }
         }
+
         return ranges;
     }
 
@@ -462,22 +461,10 @@ public class AccumuloClient
             AccumuloSecurityException, TableNotFoundException
     {
         Set<Range> finalRanges = null;
-        List<Range> indexRanges = new ArrayList<>();
         Authorizations indexScanAuths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
         Text cq = new Text();
         for (AccumuloColumnConstraint acc : indexedConstraints) {
-            if (acc.getDomain().getValues().isAny()) {
-                Type t = acc.getDomain().getType();
-                for (Object o : acc.getDomain().getValues().getDiscreteValues().getValues()) {
-                    indexRanges.add(new Range(new Text(LexicoderRowSerializer.encode(t, o))));
-                }
-            }
-            else {
-                for (com.facebook.presto.spi.predicate.Range r : acc.getDomain().getValues().getRanges().getOrderedRanges()) {
-                    indexRanges.add(getRangeFromPrestoRange(r));
-                }
-            }
-
+            Collection<Range> indexRanges = getPredicatePushdownRanges(acc.getDomain());
             BatchScanner scan = conn.createBatchScanner(indexTable, indexScanAuths, 10);
             scan.setRanges(indexRanges);
             scan.fetchColumnFamily(new Text(Indexer.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()));
