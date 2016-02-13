@@ -60,7 +60,10 @@ public class Indexer
     public static final ByteBuffer METRICS_TABLE_FIRST_ROW_CQ = wrap("first_row".getBytes());
     public static final ByteBuffer METRICS_TABLE_LAST_ROW_CQ = wrap("last_row".getBytes());
     public static final byte[] CARDINALITY_CQ = "cardinality".getBytes();
+
     public static final Text CARDINALITY_CQ_AS_TEXT = new Text(CARDINALITY_CQ);
+    public static final Text METRICS_TABLE_ROWS_CF_AS_TEXT = new Text(METRICS_TABLE_ROWS_CF.array());
+    public static final Text METRICS_TABLE_ROWID_AS_TEXT = new Text(METRICS_TABLE_ROW_ID.array());
 
     private static final byte[] EMPTY_BYTES = new byte[0];
     private static final byte UNDERSCORE = '_';

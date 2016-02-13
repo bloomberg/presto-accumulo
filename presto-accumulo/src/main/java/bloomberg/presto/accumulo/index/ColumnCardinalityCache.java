@@ -39,13 +39,13 @@ public class ColumnCardinalityCache
 
     private Map<String, TableColumnCache> tableToCache = new HashMap<>();
 
-    public ColumnCardinalityCache(Connector conn, AccumuloConfig conf, int size, int expireSeconds)
+    public ColumnCardinalityCache(Connector conn, AccumuloConfig config, Authorizations auths)
             throws AccumuloException, AccumuloSecurityException
     {
         this.conn = conn;
-        this.size = size;
-        this.expireSeconds = expireSeconds;
-        this.auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
+        this.size = config.getCardinalityCacheSize();
+        this.expireSeconds = config.getCardinalityCacheExpireSeconds();
+        this.auths = auths;
     }
 
     public void deleteCache(String schema, String table)
@@ -134,7 +134,7 @@ public class ColumnCardinalityCache
         private final String metricsTable;
         private final Text columnFamily;
 
-        private final Map<Range, Long> rangeValues = new HashMap<>();
+        private final Map<Range, Long> rangeValues = new MapDefaultZero();
 
         public AccumuloCacheLoader(String schema, String table, String family, String qualifier)
         {
@@ -164,6 +164,7 @@ public class ColumnCardinalityCache
         public Map<Range, Long> loadAll(Iterable<? extends Range> keys)
                 throws Exception
         {
+            LOG.debug("Scanning Accumulo for cardinality of %s ranges", ((Collection<Range>) keys).size());
             BatchScanner bScanner = conn.createBatchScanner(metricsTable, auths, 10);
             bScanner.setRanges((Collection<Range>) keys);
             bScanner.fetchColumn(columnFamily, Indexer.CARDINALITY_CQ_AS_TEXT);
@@ -174,8 +175,25 @@ public class ColumnCardinalityCache
             }
 
             bScanner.close();
-
             return rangeValues;
+        }
+
+        /**
+         * We extend HashMap here and override get to return a value of zero if the key is not in the map.
+         * This mitigates the CacheLoader InvalidCacheLoadException if loadAll fails to return a value for a given
+         * key, which occurs when there is no key in Accumulo.
+         */
+        public class MapDefaultZero
+                extends HashMap<Range, Long>
+        {
+            private static final long serialVersionUID = -2511991250333716810L;
+
+            @Override
+            public Long get(Object key)
+            {
+                Long value = super.get(key);
+                return value == null ? 0 : value;
+            }
         }
     }
 }
