@@ -13,6 +13,7 @@
  */
 package bloomberg.presto.accumulo;
 
+import bloomberg.presto.accumulo.index.ColumnCardinalityCache;
 import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
@@ -30,6 +31,7 @@ import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
@@ -64,17 +66,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
 public class AccumuloClient
 {
     private static final Logger LOG = Logger.get(AccumuloClient.class);
-    private ZooKeeperInstance inst = null;
-    private AccumuloConfig conf = null;
-    private Connector conn = null;
-    private AccumuloMetadataManager metaManager = null;
+    private final AccumuloConfig conf;
+    private final AccumuloMetadataManager metaManager;
+    private final ColumnCardinalityCache ccCache;
+    private final Connector conn;
+    private final ZooKeeperInstance inst;
 
     @Inject
     public AccumuloClient(AccumuloConnectorId connectorId, AccumuloConfig config, JsonCodec<Map<String, List<AccumuloTable>>> catalogCodec)
@@ -83,11 +85,10 @@ public class AccumuloClient
     {
         conf = requireNonNull(config, "config is null");
         requireNonNull(catalogCodec, "catalogCodec is null");
-
         inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
         conn = inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword().getBytes()));
-
         metaManager = AccumuloMetadataManager.getDefault(connectorId.toString(), config);
+        ccCache = new ColumnCardinalityCache(conn, conf, config.getCardinalityCacheSize(), config.getCardinalityCacheExpireSeconds());
     }
 
     public AccumuloTable createTable(ConnectorTableMetadata meta)
@@ -244,7 +245,7 @@ public class AccumuloClient
             // get the range based on predicate pushdown
             final Collection<Range> predicatePushdownRanges;
             if (AccumuloSessionProperties.isOptimizeRangePredicatePushdownEnabled(session)) {
-                predicatePushdownRanges = getPredicatePushdownRanges(rDom);
+                predicatePushdownRanges = getRangesFromDomain(rDom);
             }
             else {
                 predicatePushdownRanges = new HashSet<>();
@@ -253,12 +254,18 @@ public class AccumuloClient
 
             // Get ranges from any secondary index tables, ensuring the ranges
             // via the index are within at least one predicate pushdown range
-            List<AccumuloColumnConstraint> indexedConstraints = constraints.stream().filter(x -> x.isIndexed()).collect(Collectors.toList());
+            Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs = new HashMap<>();
+            for (AccumuloColumnConstraint acc : constraints) {
+                if (acc.isIndexed()) {
+                    constraintRangePairs.put(acc, getRangesFromDomain(acc.getDomain()));
+                }
+            }
+
             final Collection<Range> columnPushdownRanges;
-            if (AccumuloSessionProperties.isSecondaryIndexEnabled(session) && indexedConstraints.size() > 0) {
+            if (AccumuloSessionProperties.isSecondaryIndexEnabled(session) && constraintRangePairs.size() > 0) {
                 LOG.debug("Secondary index is enabled and we have indexed column constraints");
                 // get the cardinalities from the metrics table
-                List<Pair<AccumuloColumnConstraint, Long>> cardinalities = getColumnCardinalities(metricsTable, indexedConstraints);
+                List<Pair<AccumuloColumnConstraint, Long>> cardinalities = ccCache.getCardinalities(schema,  table, constraintRangePairs);
 
                 // order by cardinality, ascending
                 Collections.sort(cardinalities, new Comparator<Pair<AccumuloColumnConstraint, Long>>()
@@ -281,13 +288,16 @@ public class AccumuloClient
                 // if we should use the intersection of the columns
                 if (useIntersection(session, numRows, cardinalities)) {
                     // compute the intersection of the ranges prior to checking the threshold
-                    LOG.debug("%d indexed columns, intersecting ranges", indexedConstraints.size());
-                    idxRanges = getIndexRanges(indexTable, indexedConstraints, predicatePushdownRanges);
+                    LOG.debug("%d indexed columns, intersecting ranges", constraintRangePairs.size());
+                    idxRanges = getIndexRanges(indexTable, constraintRangePairs, predicatePushdownRanges);
                     LOG.debug("Intersection results in %d ranges from secondary index for table %s", idxRanges.size(), tableName);
                 }
                 else {
                     LOG.debug("Not intersection columns, using column with lowest cardinality ");
-                    idxRanges = getIndexRanges(indexTable, ImmutableList.of(cardinalities.get(0).getLeft()), predicatePushdownRanges);
+                    idxRanges = getIndexRanges(indexTable,
+                            ImmutableMap.of(cardinalities.get(0).getKey(),
+                                    constraintRangePairs.get(cardinalities.get(0).getKey())),
+                            predicatePushdownRanges);
                 }
 
                 long numEntries = idxRanges.size();
@@ -367,38 +377,7 @@ public class AccumuloClient
         return ratio > threshold;
     }
 
-    private List<Pair<AccumuloColumnConstraint, Long>> getColumnCardinalities(String metricsTable, List<AccumuloColumnConstraint> indexedConstraints)
-            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
-    {
-        List<Pair<AccumuloColumnConstraint, Long>> retval = new ArrayList<>();
-        for (AccumuloColumnConstraint acc : indexedConstraints) {
-            long card = getColumnCardinality(metricsTable, acc);
-            LOG.debug("Cardinality for column %s is %d", acc.getName(), card);
-            retval.add(Pair.of(acc, card));
-        }
-        return retval;
-    }
-
-    private long getColumnCardinality(String metricsTable, AccumuloColumnConstraint acc)
-            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
-    {
-        Text cardQual = new Text(Indexer.CARDINALITY_CQ);
-        Collection<Range> indexRanges = getPredicatePushdownRanges(acc.getDomain());
-        Authorizations auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
-        BatchScanner bScanner = conn.createBatchScanner(metricsTable, auths, 10);
-        bScanner.setRanges(indexRanges);
-        bScanner.fetchColumn(new Text(Indexer.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()), cardQual);
-
-        long numEntries = 0;
-        for (Entry<Key, Value> entry : bScanner) {
-            numEntries += Long.parseLong(entry.getValue().toString());
-        }
-        bScanner.close();
-
-        return numEntries;
-    }
-
-    private Collection<Range> getPredicatePushdownRanges(Domain rDom)
+    private Collection<Range> getRangesFromDomain(Domain rDom)
             throws AccumuloException, AccumuloSecurityException,
             TableNotFoundException
     {
@@ -456,18 +435,23 @@ public class AccumuloClient
         return numRows;
     }
 
-    private Collection<Range> getIndexRanges(String indexTable, Collection<AccumuloColumnConstraint> indexedConstraints, Collection<Range> predicatePushdownRanges)
+    private Collection<Range> getIndexRanges(String indexTable,
+            Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs,
+            Collection<Range> predicatePushdownRanges)
             throws AccumuloException,
             AccumuloSecurityException, TableNotFoundException
     {
         Set<Range> finalRanges = null;
         Authorizations indexScanAuths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
         Text cq = new Text();
-        for (AccumuloColumnConstraint acc : indexedConstraints) {
-            Collection<Range> indexRanges = getPredicatePushdownRanges(acc.getDomain());
+        for (Entry<AccumuloColumnConstraint, Collection<Range>> e : constraintRangePairs.entrySet()) {
             BatchScanner scan = conn.createBatchScanner(indexTable, indexScanAuths, 10);
-            scan.setRanges(indexRanges);
-            scan.fetchColumnFamily(new Text(Indexer.getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes()).array()));
+            scan.setRanges(e.getValue());
+            Text cf = new Text(Indexer.getIndexColumnFamily(
+                    e.getKey().getFamily().getBytes(),
+                    e.getKey().getQualifier().getBytes())
+                    .array());
+            scan.fetchColumnFamily(cf);
 
             Set<Range> columnRanges = new HashSet<>();
             for (Entry<Key, Value> entry : scan) {
@@ -478,7 +462,7 @@ public class AccumuloClient
                 }
             }
 
-            LOG.debug("Retrieved %d ranges for column %s", columnRanges.size(), acc.getName());
+            LOG.debug("Retrieved %d ranges for column %s", columnRanges.size(), e.getKey().getName());
             if (finalRanges == null) {
                 finalRanges = new HashSet<>();
                 finalRanges.addAll(columnRanges);
@@ -539,7 +523,6 @@ public class AccumuloClient
                 mid.set(midpoint(start.copyBytes(), end.copyBytes()));
                 arties.add(new Range(start, r.isStartKeyInclusive(), mid, false));
                 arties.add(new Range(mid, true, end, r.isEndKeyInclusive()));
-                LOG.debug("Added some artificial splits");
             }
             else {
                 arties.add(r);

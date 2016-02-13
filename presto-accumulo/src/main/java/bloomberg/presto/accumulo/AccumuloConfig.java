@@ -24,6 +24,8 @@ public class AccumuloConfig
     private String username;
     private String password;
     private String zkMetadataRoot;
+    private Integer cardinalityCacheSize;
+    private Integer cardinalityCacheExpireSeconds;
 
     @NotNull
     public String getInstance()
@@ -87,5 +89,28 @@ public class AccumuloConfig
     public void setZkMetadataRoot(String zkMetadataRoot)
     {
         this.zkMetadataRoot = zkMetadataRoot;
+    }
+
+    public int getCardinalityCacheSize()
+    {
+        return cardinalityCacheSize == null ? 100000 : cardinalityCacheSize;
+    }
+
+    @Config("cardinality.cache.size")
+    public void setCardinalityCacheSize(int cardinalityCacheSize)
+    {
+        this.cardinalityCacheSize = cardinalityCacheSize;
+    }
+
+    public int getCardinalityCacheExpireSeconds()
+    {
+        // 30 minute default
+        return cardinalityCacheExpireSeconds == null ? (30 * 60) : cardinalityCacheExpireSeconds;
+    }
+
+    @Config("cardinality.cache.expire.seconds")
+    public void setCardinalityCacheExpireSeconds(int cardinalityCacheExpireSeconds)
+    {
+        this.cardinalityCacheExpireSeconds = cardinalityCacheExpireSeconds;
     }
 }
