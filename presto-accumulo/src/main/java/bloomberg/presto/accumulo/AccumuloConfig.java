@@ -104,8 +104,8 @@ public class AccumuloConfig
 
     public int getCardinalityCacheExpireSeconds()
     {
-        // 30 minute default
-        return cardinalityCacheExpireSeconds == null ? (30 * 60) : cardinalityCacheExpireSeconds;
+        // 5 minute default
+        return cardinalityCacheExpireSeconds == null ? (5 * 60) : cardinalityCacheExpireSeconds;
     }
 
     @Config("cardinality.cache.expire.seconds")
