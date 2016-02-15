@@ -93,21 +93,29 @@ public class IndexLookup
         String indexTable = Indexer.getIndexTableName(schema, table);
         String metricsTable = Indexer.getMetricsTableName(schema, table);
         long numRows = getNumRowsInTable(metricsTable);
+        double threshold = AccumuloSessionProperties.getIndexRatio(session);
         final Collection<Range> idxRanges;
         // if we should use the intersection of the columns
-        if (useIntersection(session, numRows, cardinalities)) {
+        if (smallestCardAboveThreshold(session, numRows, cardinalities)) {
+            // if we only have one column, we can skip the intersection process
+            if (cardinalities.size() == 1) {
+                long numEntries = cardinalities.get(0).getRight();
+                double ratio = ((double) numEntries / (double) numRows);
+                LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, table);
+                return false;
+            }
+
             // compute the intersection of the ranges prior to checking the threshold
             LOG.debug("%d indexed columns, intersecting ranges", constraintRangePairs.size());
             idxRanges = getIndexRanges(indexTable, constraintRangePairs, rowIdRanges);
             LOG.debug("Intersection results in %d ranges from secondary index", idxRanges.size());
         }
         else {
-            LOG.debug("Not intersection columns, using column with lowest cardinality ");
+            LOG.debug("Not intersecting columns, using column with lowest cardinality ");
             idxRanges = getIndexRanges(indexTable, ImmutableMap.of(cardinalities.get(0).getKey(), constraintRangePairs.get(cardinalities.get(0).getKey())), rowIdRanges);
         }
 
         long numEntries = idxRanges.size();
-        double threshold = AccumuloSessionProperties.getIndexRatio(session);
         double ratio = (double) numEntries / (double) numRows;
         LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, table);
 
@@ -121,7 +129,7 @@ public class IndexLookup
         }
     }
 
-    private boolean useIntersection(ConnectorSession session, long numRows, List<Pair<AccumuloColumnConstraint, Long>> cardinalities)
+    private boolean smallestCardAboveThreshold(ConnectorSession session, long numRows, List<Pair<AccumuloColumnConstraint, Long>> cardinalities)
     {
         long lowCard = cardinalities.get(0).getRight();
         double ratio = ((double) lowCard / (double) numRows);
