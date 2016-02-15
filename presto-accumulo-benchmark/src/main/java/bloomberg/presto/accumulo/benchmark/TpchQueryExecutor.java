@@ -39,7 +39,8 @@ public class TpchQueryExecutor
         }
     }
 
-    public static QueryMetrics run(AccumuloConfig accConfig, File qf, String host, int port, String schema, boolean optimizeColumnFiltersEnabled, boolean optimizeRangePredicatePushdownEnabled, boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled, int timeout)
+    public static QueryMetrics run(AccumuloConfig accConfig, File qf, String host, int port,
+            String schema, boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled, int timeout)
             throws Exception
     {
 
@@ -48,15 +49,13 @@ public class TpchQueryExecutor
         Properties props = new Properties();
         props.setProperty("user", "root");
         PrestoConnection conn = (PrestoConnection) DriverManager.getConnection(dbUrl, props);
-        conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_COLUMN_FILTERS_ENABLED, Boolean.toString(optimizeColumnFiltersEnabled));
-        conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_RANGE_PREDICATE_PUSHDOWN_ENABLED, Boolean.toString(optimizeRangePredicatePushdownEnabled));
         conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_RANGE_SPLITS_ENABLED, Boolean.toString(optimizeRangeSplitsEnabled));
         conn.setSessionProperty(AccumuloSessionProperties.SECONDARY_INDEX_ENABLED, Boolean.toString(secondaryIndexEnabled));
+        conn.setSessionProperty(AccumuloSessionProperties.SECONDARY_INDEX_THRESHOLD, Double.toString(.15));
+        conn.setSessionProperty(AccumuloSessionProperties.LOWEST_CARDINALITY_THRESHOLD, Double.toString(.5));
 
         QueryMetrics qm = new QueryMetrics();
         qm.script = qf.getName();
-        qm.optimizeColumnFiltersEnabled = optimizeColumnFiltersEnabled;
-        qm.optimizeRangePredicatePushdownEnabled = optimizeRangePredicatePushdownEnabled;
         qm.optimizeRangeSplitsEnabled = optimizeRangeSplitsEnabled;
         qm.secondaryIndexEnabled = secondaryIndexEnabled;
 

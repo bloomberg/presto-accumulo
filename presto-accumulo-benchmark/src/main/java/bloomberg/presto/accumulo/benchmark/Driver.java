@@ -42,8 +42,8 @@ public class Driver
             throws Exception
     {
 
-        if (args.length != 11) {
-            System.err.println("Usage: [instance] [zookeepers] [user] [passwd] [dbgen.dir] [presto.host] [presto.port] [benchmark.dir] [csv.schemas] [num.splits] [timeout]");
+        if (args.length != 12) {
+            System.err.println("Usage: [instance] [zookeepers] [user] [passwd] [dbgen.dir] [presto.host] [presto.port] [benchmark.dir] [csv.schemas] [num.splits] [timeout] [skip.ingest]");
             return 1;
         }
 
@@ -60,6 +60,7 @@ public class Driver
         List<Integer> numSplits = Arrays.asList(args[9].split(",")).stream().map(x -> Integer.parseInt(x)).collect(Collectors.toList());
 
         int timeout = Integer.parseInt(args[10]);
+        boolean skipIngest = Boolean.parseBoolean(args[11]);
 
         if (!dbgendir.exists() || dbgendir.isFile()) {
             throw new InvalidParameterException(dbgendir + " does not exist or is not a directory");
@@ -86,14 +87,19 @@ public class Driver
             }
         }));
 
-        numQueries = 2 * numSplits.size() * schemaScalePairs.size() * queryFiles.size();
+        numQueries = 4 * numSplits.size() * schemaScalePairs.size() * queryFiles.size();
         ranQueries = 0;
+        
         // for each schema
         for (Pair<String, Float> s : schemaScalePairs) {
             String schema = s.getLeft();
             float scale = s.getRight();
-            TpchDBGenInvoker.run(dbgendir, scale);
-            TpchDBGenIngest.run(accConf, schema, dbgendir);
+
+            if (!skipIngest) {
+                TpchDBGenInvoker.run(dbgendir, scale);
+                TpchDBGenIngest.run(accConf, schema, dbgendir);
+            }
+
             QueryFormatter.run(s.getLeft(), benchmarkDir);
 
             // for each number of splits
@@ -105,15 +111,11 @@ public class Driver
 
                 // Run queries flipping all of the optimization flags on and off
                 boolean[] bvalues = {false, true};
-                //for (boolean optimizeColumnFiltersEnabled : bvalues) {
-                //for (boolean optimizeRangePredicatePushdownEnabled : bvalues) {
-                //  for (boolean optimizeRangeSplitsEnabled : bvalues) {
-                for (boolean secondaryIndexEnabled : bvalues) {
-                    runQueries(accConf, host, port, schema, scale, ns, false, false, false, secondaryIndexEnabled, timeout);
+                for (boolean optimizeRangeSplitsEnabled : bvalues) {
+                    for (boolean secondaryIndexEnabled : bvalues) {
+                        runQueries(accConf, host, port, schema, scale, ns, optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
+                    }
                 }
-                //}
-                //}
-                //}
 
                 // Merge tables
                 for (String tableName : splittableTables) {
@@ -125,12 +127,12 @@ public class Driver
         return 0;
     }
 
-    private void runQueries(AccumuloConfig accConf, String host, int port, String schema, float scale, int numSplits, boolean optimizeColumnFiltersEnabled, boolean optimizeRangePredicatePushdownEnabled, boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled, int timeout)
+    private void runQueries(AccumuloConfig accConf, String host, int port, String schema, float scale, int numSplits, boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled, int timeout)
             throws Exception
     {
 
         for (File qf : queryFiles) {
-            QueryMetrics qm = TpchQueryExecutor.run(accConf, qf, host, port, schema, optimizeColumnFiltersEnabled, optimizeRangePredicatePushdownEnabled, optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
+            QueryMetrics qm = TpchQueryExecutor.run(accConf, qf, host, port, schema, optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
 
             qm.scale = scale;
             qm.numAccumuloSplits = numSplits;

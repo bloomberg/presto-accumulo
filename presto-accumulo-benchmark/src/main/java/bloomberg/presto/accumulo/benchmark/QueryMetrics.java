@@ -28,8 +28,6 @@ public class QueryMetrics
     public String queryId;
     public String schema;
     public String script;
-    public boolean optimizeColumnFiltersEnabled;
-    public boolean optimizeRangePredicatePushdownEnabled;
     public boolean optimizeRangeSplitsEnabled;
     public boolean secondaryIndexEnabled;
     public QueryStats queryStats;
@@ -43,8 +41,6 @@ public class QueryMetrics
         bldr.append("Scale").append(",");
         bldr.append("Accumulo Tablets").append(",");
         bldr.append("Query Time (ms)").append(",");
-        bldr.append("Column Filters Enabled").append(",");
-        bldr.append("Range Pushdown Enabled").append(",");
         bldr.append("Range Splits Enabled").append(",");
         bldr.append("Secondary Index Enabled").append(",");
         bldr.append("Error").append(",");
@@ -74,8 +70,6 @@ public class QueryMetrics
         bldr.append(scale).append(",");
         bldr.append(numAccumuloSplits + 1).append(",");
         bldr.append(queryTimeMS).append(",");
-        bldr.append(optimizeColumnFiltersEnabled).append(",");
-        bldr.append(optimizeRangePredicatePushdownEnabled).append(",");
         bldr.append(optimizeRangeSplitsEnabled).append(",");
         bldr.append(secondaryIndexEnabled).append(",");
         bldr.append(error).append(",");
