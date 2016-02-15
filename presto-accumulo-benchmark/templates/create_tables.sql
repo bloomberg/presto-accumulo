@@ -54,7 +54,6 @@ CREATE TABLE accumulo.${SCHEMA}.region
 WITH (
 	column_mapping = 'name:md:name,comment:md:comment',
 	internal = true,
-	index_columns = 'name'
 ) AS 
 SELECT * FROM tpch.${SCHEMA}.region;
 
