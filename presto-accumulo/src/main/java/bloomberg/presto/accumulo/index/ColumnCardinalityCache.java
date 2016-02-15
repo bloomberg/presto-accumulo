@@ -14,6 +14,7 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.PartialKey;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class ColumnCardinalityCache
 {
@@ -50,6 +52,7 @@ public class ColumnCardinalityCache
 
     public void deleteCache(String schema, String table)
     {
+        LOG.debug("Deleting cache for %s.%s", schema, table);
         if (tableToCache.containsKey(table)) {
             TableColumnCache tCache = getTableCache(schema, table);
             tCache.clear();
@@ -77,10 +80,12 @@ public class ColumnCardinalityCache
 
     private TableColumnCache getTableCache(String schema, String table)
     {
-        TableColumnCache cache = tableToCache.get(AccumuloClient.getFullTableName(schema, table));
+        String fullName = AccumuloClient.getFullTableName(schema, table);
+        TableColumnCache cache = tableToCache.get(fullName);
         if (cache == null) {
+            LOG.debug("Creating new TableColumnCache for %s.%s %s", schema, table, this);
             cache = new TableColumnCache(schema, table);
-            tableToCache.put(table, cache);
+            tableToCache.put(fullName, cache);
         }
         return cache;
     }
@@ -106,7 +111,7 @@ public class ColumnCardinalityCache
         }
 
         public long getColumnCardinality(String column, String family, String qualifier, Collection<Range> colValues)
-                throws ExecutionException
+                throws ExecutionException, TableNotFoundException
         {
             LoadingCache<Range, Long> cache = columnToCache.get(column);
             if (cache == null) {
@@ -114,16 +119,40 @@ public class ColumnCardinalityCache
                 columnToCache.put(column, cache);
             }
 
+            Collection<Range> exactRanges = colValues.stream().filter(x -> isExact(x)).collect(Collectors.toList());
+            LOG.debug("Column values contain %s exact ranges of %s", exactRanges.size(), colValues.size());
+
             long sum = 0;
-            for (Long e : cache.getAll(colValues).values()) {
+            for (Long e : cache.getAll(exactRanges).values()) {
                 sum += e;
             }
 
+            // If these collection sizes are not equal,
+            // then there is at least one non-exact range
+            if (exactRanges.size() != colValues.size()) {
+                for (Range r : colValues) {
+                    if (!isExact(r)) {
+                        long val = cache.get(r);
+                        cache.put(r, val);
+                        sum += cache.get(r);
+                    }
+                }
+            }
+
+            LOG.debug("Cache stats : size=%s, %s", cache.size(), cache.stats());
             return sum;
+        }
+
+        private boolean isExact(Range x)
+        {
+            return !x.isInfiniteStartKey() &&
+                    !x.isInfiniteStopKey() &&
+                    x.getStartKey().followingKey(PartialKey.ROW).equals(x.getEndKey());
         }
 
         private LoadingCache<Range, Long> newCache(String schema, String table, String family, String qualifier)
         {
+            LOG.debug("Created new cache for %s.%s, column %s:%s, size %d expiry %d", schema, table, family, qualifier, size, expireSeconds);
             return CacheBuilder.newBuilder().maximumSize(size).expireAfterWrite(expireSeconds, TimeUnit.SECONDS).build(new AccumuloCacheLoader(schema, table, family, qualifier));
         }
     }
@@ -164,7 +193,7 @@ public class ColumnCardinalityCache
         public Map<Range, Long> loadAll(Iterable<? extends Range> keys)
                 throws Exception
         {
-            LOG.debug("Scanning Accumulo for cardinality of %s ranges", ((Collection<Range>) keys).size());
+            LOG.debug("Loading %s exact ranges from Accumulo", ((Collection<Range>) keys).size());
             BatchScanner bScanner = conn.createBatchScanner(metricsTable, auths, 10);
             bScanner.setRanges((Collection<Range>) keys);
             bScanner.fetchColumn(columnFamily, Indexer.CARDINALITY_CQ_AS_TEXT);
