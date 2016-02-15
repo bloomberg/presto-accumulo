@@ -70,7 +70,8 @@ public class IndexLookup
         for (AccumuloColumnConstraint acc : constraints) {
             if (acc.isIndexed()) {
                 constraintRangePairs.put(acc, AccumuloClient.getRangesFromDomain(acc.getDomain()));
-            } else {
+            }
+            else {
                 LOG.warn("Query containts constraint on non-indexed column %s", acc.getName());
             }
         }
