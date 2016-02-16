@@ -95,7 +95,7 @@ public class Splitter
             }
         }
         else if (rowIdType.equals(VARCHAR)) {
-            for (Long l : linspace(0, 255, numSplits)) {
+            for (Long l : linspace(0, 255, numSplits + 2)) {
                 String v = String.format("%02x", l);
                 splits.add(LexicoderRowSerializer.encode(VARCHAR, v));
             }
