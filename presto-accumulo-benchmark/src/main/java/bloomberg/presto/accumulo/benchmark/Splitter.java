@@ -9,7 +9,6 @@ import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.type.Type;
-import com.google.common.primitives.UnsignedBytes;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
@@ -19,10 +18,12 @@ import org.apache.hadoop.io.Text;
 import javax.activity.InvalidActivityException;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
+import static com.facebook.presto.spi.type.BigintType.BIGINT;
+import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 
 public class Splitter
 {
@@ -85,20 +86,23 @@ public class Splitter
         }
 
         List<byte[]> splits = new ArrayList<>();
-        splits.add(firstLastRow.getLeft());
-        splits.add(firstLastRow.getRight());
-        int tmp = numSplits / 2;
-        do {
-            int size = splits.size();
-            List<byte[]> newSplits = new ArrayList<>();
-            for (int i = 0; i < size - 1; ++i) {
-                newSplits.add(midpoint(splits.get(i), splits.get(i + 1)));
+        if (rowIdType.equals(BIGINT)) {
+            long min = LexicoderRowSerializer.decode(rowIdType, firstLastRow.getLeft());
+            long max = LexicoderRowSerializer.decode(rowIdType, firstLastRow.getRight());
+
+            for (Long l : linspace(min, max, numSplits)) {
+                splits.add(LexicoderRowSerializer.encode(BIGINT, l));
             }
-            splits.addAll(newSplits);
-            Collections.sort(splits, UnsignedBytes.lexicographicalComparator());
-            tmp /= 2;
         }
-        while (tmp > 0);
+        else if (rowIdType.equals(VARCHAR)) {
+            for (Long l : linspace(0, 255, numSplits)) {
+                String v = String.format("%02x", l);
+                splits.add(LexicoderRowSerializer.encode(VARCHAR, v));
+            }
+        }
+        else {
+            throw new UnsupportedOperationException("Can only split BIGINT and VARCHAR columns");
+        }
 
         splits.remove(0);
         splits.remove(splits.size() - 1);
@@ -106,26 +110,17 @@ public class Splitter
         return splits;
     }
 
-    private static byte[] midpoint(byte[] start, byte[] end)
+    public static List<Long> linspace(long start, long stop, int n)
     {
-        assert start.length == end.length;
+        List<Long> result = new ArrayList<>();
 
-        byte[] midpoint = new byte[start.length];
-        int remainder = 0;
-        for (int i = 0; i < start.length; ++i) {
-            int intStart = UnsignedBytes.toInt(start[i]);
-            int intEnd = UnsignedBytes.toInt(end[i]);
+        long step = (stop - start) / (n - 1);
 
-            if (intStart > intEnd) {
-                int tmp = intStart;
-                intStart = intEnd;
-                intEnd = tmp;
-            }
-
-            int mid = ((intEnd - intStart) / 2) + intStart + remainder;
-            remainder = ((intEnd - intStart) % 2) == 1 ? 128 : 0;
-            midpoint[i] = (byte) mid;
+        for (int i = 0; i <= n - 2; i++) {
+            result.add(start + (i * step));
         }
-        return midpoint;
+        result.add(stop);
+
+        return result;
     }
 }
