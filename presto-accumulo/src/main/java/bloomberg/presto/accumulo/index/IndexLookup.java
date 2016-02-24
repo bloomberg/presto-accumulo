@@ -44,7 +44,6 @@ public class IndexLookup
     private final Connector conn;
     private final Authorizations auths;
     private final Text tmpCQ = new Text();
-    private final Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs = new HashMap<>();
     private final ConstraintComparator constraintComparator = new ConstraintComparator();
 
     public IndexLookup(Connector conn, AccumuloConfig config, Authorizations auths)
@@ -65,7 +64,7 @@ public class IndexLookup
 
         LOG.debug("Secondary index is enabled");
 
-        constraintRangePairs.clear();
+        Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs = new HashMap<>();
         // Collect Accumulo ranges for each indexd column constraint
         for (AccumuloColumnConstraint acc : constraints) {
             if (acc.isIndexed()) {
