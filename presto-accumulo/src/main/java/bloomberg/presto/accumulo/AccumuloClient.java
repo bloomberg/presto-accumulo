@@ -254,7 +254,7 @@ public class AccumuloClient
 
             // Split the ranges on tablet boundaries, if enabled
             final Collection<Range> splitRanges;
-            if (AccumuloSessionProperties.isOptimizeRangeSplitsEnabled(session)) {
+            if (AccumuloSessionProperties.isOptimizeSplitRangesEnabled(session)) {
                 splitRanges = splitByTabletBoundaries(tableName, rowIdRanges);
             }
             else {

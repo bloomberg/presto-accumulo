@@ -57,7 +57,7 @@ public class IndexLookup
     public boolean applySecondaryIndex(String schema, String table, ConnectorSession session, Collection<AccumuloColumnConstraint> constraints, Collection<Range> rowIdRanges, List<TabletSplitMetadata> tabletSplits)
             throws Exception
     {
-        if (!AccumuloSessionProperties.isSecondaryIndexEnabled(session)) {
+        if (!AccumuloSessionProperties.isOptimizeIndexEnabled(session)) {
             LOG.debug("Secondary index is disabled");
             return false;
         }
@@ -95,7 +95,7 @@ public class IndexLookup
         String indexTable = Indexer.getIndexTableName(schema, table);
         String metricsTable = Indexer.getMetricsTableName(schema, table);
         long numRows = getNumRowsInTable(metricsTable);
-        double threshold = AccumuloSessionProperties.getIndexRatio(session);
+        double threshold = AccumuloSessionProperties.getIndexThreshold(session);
         final Collection<Range> idxRanges;
         // if we should use the intersection of the columns
         if (smallestCardAboveThreshold(session, numRows, cardinalities)) {
@@ -124,7 +124,7 @@ public class IndexLookup
         LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, table);
 
         if (ratio < threshold) {
-            binRanges(AccumuloSessionProperties.getSecondaryIndexRangesPerSplit(session), idxRanges, tabletSplits);
+            binRanges(AccumuloSessionProperties.getNumIndexRowsPerSplit(session), idxRanges, tabletSplits);
             LOG.debug("Number of splits for %s.%s is %d with %d ranges", schema, table, tabletSplits.size(), idxRanges.size());
             return true;
         }
@@ -137,7 +137,7 @@ public class IndexLookup
     {
         long lowCard = cardinalities.get(0).getRight();
         double ratio = ((double) lowCard / (double) numRows);
-        double threshold = AccumuloSessionProperties.getLowestCardinalityThreshold(session);
+        double threshold = AccumuloSessionProperties.getIndexLowCardThreshold(session);
         LOG.debug("Lowest cardinality is %d, num rows is %d, ratio is %2f with threshold of %f", lowCard, numRows, ratio, threshold);
         return ratio > threshold;
     }
