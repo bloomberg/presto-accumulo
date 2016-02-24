@@ -91,7 +91,6 @@ public class AccumuloClient
     public AccumuloTable createTable(ConnectorTableMetadata meta)
     {
         Map<String, Object> tableProperties = meta.getProperties();
-        boolean metaOnly = AccumuloTableProperties.isMetadataOnly(tableProperties);
 
         String rowIdColumn = AccumuloTableProperties.getRowId(tableProperties);
 
@@ -157,34 +156,36 @@ public class AccumuloClient
         // Create dat metadata
         metaManager.createTableMetadata(table);
 
-        if (!metaOnly) {
-            try {
-                if (!table.getSchemaName().equals("default") && !conn.namespaceOperations().exists(table.getSchemaName())) {
-                    conn.namespaceOperations().create(table.getSchemaName());
-                }
-
-                conn.tableOperations().create(table.getFullTableName());
-
-                if (table.isIndexed()) {
-                    // Create index table and set the locality groups
-                    Map<String, Set<Text>> groups = Indexer.getLocalityGroups(table);
-                    conn.tableOperations().create(table.getIndexTableName());
-                    conn.tableOperations().setLocalityGroups(table.getIndexTableName(), groups);
-
-                    // Create index metrics table, attach iterators, and set locality groups
-                    conn.tableOperations().create(table.getMetricsTableName());
-                    conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), groups);
-                    for (IteratorSetting s : Indexer.getMetricIterators(table)) {
-                        conn.tableOperations().attachIterator(table.getMetricsTableName(), s);
-                    }
-                }
-            }
-            catch (Exception e) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Accumulo error when creating table", e);
-            }
+        if (!internal) {
+            return table;
         }
 
-        return table;
+        try {
+            if (!table.getSchemaName().equals("default") && !conn.namespaceOperations().exists(table.getSchemaName())) {
+                conn.namespaceOperations().create(table.getSchemaName());
+            }
+
+            conn.tableOperations().create(table.getFullTableName());
+
+            if (table.isIndexed()) {
+                // Create index table and set the locality groups
+                Map<String, Set<Text>> groups = Indexer.getLocalityGroups(table);
+                conn.tableOperations().create(table.getIndexTableName());
+                conn.tableOperations().setLocalityGroups(table.getIndexTableName(), groups);
+
+                // Create index metrics table, attach iterators, and set locality groups
+                conn.tableOperations().create(table.getMetricsTableName());
+                conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), groups);
+                for (IteratorSetting s : Indexer.getMetricIterators(table)) {
+                    conn.tableOperations().attachIterator(table.getMetricsTableName(), s);
+                }
+            }
+
+            return table;
+        }
+        catch (Exception e) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Accumulo error when creating table", e);
+        }
     }
 
     public void dropTable(SchemaTableName stName, boolean dropTable)
