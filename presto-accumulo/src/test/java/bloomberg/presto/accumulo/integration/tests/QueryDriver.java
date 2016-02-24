@@ -346,8 +346,8 @@ public class QueryDriver
     public void initialize()
             throws Exception
     {
-        createTable();
         pushPrestoMetadata();
+        createTable();
         pushInput();
         initialized = true;
     }
