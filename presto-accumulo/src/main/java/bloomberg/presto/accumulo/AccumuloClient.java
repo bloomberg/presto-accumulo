@@ -31,7 +31,6 @@ import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.Marker.Bound;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.UnsignedBytes;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.AccumuloException;
@@ -263,30 +262,12 @@ public class AccumuloClient
             }
 
             // If configured and the table exists, split the ranges further artificially
-            String metricsTable = Indexer.getMetricsTableName(schema, table);
-            int numArtificialSplits = AccumuloSessionProperties.getNumArtificialSplits(session);
-            final Collection<Range> artificialRanges;
-            if (numArtificialSplits > 0 && conn.tableOperations().exists(metricsTable)) {
-                LOG.debug("Generating artificial ranges");
-                Pair<byte[], byte[]> firstLastRow = Indexer.getMinMaxRowIds(conn, metricsTable, conf.getUsername());
-                if (firstLastRow.getLeft() != null && firstLastRow.getRight() != null) {
-                    artificialRanges = generateArtificialSplits(firstLastRow.getLeft(), firstLastRow.getRight(), numArtificialSplits, splitRanges);
-                }
-                else {
-                    LOG.debug("First row and/or last row is null. Hard to believe, but no artificial splits today");
-                    artificialRanges = splitRanges;
-                }
-            }
-            else {
-                LOG.debug("Configured # of artificial ranges is zero or table is not indexed, cannot generate artificial ranges");
-                artificialRanges = splitRanges;
-            }
-
             boolean fetchTabletLocations = AccumuloSessionProperties.isOptimizeLocalityEnabled(session);
             String defaultLocation = "localhost:9997";
             Text rowBytes = new Text();
-            for (Range r : artificialRanges) {
-                if (fetchTabletLocations) {
+            for (Range r : splitRanges) {
+                LOG.debug("Range is %s", r);
+                if (fetchTabletLocations && r.getStartKey() != null) {
                     r.getStartKey().getRow(rowBytes);
                     tabletSplits.add(new TabletSplitMetadata(getTabletLocation(tableName, rowBytes.copyBytes()), ImmutableList.of(RangeHandle.from(r))));
                 }
@@ -295,54 +276,12 @@ public class AccumuloClient
                 }
             }
 
-            LOG.debug("Number of splits for table %s is %d with %d ranges", tableName, tabletSplits.size(), artificialRanges.size());
+            LOG.debug("Number of splits for table %s is %d with %d ranges", tableName, tabletSplits.size(), splitRanges.size());
             return tabletSplits;
         }
         catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to get splits", e);
         }
-    }
-
-    private Collection<Range> generateArtificialSplits(byte[] firstRow, byte[] lastRow, int iterations, Collection<Range> ranges)
-    {
-        if (iterations == 0) {
-            return ranges;
-        }
-
-        Collection<Range> arties = new ArrayList<>();
-        Text start = new Text();
-        Text mid = new Text();
-        Text end = new Text();
-        for (Range r : ranges) {
-            if (r.getStartKey() == null) {
-                start.set(firstRow);
-            }
-            else {
-                r.getStartKey().getRow(start);
-            }
-
-            if (r.getEndKey() == null) {
-                end.set(lastRow);
-            }
-            else {
-                r.getEndKey().getRow(end);
-            }
-
-            if (start.compareTo(end) != 0) {
-                mid.set(midpoint(start.copyBytes(), end.copyBytes()));
-                arties.add(new Range(start, r.isStartKeyInclusive(), mid, false));
-                arties.add(new Range(mid, true, end, r.isEndKeyInclusive()));
-            }
-            else {
-                arties.add(r);
-            }
-        }
-
-        if (iterations > 0) {
-            arties = generateArtificialSplits(firstRow, lastRow, iterations - 1, arties);
-        }
-
-        return arties;
     }
 
     private Collection<Range> splitByTabletBoundaries(String tableName, Collection<Range> ranges)
@@ -360,29 +299,6 @@ public class AccumuloClient
             }
         }
         return splitRanges;
-    }
-
-    private byte[] midpoint(byte[] start, byte[] end)
-    {
-        assert start.length == end.length;
-
-        byte[] midpoint = new byte[start.length];
-        int remainder = 0;
-        for (int i = 0; i < start.length; ++i) {
-            int intStart = UnsignedBytes.toInt(start[i]);
-            int intEnd = UnsignedBytes.toInt(end[i]);
-
-            if (intStart > intEnd) {
-                int tmp = intStart;
-                intStart = intEnd;
-                intEnd = tmp;
-            }
-
-            int mid = ((intEnd - intStart) / 2) + intStart + remainder;
-            remainder = ((intEnd - intStart) % 2) == 1 ? 128 : 0;
-            midpoint[i] = (byte) mid;
-        }
-        return midpoint;
     }
 
     public String getTabletLocation(String fulltable, byte[] key)

@@ -22,9 +22,27 @@ public class LargeDataTest
     private static final File OTHER_INPUT_FILE = new File("src/test/resources/datagen-other.txt.gz");
     private static final File FIRST_NAME_SELECT_OUTPUT = new File("src/test/resources/first_name_select.txt.gz");
 
-    private static final RowSchema INPUT_SCHEMA = RowSchema.newInstance().addRowId().addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR).addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR).addColumn("address", "metadata", "address", VarcharType.VARCHAR).addColumn("city", "metadata", "city", VarcharType.VARCHAR).addColumn("state", "metadata", "state", VarcharType.VARCHAR).addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT).addColumn("birthday", "metadata", "birthday", DateType.DATE).addColumn("favorite_color", "metadata", "favorite_color", VarcharType.VARCHAR);
+    private static final RowSchema INPUT_SCHEMA = RowSchema.newInstance()
+            .addRowId()
+            .addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR)
+            .addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR)
+            .addColumn("address", "metadata", "address", VarcharType.VARCHAR)
+            .addColumn("city", "metadata", "city", VarcharType.VARCHAR)
+            .addColumn("state", "metadata", "state", VarcharType.VARCHAR)
+            .addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT)
+            .addColumn("birthday", "metadata", "birthday", DateType.DATE)
+            .addColumn("favorite_color", "metadata", "favorite_color", VarcharType.VARCHAR);
 
-    private static final RowSchema INDEXED_SCHEMA = RowSchema.newInstance().addRowId().addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR, true).addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR).addColumn("address", "metadata", "address", VarcharType.VARCHAR).addColumn("city", "metadata", "city", VarcharType.VARCHAR).addColumn("state", "metadata", "state", VarcharType.VARCHAR).addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT).addColumn("birthday", "metadata", "birthday", DateType.DATE).addColumn("favorite_color", "metadata", "favorite_color", VarcharType.VARCHAR);
+    private static final RowSchema INDEXED_SCHEMA = RowSchema.newInstance()
+            .addRowId()
+            .addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR, true)
+            .addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR)
+            .addColumn("address", "metadata", "address", VarcharType.VARCHAR)
+            .addColumn("city", "metadata", "city", VarcharType.VARCHAR)
+            .addColumn("state", "metadata", "state", VarcharType.VARCHAR)
+            .addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT)
+            .addColumn("birthday", "metadata", "birthday", DateType.DATE)
+            .addColumn("favorite_color", "metadata", "favorite_color", VarcharType.VARCHAR);
 
     private static final Integer NUM_RECORDS = 100000;
     private static final QueryDriver DRIVER1;

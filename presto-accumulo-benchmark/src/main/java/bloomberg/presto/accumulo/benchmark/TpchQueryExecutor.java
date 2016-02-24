@@ -50,9 +50,9 @@ public class TpchQueryExecutor
         props.setProperty("user", "root");
         PrestoConnection conn = (PrestoConnection) DriverManager.getConnection(dbUrl, props);
         conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_RANGE_SPLITS_ENABLED, Boolean.toString(optimizeRangeSplitsEnabled));
-        conn.setSessionProperty(AccumuloSessionProperties.SECONDARY_INDEX_ENABLED, Boolean.toString(secondaryIndexEnabled));
-        conn.setSessionProperty(AccumuloSessionProperties.SECONDARY_INDEX_THRESHOLD, Double.toString(.15));
-        conn.setSessionProperty(AccumuloSessionProperties.LOWEST_CARDINALITY_THRESHOLD, Double.toString(.5));
+        conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_INDEX_ENABLED, Boolean.toString(secondaryIndexEnabled));
+        conn.setSessionProperty(AccumuloSessionProperties.INDEX_THRESHOLD, Double.toString(.15));
+        conn.setSessionProperty(AccumuloSessionProperties.INDEX_LOWEST_CARDINALITY_THRESHOLD, Double.toString(.5));
 
         QueryMetrics qm = new QueryMetrics();
         qm.script = qf.getName();
