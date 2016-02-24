@@ -72,7 +72,7 @@ public class IndexLookup
                 constraintRangePairs.put(acc, AccumuloClient.getRangesFromDomain(acc.getDomain()));
             }
             else {
-                LOG.warn("Query containts constraint on non-indexed column %s", acc.getName());
+                LOG.warn("Query containts constraint one non-indexed column %s", acc.getName());
             }
         }
 
@@ -104,8 +104,10 @@ public class IndexLookup
             if (cardinalities.size() == 1) {
                 long numEntries = cardinalities.get(0).getRight();
                 double ratio = ((double) numEntries / (double) numRows);
-                LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, table);
-                return false;
+                LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold);
+                if (ratio >= threshold) {
+                    return false;
+                }
             }
 
             // compute the intersection of the ranges prior to checking the threshold
