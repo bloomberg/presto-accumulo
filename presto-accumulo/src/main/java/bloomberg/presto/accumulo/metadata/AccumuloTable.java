@@ -11,8 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package bloomberg.presto.accumulo;
+package bloomberg.presto.accumulo.metadata;
 
+import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;

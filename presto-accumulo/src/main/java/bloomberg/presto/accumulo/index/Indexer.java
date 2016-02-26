@@ -1,9 +1,9 @@
 package bloomberg.presto.accumulo.index;
 
-import bloomberg.presto.accumulo.AccumuloTable;
 import bloomberg.presto.accumulo.Types;
 import bloomberg.presto.accumulo.iterators.MaxByteArrayCombiner;
 import bloomberg.presto.accumulo.iterators.MinByteArrayCombiner;
+import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.PrestoException;

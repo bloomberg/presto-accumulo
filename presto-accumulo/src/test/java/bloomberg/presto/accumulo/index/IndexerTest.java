@@ -1,6 +1,6 @@
 package bloomberg.presto.accumulo.index;
 
-import bloomberg.presto.accumulo.AccumuloTable;
+import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;

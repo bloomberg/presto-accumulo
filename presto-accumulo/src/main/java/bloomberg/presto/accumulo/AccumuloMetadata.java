@@ -13,6 +13,7 @@
  */
 package bloomberg.presto.accumulo;
 
+import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;

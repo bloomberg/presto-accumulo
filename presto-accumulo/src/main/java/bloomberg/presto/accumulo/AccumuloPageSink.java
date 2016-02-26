@@ -1,6 +1,7 @@
 package bloomberg.presto.accumulo;
 
 import bloomberg.presto.accumulo.index.Indexer;
+import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Field;
 import bloomberg.presto.accumulo.model.Row;
