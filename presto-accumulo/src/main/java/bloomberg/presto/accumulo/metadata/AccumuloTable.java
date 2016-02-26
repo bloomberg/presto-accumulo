@@ -237,8 +237,9 @@ public class AccumuloTable
     @Override
     public String toString()
     {
-        return toStringHelper(this).add("schemaName", schema).add("tableName", table)
-                .add("columns", columns).add("rowIdName", rowId).add("internal", internal)
-                .add("serializerClassName", serializerClassName).toString();
+        return toStringHelper(this).add("connectorId", connectorId).add("schemaName", schema)
+                .add("tableName", table).add("columns", columns).add("rowIdName", rowId)
+                .add("internal", internal).add("serializerClassName", serializerClassName)
+                .toString();
     }
 }
