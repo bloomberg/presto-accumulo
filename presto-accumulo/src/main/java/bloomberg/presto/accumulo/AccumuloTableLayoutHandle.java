@@ -23,12 +23,25 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * An implementation of ConnectorTableLayoutHandle, containing constraints for an active query
+ *
+ * Can't get this merged into AccumuloTable -.-
+ */
 public class AccumuloTableLayoutHandle
         implements ConnectorTableLayoutHandle
 {
     private final AccumuloTableHandle table;
     private final TupleDomain<ColumnHandle> constraint;
 
+    /**
+     * Creates a new instance of {@link AccumuloTableLayoutHandle}
+     *
+     * @param table
+     *            {@link AccumuloTableHandle}
+     * @param constraint
+     *            Constraints against the table
+     */
     @JsonCreator
     public AccumuloTableLayoutHandle(@JsonProperty("table") AccumuloTableHandle table, @JsonProperty("constraint") TupleDomain<ColumnHandle> constraint)
     {
@@ -36,12 +49,22 @@ public class AccumuloTableLayoutHandle
         this.constraint = requireNonNull(constraint, "constraint is null");
     }
 
+    /**
+     * Gets the {@link AccumuloTableHandle}
+     *
+     * @return Accumulo table
+     */
     @JsonProperty
     public AccumuloTableHandle getTable()
     {
         return table;
     }
 
+    /**
+     * Gets the constraints for this query
+     *
+     * @return the constraints
+     */
     @JsonProperty
     public TupleDomain<ColumnHandle> getConstraint()
     {
