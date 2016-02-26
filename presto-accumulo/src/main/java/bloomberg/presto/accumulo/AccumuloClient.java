@@ -161,8 +161,8 @@ public class AccumuloClient
         }
 
         try {
-            if (!table.getSchemaName().equals("default") && !conn.namespaceOperations().exists(table.getSchemaName())) {
-                conn.namespaceOperations().create(table.getSchemaName());
+            if (!table.getSchema().equals("default") && !conn.namespaceOperations().exists(table.getSchema())) {
+                conn.namespaceOperations().create(table.getSchema());
             }
 
             conn.tableOperations().create(table.getFullTableName());

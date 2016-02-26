@@ -50,7 +50,7 @@ public class Splitter
         Type rowIdType = null;
 
         for (AccumuloColumnHandle ach : table.getColumns()) {
-            if (ach.getName().equals(table.getRowIdName())) {
+            if (ach.getName().equals(table.getRowId())) {
                 rowIdType = ach.getType();
                 break;
             }

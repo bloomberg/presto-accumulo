@@ -70,7 +70,7 @@ public class AccumuloPageSink
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
 
-        rowIdName = table.getRowIdName();
+        rowIdName = table.getRowId();
     }
 
     @Override

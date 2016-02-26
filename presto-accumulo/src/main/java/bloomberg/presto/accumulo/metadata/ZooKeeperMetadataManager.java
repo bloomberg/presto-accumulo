@@ -142,11 +142,12 @@ public class ZooKeeperMetadataManager
     @Override
     public void createTableMetadata(AccumuloTable table)
     {
-        String tablePath = getTablePath(table.toSchemaTableName());
+        SchemaTableName stn = new SchemaTableName(table.getSchema(), table.getTable());
+        String tablePath = getTablePath(stn);
 
         try {
             if (curator.checkExists().forPath(tablePath) != null) {
-                throw new InvalidActivityException(String.format("Metadata for table %s already exists", table.toSchemaTableName()));
+                throw new InvalidActivityException(String.format("Metadata for table %s already exists", stn));
 
             }
         }
