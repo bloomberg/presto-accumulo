@@ -13,6 +13,7 @@
  */
 package bloomberg.presto.accumulo;
 
+import bloomberg.presto.accumulo.conf.AccumuloSessionProperties;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.spi.ColumnHandle;

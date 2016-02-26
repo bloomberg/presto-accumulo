@@ -13,7 +13,7 @@
  */
 package bloomberg.presto.accumulo.metadata;
 
-import bloomberg.presto.accumulo.AccumuloConfig;
+import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.spi.SchemaTableName;
 
 import java.util.Set;

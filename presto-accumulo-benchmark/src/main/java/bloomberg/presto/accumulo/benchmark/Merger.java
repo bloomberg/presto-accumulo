@@ -1,6 +1,6 @@
 package bloomberg.presto.accumulo.benchmark;
 
-import bloomberg.presto.accumulo.AccumuloConfig;
+import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;

@@ -1,7 +1,7 @@
 package bloomberg.presto.accumulo.index;
 
 import bloomberg.presto.accumulo.AccumuloClient;
-import bloomberg.presto.accumulo.AccumuloConfig;
+import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;

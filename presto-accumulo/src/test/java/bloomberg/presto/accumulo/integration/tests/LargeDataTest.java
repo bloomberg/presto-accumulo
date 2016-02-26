@@ -1,6 +1,6 @@
 package bloomberg.presto.accumulo.integration.tests;
 
-import bloomberg.presto.accumulo.AccumuloConfig;
+import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import com.facebook.presto.spi.type.BigintType;

@@ -1,7 +1,7 @@
 package bloomberg.presto.accumulo.integration.tests;
 
 import bloomberg.presto.accumulo.AccumuloClient;
-import bloomberg.presto.accumulo.AccumuloConfig;
+import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.metadata.ZooKeeperMetadataManager;

@@ -1,7 +1,7 @@
 package bloomberg.presto.accumulo.benchmark;
 
-import bloomberg.presto.accumulo.AccumuloConfig;
-import bloomberg.presto.accumulo.AccumuloSessionProperties;
+import bloomberg.presto.accumulo.conf.AccumuloConfig;
+import bloomberg.presto.accumulo.conf.AccumuloSessionProperties;
 import com.facebook.presto.jdbc.PrestoConnection;
 import com.facebook.presto.jdbc.PrestoResultSet;
 import com.google.common.io.Files;

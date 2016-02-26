@@ -13,6 +13,8 @@
  */
 package bloomberg.presto.accumulo;
 
+import bloomberg.presto.accumulo.conf.AccumuloSessionProperties;
+import bloomberg.presto.accumulo.conf.AccumuloTableProperties;
 import com.facebook.presto.spi.Connector;
 import com.facebook.presto.spi.ConnectorHandleResolver;
 import com.facebook.presto.spi.ConnectorMetadata;

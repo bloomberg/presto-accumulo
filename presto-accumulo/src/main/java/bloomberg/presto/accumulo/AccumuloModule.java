@@ -13,6 +13,9 @@
  */
 package bloomberg.presto.accumulo;
 
+import bloomberg.presto.accumulo.conf.AccumuloConfig;
+import bloomberg.presto.accumulo.conf.AccumuloSessionProperties;
+import bloomberg.presto.accumulo.conf.AccumuloTableProperties;
 import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeManager;
