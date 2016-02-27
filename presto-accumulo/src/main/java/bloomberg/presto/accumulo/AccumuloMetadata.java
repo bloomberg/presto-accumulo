@@ -78,7 +78,7 @@ public class AccumuloMetadata
     public void rollbackCreateTable(ConnectorSession session, ConnectorOutputTableHandle tableHandle)
     {
         AccumuloTableHandle th = checkType(tableHandle, AccumuloTableHandle.class, "table");
-        client.dropTable(th.toSchemaTableName(), th.isInternal());
+        client.dropTable(client.getTable(th.toSchemaTableName()));
     }
 
     @Override
@@ -91,7 +91,7 @@ public class AccumuloMetadata
     public void dropTable(ConnectorSession session, ConnectorTableHandle tableHandle)
     {
         AccumuloTableHandle th = checkType(tableHandle, AccumuloTableHandle.class, "table");
-        client.dropTable(th.toSchemaTableName(), th.isInternal());
+        client.dropTable(client.getTable(th.toSchemaTableName()));
     }
 
     @Override

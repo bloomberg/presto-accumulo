@@ -13,12 +13,12 @@
  */
 package bloomberg.presto.accumulo.metadata;
 
-import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -145,17 +145,16 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the full table name of the Accumulo table, i.e. schemaName.tableName. If the schemaName
-     * is 'default', then there is no Accumulo namespace and the table name is all that is returned.
-     * This method is ignored by jackson.
+     * Gets the full table name of the Accumulo table, i.e. schemaName.tableName. This method is
+     * ignored by jackson.
      *
-     * @see AccumuloClient#getFullTableName
+     * @see AccumuloTable#getFullTableName
      * @return Full table name
      */
     @JsonIgnore
     public String getFullTableName()
     {
-        return AccumuloClient.getFullTableName(schema, table);
+        return getFullTableName(schema, table);
     }
 
     /**
@@ -232,6 +231,38 @@ public class AccumuloTable
             throw new PrestoException(StandardErrorCode.USER_ERROR,
                     "Configured serializer class not found", e);
         }
+    }
+
+    /**
+     * Gets the full table name of the Accumulo table, i.e. schemaName.tableName. If the schemaName
+     * is 'default', then there is no Accumulo namespace and the table name is all that is returned.
+     * This method is ignored by jackson.
+     *
+     * @param schema
+     *            Schema name
+     * @param table
+     *            Table name
+     * @return Full table name
+     */
+    @JsonIgnore
+    public static String getFullTableName(String schema, String table)
+    {
+        return schema.equals("default") ? table : schema + '.' + table;
+    }
+
+    /**
+     * Gets the full table name of the Accumulo table, i.e. schemaName.tableName. If the schemaName
+     * is 'default', then there is no Accumulo namespace and the table name is all that is returned.
+     * This method is ignored by jackson.
+     *
+     * @param stn
+     *            SchemaTableName
+     * @return Full table name
+     */
+    @JsonIgnore
+    public static String getFullTableName(SchemaTableName stn)
+    {
+        return getFullTableName(stn.getSchemaName(), stn.getTableName());
     }
 
     @Override

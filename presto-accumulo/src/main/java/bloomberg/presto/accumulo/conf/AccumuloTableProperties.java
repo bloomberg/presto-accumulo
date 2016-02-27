@@ -24,8 +24,11 @@ import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.security.InvalidParameterException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -97,15 +100,40 @@ public final class AccumuloTableProperties
     }
 
     /**
-     * Gets the value of the column_mapping property.
+     * Gets the value of the column_mapping property and parses it into a map of Presto column name
+     * to a pair of strings, the Accumulo column family and qualifier.
      *
      * @param tableProperties
      *            The map of table properties
-     * @return The column mapping
+     * @return The column mapping, presto name to (accumulo column family, qualifier)
      */
-    public static String getColumnMapping(Map<String, Object> tableProperties)
+    public static Map<String, Pair<String, String>> getColumnMapping(
+            Map<String, Object> tableProperties)
     {
-        return (String) tableProperties.get(COLUMN_MAPPING);
+        String strMapping = (String) tableProperties.get(COLUMN_MAPPING);
+        if (strMapping == null || strMapping.isEmpty()) {
+            throw new InvalidParameterException("Must specify column mapping property");
+        }
+
+        // Parse out the column mapping
+        // This is a comma-delimited list of "presto column:accumulo fam:accumulo qualifier"
+        // triplets
+        Map<String, Pair<String, String>> mapping = new HashMap<>();
+        for (String m : strMapping.split(",")) {
+            String[] tokens = m.split(":");
+
+            // If there are three tokens, parse out the mapping
+            // Else throw an exception!
+            if (tokens.length == 3) {
+                mapping.put(tokens[0], Pair.of(tokens[1], tokens[2]));
+            }
+            else {
+                throw new InvalidParameterException(String
+                        .format("Mapping of %s contains %d tokens instead of 3", m, tokens.length));
+            }
+        }
+
+        return mapping;
     }
 
     /**

@@ -1,6 +1,5 @@
 package bloomberg.presto.accumulo.integration.tests;
 
-import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.metadata.AccumuloTable;
@@ -356,7 +355,7 @@ public class QueryDriver
             throws Exception
     {
         // delete the accumulo table and any index tables
-        conn.tableOperations().delete(AccumuloClient.getFullTableName(schema, tableName));
+        conn.tableOperations().delete(AccumuloTable.getFullTableName(schema, tableName));
 
         if (hasIndex()) {
             conn.tableOperations().delete(Indexer.getIndexTableName(schema, tableName));

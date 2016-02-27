@@ -1,7 +1,7 @@
 package bloomberg.presto.accumulo.index;
 
-import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
+import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -80,7 +80,7 @@ public class ColumnCardinalityCache
 
     private TableColumnCache getTableCache(String schema, String table)
     {
-        String fullName = AccumuloClient.getFullTableName(schema, table);
+        String fullName = AccumuloTable.getFullTableName(schema, table);
         TableColumnCache cache = tableToCache.get(fullName);
         if (cache == null) {
             LOG.debug("Creating new TableColumnCache for %s.%s %s", schema, table, this);
