@@ -31,6 +31,10 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Presto Connector for Accumulo. Defines several high-level classes for properties, metadata,
+ * retrieving splits, providing I/O operations, etc.
+ */
 public class AccumuloConnector
         implements Connector
 {
@@ -45,8 +49,32 @@ public class AccumuloConnector
     private final AccumuloSessionProperties sessionProperties;
     private final AccumuloTableProperties tableProperties;
 
+    /**
+     * Creates a new instance of AccumuloConnector, brought to you by Guice.
+     *
+     * @param lifeCycleManager
+     *            Manages the life cycle
+     * @param metadata
+     *            Provides metadata operations for creating tables, dropping tables, returing table
+     *            metadata, etc
+     * @param splitManager
+     *            Splits tables into parallel operations for scans
+     * @param recordSetProvider
+     *            Converts splits into rows of data
+     * @param handleResolver
+     *            Defines various handles for Presto to instantiate
+     * @param pageSinkProvider
+     *            Provides a means to write data to Accumulo via INSERTs
+     * @param sessionProperties
+     *            Defines all Accumulo session properties
+     * @param tableProperties
+     *            Defines all Accumulo table properties
+     */
     @Inject
-    public AccumuloConnector(LifeCycleManager lifeCycleManager, AccumuloMetadata metadata, AccumuloSplitManager splitManager, AccumuloRecordSetProvider recordSetProvider, AccumuloHandleResolver handleResolver, AccumuloPageSinkProvider pageSinkProvider, AccumuloSessionProperties sessionProperties, AccumuloTableProperties tableProperties)
+    public AccumuloConnector(LifeCycleManager lifeCycleManager, AccumuloMetadata metadata,
+            AccumuloSplitManager splitManager, AccumuloRecordSetProvider recordSetProvider,
+            AccumuloHandleResolver handleResolver, AccumuloPageSinkProvider pageSinkProvider,
+            AccumuloSessionProperties sessionProperties, AccumuloTableProperties tableProperties)
     {
         this.lifeCycleManager = requireNonNull(lifeCycleManager, "lifeCycleManager is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -58,48 +86,88 @@ public class AccumuloConnector
         this.tableProperties = requireNonNull(tableProperties, "tableProperties is null");
     }
 
+    /**
+     * Gets the metadata, an instance of {@link AccumuloMetadata}
+     *
+     * @return Metadata
+     */
     @Override
     public ConnectorMetadata getMetadata()
     {
         return metadata;
     }
 
+    /**
+     * Gets the split manager, an instance of {@link AccumuloSplitManager}
+     *
+     * @return Split manager
+     */
     @Override
     public ConnectorSplitManager getSplitManager()
     {
         return splitManager;
     }
 
+    /**
+     * Gets the record set provider, an instance of {@link AccumuloRecordSetProvider}
+     *
+     * @return Record set provider
+     */
     @Override
     public ConnectorRecordSetProvider getRecordSetProvider()
     {
         return recordSetProvider;
     }
 
+    /**
+     * Gets the page sink provider, an instance of {@link AccumuloPageSinkProvider}
+     *
+     * @return Page sink provider
+     */
     @Override
     public ConnectorPageSinkProvider getPageSinkProvider()
     {
         return pageSinkProvider;
     }
 
+    /**
+     * Gets the valid table properties
+     *
+     * @see AccumuloTableProperties
+     * @return List of table properties
+     */
     @Override
     public List<PropertyMetadata<?>> getTableProperties()
     {
         return tableProperties.getTableProperties();
     }
 
+    /**
+     * Gets the valid session properties
+     *
+     * @see AccumuloSessionProperties
+     * @return List of session properties
+     */
     @Override
     public List<PropertyMetadata<?>> getSessionProperties()
     {
         return sessionProperties.getSessionProperties();
     }
 
+    /**
+     * Gets the handle resolver, an instance of {@link AccumuloHandleResolver}
+     *
+     * @return Handle resolver
+     */
     @Override
     public ConnectorHandleResolver getHandleResolver()
     {
         return handleResolver;
     }
 
+    /**
+     * Shuts down the connector
+     */
     @Override
     public final void shutdown()
     {
