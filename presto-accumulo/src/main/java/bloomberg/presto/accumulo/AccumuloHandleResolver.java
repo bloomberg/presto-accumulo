@@ -26,11 +26,20 @@ import javax.inject.Inject;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Presto class to provide and validate various handles throughout the connector
+ */
 public class AccumuloHandleResolver
         implements ConnectorHandleResolver
 {
     private final String connectorId;
 
+    /**
+     * Creates a new instance of AccumuloHandleResolver, guic'd
+     *
+     * @param clientId
+     *            Connector ID
+     */
     @Inject
     public AccumuloHandleResolver(AccumuloConnectorId clientId)
     {
@@ -40,31 +49,36 @@ public class AccumuloHandleResolver
     @Override
     public boolean canHandle(ConnectorTableHandle tableHandle)
     {
-        return tableHandle instanceof AccumuloTableHandle && ((AccumuloTableHandle) tableHandle).getConnectorId().equals(connectorId);
+        return tableHandle instanceof AccumuloTableHandle
+                && ((AccumuloTableHandle) tableHandle).getConnectorId().equals(connectorId);
     }
 
     @Override
     public boolean canHandle(ColumnHandle columnHandle)
     {
-        return columnHandle instanceof AccumuloColumnHandle && ((AccumuloColumnHandle) columnHandle).getConnectorId().equals(connectorId);
+        return columnHandle instanceof AccumuloColumnHandle
+                && ((AccumuloColumnHandle) columnHandle).getConnectorId().equals(connectorId);
     }
 
     @Override
     public boolean canHandle(ConnectorInsertTableHandle tableHandle)
     {
-        return tableHandle instanceof AccumuloTableHandle && ((AccumuloTableHandle) tableHandle).getConnectorId().equals(connectorId);
+        return tableHandle instanceof AccumuloTableHandle
+                && ((AccumuloTableHandle) tableHandle).getConnectorId().equals(connectorId);
     }
 
     @Override
     public boolean canHandle(ConnectorOutputTableHandle tableHandle)
     {
-        return tableHandle instanceof AccumuloTableHandle && ((AccumuloTableHandle) tableHandle).getConnectorId().equals(connectorId);
+        return tableHandle instanceof AccumuloTableHandle
+                && ((AccumuloTableHandle) tableHandle).getConnectorId().equals(connectorId);
     }
 
     @Override
     public boolean canHandle(ConnectorSplit split)
     {
-        return split instanceof AccumuloSplit && ((AccumuloSplit) split).getConnectorId().equals(connectorId);
+        return split instanceof AccumuloSplit
+                && ((AccumuloSplit) split).getConnectorId().equals(connectorId);
     }
 
     @Override

@@ -17,6 +17,11 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Wrapper class for the connector ID, which is a String.
+ *
+ * TODO Why does this exist?
+ */
 public final class AccumuloConnectorId
 {
     private final String id;

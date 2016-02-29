@@ -47,6 +47,10 @@ import static bloomberg.presto.accumulo.Types.checkType;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Presto metadata provider for Accumulo. Responsible for creating/dropping/listing tables, schemas,
+ * columns, all sorts of goodness. Heavily leverages {@link AccumuloClient}
+ */
 public class AccumuloMetadata
         implements ConnectorMetadata
 {
@@ -60,33 +64,87 @@ public class AccumuloMetadata
         this.client = requireNonNull(client, "client is null");
     }
 
+    /**
+     * Begins the process of creating a table with the given metadata. This process of
+     * begin/commit/rollback is used for CTAS statements.
+     *
+     * @param session
+     *            Current client session
+     * @param tableMetadata
+     *            Table metadata to create
+     * @return Output table handle
+     */
     @Override
-    public ConnectorOutputTableHandle beginCreateTable(ConnectorSession session, ConnectorTableMetadata tableMetadata)
+    public ConnectorOutputTableHandle beginCreateTable(ConnectorSession session,
+            ConnectorTableMetadata tableMetadata)
     {
         SchemaTableName stName = tableMetadata.getTable();
         AccumuloTable table = client.createTable(tableMetadata);
-        return new AccumuloTableHandle(connectorId, stName.getSchemaName(), stName.getTableName(), table.getRowId(), table.isInternal(), table.getSerializerClass().getName());
+        return new AccumuloTableHandle(connectorId, stName.getSchemaName(), stName.getTableName(),
+                table.getRowId(), table.isInternal(), table.getSerializerClass().getName());
     }
 
+    /**
+     * Commit the table creation.
+     *
+     * @param session
+     *            Current client session
+     * @param tableHandle
+     *            Output table handle
+     * @param fragments
+     *            Collection of fragment metadata
+     */
     @Override
-    public void commitCreateTable(ConnectorSession session, ConnectorOutputTableHandle tableHandle, Collection<Slice> fragments)
+    public void commitCreateTable(ConnectorSession session, ConnectorOutputTableHandle tableHandle,
+            Collection<Slice> fragments)
     {
-        // no-op?
+        // TODO no-op?
+        // The table and metadata is actually created in beginCreateTable
+        // There may be some additional useful information regarding the fragments, but I don't
+        // think that really matters for this connector
     }
 
+    /**
+     * Rollback the table creation
+     *
+     * @param session
+     *            Current client session
+     * @param tableHandle
+     *            Table handle to delete
+     */
     @Override
-    public void rollbackCreateTable(ConnectorSession session, ConnectorOutputTableHandle tableHandle)
+    public void rollbackCreateTable(ConnectorSession session,
+            ConnectorOutputTableHandle tableHandle)
     {
+        // Here, we just call drop table to rollback our create
+        // Note that this will not delete the Accumulo tables if the table is external
+        // TODO Should it?
         AccumuloTableHandle th = checkType(tableHandle, AccumuloTableHandle.class, "table");
         client.dropTable(client.getTable(th.toSchemaTableName()));
     }
 
+    /**
+     * Create the table metadata
+     *
+     * @param session
+     *            Current client session
+     * @param tableMetadata
+     *            Table metadata to create
+     */
     @Override
     public void createTable(ConnectorSession session, ConnectorTableMetadata tableMetadata)
     {
         client.createTable(tableMetadata);
     }
 
+    /**
+     * Create the table metadata
+     *
+     * @param session
+     *            Current client session
+     * @param tableHandle
+     *            Table metadata to drop
+     */
     @Override
     public void dropTable(ConnectorSession session, ConnectorTableHandle tableHandle)
     {
@@ -94,18 +152,38 @@ public class AccumuloMetadata
         client.dropTable(client.getTable(th.toSchemaTableName()));
     }
 
+    /**
+     * Begin an insert of data into an Accumulo table. This is for new inserts, not for a CTAS.
+     *
+     * @param session
+     *            Current client session
+     * @param tableHandle
+     *            Table handle for the insert
+     * @return Insert handle for the table
+     */
     @Override
-    public ConnectorInsertTableHandle beginInsert(ConnectorSession session, ConnectorTableHandle tableHandle)
+    public ConnectorInsertTableHandle beginInsert(ConnectorSession session,
+            ConnectorTableHandle tableHandle)
     {
-        // Unsure what to do here besides validate the type
-        // Seems like this is mostly metadata management
-        // The bulk of the work is done in the page sink for building out
-        // the pages (blocks of rows of data)
+        // This is all metadata management for the insert op
+        // Not much to do here but validate the type and return the new table handle (which is the
+        // same)
         return checkType(tableHandle, AccumuloTableHandle.class, "table");
     }
 
+    /**
+     * Commit the insert
+     *
+     * @param session
+     *            Current client session
+     * @param insertHandle
+     *            Table handle
+     * @param fragments
+     *            Collection of fragment metadata
+     */
     @Override
-    public void commitInsert(ConnectorSession session, ConnectorInsertTableHandle insertHandle, Collection<Slice> fragments)
+    public void commitInsert(ConnectorSession session, ConnectorInsertTableHandle insertHandle,
+            Collection<Slice> fragments)
     {
         // Seems like most connectors just return metadata about the fragments
         // Unsure if we can use this for an optimization?
@@ -113,19 +191,35 @@ public class AccumuloMetadata
         checkType(insertHandle, AccumuloTableHandle.class, "table");
     }
 
+    /**
+     * Rollback the insert, which is not supported by this connector
+     *
+     * @param session
+     *            Current client session
+     * @param insertHandle
+     *            Table handle
+     */
     @Override
-    public List<String> listSchemaNames(ConnectorSession session)
+    public void rollbackInsert(ConnectorSession session, ConnectorInsertTableHandle insertHandle)
     {
-        return listSchemaNames();
+        // This super func is a no-op (may change in future versions)
+        // Not much we can really do here since all the inserts are elsewhere.
+        // Accumulo ain't no ACID
+        // TODO Can we do insert rollbacks somehow?
+        ConnectorMetadata.super.rollbackInsert(session, insertHandle);
     }
 
-    public List<String> listSchemaNames()
-    {
-        return ImmutableList.copyOf(client.getSchemaNames());
-    }
-
+    /**
+     * Gets an instance of a TableHandle based on the given name
+     *
+     * @param session
+     *            Current client session
+     * @param stName
+     *            Table name
+     * @return Table handle or null if the table does not exist
+     */
     @Override
-    public AccumuloTableHandle getTableHandle(ConnectorSession session, SchemaTableName stName)
+    public ConnectorTableHandle getTableHandle(ConnectorSession session, SchemaTableName stName)
     {
         if (!listSchemaNames(session).contains(stName.getSchemaName())) {
             return null;
@@ -136,36 +230,131 @@ public class AccumuloMetadata
             return null;
         }
 
-        return new AccumuloTableHandle(connectorId, stName.getSchemaName(), stName.getTableName(), table.getRowId(), table.isInternal(), table.getSerializerClass().getName());
+        return new AccumuloTableHandle(connectorId, stName.getSchemaName(), stName.getTableName(),
+                table.getRowId(), table.isInternal(), table.getSerializerClass().getName());
     }
 
+    /**
+     * Gets all table layouts of the given table with the given constraints
+     *
+     * @param session
+     *            Current client session
+     * @param table
+     *            Table handle
+     * @param constraint
+     *            Column constraints of the query
+     * @param desiredColumns
+     *            Column handles requested in the query
+     * @return List of table layouts
+     */
     @Override
-    public List<ConnectorTableLayoutResult> getTableLayouts(ConnectorSession session, ConnectorTableHandle table, Constraint<ColumnHandle> constraint, Optional<Set<ColumnHandle>> desiredColumns)
+    public List<ConnectorTableLayoutResult> getTableLayouts(ConnectorSession session,
+            ConnectorTableHandle table, Constraint<ColumnHandle> constraint,
+            Optional<Set<ColumnHandle>> desiredColumns)
     {
         AccumuloTableHandle tableHandle = checkType(table, AccumuloTableHandle.class, "table");
-
-        ConnectorTableLayout layout = new ConnectorTableLayout(new AccumuloTableLayoutHandle(tableHandle, constraint.getSummary()));
-
+        ConnectorTableLayout layout = new ConnectorTableLayout(
+                new AccumuloTableLayoutHandle(tableHandle, constraint.getSummary()));
         return ImmutableList.of(new ConnectorTableLayoutResult(layout, constraint.getSummary()));
     }
 
+    /**
+     * Gets a table layout from the given handle
+     *
+     * @param session
+     *            Current client session
+     * @param handle
+     *            Table handle
+     * @return Table layout
+     */
     @Override
-    public ConnectorTableLayout getTableLayout(ConnectorSession session, ConnectorTableLayoutHandle handle)
+    public ConnectorTableLayout getTableLayout(ConnectorSession session,
+            ConnectorTableLayoutHandle handle)
     {
-        AccumuloTableLayoutHandle layout = checkType(handle, AccumuloTableLayoutHandle.class, "layout");
-        return new ConnectorTableLayout(layout);
+        return new ConnectorTableLayout(
+                checkType(handle, AccumuloTableLayoutHandle.class, "layout"));
     }
 
+    /**
+     * Gets table metadata for the given handle
+     *
+     * @param session
+     *            Current client session
+     * @param table
+     *            Table handle
+     * @return Metadata for the given table handle
+     */
     @Override
-    public ConnectorTableMetadata getTableMetadata(ConnectorSession session, ConnectorTableHandle table)
+    public ConnectorTableMetadata getTableMetadata(ConnectorSession session,
+            ConnectorTableHandle table)
     {
         AccumuloTableHandle tHandle = checkType(table, AccumuloTableHandle.class, "table");
-        checkArgument(tHandle.getConnectorId().equals(connectorId), "tableHandle is not for this connector");
-        SchemaTableName tableName = new SchemaTableName(tHandle.getSchemaName(), tHandle.getTableName());
-
-        return getTableMetadata(tableName);
+        checkArgument(tHandle.getConnectorId().equals(connectorId),
+                "table is not for this connector");
+        return getTableMetadata(
+                new SchemaTableName(tHandle.getSchemaName(), tHandle.getTableName()));
     }
 
+    /**
+     * Gets all available column handles for the requested table
+     *
+     * @param session
+     *            client session
+     * @param tableHandle
+     *            Table handle
+     * @return Mapping of Presto column name to column handle
+     */
+    @Override
+    public Map<String, ColumnHandle> getColumnHandles(ConnectorSession session,
+            ConnectorTableHandle tableHandle)
+    {
+        AccumuloTableHandle tHandle =
+                checkType(tableHandle, AccumuloTableHandle.class, "tableHandle");
+        checkArgument(tHandle.getConnectorId().equals(connectorId),
+                "tableHandle is not for this connector");
+
+        AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
+        if (table == null) {
+            throw new TableNotFoundException(tHandle.toSchemaTableName());
+        }
+
+        ImmutableMap.Builder<String, ColumnHandle> columnHandles = ImmutableMap.builder();
+        for (AccumuloColumnHandle column : table.getColumns()) {
+            columnHandles.put(column.getName(), column);
+        }
+        return columnHandles.build();
+    }
+
+    @Override
+    public ColumnMetadata getColumnMetadata(ConnectorSession session,
+            ConnectorTableHandle tableHandle, ColumnHandle columnHandle)
+    {
+        checkType(tableHandle, AccumuloTableHandle.class, "tableHandle");
+        return checkType(columnHandle, AccumuloColumnHandle.class, "columnHandle")
+                .getColumnMetadata();
+    }
+
+    /**
+     * List all existing schemas
+     *
+     * @see AccumuloClient#getSchemaNames
+     * @param session
+     *            Current client session
+     */
+    @Override
+    public List<String> listSchemaNames(ConnectorSession session)
+    {
+        return ImmutableList.copyOf(client.getSchemaNames());
+    }
+
+    /**
+     * List all tables for a given schema, or null for all schemas
+     *
+     * @param session
+     *            Current client session
+     * @param schemaNameOrNull
+     *            Schema name to list tables for, or null if all tables
+     */
     @Override
     public List<SchemaTableName> listTables(ConnectorSession session, String schemaNameOrNull)
     {
@@ -186,29 +375,22 @@ public class AccumuloMetadata
         return builder.build();
     }
 
+    /**
+     * Lists all of the columns for each provided schema table
+     *
+     * @param session
+     *            Current client session
+     * @param prefix
+     *            Table prefix
+     * @return Mapping of table names with the given prefix to columns
+     */
     @Override
-    public Map<String, ColumnHandle> getColumnHandles(ConnectorSession session, ConnectorTableHandle tableHandle)
-    {
-        AccumuloTableHandle tHandle = checkType(tableHandle, AccumuloTableHandle.class, "tableHandle");
-        checkArgument(tHandle.getConnectorId().equals(connectorId), "tableHandle is not for this connector");
-
-        AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
-        if (table == null) {
-            throw new TableNotFoundException(tHandle.toSchemaTableName());
-        }
-
-        ImmutableMap.Builder<String, ColumnHandle> columnHandles = ImmutableMap.builder();
-        for (AccumuloColumnHandle column : table.getColumns()) {
-            columnHandles.put(column.getName(), column);
-        }
-        return columnHandles.build();
-    }
-
-    @Override
-    public Map<SchemaTableName, List<ColumnMetadata>> listTableColumns(ConnectorSession session, SchemaTablePrefix prefix)
+    public Map<SchemaTableName, List<ColumnMetadata>> listTableColumns(ConnectorSession session,
+            SchemaTablePrefix prefix)
     {
         requireNonNull(prefix, "prefix is null");
-        ImmutableMap.Builder<SchemaTableName, List<ColumnMetadata>> columns = ImmutableMap.builder();
+        ImmutableMap.Builder<SchemaTableName, List<ColumnMetadata>> columns =
+                ImmutableMap.builder();
         for (SchemaTableName tableName : listTables(session, prefix)) {
             ConnectorTableMetadata tableMetadata = getTableMetadata(tableName);
             // table can disappear during listing operation
@@ -219,27 +401,36 @@ public class AccumuloMetadata
         return columns.build();
     }
 
-    @Override
-    public ColumnMetadata getColumnMetadata(ConnectorSession session, ConnectorTableHandle tableHandle, ColumnHandle columnHandle)
+    /**
+     * Gets metadata for the given table
+     *
+     * @param stn
+     *            Schema and table name
+     * @return Table metadata, or null if schema/table does not exist
+     */
+    private ConnectorTableMetadata getTableMetadata(SchemaTableName stn)
     {
-        checkType(tableHandle, AccumuloTableHandle.class, "tableHandle");
-        return checkType(columnHandle, AccumuloColumnHandle.class, "columnHandle").getColumnMetadata();
-    }
-
-    private ConnectorTableMetadata getTableMetadata(SchemaTableName stName)
-    {
-        if (!listSchemaNames().contains(stName.getSchemaName())) {
+        if (!client.getSchemaNames().contains(stn.getSchemaName())) {
             return null;
         }
 
-        AccumuloTable table = client.getTable(stName);
+        AccumuloTable table = client.getTable(stn);
         if (table == null) {
             return null;
         }
 
-        return new ConnectorTableMetadata(stName, table.getColumnsMetadata());
+        return new ConnectorTableMetadata(stn, table.getColumnsMetadata());
     }
 
+    /**
+     * List all tables with the given prefix
+     *
+     * @param session
+     *            Current client session
+     * @param prefix
+     *            Table prefix
+     * @return List of table names with the given schema and/or table name, which could be one table
+     */
     private List<SchemaTableName> listTables(ConnectorSession session, SchemaTablePrefix prefix)
     {
         if (prefix.getSchemaName() == null) {
