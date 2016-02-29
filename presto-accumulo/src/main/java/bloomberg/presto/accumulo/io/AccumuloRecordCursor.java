@@ -11,8 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package bloomberg.presto.accumulo;
+package bloomberg.presto.accumulo.io;
 
+import bloomberg.presto.accumulo.Types;
 import bloomberg.presto.accumulo.iterators.AndFilter;
 import bloomberg.presto.accumulo.iterators.NullRowFilter;
 import bloomberg.presto.accumulo.iterators.OrFilter;

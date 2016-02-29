@@ -1,8 +1,8 @@
 package bloomberg.presto.accumulo.benchmark;
 
-import bloomberg.presto.accumulo.AccumuloPageSink;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.index.Indexer;
+import bloomberg.presto.accumulo.io.AccumuloPageSink;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.Row;
