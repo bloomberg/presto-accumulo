@@ -35,6 +35,11 @@ import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Presto module to do all kinds of run Guice injection stuff!
+ * 
+ * WARNING: Contains black magick
+ */
 public class AccumuloModule
         implements Module
 {
