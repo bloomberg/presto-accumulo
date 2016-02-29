@@ -30,6 +30,10 @@ public final class Types
     /**
      * Validates the given value is an instance of the target class.
      *
+     * @param <A>
+     *            Generic type for value
+     * @param <B>
+     *            Generic type for the target, which extends A
      * @param value
      *            Instance of an object
      * @param target
