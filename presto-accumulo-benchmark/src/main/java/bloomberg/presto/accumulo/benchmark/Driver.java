@@ -1,7 +1,7 @@
 package bloomberg.presto.accumulo.benchmark;
 
-import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
+import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
@@ -119,7 +119,7 @@ public class Driver
 
                 // Merge tables
                 for (String tableName : splittableTables) {
-                    Merger.run(accConf, AccumuloClient.getFullTableName(schema, tableName));
+                    Merger.run(accConf, AccumuloTable.getFullTableName(schema, tableName));
                 }
             }
         }

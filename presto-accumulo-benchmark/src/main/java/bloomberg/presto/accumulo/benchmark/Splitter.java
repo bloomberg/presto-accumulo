@@ -1,6 +1,5 @@
 package bloomberg.presto.accumulo.benchmark;
 
-import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
@@ -35,7 +34,7 @@ public class Splitter
         }
 
         SchemaTableName stn = new SchemaTableName(schemaName, tableName);
-        String fullTableName = AccumuloClient.getFullTableName(stn);
+        String fullTableName = AccumuloTable.getFullTableName(stn);
         String metricsTable = Indexer.getMetricsTableName(stn);
 
         ZooKeeperInstance inst = new ZooKeeperInstance(conf.getInstance(), conf.getZooKeepers());
