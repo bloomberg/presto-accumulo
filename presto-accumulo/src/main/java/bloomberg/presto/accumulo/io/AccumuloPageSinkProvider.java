@@ -14,9 +14,9 @@
 package bloomberg.presto.accumulo.io;
 
 import bloomberg.presto.accumulo.AccumuloClient;
-import bloomberg.presto.accumulo.AccumuloTableHandle;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.metadata.AccumuloTable;
+import bloomberg.presto.accumulo.model.AccumuloTableHandle;
 import com.facebook.presto.spi.ConnectorInsertTableHandle;
 import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorPageSink;

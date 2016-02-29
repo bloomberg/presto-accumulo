@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo;
+package bloomberg.presto.accumulo.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

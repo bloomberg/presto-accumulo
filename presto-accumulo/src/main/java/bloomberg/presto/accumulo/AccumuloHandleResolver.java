@@ -14,6 +14,9 @@
 package bloomberg.presto.accumulo;
 
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.model.AccumuloSplit;
+import bloomberg.presto.accumulo.model.AccumuloTableHandle;
+import bloomberg.presto.accumulo.model.AccumuloTableLayoutHandle;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorHandleResolver;
 import com.facebook.presto.spi.ConnectorInsertTableHandle;

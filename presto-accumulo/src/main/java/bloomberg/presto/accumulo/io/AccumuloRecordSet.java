@@ -13,10 +13,10 @@
  */
 package bloomberg.presto.accumulo.io;
 
-import bloomberg.presto.accumulo.AccumuloSplit;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.model.AccumuloSplit;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;

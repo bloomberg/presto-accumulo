@@ -1,5 +1,6 @@
 package bloomberg.presto.accumulo;
 
+import bloomberg.presto.accumulo.udf.AccumuloStringFunctions;
 import com.facebook.presto.metadata.FunctionFactory;
 import com.facebook.presto.metadata.FunctionListBuilder;
 import com.facebook.presto.metadata.SqlFunction;

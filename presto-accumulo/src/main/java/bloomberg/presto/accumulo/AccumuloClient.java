@@ -22,6 +22,8 @@ import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.model.RangeHandle;
+import bloomberg.presto.accumulo.model.TabletSplitMetadata;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.ColumnMetadata;

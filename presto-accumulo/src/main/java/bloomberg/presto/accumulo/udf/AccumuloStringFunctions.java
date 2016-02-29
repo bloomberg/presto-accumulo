@@ -1,4 +1,4 @@
-package bloomberg.presto.accumulo;
+package bloomberg.presto.accumulo.udf;
 
 import com.facebook.presto.operator.Description;
 import com.facebook.presto.operator.scalar.ScalarFunction;

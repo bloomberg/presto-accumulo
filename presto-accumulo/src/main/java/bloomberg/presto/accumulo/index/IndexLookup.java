@@ -1,11 +1,11 @@
 package bloomberg.presto.accumulo.index;
 
 import bloomberg.presto.accumulo.AccumuloClient;
-import bloomberg.presto.accumulo.RangeHandle;
-import bloomberg.presto.accumulo.TabletSplitMetadata;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.conf.AccumuloSessionProperties;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
+import bloomberg.presto.accumulo.model.RangeHandle;
+import bloomberg.presto.accumulo.model.TabletSplitMetadata;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;

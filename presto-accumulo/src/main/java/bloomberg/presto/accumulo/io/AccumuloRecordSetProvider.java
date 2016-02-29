@@ -14,9 +14,9 @@
 package bloomberg.presto.accumulo.io;
 
 import bloomberg.presto.accumulo.AccumuloConnectorId;
-import bloomberg.presto.accumulo.AccumuloSplit;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
+import bloomberg.presto.accumulo.model.AccumuloSplit;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.ConnectorSession;
