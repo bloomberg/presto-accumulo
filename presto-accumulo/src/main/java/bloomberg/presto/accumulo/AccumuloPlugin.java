@@ -27,6 +27,10 @@ import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Main extension point for Accumulo connector for Presto. Provides services related to Accumulo to
+ * Presto, such as the connector itself and any defined UDFs.
+ */
 public class AccumuloPlugin
         implements Plugin
 {
@@ -36,7 +40,8 @@ public class AccumuloPlugin
     @Override
     public synchronized void setOptionalConfig(Map<String, String> optionalConfig)
     {
-        this.optionalConfig = ImmutableMap.copyOf(requireNonNull(optionalConfig, "optionalConfig is null"));
+        this.optionalConfig =
+                ImmutableMap.copyOf(requireNonNull(optionalConfig, "optionalConfig is null"));
     }
 
     @Inject
@@ -54,7 +59,8 @@ public class AccumuloPlugin
     public synchronized <T> List<T> getServices(Class<T> type)
     {
         if (type == ConnectorFactory.class) {
-            return ImmutableList.of(type.cast(new AccumuloConnectorFactory(typeManager, getOptionalConfig())));
+            return ImmutableList
+                    .of(type.cast(new AccumuloConnectorFactory(typeManager, getOptionalConfig())));
         }
 
         if (type == FunctionFactory.class) {
