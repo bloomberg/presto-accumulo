@@ -5,6 +5,7 @@ import bloomberg.presto.accumulo.index.Indexer;
 import bloomberg.presto.accumulo.io.AccumuloPageSink;
 import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.metadata.AccumuloTable;
+import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.Row;
 import bloomberg.presto.accumulo.model.RowSchema;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
@@ -24,6 +25,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -190,6 +193,24 @@ public class TpchDBGenIngest
                 indexer = null;
             }
 
+            List<AccumuloColumnHandle> columns = rowSchema.getColumns();
+            Collections.sort(columns, new Comparator<AccumuloColumnHandle>()
+            {
+                @Override
+                public int compare(AccumuloColumnHandle o1, AccumuloColumnHandle o2)
+                {
+                    return Integer.compare(o1.getOrdinal(), o2.getOrdinal());
+                }
+            });
+
+            int rowIdOrdinal = -1;
+            for (AccumuloColumnHandle ach : columns) {
+                if (ach.getName().equals(table.getRowId())) {
+                    rowIdOrdinal = ach.getOrdinal();
+                    break;
+                }
+            }
+
             System.out.println(String.format("Reading rows from file %s, writing to table %s", df, fullTableName));
             String line;
             int numRows = 0, numIdxRows = 0;
@@ -203,7 +224,7 @@ public class TpchDBGenIngest
 
                 Row r = Row.fromString(rowSchema, line, DELIMITER);
 
-                Mutation m = AccumuloPageSink.toMutation(r, rowIdName, rowSchema.getColumns(), serializer);
+                Mutation m = AccumuloPageSink.toMutation(r, rowIdOrdinal, columns, serializer);
 
                 wrtr.addMutation(m);
 
