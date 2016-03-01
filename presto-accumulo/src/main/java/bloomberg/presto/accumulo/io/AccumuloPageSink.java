@@ -44,6 +44,8 @@ import static java.util.Objects.requireNonNull;
  *
  * TODO Probably should just write them out to the table instead of batching them in memory. Who
  * knows how big these pages are. Not strictly a rhetorical question.
+ *
+ * @see AccumuloPageSinkProvider
  */
 public class AccumuloPageSink
         implements ConnectorPageSink

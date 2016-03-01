@@ -32,6 +32,13 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Implementation of a Presto RecordSet, responsible for returning the column types and the
+ * RecordCursor to the framework.
+ *
+ * @see AccumuloRecordCursor
+ * @see AccumuloRecordSetProvider
+ */
 public class AccumuloRecordSet
         implements RecordSet
 {
@@ -42,7 +49,22 @@ public class AccumuloRecordSet
     private final BatchScanner scan;
     private final String rowIdName;
 
-    public AccumuloRecordSet(ConnectorSession session, AccumuloConfig config, AccumuloSplit split, List<AccumuloColumnHandle> columnHandles, Connector conn)
+    /**
+     * Creates a new instance of {@link AccumuloRecordSet}
+     *
+     * @param session
+     *            Current client session
+     * @param config
+     *            Connector configuration
+     * @param split
+     *            Split to process
+     * @param columnHandles
+     *            Columns of the table
+     * @param conn
+     *            Accumulo connector
+     */
+    public AccumuloRecordSet(ConnectorSession session, AccumuloConfig config, AccumuloSplit split,
+            List<AccumuloColumnHandle> columnHandles, Connector conn)
     {
         requireNonNull(config, "config is null");
         requireNonNull(split, "split is null");
@@ -50,6 +72,7 @@ public class AccumuloRecordSet
 
         rowIdName = split.getRowIdName();
 
+        // Factory the serializer based on the split configuration
         try {
             this.serializer = split.getSerializerClass().newInstance();
         }
@@ -57,6 +80,7 @@ public class AccumuloRecordSet
             throw new RuntimeException("Failed to factory serializer class", e);
         }
 
+        // Save off the column handles and createa list of the Accumulo types
         this.columnHandles = requireNonNull(columnHandles, "column handles is null");
         ImmutableList.Builder<Type> types = ImmutableList.builder();
         for (AccumuloColumnHandle column : columnHandles) {
@@ -65,8 +89,9 @@ public class AccumuloRecordSet
         this.columnTypes = types.build();
 
         try {
-            scan = conn.createBatchScanner(split.getFullTableName(), conn.securityOperations().getUserAuthorizations(config.getUsername()), 10);
-
+            // Create the BatchScanner and set the ranges from the split
+            scan = conn.createBatchScanner(split.getFullTableName(),
+                    conn.securityOperations().getUserAuthorizations(config.getUsername()), 10);
             scan.setRanges(split.getRanges());
         }
         catch (Exception e) {
@@ -74,12 +99,22 @@ public class AccumuloRecordSet
         }
     }
 
+    /**
+     * Gets the types of all the columns in field order
+     *
+     * @return List of Presto types
+     */
     @Override
     public List<Type> getColumnTypes()
     {
         return columnTypes;
     }
 
+    /**
+     * Gets a new RecordCursor to iterate over rows of data as defined by the RecordSet's split
+     *
+     * @return RecordCursor
+     */
     @Override
     public RecordCursor cursor()
     {

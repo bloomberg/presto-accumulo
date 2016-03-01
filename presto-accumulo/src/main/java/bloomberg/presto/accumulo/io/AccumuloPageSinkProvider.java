@@ -15,7 +15,6 @@ package bloomberg.presto.accumulo.io;
 
 import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
-import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloTableHandle;
 import com.facebook.presto.spi.ConnectorInsertTableHandle;
 import com.facebook.presto.spi.ConnectorOutputTableHandle;
@@ -35,6 +34,12 @@ import javax.inject.Inject;
 import static bloomberg.presto.accumulo.Types.checkType;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Page sink provider for Accumulo connector. Creates {@link AccumuloPageSink} objects for output
+ * tables (CTAS) and inserts.
+ *
+ * @see AccumuloPageSink
+ */
 public class AccumuloPageSinkProvider
         implements ConnectorPageSinkProvider
 {
@@ -42,34 +47,64 @@ public class AccumuloPageSinkProvider
     private final AccumuloConfig config;
     private final Connector conn;
 
+    /**
+     * Creates a new instance of {@link AccumuloPageSinkProvider}
+     *
+     * @param config
+     *            Connector configuration
+     * @param client
+     *            Client to pass along to the created page sinks
+     */
     @Inject
     public AccumuloPageSinkProvider(AccumuloConfig config, AccumuloClient client)
     {
         this.client = requireNonNull(client, "client is null");
         this.config = requireNonNull(config, "config is null");
 
-        ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
+        ZooKeeperInstance inst =
+                new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
         try {
-            conn = inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword().getBytes()));
+            conn = inst.getConnector(config.getUsername(),
+                    new PasswordToken(config.getPassword().getBytes()));
         }
         catch (AccumuloException | AccumuloSecurityException e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
 
+    /**
+     * Creates a page sink for the given output table handle
+     *
+     * @param session
+     *            Current client session
+     * @param outputTableHandle
+     *            Output table handle
+     * @return A new page sink
+     */
     @Override
-    public ConnectorPageSink createPageSink(ConnectorSession session, ConnectorOutputTableHandle outputTableHandle)
+    public ConnectorPageSink createPageSink(ConnectorSession session,
+            ConnectorOutputTableHandle outputTableHandle)
     {
-        AccumuloTableHandle tHandle = checkType(outputTableHandle, AccumuloTableHandle.class, "table");
-        AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
-        return new AccumuloPageSink(conn, config, table);
+        AccumuloTableHandle tHandle =
+                checkType(outputTableHandle, AccumuloTableHandle.class, "tHandle");
+        return new AccumuloPageSink(conn, config, client.getTable(tHandle.toSchemaTableName()));
     }
 
+    /**
+     * Creates a page sink for the given insert table handle
+     *
+     * @param session
+     *            Current client session
+     * @param insertTableHandle
+     *            Insert table handle
+     * @return A new page sink
+     */
     @Override
-    public ConnectorPageSink createPageSink(ConnectorSession session, ConnectorInsertTableHandle insertTableHandle)
+    public ConnectorPageSink createPageSink(ConnectorSession session,
+            ConnectorInsertTableHandle insertTableHandle)
     {
-        AccumuloTableHandle tHandle = checkType(insertTableHandle, AccumuloTableHandle.class, "table");
-        AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
-        return new AccumuloPageSink(conn, config, table);
+        AccumuloTableHandle tHandle =
+                checkType(insertTableHandle, AccumuloTableHandle.class, "tHandle");
+        return new AccumuloPageSink(conn, config, client.getTable(tHandle.toSchemaTableName()));
     }
 }

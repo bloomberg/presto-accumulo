@@ -37,6 +37,13 @@ import static bloomberg.presto.accumulo.Types.checkType;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Implementation of a ConnectorRecordSetProvider for Accumulo. Generates {@link AccumuloRecordSet}
+ * objects for a provided split.
+ *
+ * @see AccumuloRecordSet
+ * @see AccumuloRecordCursor
+ */
 public class AccumuloRecordSetProvider
         implements ConnectorRecordSetProvider
 {
@@ -50,27 +57,46 @@ public class AccumuloRecordSetProvider
         this.connectorId = requireNonNull(connectorId, "connectorId is null").toString();
         this.config = requireNonNull(config, "config is null");
 
-        ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
+        ZooKeeperInstance inst =
+                new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
         try {
-            conn = inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword().getBytes()));
+            conn = inst.getConnector(config.getUsername(),
+                    new PasswordToken(config.getPassword().getBytes()));
         }
         catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
         }
     }
 
+    /**
+     * Gets a record set to read data from the given split and columns.
+     *
+     * @param session
+     *            Current client session
+     * @param split
+     *            Split to read
+     * @param columns
+     *            Column handles of the table
+     */
     @Override
-    public RecordSet getRecordSet(ConnectorSession session, ConnectorSplit split, List<? extends ColumnHandle> columns)
+    public RecordSet getRecordSet(ConnectorSession session, ConnectorSplit split,
+            List<? extends ColumnHandle> columns)
     {
-        requireNonNull(split, "partitionChunk is null");
-        AccumuloSplit accSplit = checkType(split, AccumuloSplit.class, "split");
-        checkArgument(accSplit.getConnectorId().equals(connectorId), "split is not for this connector");
+        requireNonNull(split, "split is null");
+        requireNonNull(columns, "columns is null");
 
+        // Convert split
+        AccumuloSplit accSplit = checkType(split, AccumuloSplit.class, "split");
+        checkArgument(accSplit.getConnectorId().equals(connectorId),
+                "split is not for this connector");
+
+        // Convert all columns handles
         ImmutableList.Builder<AccumuloColumnHandle> handles = ImmutableList.builder();
         for (ColumnHandle handle : columns) {
             handles.add(checkType(handle, AccumuloColumnHandle.class, "handle"));
         }
 
+        // Return new record set
         return new AccumuloRecordSet(session, config, accSplit, handles.build(), conn);
     }
 }
