@@ -43,11 +43,13 @@ public class IndexerTest
     private static final byte[] M1_ROWID = encode(VARCHAR, "row1");
     private static final byte[] AGE_VALUE = encode(BIGINT, 27L);
     private static final byte[] M1_FNAME_VALUE = encode(VARCHAR, "alice");
-    private static final byte[] M1_ARR_VALUE = encode(new ArrayType(VARCHAR), AccumuloRowSerializer.getBlockFromArray(VARCHAR, ImmutableList.of("abc", "def", "ghi")));
+    private static final byte[] M1_ARR_VALUE = encode(new ArrayType(VARCHAR), AccumuloRowSerializer
+            .getBlockFromArray(VARCHAR, ImmutableList.of("abc", "def", "ghi")));
 
     private static final byte[] M2_ROWID = encode(VARCHAR, "row2");
     private static final byte[] M2_FNAME_VALUE = encode(VARCHAR, "bob");
-    private static final byte[] M2_ARR_VALUE = encode(new ArrayType(VARCHAR), AccumuloRowSerializer.getBlockFromArray(VARCHAR, ImmutableList.of("ghi", "mno", "abc")));
+    private static final byte[] M2_ARR_VALUE = encode(new ArrayType(VARCHAR), AccumuloRowSerializer
+            .getBlockFromArray(VARCHAR, ImmutableList.of("ghi", "mno", "abc")));
 
     private Indexer indexer;
     private Instance inst = new MockInstance();
@@ -65,12 +67,17 @@ public class IndexerTest
     {
         conn = inst.getConnector("root", new PasswordToken(""));
 
-        AccumuloColumnHandle c1 = new AccumuloColumnHandle("accumulo", "id", null, null, VARCHAR, 0, "", false);
-        AccumuloColumnHandle c2 = new AccumuloColumnHandle("accumulo", "age", "cf", "age", BIGINT, 1, "", true);
-        AccumuloColumnHandle c3 = new AccumuloColumnHandle("accumulo", "firstname", "cf", "firstname", VARCHAR, 2, "", true);
-        AccumuloColumnHandle c4 = new AccumuloColumnHandle("accumulo", "arr", "cf", "arr", new ArrayType(VARCHAR), 3, "", true);
+        AccumuloColumnHandle c1 =
+                new AccumuloColumnHandle("accumulo", "id", null, null, VARCHAR, 0, "", false);
+        AccumuloColumnHandle c2 =
+                new AccumuloColumnHandle("accumulo", "age", "cf", "age", BIGINT, 1, "", true);
+        AccumuloColumnHandle c3 = new AccumuloColumnHandle("accumulo", "firstname", "cf",
+                "firstname", VARCHAR, 2, "", true);
+        AccumuloColumnHandle c4 = new AccumuloColumnHandle("accumulo", "arr", "cf", "arr",
+                new ArrayType(VARCHAR), 3, "", true);
 
-        table = new AccumuloTable("default", "index_test_table", ImmutableList.of(c1, c2, c3, c4), "id", true, LexicoderRowSerializer.class.getCanonicalName());
+        table = new AccumuloTable("default", "index_test_table", ImmutableList.of(c1, c2, c3, c4),
+                "id", true, LexicoderRowSerializer.class.getCanonicalName());
 
         conn.tableOperations().create(table.getFullTableName());
         conn.tableOperations().create(table.getIndexTableName());
@@ -124,14 +131,17 @@ public class IndexerTest
         scan.setRange(new Range());
 
         iter = scan.iterator();
-        assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "cardinality", "1");
-        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "cardinality", "1");
-        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "first_row", "row1");
-        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "last_row", "row1");
-        assertKeyValuePair(iter.next(), "abc".getBytes(), "cf_arr", "cardinality", "1");
-        assertKeyValuePair(iter.next(), M1_FNAME_VALUE, "cf_firstname", "cardinality", "1");
-        assertKeyValuePair(iter.next(), "def".getBytes(), "cf_arr", "cardinality", "1");
-        assertKeyValuePair(iter.next(), "ghi".getBytes(), "cf_arr", "cardinality", "1");
+        assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "___card___", "1");
+        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "___rows___",
+                "___card___", "1");
+        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "___rows___",
+                "___first_row___", "row1");
+        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "___rows___",
+                "___last_row___", "row1");
+        assertKeyValuePair(iter.next(), "abc".getBytes(), "cf_arr", "___card___", "1");
+        assertKeyValuePair(iter.next(), M1_FNAME_VALUE, "cf_firstname", "___card___", "1");
+        assertKeyValuePair(iter.next(), "def".getBytes(), "cf_arr", "___card___", "1");
+        assertKeyValuePair(iter.next(), "ghi".getBytes(), "cf_arr", "___card___", "1");
         Assert.assertFalse(iter.hasNext());
 
         scan.close();
@@ -160,22 +170,26 @@ public class IndexerTest
         scan.setRange(new Range());
 
         iter = scan.iterator();
-        assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "cardinality", "2");
-        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "cardinality", "2");
-        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "first_row", "row1");
-        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "rows", "last_row", "row2");
-        assertKeyValuePair(iter.next(), "abc".getBytes(), "cf_arr", "cardinality", "2");
-        assertKeyValuePair(iter.next(), M1_FNAME_VALUE, "cf_firstname", "cardinality", "1");
-        assertKeyValuePair(iter.next(), M2_FNAME_VALUE, "cf_firstname", "cardinality", "1");
-        assertKeyValuePair(iter.next(), "def".getBytes(), "cf_arr", "cardinality", "1");
-        assertKeyValuePair(iter.next(), "ghi".getBytes(), "cf_arr", "cardinality", "2");
-        assertKeyValuePair(iter.next(), "mno".getBytes(), "cf_arr", "cardinality", "1");
+        assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "___card___", "2");
+        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "___rows___",
+                "___card___", "2");
+        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "___rows___",
+                "___first_row___", "row1");
+        assertKeyValuePair(iter.next(), Indexer.METRICS_TABLE_ROW_ID.array(), "___rows___",
+                "___last_row___", "row2");
+        assertKeyValuePair(iter.next(), "abc".getBytes(), "cf_arr", "___card___", "2");
+        assertKeyValuePair(iter.next(), M1_FNAME_VALUE, "cf_firstname", "___card___", "1");
+        assertKeyValuePair(iter.next(), M2_FNAME_VALUE, "cf_firstname", "___card___", "1");
+        assertKeyValuePair(iter.next(), "def".getBytes(), "cf_arr", "___card___", "1");
+        assertKeyValuePair(iter.next(), "ghi".getBytes(), "cf_arr", "___card___", "2");
+        assertKeyValuePair(iter.next(), "mno".getBytes(), "cf_arr", "___card___", "1");
         Assert.assertFalse(iter.hasNext());
 
         scan.close();
     }
 
-    private void assertKeyValuePair(Entry<Key, Value> e, byte[] row, String cf, String cq, String value)
+    private void assertKeyValuePair(Entry<Key, Value> e, byte[] row, String cf, String cq,
+            String value)
     {
         System.out.println(e);
         Assert.assertArrayEquals(row, e.getKey().getRow().copyBytes());

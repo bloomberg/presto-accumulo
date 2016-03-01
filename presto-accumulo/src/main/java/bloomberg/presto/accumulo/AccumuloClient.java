@@ -337,7 +337,7 @@ public class AccumuloClient
 
             // Check the secondary index based on the column constraints
             // If this returns true, return the tablet splits to Presto
-            if (sIndexLookup.applySecondaryIndex(schema, table, session, constraints, rowIdRanges,
+            if (sIndexLookup.applyIndex(schema, table, session, constraints, rowIdRanges,
                     tabletSplits)) {
                 return tabletSplits;
             }

@@ -196,7 +196,7 @@ public final class AccumuloSessionProperties
      *            The current session
      * @return The index threshold, 0 - 1
      */
-    public static double getIndexLowCardThreshold(ConnectorSession session)
+    public static double getIndexSmallCardThreshold(ConnectorSession session)
     {
         return session.getProperty(INT_INDEX_LOWEST_CARDINALITY_THRESHOLD, Double.class);
     }

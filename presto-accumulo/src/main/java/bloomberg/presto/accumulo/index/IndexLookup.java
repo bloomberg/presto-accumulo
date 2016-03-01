@@ -11,8 +11,6 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.log.Logger;
-import org.apache.accumulo.core.client.AccumuloException;
-import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Scanner;
@@ -35,28 +33,78 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+/**
+ * Class to assist the Presto connector, and maybe external applications, leverage the secondary
+ * index built by the {@link Indexer}. Leverages {@link ColumnCardinalityCache} to assist in
+ * retrieving row IDs. Currently pretty bound to the Presto connector APIs.
+ * TODO Decouple from Presto API?
+ */
 public class IndexLookup
 {
     private static final Logger LOG = Logger.get(IndexLookup.class);
-    private static final Range METRICS_TABLE_ROWID_RANGE = new Range(Indexer.METRICS_TABLE_ROWID_AS_TEXT);
+    private static final Range METRICS_TABLE_ROWID_RANGE =
+            new Range(Indexer.METRICS_TABLE_ROWID_AS_TEXT);
 
     private final ColumnCardinalityCache ccCache;
     private final Connector conn;
     private final Authorizations auths;
     private final Text tmpCQ = new Text();
-    private final ConstraintComparator constraintComparator = new ConstraintComparator();
+    private final ConstraintCardinalityComparator constraintComparator =
+            new ConstraintCardinalityComparator();
 
+    /**
+     * Creates a new instance of {@link IndexLookup}
+     *
+     * @param conn
+     *            Accumulo connector
+     * @param config
+     *            Presto config for Accumulo connector
+     * @param auths
+     *            Authorizations for the scanners
+     */
     public IndexLookup(Connector conn, AccumuloConfig config, Authorizations auths)
-            throws AccumuloException, AccumuloSecurityException
     {
         this.conn = conn;
         this.auths = auths;
         this.ccCache = new ColumnCardinalityCache(conn, config, auths);
     }
 
-    public boolean applySecondaryIndex(String schema, String table, ConnectorSession session, Collection<AccumuloColumnConstraint> constraints, Collection<Range> rowIdRanges, List<TabletSplitMetadata> tabletSplits)
-            throws Exception
+    /**
+     * Scans the index table, applying the index based on the given column constraints to return a
+     * set of tablet splits.<br>
+     * <br>
+     * If this function returns true, the output parameter tabletSplits contains a list of
+     * TabletSplitMetadata objects. These in turn contain a collection of Ranges containing the
+     * exact row IDs determined using the index.
+     * <br>
+     * If this function returns false, the secondary index should not be used. In this case, either
+     * the accumulo session has disabled secondary indexing, or the number of row IDs that would be
+     * used by the secondary index is greater than the configured threshold (again retrieved from
+     * the session).
+     *
+     * @param schema
+     *            Schema name
+     * @param table
+     *            Table name
+     * @param session
+     *            Current client session
+     * @param constraints
+     *            All column constraints (this method will filter for if the column is indexed)
+     * @param rowIdRanges
+     *            Collection of Accumulo ranges based on any predicate against a record key
+     * @param tabletSplits
+     *            Output parameter containing the bundles of row IDs determined by the use of the
+     *            index.
+     * @return True if the tablet splits are valid and should be used, false otherwise
+     * @throws Exception
+     *             If something bad happens. What are the odds?
+     */
+    public boolean applyIndex(String schema, String table, ConnectorSession session,
+            Collection<AccumuloColumnConstraint> constraints, Collection<Range> rowIdRanges,
+            List<TabletSplitMetadata> tabletSplits)
+                    throws Exception
     {
+        // Early out if index is disabled
         if (!AccumuloSessionProperties.isOptimizeIndexEnabled(session)) {
             LOG.debug("Secondary index is disabled");
             return false;
@@ -64,29 +112,33 @@ public class IndexLookup
 
         LOG.debug("Secondary index is enabled");
 
+        // Collect Accumulo ranges for each indexed column constraint
         Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs = new HashMap<>();
-        // Collect Accumulo ranges for each indexd column constraint
         for (AccumuloColumnConstraint acc : constraints) {
             if (acc.isIndexed()) {
                 constraintRangePairs.put(acc, AccumuloClient.getRangesFromDomain(acc.getDomain()));
             }
             else {
-                LOG.warn("Query containts constraint one non-indexed column %s", acc.getName());
+                LOG.warn(
+                        "Query containts constraint on non-indexed column %s. Is it worth indexing?",
+                        acc.getName());
             }
         }
 
+        // If there is no constraints on an index column, we again will bail out
         if (constraintRangePairs.size() == 0) {
             LOG.debug("Query contains no constraints on indexed columns, skipping secondary index");
             return false;
         }
 
-        // get the cardinalities from the metrics table
-        List<Pair<AccumuloColumnConstraint, Long>> cardinalities = ccCache.getCardinalities(schema, table, constraintRangePairs);
+        // Get the cardinalities from the metrics table
+        List<Pair<AccumuloColumnConstraint, Long>> cardinalities =
+                ccCache.getCardinalities(schema, table, constraintRangePairs);
 
-        // order by cardinality, ascending
+        // Order by cardinality, ascending
         Collections.sort(cardinalities, constraintComparator);
 
-        // if first entry has cardinality zero
+        // If first entry has cardinality zero, the query would have no results
         if (cardinalities.get(0).getRight() == 0) {
             LOG.debug("Query would return no results, returning empty list of splits");
             return true;
@@ -97,62 +149,107 @@ public class IndexLookup
         long numRows = getNumRowsInTable(metricsTable);
         double threshold = AccumuloSessionProperties.getIndexThreshold(session);
         final Collection<Range> idxRanges;
-        // if we should use the intersection of the columns
+
+        // If the smallest cardinality in our list is above the lowest cardinality threshold, we
+        // should look at intersecting the row ID ranges to try and get under the threshold
         if (smallestCardAboveThreshold(session, numRows, cardinalities)) {
-            // if we only have one column, we can skip the intersection process
+            // If we only have one column, we can skip the intersection process and just check the
+            // index threshold
             if (cardinalities.size() == 1) {
                 long numEntries = cardinalities.get(0).getRight();
                 double ratio = ((double) numEntries / (double) numRows);
-                LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold);
+                LOG.debug(
+                        "Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b",
+                        numEntries, numRows, ratio, threshold, ratio < threshold);
                 if (ratio >= threshold) {
                     return false;
                 }
             }
 
-            // compute the intersection of the ranges prior to checking the threshold
+            // Else, get the intersection of all row IDs for all column constraints
             LOG.debug("%d indexed columns, intersecting ranges", constraintRangePairs.size());
             idxRanges = getIndexRanges(indexTable, constraintRangePairs, rowIdRanges);
             LOG.debug("Intersection results in %d ranges from secondary index", idxRanges.size());
         }
         else {
+            // Else, we don't need to intersect the columns and we can just use the column with the
+            // lowest cardinality, so get all those row IDs in a set of ranges.
             LOG.debug("Not intersecting columns, using column with lowest cardinality ");
-            idxRanges = getIndexRanges(indexTable, ImmutableMap.of(cardinalities.get(0).getKey(), constraintRangePairs.get(cardinalities.get(0).getKey())), rowIdRanges);
+            idxRanges =
+                    getIndexRanges(indexTable,
+                            ImmutableMap.of(cardinalities.get(0).getKey(),
+                                    constraintRangePairs.get(cardinalities.get(0).getKey())),
+                    rowIdRanges);
         }
 
+        // Okay, we now check how many rows we would scan by using the index vs. the overall number
+        // of rows
         long numEntries = idxRanges.size();
         double ratio = (double) numEntries / (double) numRows;
-        LOG.debug("Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b", numEntries, numRows, ratio, threshold, ratio < threshold, table);
+        LOG.debug(
+                "Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b",
+                numEntries, numRows, ratio, threshold, ratio < threshold, table);
 
+        // If the percentage of scanned rows, the ratio, less than the configured threshold
         if (ratio < threshold) {
-            binRanges(AccumuloSessionProperties.getNumIndexRowsPerSplit(session), idxRanges, tabletSplits);
-            LOG.debug("Number of splits for %s.%s is %d with %d ranges", schema, table, tabletSplits.size(), idxRanges.size());
+            // Bin the ranges into TabletMetadataSplits and return true to use the tablet splits
+            binRanges(AccumuloSessionProperties.getNumIndexRowsPerSplit(session), idxRanges,
+                    tabletSplits);
+            LOG.debug("Number of splits for %s.%s is %d with %d ranges", schema, table,
+                    tabletSplits.size(), idxRanges.size());
             return true;
         }
         else {
+            // We are going to do too much work to use the secondary index, so return false
             return false;
         }
     }
 
-    private boolean smallestCardAboveThreshold(ConnectorSession session, long numRows, List<Pair<AccumuloColumnConstraint, Long>> cardinalities)
+    /**
+     * Gets a Boolean value indicating if the smallest cardinality is above the small card threshold
+     *
+     * @param session
+     *            Current client session
+     * @param numRows
+     *            Number of rows in the table
+     * @param cardinalities
+     *            Sorted list of cardinalities
+     * @return True if the ratio is greater than the configured threshold, false otherwise
+     */
+    private boolean smallestCardAboveThreshold(ConnectorSession session, long numRows,
+            List<Pair<AccumuloColumnConstraint, Long>> cardinalities)
     {
         long lowCard = cardinalities.get(0).getRight();
         double ratio = ((double) lowCard / (double) numRows);
-        double threshold = AccumuloSessionProperties.getIndexLowCardThreshold(session);
-        LOG.debug("Lowest cardinality is %d, num rows is %d, ratio is %2f with threshold of %f", lowCard, numRows, ratio, threshold);
+        double threshold = AccumuloSessionProperties.getIndexSmallCardThreshold(session);
+        LOG.debug("Lowest cardinality is %d, num rows is %d, ratio is %2f with threshold of %f",
+                lowCard, numRows, ratio, threshold);
         return ratio > threshold;
     }
 
+    /**
+     * Gets the number of rows from the given metrics table
+     *
+     * @param metricsTable
+     *            Metrics table to scan for number of rows
+     * @return Estimated number of rows in the table
+     * @throws TableNotFoundException
+     *             If the metrics table does not exist
+     */
     private long getNumRowsInTable(String metricsTable)
-            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
+            throws TableNotFoundException
     {
+        // Create scanner against the metrics table, pulling the special column and the rows column
         Scanner scan = conn.createScanner(metricsTable, auths);
-        scan.fetchColumn(Indexer.METRICS_TABLE_ROWS_CF_AS_TEXT, Indexer.CARDINALITY_CQ_AS_TEXT);
         scan.setRange(METRICS_TABLE_ROWID_RANGE);
+        scan.fetchColumn(Indexer.METRICS_TABLE_ROWS_CF_AS_TEXT, Indexer.CARDINALITY_CQ_AS_TEXT);
 
+        // Scan the entry and get the number of rows
         long numRows = -1;
         for (Entry<Key, Value> entry : scan) {
             if (numRows > 0) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Should have received only one entry");
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Should have received only one entry");
             }
             numRows = Long.parseLong(entry.getValue().toString());
         }
@@ -162,55 +259,98 @@ public class IndexLookup
         return numRows;
     }
 
-    private Collection<Range> getIndexRanges(String indexTable, Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs, Collection<Range> predicatePushdownRanges)
-            throws AccumuloException,
-            AccumuloSecurityException, TableNotFoundException
+    /**
+     * Gets all index ranges based on the given column constraint/range pairs.
+     *
+     * @param indexTable
+     *            Fully-qualified index table name
+     * @param constraintRangePairs
+     *            Mapping of column constraint to Accumulo Ranges for that constraint
+     * @param rowIDRanges
+     *            Collection of Ranges based on any predicate from the row ID. Used to drop and row
+     *            IDs that are not in one of these Ranges
+     * @return A collection of Ranges containing row IDs in the main table to scan
+     * @throws TableNotFoundException
+     */
+    private Collection<Range> getIndexRanges(String indexTable,
+            Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs,
+            Collection<Range> rowIDRanges)
+                    throws TableNotFoundException
     {
         Set<Range> finalRanges = null;
-        for (Entry<AccumuloColumnConstraint, Collection<Range>> e : constraintRangePairs.entrySet()) {
+        // For each column/constraint pair
+        for (Entry<AccumuloColumnConstraint, Collection<Range>> e : constraintRangePairs
+                .entrySet()) {
+            // Create a batch scanner against the index table, setting the ranges
             BatchScanner scan = conn.createBatchScanner(indexTable, auths, 10);
             scan.setRanges(e.getValue());
-            Text cf = new Text(Indexer.getIndexColumnFamily(e.getKey().getFamily().getBytes(), e.getKey().getQualifier().getBytes()).array());
+
+            // Fetch the column family for this specific column
+            Text cf = new Text(Indexer.getIndexColumnFamily(e.getKey().getFamily().getBytes(),
+                    e.getKey().getQualifier().getBytes()).array());
             scan.fetchColumnFamily(cf);
 
+            // For each entry in the scanner
             Set<Range> columnRanges = new HashSet<>();
             for (Entry<Key, Value> entry : scan) {
                 entry.getKey().getColumnQualifier(tmpCQ);
 
-                if (inRange(tmpCQ, predicatePushdownRanges)) {
+                // Add to our column ranges if it is in one of the row ID ranges
+                if (inRange(tmpCQ, rowIDRanges)) {
                     columnRanges.add(new Range(tmpCQ));
                 }
             }
 
-            LOG.debug("Retrieved %d ranges for column %s", columnRanges.size(), e.getKey().getName());
+            LOG.debug("Retrieved %d ranges for column %s", columnRanges.size(),
+                    e.getKey().getName());
+
+            // If finalRanges is null, we have not yet added any column ranges
             if (finalRanges == null) {
                 finalRanges = new HashSet<>();
                 finalRanges.addAll(columnRanges);
             }
             else {
+                // Retain only the row IDs for this column that have already been added
+                // This is your set intersection operation!
                 finalRanges.retainAll(columnRanges);
             }
 
+            // Close the scanner
             scan.close();
         }
 
+        // Return the final ranges for all constraint pairs
         return finalRanges;
     }
 
-    private void binRanges(int numRangesPerBin, Collection<Range> splitRanges, List<TabletSplitMetadata> prestoSplits)
+    /**
+     * Bins the given collection of ranges into metadata for the Presto splits
+     *
+     * @param numRangesPerBin
+     *            Number of ranges to put in a single metadata object
+     * @param splitRanges
+     *            The ranges to add
+     * @param prestoSplits
+     *            The output collection for the tablet metadata
+     */
+    private void binRanges(int numRangesPerBin, Collection<Range> splitRanges,
+            List<TabletSplitMetadata> prestoSplits)
     {
-        // convert Ranges to RangeHandles
+        // Convert Ranges to RangeHandles so Jackson will work
         List<RangeHandle> rHandles = new ArrayList<>();
         splitRanges.stream().forEach(x -> rHandles.add(RangeHandle.from(x)));
 
-        // Bin them together into splits
+        // Shuffle the handles to give an even distribution across all tablet splits
         Collections.shuffle(rHandles);
 
+        // Location here doesn't matter, I think this 9997 is left over from the connector example
+        // Let's leave it to pay homage to where this thing came from
         String loc = "localhost:9997";
         int toAdd = rHandles.size();
         int fromIndex = 0;
         int toIndex = Math.min(toAdd, numRangesPerBin);
         do {
+            // Add the sublist of range handles
             prestoSplits.add(new TabletSplitMetadata(loc, rHandles.subList(fromIndex, toIndex)));
             toAdd -= toIndex - fromIndex;
             fromIndex = toIndex;
@@ -219,10 +359,20 @@ public class IndexLookup
         while (toAdd > 0);
     }
 
-    private boolean inRange(Text cq, Collection<Range> preSplitRanges)
+    /**
+     * Gets a Boolean value indicating if the given value is in one of the Ranges in the given
+     * collection
+     *
+     * @param t
+     *            Text object to check against the Range collection
+     * @param ranges
+     *            Ranges to look into
+     * @return True if the text object is in one of the ranges, false otherwise
+     */
+    private boolean inRange(Text t, Collection<Range> ranges)
     {
-        Key kCq = new Key(cq);
-        for (Range r : preSplitRanges) {
+        Key kCq = new Key(t);
+        for (Range r : ranges) {
             if (!r.beforeStartKey(kCq) && !r.afterEndKey(kCq)) {
                 return true;
             }
@@ -230,11 +380,15 @@ public class IndexLookup
         return false;
     }
 
-    public class ConstraintComparator
+    /**
+     * Internal class for sorting the pairs of column constraints and cardinality
+     */
+    private class ConstraintCardinalityComparator
             implements Comparator<Pair<AccumuloColumnConstraint, Long>>
     {
         @Override
-        public int compare(Pair<AccumuloColumnConstraint, Long> o1, Pair<AccumuloColumnConstraint, Long> o2)
+        public int compare(Pair<AccumuloColumnConstraint, Long> o1,
+                Pair<AccumuloColumnConstraint, Long> o2)
         {
             return o1.getRight().compareTo(o2.getRight());
         }
