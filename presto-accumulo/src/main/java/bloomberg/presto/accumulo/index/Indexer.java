@@ -184,8 +184,8 @@ public class Indexer
         table.getColumns().stream().forEach(col -> {
             if (col.isIndexed()) {
                 // Wrap the column family and qualifier for this column
-                ByteBuffer cf = ByteBuffer.wrap(col.getColumnFamily().getBytes());
-                ByteBuffer cq = ByteBuffer.wrap(col.getColumnQualifier().getBytes());
+                ByteBuffer cf = ByteBuffer.wrap(col.getFamily().getBytes());
+                ByteBuffer cq = ByteBuffer.wrap(col.getQualifier().getBytes());
 
                 // Get all qualifiers for this given column family, creating a new one if necessary
                 Set<ByteBuffer> qualifiers = indexColumns.get(cf);
@@ -492,8 +492,9 @@ public class Indexer
         for (AccumuloColumnHandle acc : table.getColumns().stream().filter(x -> x.isIndexed())
                 .collect(Collectors.toList())) {
             // Create a Text version of the index column family
-            Text indexColumnFamily = new Text(getIndexColumnFamily(acc.getColumnFamily().getBytes(),
-                    acc.getColumnQualifier().getBytes()).array());
+            Text indexColumnFamily = new Text(
+                    getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes())
+                            .array());
 
             // Add this to the locality groups, it is a 1:1 mapping of locality group to column
             // families

@@ -17,6 +17,7 @@ import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.type.Type;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
@@ -24,78 +25,155 @@ import java.util.Objects;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Jackson object and an implementation of a Presto ColumnHandle. Encapsulates all data referring to
+ * a column: name, Accumulo column mapping, type, ordinal, etc.
+ */
 public final class AccumuloColumnHandle
         implements ColumnHandle, Comparable<AccumuloColumnHandle>
 {
     private final boolean indexed;
     private final String connectorId;
     private final String name;
-    private final String columnFamily;
-    private final String columnQualifier;
+    private final String family;
+    private final String qualifier;
     private final Type type;
     private final int ordinal;
     private final String comment;
 
+    /**
+     * JSON Creator for a new {@link AccumuloColumnHandle} object
+     *
+     * @param connectorId
+     *            Connector ID
+     * @param name
+     *            Presto column name
+     * @param family
+     *            Accumulo column family
+     * @param qualifier
+     *            Accumulo column qualifier
+     * @param type
+     *            Presto type
+     * @param ordinal
+     *            Ordinal of the column within the row
+     * @param comment
+     *            Comment for the column
+     * @param indexed
+     *            True if the column has entries in the index table, false otherwise
+     */
     @JsonCreator
-    public AccumuloColumnHandle(@JsonProperty("connectorId") String connectorId, @JsonProperty("name") String name, @JsonProperty("columnFamily") String columnFamily, @JsonProperty("columnQualifier") String columnQualifier, @JsonProperty("type") Type type, @JsonProperty("ordinal") int ordinal, @JsonProperty("comment") String comment, @JsonProperty("indexed") boolean indexed)
+    public AccumuloColumnHandle(@JsonProperty("connectorId") String connectorId,
+            @JsonProperty("name") String name, @JsonProperty("family") String family,
+            @JsonProperty("qualifier") String qualifier, @JsonProperty("type") Type type,
+            @JsonProperty("ordinal") int ordinal, @JsonProperty("comment") String comment,
+            @JsonProperty("indexed") boolean indexed)
     {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.name = requireNonNull(name, "name is null");
-        this.columnFamily = columnFamily;
-        this.columnQualifier = columnQualifier;
+        this.family = family;
+        this.qualifier = qualifier;
         this.type = requireNonNull(type, "type is null");
         this.ordinal = requireNonNull(ordinal, "type is null");
         this.comment = requireNonNull(comment, "comment is null");
         this.indexed = requireNonNull(indexed, "indexed is null");
     }
 
+    /**
+     * Gets the Presto connector ID. This is a JSON property.
+     *
+     * @return Connector ID
+     */
     @JsonProperty
     public String getConnectorId()
     {
         return connectorId;
     }
 
+    /**
+     * Gets the Presto column name. This is a JSON property.
+     *
+     * @return Presto column name
+     */
     @JsonProperty
     public String getName()
     {
         return name;
     }
 
+    /**
+     * Gets the Accumulo column family. This is a JSON property.
+     *
+     * @return Column family
+     */
     @JsonProperty
-    public String getColumnFamily()
+    public String getFamily()
     {
-        return columnFamily;
+        return family;
     }
 
+    /**
+     * Gets the Accumulo column qualifier. This is a JSON property.
+     *
+     * @return Column qualifier
+     */
     @JsonProperty
-    public String getColumnQualifier()
+    public String getQualifier()
     {
-        return columnQualifier;
+        return qualifier;
     }
 
+    /**
+     * Gets the Presto column type. This is a JSON property.
+     *
+     * @return Presto type
+     */
     @JsonProperty
     public Type getType()
     {
         return type;
     }
 
+    /**
+     * Gets the column ordinal within the row. This is a JSON property.
+     *
+     * @return Column ordinal
+     */
     @JsonProperty
     public int getOrdinal()
     {
         return ordinal;
     }
 
+    /**
+     * Gets the column comment. This is a JSON property.
+     *
+     * @return Comment
+     */
     @JsonProperty
     public String getComment()
     {
         return comment;
     }
 
+    /**
+     * Gets a new {@link ColumnMetadata} regarding this column. This is ignored by Jackson.
+     *
+     * @return Column metadata
+     */
+    @JsonIgnore
     public ColumnMetadata getColumnMetadata()
     {
+        // TODO Partition key? Technically the row ID would be partitioned, not sure what this does
+        // for Presto, though.
         return new ColumnMetadata(name, type, false, comment, false);
     }
 
+    /**
+     * Gets a Boolean value indicating whether or not this column contains entries in the index
+     * table. This is a JSON property.
+     *
+     * @return True if indexed, false otherwise
+     */
     @JsonProperty
     public boolean isIndexed()
     {
@@ -105,7 +183,7 @@ public final class AccumuloColumnHandle
     @Override
     public int hashCode()
     {
-        return Objects.hash(connectorId, name, columnFamily, columnQualifier, type, ordinal, comment, indexed);
+        return Objects.hash(indexed, connectorId, name, family, qualifier, type, ordinal, comment);
     }
 
     @Override
@@ -119,15 +197,29 @@ public final class AccumuloColumnHandle
         }
 
         AccumuloColumnHandle other = (AccumuloColumnHandle) obj;
-        return Objects.equals(this.connectorId, other.connectorId) && Objects.equals(this.name, other.name) && Objects.equals(this.columnFamily, other.columnFamily) && Objects.equals(this.columnQualifier, other.columnQualifier) && Objects.equals(this.type, other.type) && Objects.equals(this.ordinal, other.ordinal) && Objects.equals(this.comment, other.comment) && Objects.equals(this.indexed, other.indexed);
+        return Objects.equals(this.indexed, other.indexed)
+                && Objects.equals(this.connectorId, other.connectorId)
+                && Objects.equals(this.name, other.name)
+                && Objects.equals(this.family, other.family)
+                && Objects.equals(this.qualifier, other.qualifier)
+                && Objects.equals(this.type, other.type)
+                && Objects.equals(this.ordinal, other.ordinal)
+                && Objects.equals(this.comment, other.comment);
     }
 
     @Override
     public String toString()
     {
-        return toStringHelper(this).add("connectorId", connectorId).add("name", name).add("columnFamily", columnFamily).add("columnQualifier", columnQualifier).add("type", type).add("ordinal", ordinal).add("comment", comment).add("indexed", indexed).toString();
+        return toStringHelper(this).add("connectorId", connectorId).add("name", name)
+                .add("columnFamily", family).add("columnQualifier", qualifier).add("type", type)
+                .add("ordinal", ordinal).add("comment", comment).add("indexed", indexed).toString();
     }
 
+    /**
+     * Compares this column's ordinal against the given column's ordinal
+     *
+     * @return Comparison value of the column ordinals
+     */
     @Override
     public int compareTo(AccumuloColumnHandle o)
     {

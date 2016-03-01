@@ -162,8 +162,8 @@ public class AccumuloSplitManager
                     checkType(cd.getColumn(), AccumuloColumnHandle.class, "column handle");
 
             if (!col.getName().equals(rowIdName)) {
-                acc.add(new AccumuloColumnConstraint(col.getName(), col.getColumnFamily(),
-                        col.getColumnQualifier(), cd.getDomain(), col.isIndexed()));
+                acc.add(new AccumuloColumnConstraint(col.getName(), col.getFamily(),
+                        col.getQualifier(), cd.getDomain(), col.isIndexed()));
             }
         }
 

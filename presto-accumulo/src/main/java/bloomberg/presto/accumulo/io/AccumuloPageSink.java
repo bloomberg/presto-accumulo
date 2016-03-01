@@ -235,8 +235,7 @@ public class AccumuloPageSink
                 setText(row.getField(ach.getOrdinal()), value, serializer);
 
                 // And add the bytes to the Mutation
-                m.put(ach.getColumnFamily(), ach.getColumnQualifier(),
-                        new Value(value.copyBytes()));
+                m.put(ach.getFamily(), ach.getQualifier(), new Value(value.copyBytes()));
             }
         }
 
