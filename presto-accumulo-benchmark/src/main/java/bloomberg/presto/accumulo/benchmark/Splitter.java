@@ -55,7 +55,7 @@ public class Splitter
             }
         }
 
-        List<byte[]> splits = getSplits(rowIdType, conn, metricsTable, conf.getUsername(), numSplits);
+        List<byte[]> splits = getSplits(rowIdType, conn, table, conf.getUsername(), numSplits);
 
         SortedSet<Text> tableSplits = new TreeSet<>();
         for (byte[] s : splits) {
@@ -73,10 +73,10 @@ public class Splitter
         }
     }
 
-    private static List<byte[]> getSplits(Type rowIdType, Connector conn, String metricsTable, String username, int numSplits)
+    private static List<byte[]> getSplits(Type rowIdType, Connector conn, AccumuloTable table, String username, int numSplits)
             throws Exception
     {
-        Pair<byte[], byte[]> firstLastRow = Indexer.getMinMaxRowIds(conn, metricsTable, username);
+        Pair<byte[], byte[]> firstLastRow = Indexer.getMinMaxRowIds(conn, table, conn.securityOperations().getUserAuthorizations(username));
 
         System.out.println("Min is " + LexicoderRowSerializer.decode(rowIdType, firstLastRow.getLeft()).toString());
         System.out.println("Max is " + LexicoderRowSerializer.decode(rowIdType, firstLastRow.getRight()).toString());
