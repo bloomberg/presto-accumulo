@@ -411,7 +411,7 @@ public class QueryDriver
     {
         ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
         this.conn = inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword()));
-        metaManager = new ZooKeeperMetadataManager(CATALOG, config);
+        metaManager = new ZooKeeperMetadataManager(config);
     }
 
     protected void createTable()

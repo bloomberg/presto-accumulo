@@ -14,16 +14,9 @@
 package bloomberg.presto.accumulo.metadata;
 
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.type.TypeDeserializer;
-import com.facebook.presto.type.TypeRegistry;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
-import io.airlift.json.ObjectMapperProvider;
+import com.facebook.presto.spi.StandardErrorCode;
 import io.airlift.log.Logger;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -31,10 +24,12 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 
 import javax.activity.InvalidActivityException;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * An implementation of {@link AccumuloMetadataManager} that persists metadata to Apache ZooKeeper.
+ */
 public class ZooKeeperMetadataManager
         extends AccumuloMetadataManager
 {
@@ -42,44 +37,53 @@ public class ZooKeeperMetadataManager
     private static final Logger LOG = Logger.get(ZooKeeperMetadataManager.class);
 
     private final CuratorFramework curator;
-    private final ObjectMapper mapper;
     private final String zkMetadataRoot;
     private final String zookeepers;
 
-    public ZooKeeperMetadataManager(String connectorId, AccumuloConfig config)
+    /**
+     * Creates a new instance of {@link ZooKeeperMetadataManager}
+     *
+     * @param config
+     *            Connector configuration for Accumulo
+     */
+    public ZooKeeperMetadataManager(AccumuloConfig config)
     {
-        super(connectorId, config);
+        super(config);
         zkMetadataRoot = config.getZkMetadataRoot();
         zookeepers = config.getZooKeepers();
 
-        CuratorFramework checkRoot = CuratorFrameworkFactory.newClient(zookeepers, new ExponentialBackoffRetry(1000, 3));
+        // Create the connection to ZooKeeper to check if the metadata root exists
+        CuratorFramework checkRoot =
+                CuratorFrameworkFactory.newClient(zookeepers, new ExponentialBackoffRetry(1000, 3));
         checkRoot.start();
 
         try {
+            // If the metadata root does not exist, create it
             if (checkRoot.checkExists().forPath(zkMetadataRoot) == null) {
                 checkRoot.create().forPath(zkMetadataRoot);
             }
         }
         catch (Exception e) {
-            throw new RuntimeException("ZK error checking metadata root", e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "ZK error checking metadata root", e);
         }
         checkRoot.close();
 
-        curator = CuratorFrameworkFactory.newClient(zookeepers + zkMetadataRoot, new ExponentialBackoffRetry(1000, 3));
+        // Create the curator client framework to use for metadata management, set at the ZK root
+        curator = CuratorFrameworkFactory.newClient(zookeepers + zkMetadataRoot,
+                new ExponentialBackoffRetry(1000, 3));
         curator.start();
 
         try {
+            // Create default schema should it not exist
             if (curator.checkExists().forPath("/" + DEFAULT_SCHEMA) == null) {
                 curator.create().forPath("/" + DEFAULT_SCHEMA);
             }
         }
         catch (Exception e) {
-            throw new RuntimeException("ZK error checking/creating default schema", e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "ZK error checking/creating default schema", e);
         }
-
-        ObjectMapperProvider objectMapperProvider = new ObjectMapperProvider();
-        objectMapperProvider.setJsonDeserializers(ImmutableMap.<Class<?>, JsonDeserializer<?>>of(Type.class, new TypeDeserializer(new TypeRegistry())));
-        mapper = objectMapperProvider.get();
     }
 
     @Override
@@ -91,7 +95,8 @@ public class ZooKeeperMetadataManager
             return schemas;
         }
         catch (Exception e) {
-            throw new RuntimeException("Error fetching schemas", e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Error fetching schemas",
+                    e);
         }
     }
 
@@ -103,7 +108,8 @@ public class ZooKeeperMetadataManager
             exists = curator.checkExists().forPath("/" + schema) != null;
         }
         catch (Exception e) {
-            throw new RuntimeException("Error checking if schema exists", e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "Error checking if schema exists", e);
         }
 
         if (exists) {
@@ -113,7 +119,8 @@ public class ZooKeeperMetadataManager
                 return tables;
             }
             catch (Exception e) {
-                throw new RuntimeException("Error fetching schemas", e);
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Error fetching schemas", e);
             }
         }
         else {
@@ -134,7 +141,7 @@ public class ZooKeeperMetadataManager
             }
         }
         catch (Exception e) {
-            throw new RuntimeException("Error fetching table", e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Error fetching table", e);
         }
     }
 
@@ -146,19 +153,22 @@ public class ZooKeeperMetadataManager
 
         try {
             if (curator.checkExists().forPath(tablePath) != null) {
-                throw new InvalidActivityException(String.format("Metadata for table %s already exists", stn));
+                throw new InvalidActivityException(
+                        String.format("Metadata for table %s already exists", stn));
 
             }
         }
         catch (Exception e) {
-            throw new RuntimeException("ZK error when checking if table already exists", e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "ZK error when checking if table already exists", e);
         }
 
         try {
             curator.create().creatingParentsIfNeeded().forPath(tablePath, toJsonBytes(table));
         }
         catch (Exception e) {
-            throw new RuntimeException("Error creating table node in ZooKeeper", e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "Error creating table node in ZooKeeper", e);
         }
     }
 
@@ -169,29 +179,32 @@ public class ZooKeeperMetadataManager
             curator.delete().deletingChildrenIfNeeded().forPath(getTablePath(stName));
         }
         catch (Exception e) {
-            throw new RuntimeException("ZK error when deleting metatadata", e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "ZK error when deleting metatadata", e);
         }
     }
 
-    private String getSchemaPath(SchemaTableName stName)
+    /**
+     * Gets the schema znode for the given schema table name
+     *
+     * @param stn
+     *            Schema table name
+     * @return The path for the schema node
+     */
+    private String getSchemaPath(SchemaTableName stn)
     {
-        return "/" + stName.getSchemaName();
+        return "/" + stn.getSchemaName();
     }
 
-    private String getTablePath(SchemaTableName stName)
+    /**
+     * Gets the table znode for the given table name
+     *
+     * @param stn
+     *            Schema table name
+     * @return The path for the table
+     */
+    private String getTablePath(SchemaTableName stn)
     {
-        return getSchemaPath(stName) + '/' + stName.getTableName();
-    }
-
-    private AccumuloTable toAccumuloTable(byte[] data)
-            throws JsonParseException, JsonMappingException, IOException
-    {
-        return mapper.readValue(new String(data), AccumuloTable.class);
-    }
-
-    private byte[] toJsonBytes(AccumuloTable t)
-            throws JsonParseException, JsonMappingException, IOException
-    {
-        return mapper.writeValueAsBytes(t);
+        return getSchemaPath(stn) + '/' + stn.getTableName();
     }
 }

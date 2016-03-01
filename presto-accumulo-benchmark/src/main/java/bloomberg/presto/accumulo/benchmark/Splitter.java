@@ -44,7 +44,7 @@ public class Splitter
             throw new InvalidActivityException("Metrics table does not exist, can only split indexed tables due to need for metadata");
         }
 
-        AccumuloTable table = AccumuloMetadataManager.getDefault("accumulo", conf).getTable(stn);
+        AccumuloTable table = AccumuloMetadataManager.getDefault(conf).getTable(stn);
 
         Type rowIdType = null;
 

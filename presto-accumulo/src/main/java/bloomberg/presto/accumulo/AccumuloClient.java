@@ -90,7 +90,7 @@ public class AccumuloClient
      * @param connectorId
      *            Connector ID
      * @param config
-     *            Connector configuratoin for Accumulo
+     *            Connector configuration for Accumulo
      * @throws AccumuloException
      *             If an Accumulo error occurs
      * @throws AccumuloSecurityException
@@ -104,7 +104,7 @@ public class AccumuloClient
         this.inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
         this.conn = inst.getConnector(config.getUsername(),
                 new PasswordToken(config.getPassword().getBytes()));
-        this.metaManager = AccumuloMetadataManager.getDefault(connectorId.toString(), config);
+        this.metaManager = AccumuloMetadataManager.getDefault(config);
         this.auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
         this.sIndexLookup = new IndexLookup(conn, conf, auths);
     }

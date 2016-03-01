@@ -140,7 +140,7 @@ public class TpchDBGenIngest
             throw new FileNotFoundException("No table files found in datagen directory");
         }
 
-        AccumuloMetadataManager mgr = AccumuloMetadataManager.getDefault("accumulo", accConfig);
+        AccumuloMetadataManager mgr = AccumuloMetadataManager.getDefault(accConfig);
 
         ZooKeeperInstance inst = new ZooKeeperInstance(accConfig.getInstance(), accConfig.getZooKeepers());
         Connector conn = inst.getConnector(accConfig.getUsername(), new PasswordToken(accConfig.getPassword()));
