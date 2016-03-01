@@ -70,7 +70,7 @@ public class AccumuloRecordSet
         requireNonNull(split, "split is null");
         constraints = requireNonNull(split.getConstraints(), "constraints is null");
 
-        rowIdName = split.getRowIdName();
+        rowIdName = split.getRowId();
 
         // Factory the serializer based on the split configuration
         try {
