@@ -124,6 +124,8 @@ public class AccumuloRecordCursor
         }
         else {
             // Else, we will be scanning some more columns here
+            this.serializer.setRowOnly(false);
+
             Text fam = new Text();
             Text qual = new Text();
 
