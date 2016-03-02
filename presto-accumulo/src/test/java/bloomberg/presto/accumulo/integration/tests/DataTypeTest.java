@@ -62,8 +62,8 @@ public class DataTypeTest
         ArrayType arrayType = new ArrayType(elementType);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(elementType, ImmutableList.of("a", "b", "c")), arrayType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(elementType, ImmutableList.of("d", "e", "f")), arrayType);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(elementType, ImmutableList.of("a", "b", "c")), arrayType);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(elementType, ImmutableList.of("d", "e", "f")), arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -76,8 +76,8 @@ public class DataTypeTest
         ArrayType arrayType = new ArrayType(nestedArrayType);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i"))), arrayType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r"))), arrayType);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i"))), arrayType);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r"))), arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -93,7 +93,7 @@ public class DataTypeTest
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa")))), arrayType);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa")))), arrayType);
         // @formatter:on
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
@@ -111,7 +111,7 @@ public class DataTypeTest
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa"))), ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa"))), ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa"))))), arrayType);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa"))), ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa"))), ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa"))))), arrayType);
         // @formatter:on
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1).withOutput(r1).runTest();
@@ -123,8 +123,8 @@ public class DataTypeTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BigintType.BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(new Long(28), BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(new Long(0), BigintType.BIGINT);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(new Long(28), BigintType.BIGINT);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(new Long(0), BigintType.BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -135,8 +135,8 @@ public class DataTypeTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BooleanType.BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(true, BooleanType.BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(false, BooleanType.BOOLEAN);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(true, BooleanType.BOOLEAN);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(false, BooleanType.BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -147,8 +147,8 @@ public class DataTypeTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DateType.DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(c(2015, 12, 14), DateType.DATE);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(c(2015, 12, 15), DateType.DATE);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(c(2015, 12, 14), DateType.DATE);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(c(2015, 12, 15), DateType.DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -159,9 +159,9 @@ public class DataTypeTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("rate", "metadata", "rate", DoubleType.DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(new Double(28.1234), DoubleType.DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(new Double(28.1234), DoubleType.DOUBLE);
 
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(new Double(-123.1234), DoubleType.DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(new Double(-123.1234), DoubleType.DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -175,8 +175,8 @@ public class DataTypeTest
         MapType mapType = new MapType(keyType, valueType);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("peopleages", "metadata", "peopleages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of("a", 1, "b", 2, "c", 3)), mapType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of("d", 4, "e", 5, "f", 6)), mapType);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of("a", 1, "b", 2, "c", 3)), mapType);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of("d", 4, "e", 5, "f", 6)), mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -192,8 +192,8 @@ public class DataTypeTest
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo", "metadata", "foo", mapType);
 
         // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of(ImmutableList.of(1, 2, 3), ImmutableList.of(1, 2, 3))), mapType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of(ImmutableList.of(4, 5, 6), ImmutableList.of(4, 5, 6))), mapType);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of(ImmutableList.of(1, 2, 3), ImmutableList.of(1, 2, 3))), mapType);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of(ImmutableList.of(4, 5, 6), ImmutableList.of(4, 5, 6))), mapType);
         // @formatter:on
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
@@ -211,8 +211,8 @@ public class DataTypeTest
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo", "metadata", "foo", mapType);
 
         // @formatter:off
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of(ImmutableMap.of("a", 1, "b", 2, "c", 3), ImmutableMap.of("a", 1, "b", 2, "c", 3))), mapType);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of(ImmutableMap.of("d", 4, "e", 5, "f", 6), ImmutableMap.of("d", 4, "e", 5, "f", 6))), mapType);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of(ImmutableMap.of("a", 1, "b", 2, "c", 3), ImmutableMap.of("a", 1, "b", 2, "c", 3))), mapType);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of(ImmutableMap.of("d", 4, "e", 5, "f", 6), ImmutableMap.of("d", 4, "e", 5, "f", 6))), mapType);
         // @formatter:on
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
@@ -225,10 +225,10 @@ public class DataTypeTest
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("last_login", "metadata", "last_login", TimeType.TIME);
 
         Calendar cal = new GregorianCalendar();
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(new Time(cal.getTimeInMillis()), TimeType.TIME);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(new Time(cal.getTimeInMillis()), TimeType.TIME);
 
         cal.add(Calendar.MINUTE, 5);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(new Time(cal.getTimeInMillis()), TimeType.TIME);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(new Time(cal.getTimeInMillis()), TimeType.TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -240,10 +240,10 @@ public class DataTypeTest
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("last_login", "metadata", "last_login", TimestampType.TIMESTAMP);
 
         Calendar cal = new GregorianCalendar();
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(new Timestamp(cal.getTimeInMillis()), TimestampType.TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(new Timestamp(cal.getTimeInMillis()), TimestampType.TIMESTAMP);
 
         cal.add(Calendar.MINUTE, 5);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField(new Timestamp(cal.getTimeInMillis()), TimestampType.TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(new Timestamp(cal.getTimeInMillis()), TimestampType.TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -254,9 +254,9 @@ public class DataTypeTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VarbinaryType.VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField("Check out all this data!".getBytes(), VarbinaryType.VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField("Check out all this data!".getBytes(), VarbinaryType.VARBINARY);
 
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField("Check out all this other data!".getBytes(), VarbinaryType.VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField("Check out all this other data!".getBytes(), VarbinaryType.VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -267,9 +267,9 @@ public class DataTypeTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("name", "metadata", "name", VarcharType.VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField("Alice", VarcharType.VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VarcharType.VARCHAR).addField("Bob", VarcharType.VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VarcharType.VARCHAR).addField("Carol", VarcharType.VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField("Alice", VarcharType.VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField("Bob", VarcharType.VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VarcharType.VARCHAR).addField("Carol", VarcharType.VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2, r3).runTest();
     }
@@ -280,8 +280,8 @@ public class DataTypeTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BigintType.BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(60L, BigintType.BIGINT);
-        Row r2 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(null, BigintType.BIGINT);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(60L, BigintType.BIGINT);
+        Row r2 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(null, BigintType.BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age = 0 OR age is NULL").withInputSchema(schema).withInput(r1, r2).initialize();
@@ -293,8 +293,8 @@ public class DataTypeTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BigintType.BIGINT).addColumn("male", "metadata", "male", BooleanType.BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(60L, BigintType.BIGINT).addField(true, BooleanType.BOOLEAN);
-        Row r2 = Row.newInstance().addField("row1", VarcharType.VARCHAR).addField(null, BigintType.BIGINT).addField(null, BooleanType.BOOLEAN);
+        Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(60L, BigintType.BIGINT).addField(true, BooleanType.BOOLEAN);
+        Row r2 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(null, BigintType.BIGINT).addField(null, BooleanType.BOOLEAN);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withInput(r1, r2).initialize();

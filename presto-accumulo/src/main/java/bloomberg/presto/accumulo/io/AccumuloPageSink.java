@@ -133,7 +133,7 @@ public class AccumuloPageSink
     {
         // For each position within the page, i.e. row
         for (int position = 0; position < page.getPositionCount(); ++position) {
-            Row r = Row.newInstance();
+            Row r = Row.newRow();
             rows.add(r);
             // For each channel within the page, i.e. column
             for (int channel = 0; channel < page.getChannelCount(); ++channel) {
@@ -256,10 +256,10 @@ public class AccumuloPageSink
     {
         Type type = field.getType();
         if (Types.isArrayType(type)) {
-            serializer.setArray(value, type, field.getBlock());
+            serializer.setArray(value, type, field.getArray());
         }
         else if (Types.isMapType(type)) {
-            serializer.setMap(value, type, field.getBlock());
+            serializer.setMap(value, type, field.getMap());
         }
         else {
             switch (type.getDisplayName()) {

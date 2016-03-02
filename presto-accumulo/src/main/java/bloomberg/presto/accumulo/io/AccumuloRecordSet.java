@@ -77,7 +77,8 @@ public class AccumuloRecordSet
             this.serializer = split.getSerializerClass().newInstance();
         }
         catch (Exception e) {
-            throw new RuntimeException("Failed to factory serializer class", e);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "Failed to factory serializer class.  Is it on the classpath?", e);
         }
 
         // Save off the column handles and createa list of the Accumulo types

@@ -73,9 +73,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("weight", "metadata", "weight", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, BIGINT).addField(new Long(60), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT).addField(new Long(60), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, BIGINT).addField(new Long(60), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT).addField(new Long(60), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
@@ -87,9 +87,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("weight", "metadata", "weight", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, BIGINT).addField(new Long(60), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT).addField(new Long(60), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, BIGINT).addField(new Long(60), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT).addField(new Long(60), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age IS NOT NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r3).runTest();
@@ -101,9 +101,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("weight", "metadata", "weight", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, BIGINT).addField(new Long(60), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT).addField(new Long(60), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, BIGINT).addField(new Long(60), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT).addField(new Long(60), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age = 0 OR age is NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
@@ -115,9 +115,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age < 15").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1).runTest();
     }
@@ -128,9 +128,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age <= 15").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -141,9 +141,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age = 15").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
 
@@ -158,9 +158,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age > 15").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3).runTest();
     }
 
@@ -170,9 +170,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age >= 15").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2, r3).runTest();
     }
@@ -183,9 +183,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age < 30 AND age > 0").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -196,11 +196,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age <= 30 AND age > 0").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r2, r3).runTest();
     }
@@ -211,11 +211,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age < 30 AND age >= 0").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2).runTest();
     }
@@ -226,11 +226,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age <= 30 AND age >= 0").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2, r3).runTest();
     }
@@ -241,13 +241,13 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(new Long(60), BIGINT);
-        Row r7 = Row.newInstance().addField("row7", VARCHAR).addField(new Long(90), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(new Long(60), BIGINT);
+        Row r7 = Row.newRow().addField("row7", VARCHAR).addField(new Long(90), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age IN (0, 15, -15, 45)").withInputSchema(schema).withSplits("row4", "row6").withInput(r1, r2, r3, r4, r5, r6, r7).withOutput(r1, r2, r4, r5).runTest();
@@ -259,12 +259,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(new Long(60), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(new Long(60), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE (age <= 30 AND age >= 0) OR (age > 45 AND age < 70)").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r1, r2, r3, r6).runTest();
     }
@@ -275,13 +275,13 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("fav_num", "metadata", "fav_num", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT).addField(new Long(30), BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Long(-15), BIGINT).addField(new Long(-15), BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Long(45), BIGINT).addField(new Long(45), BIGINT);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(new Long(60), BIGINT).addField(new Long(60), BIGINT);
-        Row r7 = Row.newInstance().addField("row7", VARCHAR).addField(new Long(90), BIGINT).addField(new Long(90), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT).addField(new Long(30), BIGINT);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Long(-15), BIGINT).addField(new Long(-15), BIGINT);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Long(45), BIGINT).addField(new Long(45), BIGINT);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(new Long(60), BIGINT).addField(new Long(60), BIGINT);
+        Row r7 = Row.newRow().addField("row7", VARCHAR).addField(new Long(90), BIGINT).addField(new Long(90), BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ((" + "age <= 30 AND age >= 0) OR (" + "age > 45 AND age < 70) OR (age > 80)) AND ((" + "fav_num <= 30 AND fav_num > 15) OR (" + "fav_num >= 45 AND fav_num < 60) OR (fav_num = 90))").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6, r7).withOutput(r3, r7).runTest();
     }
@@ -292,8 +292,8 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(null, BOOLEAN).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(null, BOOLEAN).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE male IS NULL").withInputSchema(schema).withInput(r1, r2).withOutput(r1).runTest();
     }
@@ -304,8 +304,8 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(null, BOOLEAN).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(null, BOOLEAN).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE male IS NOT NULL").withInputSchema(schema).withInput(r1, r2).withOutput(r2).runTest();
     }
@@ -316,9 +316,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(null, BOOLEAN).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(true, BOOLEAN).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(null, BOOLEAN).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(true, BOOLEAN).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE male = false OR male IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -329,8 +329,8 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Boolean(true), BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Boolean(false), BOOLEAN);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Boolean(true), BOOLEAN);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Boolean(false), BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE male = true").withInputSchema(schema).withInput(r1, r2).withOutput(r1).runTest();
     }
@@ -341,8 +341,8 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(true, BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(false, BOOLEAN);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(true, BOOLEAN);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE male = false").withInputSchema(schema).withInput(r1, r2).withOutput(r2).runTest();
     }
@@ -353,9 +353,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("human", "metadata", "human", BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(true, BOOLEAN).addField(true, BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(true, BOOLEAN);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(true, BOOLEAN).addField(false, BOOLEAN);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(true, BOOLEAN).addField(true, BOOLEAN);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(true, BOOLEAN);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(true, BOOLEAN).addField(false, BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE male = false AND human = true").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -366,8 +366,8 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(true, BOOLEAN);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(false, BOOLEAN);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(true, BOOLEAN);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE male IN (false, true)").withInputSchema(schema).withInput(r1, r2).withOutput(r1, r2).runTest();
     }
@@ -378,9 +378,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, DATE).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DATE).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -391,9 +391,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, DATE).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DATE).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date IS NOT NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r3).runTest();
     }
@@ -404,9 +404,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, DATE).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DATE).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date = DATE '2015-12-01' OR start_date IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -417,9 +417,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date < DATE '2015-12-15'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1).runTest();
     }
@@ -430,9 +430,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date <= DATE '2015-12-15'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -443,9 +443,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date = DATE '2015-12-15'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -456,9 +456,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date > DATE '2015-12-15'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3).runTest();
     }
@@ -469,9 +469,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date >= DATE '2015-12-15'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2, r3).runTest();
     }
@@ -482,9 +482,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date > DATE '2015-12-01' AND " + "start_date < DATE '2015-12-31'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -495,11 +495,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(c(2015, 11, 15), DATE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(c(2016, 1, 15), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(c(2015, 11, 15), DATE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(c(2016, 1, 15), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date > DATE '2015-12-01' AND " + "start_date <= DATE '2015-12-31'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r2, r3).runTest();
     }
@@ -510,11 +510,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(c(2015, 11, 15), DATE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(c(2016, 1, 15), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(c(2015, 11, 15), DATE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(c(2016, 1, 15), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date >= DATE '2015-12-01' AND " + "start_date < DATE '2015-12-31'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2).runTest();
     }
@@ -525,11 +525,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(c(2015, 11, 15), DATE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(c(2016, 1, 15), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(c(2015, 11, 15), DATE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(c(2016, 1, 15), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date >= DATE '2015-12-01' AND " + "start_date <= DATE '2015-12-31'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2, r3).runTest();
     }
@@ -540,12 +540,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(c(2015, 11, 15), DATE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(c(2016, 1, 15), DATE);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(c(2016, 1, 31), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(c(2015, 11, 15), DATE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(c(2016, 1, 15), DATE);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(c(2016, 1, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE (" + "(start_date > DATE '2015-12-01' AND " + "start_date <= DATE '2015-12-31')) OR (" + "(start_date >= DATE '2016-01-15' AND " + "start_date < DATE '2016-01-31'))").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r2, r3, r5).runTest();
     }
@@ -556,12 +556,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(c(2015, 11, 15), DATE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(c(2016, 1, 15), DATE);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(c(2016, 1, 31), DATE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(c(2015, 12, 31), DATE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(c(2015, 11, 15), DATE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(c(2016, 1, 15), DATE);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(c(2016, 1, 31), DATE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date IN (" + "DATE '2015-12-01', " + "DATE '2015-12-31', " + "DATE '2016-01-15', " + "DATE '2015-11-15')").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r1, r3, r5, r4).runTest();
     }
@@ -572,9 +572,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("weight", "metadata", "weight", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(60), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, DOUBLE).addField(new Double(60), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE).addField(new Double(60), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(60), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DOUBLE).addField(new Double(60), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE).addField(new Double(60), DOUBLE);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
@@ -586,9 +586,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("weight", "metadata", "weight", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(60), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, DOUBLE).addField(new Double(60), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE).addField(new Double(60), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(60), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DOUBLE).addField(new Double(60), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE).addField(new Double(60), DOUBLE);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age IS NOT NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r3).runTest();
@@ -600,9 +600,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("weight", "metadata", "weight", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(60), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, DOUBLE).addField(new Double(60), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE).addField(new Double(60), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(60), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DOUBLE).addField(new Double(60), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE).addField(new Double(60), DOUBLE);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age = 0.0 OR age is NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
@@ -614,9 +614,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age < 15").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1).runTest();
     }
@@ -627,9 +627,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age <= 15").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -640,9 +640,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age = 15").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
 
@@ -657,9 +657,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age > 15").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3).runTest();
     }
 
@@ -669,9 +669,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age >= 15").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2, r3).runTest();
     }
@@ -682,9 +682,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age < 30 AND age > 0").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -695,11 +695,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Double(45), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Double(45), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age <= 30 AND age > 0").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r2, r3).runTest();
     }
@@ -710,11 +710,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Double(45), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Double(45), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age < 30 AND age >= 0").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2).runTest();
     }
@@ -725,11 +725,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Double(45), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Double(45), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age <= 30 AND age >= 0").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2, r3).runTest();
     }
@@ -740,13 +740,13 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Double(45), DOUBLE);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(new Double(60), DOUBLE);
-        Row r7 = Row.newInstance().addField("row7", VARCHAR).addField(new Double(90), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Double(45), DOUBLE);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(new Double(60), DOUBLE);
+        Row r7 = Row.newRow().addField("row7", VARCHAR).addField(new Double(90), DOUBLE);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE age IN (0, 15, -15, 45)").withInputSchema(schema).withSplits("row4", "row6").withInput(r1, r2, r3, r4, r5, r6, r7).withOutput(r1, r2, r4, r5).runTest();
@@ -758,12 +758,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Double(45), DOUBLE);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(new Double(60), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Double(45), DOUBLE);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(new Double(60), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE (age <= 30 AND age >= 0) OR (age > 45 AND age < 70)").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r1, r2, r3, r6).runTest();
     }
@@ -774,13 +774,13 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("fav_num", "metadata", "fav_num", DOUBLE);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(0), DOUBLE);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Double(15), DOUBLE).addField(new Double(15), DOUBLE);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Double(30), DOUBLE).addField(new Double(30), DOUBLE);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE).addField(new Double(-15), DOUBLE);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Double(45), DOUBLE).addField(new Double(45), DOUBLE);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(new Double(60), DOUBLE).addField(new Double(60), DOUBLE);
-        Row r7 = Row.newInstance().addField("row7", VARCHAR).addField(new Double(90), DOUBLE).addField(new Double(90), DOUBLE);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(0), DOUBLE);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE).addField(new Double(15), DOUBLE);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Double(30), DOUBLE).addField(new Double(30), DOUBLE);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Double(-15), DOUBLE).addField(new Double(-15), DOUBLE);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Double(45), DOUBLE).addField(new Double(45), DOUBLE);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(new Double(60), DOUBLE).addField(new Double(60), DOUBLE);
+        Row r7 = Row.newRow().addField("row7", VARCHAR).addField(new Double(90), DOUBLE).addField(new Double(90), DOUBLE);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ((" + "age <= 30 AND age >= 0) OR (" + "age > 45 AND age < 70) OR (age > 80)) AND ((" + "fav_num <= 30 AND fav_num > 15) OR (" + "fav_num >= 45 AND fav_num < 60) OR (fav_num = 90))").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6, r7).withOutput(r3, r7).runTest();
     }
@@ -791,9 +791,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, TIME).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIME).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -804,9 +804,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, TIME).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIME).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date IS NOT NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r3).runTest();
     }
@@ -817,9 +817,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, TIME).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIME).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date = TIME '00:30:00' OR start_date IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -830,9 +830,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date < TIME '12:00:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1).runTest();
     }
@@ -843,9 +843,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date <= TIME '12:00:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -856,9 +856,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date = TIME '12:00:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -869,9 +869,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date > TIME '12:00:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3).runTest();
     }
@@ -882,9 +882,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date >= TIME '12:00:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2, r3).runTest();
     }
@@ -895,9 +895,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date > TIME '00:30:00' AND " + "start_date < TIME '20:15:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -908,11 +908,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(t(0, 0, 0), TIME);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(t(22, 0, 15), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(t(0, 0, 0), TIME);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(t(22, 0, 15), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date > TIME '00:30:00' AND " + "start_date <= TIME '20:15:30'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r2, r3).runTest();
     }
@@ -923,11 +923,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(t(0, 0, 0), TIME);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(t(22, 0, 15), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(t(0, 0, 0), TIME);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(t(22, 0, 15), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date >= TIME '00:30:00' AND " + "start_date < TIME '20:15:30'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2).runTest();
     }
@@ -938,11 +938,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(t(0, 0, 0), TIME);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(t(22, 0, 15), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(t(0, 0, 0), TIME);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(t(22, 0, 15), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date >= TIME '00:30:00' AND " + "start_date <= TIME '20:15:30'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2, r3).runTest();
     }
@@ -953,12 +953,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(t(0, 0, 0), TIME);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(t(22, 0, 15), TIME);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(ts(2016, 01, 31, 23, 0, 0), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(t(0, 0, 0), TIME);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(t(22, 0, 15), TIME);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(ts(2016, 01, 31, 23, 0, 0), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE (" + "(start_date > TIME '00:30:00' AND " + "start_date <= TIME '20:15:30')) OR (" + "(start_date >= TIME '22:00:15' AND " + "start_date < TIME '23:00:00'))").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r2, r3, r5).runTest();
     }
@@ -969,12 +969,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(t(0, 0, 0), TIME);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(t(22, 0, 15), TIME);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(ts(2016, 01, 31, 23, 0, 0), TIME);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(t(20, 15, 30), TIME);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(t(0, 0, 0), TIME);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(t(22, 0, 15), TIME);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(ts(2016, 01, 31, 23, 0, 0), TIME);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date IN (" + "TIME '00:30:00', " + "TIME '20:15:30', " + "TIME '22:00:15', " + "TIME '00:00:00')").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r1, r3, r5, r4).runTest();
     }
@@ -985,9 +985,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, TIMESTAMP).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIMESTAMP).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -998,9 +998,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, TIMESTAMP).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIMESTAMP).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date IS NOT NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r3).runTest();
     }
@@ -1011,9 +1011,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, TIMESTAMP).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIMESTAMP).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date = TIMESTAMP '2015-12-01 00:30:00' OR start_date IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -1024,9 +1024,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date < TIMESTAMP '2015-12-15 12:00:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1).runTest();
     }
@@ -1037,9 +1037,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date <= TIMESTAMP '2015-12-15 12:00:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -1050,9 +1050,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date = TIMESTAMP '2015-12-15 12:00:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1063,9 +1063,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date > TIMESTAMP '2015-12-15 12:00:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3).runTest();
     }
@@ -1076,9 +1076,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date >= TIMESTAMP '2015-12-15 12:00:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2, r3).runTest();
     }
@@ -1089,9 +1089,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date > TIMESTAMP '2015-12-01 00:30:00' AND " + "start_date < TIMESTAMP '2015-12-31 20:15:30'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1102,11 +1102,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date > TIMESTAMP '2015-12-01 00:30:00' AND " + "start_date <= TIMESTAMP '2015-12-31 20:15:30'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r2, r3).runTest();
     }
@@ -1117,11 +1117,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date >= TIMESTAMP '2015-12-01 00:30:00' AND " + "start_date < TIMESTAMP '2015-12-31 20:15:30'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2).runTest();
     }
@@ -1132,11 +1132,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "start_date >= TIMESTAMP '2015-12-01 00:30:00' AND " + "start_date <= TIMESTAMP '2015-12-31 20:15:30'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2, r3).runTest();
     }
@@ -1147,12 +1147,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(ts(2016, 01, 31, 23, 0, 0), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(ts(2016, 01, 31, 23, 0, 0), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE (" + "(start_date > TIMESTAMP '2015-12-01 00:30:00' AND " + "start_date <= TIMESTAMP '2015-12-31 20:15:30')) OR (" + "(start_date >= TIMESTAMP '2016-01-15 22:00:15' AND " + "start_date < TIMESTAMP '2016-01-31 23:00:00'))").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r2, r3, r5).runTest();
     }
@@ -1163,12 +1163,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(ts(2016, 01, 31, 23, 0, 0), TIMESTAMP);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ts(2015, 12, 31, 20, 15, 30), TIMESTAMP);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(ts(2015, 11, 15, 0, 0, 0), TIMESTAMP);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(ts(2016, 01, 15, 22, 0, 15), TIMESTAMP);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(ts(2016, 01, 31, 23, 0, 0), TIMESTAMP);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE start_date IN (" + "TIMESTAMP '2015-12-01 00:30:00', " + "TIMESTAMP '2015-12-31 20:15:30', " + "TIMESTAMP '2016-01-15 22:00:15', " + "TIMESTAMP '2015-11-15 00:00:00')").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r1, r3, r5, r4).runTest();
     }
@@ -1179,9 +1179,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, VARBINARY).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARBINARY).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE bytes IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1192,9 +1192,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, VARBINARY).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARBINARY).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE bytes IS NOT NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r3).runTest();
     }
@@ -1205,9 +1205,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, VARBINARY).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARBINARY).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE bytes = VARBINARY 'abc' OR bytes IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -1218,9 +1218,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE bytes < VARBINARY 'def'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1).runTest();
     }
@@ -1231,9 +1231,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE bytes <= VARBINARY 'def'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -1244,9 +1244,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE bytes = VARBINARY 'def'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1257,9 +1257,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE bytes > VARBINARY 'def'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3).runTest();
     }
@@ -1270,9 +1270,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE bytes >= VARBINARY 'def'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2, r3).runTest();
     }
@@ -1283,9 +1283,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "bytes > VARBINARY 'abc' AND " + "bytes < VARBINARY 'ghi'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1296,11 +1296,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a".getBytes(), VARBINARY);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField("a".getBytes(), VARBINARY);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField("jkl".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "bytes > VARBINARY 'abc' AND " + "bytes <= VARBINARY 'ghi'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r2, r3).runTest();
     }
@@ -1311,11 +1311,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a".getBytes(), VARBINARY);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField("a".getBytes(), VARBINARY);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField("jkl".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "bytes >= VARBINARY 'abc' AND " + "bytes < VARBINARY 'ghi'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2).runTest();
     }
@@ -1326,11 +1326,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a".getBytes(), VARBINARY);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField("a".getBytes(), VARBINARY);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField("jkl".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "bytes >= VARBINARY 'abc' AND " + "bytes <= VARBINARY 'ghi'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2, r3).runTest();
     }
@@ -1341,12 +1341,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a".getBytes(), VARBINARY);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl".getBytes(), VARBINARY);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField("mno".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField("a".getBytes(), VARBINARY);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField("jkl".getBytes(), VARBINARY);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField("mno".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE (" + "(bytes > VARBINARY 'abc' AND " + "bytes <= VARBINARY 'ghi')) OR (" + "(bytes >= VARBINARY 'jkl' AND " + "bytes < VARBINARY 'mno'))").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r2, r3, r5).runTest();
     }
@@ -1357,12 +1357,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a".getBytes(), VARBINARY);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl".getBytes(), VARBINARY);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField("mno".getBytes(), VARBINARY);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi".getBytes(), VARBINARY);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField("a".getBytes(), VARBINARY);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField("jkl".getBytes(), VARBINARY);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField("mno".getBytes(), VARBINARY);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE bytes IN (" + "VARBINARY 'abc', VARBINARY 'ghi', " + "VARBINARY 'jkl', VARBINARY 'a')").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r1, r3, r5, r4).runTest();
     }
@@ -1373,9 +1373,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, VARCHAR).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARCHAR).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE data IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1386,9 +1386,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, VARCHAR).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARCHAR).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE data IS NOT NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r3).runTest();
     }
@@ -1399,9 +1399,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, VARCHAR).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARCHAR).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE data = 'abc' OR data IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -1412,9 +1412,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE data < 'def'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1).runTest();
     }
@@ -1425,9 +1425,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE data <= 'def'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -1438,9 +1438,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE data = 'def'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1451,9 +1451,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE data > 'def'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3).runTest();
     }
@@ -1464,9 +1464,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE data >= 'def'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2, r3).runTest();
     }
@@ -1477,9 +1477,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "data > 'abc' AND " + "data < 'ghi'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1490,11 +1490,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a", VARCHAR);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField("a", VARCHAR);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField("jkl", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "data > 'abc' AND " + "data <= 'ghi'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r2, r3).runTest();
     }
@@ -1505,11 +1505,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a", VARCHAR);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField("a", VARCHAR);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField("jkl", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "data >= 'abc' AND " + "data < 'ghi'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2).runTest();
     }
@@ -1520,11 +1520,11 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a", VARCHAR);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField("a", VARCHAR);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField("jkl", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "data >= 'abc' AND " + "data <= 'ghi'").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2, r3).runTest();
     }
@@ -1535,12 +1535,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a", VARCHAR);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl", VARCHAR);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField("mno", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField("a", VARCHAR);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField("jkl", VARCHAR);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField("mno", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE (" + "(data > 'abc' AND " + "data <= 'ghi')) OR (" + "(data >= 'jkl' AND " + "data < 'mno'))").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r2, r3, r5).runTest();
     }
@@ -1551,12 +1551,12 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField("abc", VARCHAR);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField("def", VARCHAR);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField("ghi", VARCHAR);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField("a", VARCHAR);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField("jkl", VARCHAR);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField("mno", VARCHAR);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField("ghi", VARCHAR);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField("a", VARCHAR);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField("jkl", VARCHAR);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField("mno", VARCHAR);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE data IN ('abc', 'ghi', 'jkl', 'a')").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r1, r3, r5, r4).runTest();
     }
@@ -1568,9 +1568,9 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, arrayType).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, arrayType).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE senders IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1582,9 +1582,9 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, arrayType).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, arrayType).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE senders IS NOT NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r3).runTest();
     }
@@ -1596,9 +1596,9 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, arrayType).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, arrayType).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE senders = ARRAY['a','b','c'] OR senders IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -1610,9 +1610,9 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE senders < ARRAY['d','e','f']").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1).runTest();
     }
@@ -1624,9 +1624,9 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE senders <= ARRAY['d','e','f']").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -1638,9 +1638,9 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE senders = ARRAY['d','e','f']").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1652,9 +1652,9 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE senders > ARRAY['d','e','f']").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3).runTest();
     }
@@ -1666,9 +1666,9 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE senders >= ARRAY['d','e','f']").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2, r3).runTest();
     }
@@ -1680,9 +1680,9 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "senders > ARRAY['a','b','c'] AND " + "senders < ARRAY['g','h','i']").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1694,11 +1694,11 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ARRAY_A, arrayType);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ARRAY_JKL, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(ARRAY_A, arrayType);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(ARRAY_JKL, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "senders > ARRAY['a','b','c'] AND " + "senders <= ARRAY['g','h','i']").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r2, r3).runTest();
     }
@@ -1710,11 +1710,11 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ARRAY_A, arrayType);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ARRAY_JKL, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(ARRAY_A, arrayType);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(ARRAY_JKL, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "senders >= ARRAY['a','b','c'] AND " + "senders < ARRAY['g','h','i']").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2).runTest();
     }
@@ -1728,11 +1728,11 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ARRAY_A, arrayType);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ARRAY_JKL, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(ARRAY_A, arrayType);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(ARRAY_JKL, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "senders >= ARRAY['a','b','c'] AND " + "senders <= ARRAY['g','h','i']").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2, r3).runTest();
     }
@@ -1744,12 +1744,12 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ARRAY_A, arrayType);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ARRAY_JKL, arrayType);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(ARRAY_MNO, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(ARRAY_A, arrayType);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(ARRAY_JKL, arrayType);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(ARRAY_MNO, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE (" + "(senders > ARRAY['a','b','c'] AND " + "senders <= ARRAY['g','h','i'])) OR (" + "(senders >= ARRAY['j','k','l'] AND " + "senders < ARRAY['m','n','o']))").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r2, r3, r5).runTest();
     }
@@ -1761,12 +1761,12 @@ public class PredicatePushdownTest
         ArrayType arrayType = new ArrayType(VARCHAR);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(ARRAY_A, arrayType);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(ARRAY_JKL, arrayType);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(ARRAY_MNO, arrayType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(ARRAY_GHI, arrayType);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(ARRAY_A, arrayType);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(ARRAY_JKL, arrayType);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(ARRAY_MNO, arrayType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE senders IN (ARRAY['a','b','c'], ARRAY['g','h','i'], ARRAY['j','k','l'], ARRAY['a'])").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r1, r3, r5, r4).runTest();
     }
@@ -1778,9 +1778,9 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, mapType).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, mapType).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ages IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1792,9 +1792,9 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, mapType).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, mapType).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ages IS NOT NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r3).runTest();
     }
@@ -1806,9 +1806,9 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType).addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType).addField(10L, BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(null, mapType).addField(10L, BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType).addField(10L, BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, mapType).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType).addField(10L, BIGINT);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ages = MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) OR ages IS NULL").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -1822,9 +1822,9 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ages < MAP(ARRAY['d','e','f'],ARRAY[4,5,6])").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1).runTest();
     }
@@ -1838,9 +1838,9 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ages <= MAP(ARRAY['d','e','f'],ARRAY[4,5,6])").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
     }
@@ -1852,9 +1852,9 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ages = MAP(ARRAY['d','e','f'],ARRAY[4,5,6])").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1868,9 +1868,9 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ages > MAP(ARRAY['d','e','f'],ARRAY[4,5,6])").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r3).runTest();
     }
@@ -1884,9 +1884,9 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ages >= MAP(ARRAY['d','e','f'],ARRAY[4,5,6])").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2, r3).runTest();
     }
@@ -1900,9 +1900,9 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "ages > MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) AND " + "ages < MAP(ARRAY['g','h','i'],ARRAY[7,8,9])").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
     }
@@ -1916,11 +1916,11 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(MAP_A, mapType);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(MAP_JKL, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(MAP_A, mapType);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(MAP_JKL, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "ages > MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) AND " + "ages <= MAP(ARRAY['g','h','i'],ARRAY[7,8,9])").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r2, r3).runTest();
     }
@@ -1934,11 +1934,11 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(MAP_A, mapType);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(MAP_JKL, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(MAP_A, mapType);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(MAP_JKL, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "ages >= MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) AND " + "ages < MAP(ARRAY['g','h','i'],ARRAY[7,8,9])").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2).runTest();
     }
@@ -1952,11 +1952,11 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(MAP_A, mapType);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(MAP_JKL, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(MAP_A, mapType);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(MAP_JKL, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE " + "ages >= MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) AND " + "ages <= MAP(ARRAY['g','h','i'],ARRAY[7,8,9])").withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2, r3).runTest();
     }
@@ -1970,12 +1970,12 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(MAP_A, mapType);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(MAP_JKL, mapType);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(MAP_MNO, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(MAP_A, mapType);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(MAP_JKL, mapType);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(MAP_MNO, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE (" + "(ages > MAP(ARRAY['a','b','c'],ARRAY[1,2,3]) AND " + "ages <= MAP(ARRAY['g','h','i'],ARRAY[7,8,9]))) OR (" + "(ages >= MAP(ARRAY['j','k','l'],ARRAY[0,1,2]) AND " + "ages < MAP(ARRAY['m','n','o'],ARRAY[3,4,5])))").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r2, r3, r5).runTest();
     }
@@ -1991,12 +1991,12 @@ public class PredicatePushdownTest
         MapType mapType = new MapType(VARCHAR, BIGINT);
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(MAP_A, mapType);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(MAP_JKL, mapType);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(MAP_MNO, mapType);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(MAP_GHI, mapType);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(MAP_A, mapType);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(MAP_JKL, mapType);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(MAP_MNO, mapType);
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE ages IN (" + "MAP(ARRAY['a','b','c'],ARRAY[1,2,3]), " + "MAP(ARRAY['g','h','i'],ARRAY[4,5,6]), " + "MAP(ARRAY['j','k','l'],ARRAY[7,8,9]), " + "MAP(ARRAY['a'],ARRAY[0]))").withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r1, r3, r5, r4).runTest();
     }
@@ -2007,13 +2007,13 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(new Long(60), BIGINT);
-        Row r7 = Row.newInstance().addField("row7", VARCHAR).addField(new Long(90), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(new Long(60), BIGINT);
+        Row r7 = Row.newRow().addField("row7", VARCHAR).addField(new Long(90), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable").withInputSchema(schema).withSplits("row4", "row6").withInput(r1, r2, r3, r4, r5, r6, r7).withOutput(r1, r2, r3, r4, r5, r6, r7).runTest();
@@ -2025,9 +2025,9 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE recordkey = 'row2'").withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
@@ -2039,13 +2039,13 @@ public class PredicatePushdownTest
     {
         RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
-        Row r1 = Row.newInstance().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
-        Row r2 = Row.newInstance().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
-        Row r3 = Row.newInstance().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
-        Row r4 = Row.newInstance().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
-        Row r5 = Row.newInstance().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
-        Row r6 = Row.newInstance().addField("row6", VARCHAR).addField(new Long(60), BIGINT);
-        Row r7 = Row.newInstance().addField("row7", VARCHAR).addField(new Long(90), BIGINT);
+        Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
+        Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
+        Row r3 = Row.newRow().addField("row3", VARCHAR).addField(new Long(30), BIGINT);
+        Row r4 = Row.newRow().addField("row4", VARCHAR).addField(new Long(-15), BIGINT);
+        Row r5 = Row.newRow().addField("row5", VARCHAR).addField(new Long(45), BIGINT);
+        Row r6 = Row.newRow().addField("row6", VARCHAR).addField(new Long(60), BIGINT);
+        Row r7 = Row.newRow().addField("row7", VARCHAR).addField(new Long(90), BIGINT);
 
         // no constraints on predicate pushdown
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withQuery("SELECT * FROM testmytable WHERE (recordkey < 'row6' AND recordkey >= 'row3') OR recordkey = 'row1'").withInputSchema(schema).withSplits("row4", "row6").withInput(r1, r2, r3, r4, r5, r6, r7).withOutput(r1, r3, r4, r5).runTest();

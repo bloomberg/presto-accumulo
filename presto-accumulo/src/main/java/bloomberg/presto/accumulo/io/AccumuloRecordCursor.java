@@ -344,7 +344,8 @@ public class AccumuloRecordCursor
             case StandardTypes.TIMESTAMP:
                 return serializer.getTimestamp(fieldToColumnName[field]).getTime();
             default:
-                throw new RuntimeException("Unsupported type " + getType(field));
+                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                        "Unsupported type " + getType(field));
         }
     }
 
@@ -387,7 +388,8 @@ public class AccumuloRecordCursor
             case StandardTypes.VARCHAR:
                 return Slices.utf8Slice(serializer.getVarchar(fieldToColumnName[field]));
             default:
-                throw new RuntimeException("Unsupported type " + getType(field));
+                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                        "Unsupported type " + getType(field));
         }
     }
 

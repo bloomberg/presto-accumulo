@@ -1,5 +1,7 @@
 package bloomberg.presto.accumulo.model;
 
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarcharType;
 
@@ -17,22 +19,30 @@ public class RowSchema
 
     public RowSchema addRowId()
     {
+        // TODO Fix this! Row ID doesn't have to be first anymore. Nope, not anymore.
         if (columns.size() != 0) {
-            throw new RuntimeException("Row ID must be the first column");
+            throw new PrestoException(StandardErrorCode.USER_ERROR,
+                    "Row ID must be the first column");
         }
 
-        columns.add(new AccumuloColumnHandle("accumulo", "recordkey", null, null, VarcharType.VARCHAR, columns.size(), "Accumulo row ID", false));
+        columns.add(new AccumuloColumnHandle("accumulo", "recordkey", null, null,
+                VarcharType.VARCHAR, columns.size(), "Accumulo row ID", false));
         return this;
     }
 
-    public RowSchema addColumn(String prestoName, String columnFamily, String columnQualifier, Type type)
+    public RowSchema addColumn(String prestoName, String columnFamily, String columnQualifier,
+            Type type)
     {
         return addColumn(prestoName, columnFamily, columnQualifier, type, false);
     }
 
-    public RowSchema addColumn(String prestoName, String columnFamily, String columnQualifier, Type type, boolean indexed)
+    public RowSchema addColumn(String prestoName, String columnFamily, String columnQualifier,
+            Type type, boolean indexed)
     {
-        columns.add(new AccumuloColumnHandle("accumulo", prestoName, columnFamily, columnQualifier, type, columns.size(), String.format("Accumulo column %s:%s. Indexed: %b", columnFamily, columnQualifier, indexed), indexed));
+        columns.add(new AccumuloColumnHandle("accumulo", prestoName, columnFamily, columnQualifier,
+                type, columns.size(), String.format("Accumulo column %s:%s. Indexed: %b",
+                        columnFamily, columnQualifier, indexed),
+                indexed));
         return this;
     }
 
@@ -49,7 +59,7 @@ public class RowSchema
             }
         }
 
-        throw new RuntimeException("No column with name " + name);
+        throw new PrestoException(StandardErrorCode.USER_ERROR, "No column with name " + name);
     }
 
     public List<AccumuloColumnHandle> getColumns()

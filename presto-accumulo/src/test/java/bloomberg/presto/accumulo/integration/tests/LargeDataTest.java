@@ -90,7 +90,7 @@ public class LargeDataTest
     public void testSelectCount()
             throws Exception
     {
-        Row r1 = Row.newInstance().addField(NUM_RECORDS, BigintType.BIGINT);
+        Row r1 = Row.newRow().addField(NUM_RECORDS, BigintType.BIGINT);
         DRIVER1.withQuery("SELECT COUNT(*) FROM testmytable").withOutput(r1).runTest();
     }
 
@@ -125,7 +125,7 @@ public class LargeDataTest
     public void testSelectCountMinMaxWhereFirstNameEquals()
             throws Exception
     {
-        Row r1 = Row.newInstance().addField(13L, BigintType.BIGINT).addField(new Date(73859156000L), DateType.DATE).addField(new Date(1328445195000L), DateType.DATE);
+        Row r1 = Row.newRow().addField(13L, BigintType.BIGINT).addField(new Date(73859156000L), DateType.DATE).addField(new Date(1328445195000L), DateType.DATE);
 
         String query = "SELECT COUNT(*) AS count, MIN(birthday), MAX(birthday) FROM testmytable " + "WHERE first_name = 'Darla'";
 
@@ -136,7 +136,7 @@ public class LargeDataTest
     public void testJoin()
             throws Exception
     {
-        Row r1 = Row.newInstance().addField(6L, BigintType.BIGINT);
+        Row r1 = Row.newRow().addField(6L, BigintType.BIGINT);
 
         String query = "SELECT COUNT(*) AS count FROM testmytable tmt, testmyothertable tmot " + "WHERE tmt.zipcode = tmot.zipcode AND " + "tmt.birthday = tmot.birthday";
 

@@ -124,7 +124,8 @@ public class ZooKeeperMetadataManager
             }
         }
         else {
-            throw new RuntimeException("No metadata for schema " + schema);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "No metadata for schema" + schema);
         }
     }
 

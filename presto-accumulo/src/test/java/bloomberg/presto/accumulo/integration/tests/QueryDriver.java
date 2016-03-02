@@ -250,7 +250,7 @@ public class QueryDriver
                     throw new RuntimeException(String.format("Record in file has %d tokens, expected %d, %s", tokens.length, eLength, line));
                 }
 
-                Row r = Row.newInstance();
+                Row r = Row.newRow();
                 list.add(r);
                 for (int i = 0; i < tokens.length; ++i) {
                     switch (rSchema.getColumn(i).getType().getDisplayName()) {
