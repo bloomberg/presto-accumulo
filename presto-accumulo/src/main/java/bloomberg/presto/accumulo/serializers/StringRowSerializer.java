@@ -16,6 +16,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * Implementation of {@link StringRowSerializer} that encodes and decodes Presto column values as
+ * human-readable String objects.
+ */
 public class StringRowSerializer
         implements AccumuloRowSerializer
 {
@@ -87,13 +91,15 @@ public class StringRowSerializer
     @Override
     public Block getArray(String name, Type type)
     {
-        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED, "arrays are not (yet?) supported for StringRowSerializer");
+        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                "arrays are not (yet?) supported for StringRowSerializer");
     }
 
     @Override
     public void setArray(Text text, Type type, Block block)
     {
-        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED, "arrays are not (yet?) supported for StringRowSerializer");
+        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                "arrays are not (yet?) supported for StringRowSerializer");
     }
 
     @Override
@@ -147,13 +153,15 @@ public class StringRowSerializer
     @Override
     public Block getMap(String name, Type type)
     {
-        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED, "maps are not (yet?) supported for StringRowSerializer");
+        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                "maps are not (yet?) supported for StringRowSerializer");
     }
 
     @Override
     public void setMap(Text text, Type type, Block block)
     {
-        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED, "maps are not (yet?) supported for StringRowSerializer");
+        throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                "maps are not (yet?) supported for StringRowSerializer");
     }
 
     @Override

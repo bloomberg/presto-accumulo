@@ -16,6 +16,8 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 
+import javax.annotation.concurrent.NotThreadSafe;
+
 import java.io.IOException;
 import java.sql.Date;
 import java.sql.Time;
@@ -33,12 +35,18 @@ import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 
+/**
+ * Implementation of {@link AccumuloRowSerializer} that uses Accumulo lexicoders to serialize the
+ * values of the Presto columns.
+ */
 @SuppressWarnings({"rawtypes", "unchecked"})
+@NotThreadSafe
 public class LexicoderRowSerializer
         implements AccumuloRowSerializer
 {
     public static final byte[] TRUE = new byte[] {1};
     public static final byte[] FALSE = new byte[] {0};
+
     private static Map<Type, Lexicoder> lexicoderMap = null;
     private static Map<String, ListLexicoder<?>> listLexicoders = new HashMap<>();
     private static Map<String, MapLexicoder<?, ?>> mapLexicoders = new HashMap<>();
@@ -125,7 +133,8 @@ public class LexicoderRowSerializer
     public Block getArray(String name, Type type)
     {
         Type elementType = Types.getElementType(type);
-        return AccumuloRowSerializer.getBlockFromArray(elementType, decode(type, getFieldValue(name)));
+        return AccumuloRowSerializer.getBlockFromArray(elementType,
+                decode(type, getFieldValue(name)));
     }
 
     @Override
@@ -301,21 +310,25 @@ public class LexicoderRowSerializer
      * </tr>
      * </table>
      *
-     * @param type The presto {@link com.facebook.presto.spi.type.Type}
-     * @param v The Java object per the table in the method description
+     * @param type
+     *            The presto {@link com.facebook.presto.spi.type.Type}
+     * @param v
+     *            The Java object per the table in the method description
      * @return Encoded bytes
      */
     public static byte[] encode(Type type, Object v)
     {
         Object toEncode;
         if (Types.isArrayType(type)) {
-            toEncode = AccumuloRowSerializer.getArrayFromBlock(Types.getElementType(type), (Block) v);
+            toEncode =
+                    AccumuloRowSerializer.getArrayFromBlock(Types.getElementType(type), (Block) v);
         }
         else if (Types.isMapType(type)) {
             toEncode = AccumuloRowSerializer.getMapFromBlock(type, (Block) v);
         }
         else if (type.equals(BOOLEAN)) {
-            toEncode = v.equals(Boolean.TRUE) ? LexicoderRowSerializer.TRUE : LexicoderRowSerializer.FALSE;
+            toEncode = v.equals(Boolean.TRUE) ? LexicoderRowSerializer.TRUE
+                    : LexicoderRowSerializer.FALSE;
         }
         else if (type.equals(DATE) && v instanceof Date) {
             toEncode = ((Date) v).getTime();
@@ -395,9 +408,13 @@ public class LexicoderRowSerializer
      * <td>String</td>
      * </tr>
      * </table>
-     * @param type The presto {@link com.facebook.presto.spi.type.Type}
-     * @param v Encoded bytes to decode
-     * @param <T> The Java type of the object that has been encoded to the given byte array
+     *
+     * @param type
+     *            The presto {@link com.facebook.presto.spi.type.Type}
+     * @param v
+     *            Encoded bytes to decode
+     * @param <T>
+     *            The Java type of the object that has been encoded to the given byte array
      * @return The Java object per the table in the method description
      */
     public static <T> T decode(Type type, byte[] v)
@@ -416,27 +433,41 @@ public class LexicoderRowSerializer
         else {
             Lexicoder l = lexicoderMap.get(type);
             if (l == null) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "No lexicoder for type " + type);
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "No lexicoder for type " + type);
             }
             return l;
         }
     }
 
-    private static ListLexicoder getListLexicoder(Type type)
+    /**
+     * Gets a ListLexicoder for the given element type.
+     *
+     * @param eType
+     * @return List lexicoder
+     */
+    private static ListLexicoder getListLexicoder(Type eType)
     {
-        ListLexicoder<?> listLexicoder = listLexicoders.get(type.getDisplayName());
+        ListLexicoder<?> listLexicoder = listLexicoders.get(eType.getDisplayName());
         if (listLexicoder == null) {
-            listLexicoder = new ListLexicoder(getLexicoder(Types.getElementType(type)));
-            listLexicoders.put(type.getDisplayName(), listLexicoder);
+            listLexicoder = new ListLexicoder(getLexicoder(Types.getElementType(eType)));
+            listLexicoders.put(eType.getDisplayName(), listLexicoder);
         }
         return listLexicoder;
     }
 
+    /**
+     * Gets a MapLexicoder for the given Map type.
+     *
+     * @param type
+     * @return Map lexicoder
+     */
     private static MapLexicoder getMapLexicoder(Type type)
     {
         MapLexicoder<?, ?> mapLexicoder = mapLexicoders.get(type.getDisplayName());
         if (mapLexicoder == null) {
-            mapLexicoder = new MapLexicoder(getLexicoder(Types.getKeyType(type)), getLexicoder(Types.getValueType(type)));
+            mapLexicoder = new MapLexicoder(getLexicoder(Types.getKeyType(type)),
+                    getLexicoder(Types.getValueType(type)));
             mapLexicoders.put(type.getDisplayName(), mapLexicoder);
         }
         return mapLexicoder;

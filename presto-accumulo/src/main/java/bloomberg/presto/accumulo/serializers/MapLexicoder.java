@@ -11,16 +11,32 @@ import static org.apache.accumulo.core.client.lexicoder.impl.ByteUtils.escape;
 import static org.apache.accumulo.core.client.lexicoder.impl.ByteUtils.split;
 import static org.apache.accumulo.core.client.lexicoder.impl.ByteUtils.unescape;
 
+/**
+ * Accumulo lexicoder for encoding a Java Map
+ *
+ * @param <K>
+ *            Key data type
+ * @param <V>
+ *            Value data type
+ */
 public class MapLexicoder<K, V>
         implements Lexicoder<Map<K, V>>
 {
     private Lexicoder<K> keyLexicoder;
     private Lexicoder<V> valueLexicoder;
 
-    public MapLexicoder(Lexicoder<K> keyLexicoder, Lexicoder<V> valueLexicoder)
+    /**
+     * Creates a new {@link MapLexicoder} using the given lexicoders for key and value data types
+     *
+     * @param kl
+     *            Lexicoder for the keys
+     * @param vl
+     *            Lexicoder for the values
+     */
+    public MapLexicoder(Lexicoder<K> kl, Lexicoder<V> vl)
     {
-        this.keyLexicoder = keyLexicoder;
-        this.valueLexicoder = valueLexicoder;
+        this.keyLexicoder = kl;
+        this.valueLexicoder = vl;
     }
 
     @Override
@@ -32,6 +48,7 @@ public class MapLexicoder<K, V>
             elements[index++] = escape(keyLexicoder.encode(e.getKey()));
             elements[index++] = escape(valueLexicoder.encode(e.getValue()));
         }
+
         return concat(elements);
     }
 
