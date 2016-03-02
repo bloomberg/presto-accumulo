@@ -25,73 +25,132 @@ import java.util.Objects;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Implementation of several Presto TableHandles for inserting data, CTAS, and a regular ol' table
+ * handle. Contains table metadata!
+ */
 public final class AccumuloTableHandle
-        implements ConnectorInsertTableHandle,
-        ConnectorOutputTableHandle, ConnectorTableHandle
+        implements ConnectorInsertTableHandle, ConnectorOutputTableHandle, ConnectorTableHandle
 {
     private final boolean internal;
     private final String connectorId;
-    private final String rowIdName;
-    private final String schemaName;
+    private final String rowId;
+    private final String schema;
     private final String serializerClassName;
-    private final String tableName;
+    private final String table;
 
+    /**
+     * Creates a new instance of {@link AccumuloTableHandle}.
+     *
+     * @param connectorId
+     *            Presto connector ID
+     * @param schema
+     *            Presto schema (Accumulo namespace)
+     * @param table
+     *            Presto table (Accumulo table)
+     * @param rowId
+     *            The Presto column name that is the Accumulo row ID
+     * @param internal
+     *            Whether or not this table is internal, i.e. managed by Presto
+     * @param serializerClassName
+     *            The qualified Java class name to (de)serialize data from Accumulo
+     */
     @JsonCreator
-    public AccumuloTableHandle(@JsonProperty("connectorId") String connectorId, @JsonProperty("schemaName") String schemaName, @JsonProperty("tableName") String tableName, @JsonProperty("rowIdName") String rowIdName, @JsonProperty("internal") boolean internal, @JsonProperty("serializerClassName") String serializerClassName)
+    public AccumuloTableHandle(@JsonProperty("connectorId") String connectorId,
+            @JsonProperty("schema") String schema, @JsonProperty("table") String table,
+            @JsonProperty("rowId") String rowId, @JsonProperty("internal") boolean internal,
+            @JsonProperty("serializerClassName") String serializerClassName)
     {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.internal = requireNonNull(internal, "internal is null");
-        this.rowIdName = requireNonNull(rowIdName, "rowIdName is null");
-        this.schemaName = requireNonNull(schemaName, "schemaName is null");
-        this.serializerClassName = requireNonNull(serializerClassName, "serializerClassName is null");
-        this.tableName = requireNonNull(tableName, "tableName is null");
+        this.rowId = requireNonNull(rowId, "rowId is null");
+        this.schema = requireNonNull(schema, "schema is null");
+        this.serializerClassName =
+                requireNonNull(serializerClassName, "serializerClassName is null");
+        this.table = requireNonNull(table, "table is null");
     }
 
+    /**
+     * Gets the Presto connector ID.
+     *
+     * @return Connector ID
+     */
     @JsonProperty
     public String getConnectorId()
     {
         return connectorId;
     }
 
+    /**
+     * Gets the row ID.
+     *
+     * @return Row ID
+     */
     @JsonProperty
-    public String getRowIdName()
+    public String getRowId()
     {
-        return rowIdName;
+        return rowId;
     }
 
+    /**
+     * Gets the schema name.
+     *
+     * @return Schema name
+     */
     @JsonProperty
-    public String getSchemaName()
+    public String getSchema()
     {
-        return schemaName;
+        return schema;
     }
 
+    /**
+     * Gets the configured serializer class name. This method is a JsonProperty.
+     *
+     * @return The list of {@link AccumuloColumnHandle}
+     */
     @JsonProperty
     public String getSerializerClassName()
     {
         return serializerClassName;
     }
 
+    /**
+     * Gets the table name.
+     *
+     * @return Table name
+     */
     @JsonProperty
-    public String getTableName()
+    public String getTable()
     {
-        return tableName;
+        return table;
     }
 
+    /**
+     * Gets a Boolean value indicating if the Accumulo tables are internal, i.e. managed by Presto.
+     * This method is a JsonProperty.
+     *
+     * @return True if internal, false otherwise
+     */
     @JsonProperty
     public boolean isInternal()
     {
         return internal;
     }
 
+    /**
+     * Gets a new SchemaTableName for this object's schema and table
+     *
+     * @return new SchemaTableName
+     */
     public SchemaTableName toSchemaTableName()
     {
-        return new SchemaTableName(schemaName, tableName);
+        return new SchemaTableName(schema, table);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(connectorId, schemaName, tableName, rowIdName, internal, serializerClassName);
+        return Objects.hash(connectorId, schema, table, rowId, internal, serializerClassName);
     }
 
     @Override
@@ -105,12 +164,19 @@ public final class AccumuloTableHandle
         }
 
         AccumuloTableHandle other = (AccumuloTableHandle) obj;
-        return Objects.equals(this.connectorId, other.connectorId) && Objects.equals(this.schemaName, other.schemaName) && Objects.equals(this.tableName, other.tableName) && Objects.equals(this.rowIdName, other.rowIdName) && Objects.equals(this.internal, other.internal) && Objects.equals(this.serializerClassName, other.serializerClassName);
+        return Objects.equals(this.connectorId, other.connectorId)
+                && Objects.equals(this.schema, other.schema)
+                && Objects.equals(this.table, other.table)
+                && Objects.equals(this.rowId, other.rowId)
+                && Objects.equals(this.internal, other.internal)
+                && Objects.equals(this.serializerClassName, other.serializerClassName);
     }
 
     @Override
     public String toString()
     {
-        return toStringHelper(this).add("connectorId", connectorId).add("schemaName", schemaName).add("tableName", tableName).add("rowIdName", rowIdName).add("internal", internal).add("serializerClassName", serializerClassName).toString();
+        return toStringHelper(this).add("connectorId", connectorId).add("schema", schema)
+                .add("table", table).add("rowId", rowId).add("internal", internal)
+                .add("serializerClassName", serializerClassName).toString();
     }
 }

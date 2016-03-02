@@ -83,9 +83,9 @@ public class AccumuloSplitManager
                 checkType(layout, AccumuloTableLayoutHandle.class, "layout");
         AccumuloTableHandle tableHandle = layoutHandle.getTable();
 
-        String schemaName = tableHandle.getSchemaName();
-        String tableName = tableHandle.getTableName();
-        String rowIdName = tableHandle.getRowIdName();
+        String schemaName = tableHandle.getSchema();
+        String tableName = tableHandle.getTable();
+        String rowIdName = tableHandle.getRowId();
 
         // If the column filter optimization is enabled, then get the list of column constraints to
         // pack into a split

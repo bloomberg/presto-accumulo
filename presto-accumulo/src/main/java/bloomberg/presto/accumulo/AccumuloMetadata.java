@@ -294,7 +294,7 @@ public class AccumuloMetadata
         checkArgument(tHandle.getConnectorId().equals(connectorId),
                 "table is not for this connector");
         return getTableMetadata(
-                new SchemaTableName(tHandle.getSchemaName(), tHandle.getTableName()));
+                new SchemaTableName(tHandle.getSchema(), tHandle.getTable()));
     }
 
     /**
