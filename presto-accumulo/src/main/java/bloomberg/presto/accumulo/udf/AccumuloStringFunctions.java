@@ -9,6 +9,9 @@ import io.airlift.slice.Slices;
 
 import java.util.UUID;
 
+/**
+ * Class containing String-based SQL functions for Accumulo connector
+ */
 public class AccumuloStringFunctions
 {
     private AccumuloStringFunctions()
