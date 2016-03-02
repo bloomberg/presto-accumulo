@@ -50,7 +50,7 @@ public class TpchDBGenIngest
     private static final String REGION_ROW_ID = "regionkey";
     private static final String SUPPLIER_ROW_ID = "suppkey";
 
-    private static final RowSchema CUSTOMER_SCHEMA = RowSchema.newInstance()
+    private static final RowSchema CUSTOMER_SCHEMA = RowSchema.newRowSchema()
             .addColumn("custkey", null, null, BIGINT)
             .addColumn("name", "md", "name", VARCHAR)
             .addColumn("address", "md", "address", VARCHAR)
@@ -60,7 +60,7 @@ public class TpchDBGenIngest
             .addColumn("mktsegment", "md", "mktsegment", VARCHAR, true)
             .addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema LINEITEM_SCHEMA = RowSchema.newInstance()
+    private static final RowSchema LINEITEM_SCHEMA = RowSchema.newRowSchema()
             .addColumn("uuid", null, null, VARCHAR)
             .addColumn("orderkey", "md", "orderkey", BIGINT)
             .addColumn("partkey", "md", "partkey", BIGINT)
@@ -79,13 +79,13 @@ public class TpchDBGenIngest
             .addColumn("shipmode", "md", "shipmode", VARCHAR, true)
             .addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema NATION_SCHEMA = RowSchema.newInstance()
+    private static final RowSchema NATION_SCHEMA = RowSchema.newRowSchema()
             .addColumn("nationkey", null, null, BIGINT)
             .addColumn("name", "md", "name", VARCHAR, true)
             .addColumn("regionkey", "md", "regionkey", BIGINT)
             .addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema ORDERS_SCHEMA = RowSchema.newInstance()
+    private static final RowSchema ORDERS_SCHEMA = RowSchema.newRowSchema()
             .addColumn("orderkey", null, null, BIGINT)
             .addColumn("custkey", "md", "custkey", BIGINT)
             .addColumn("orderstatus", "md", "orderstatus", VARCHAR)
@@ -96,7 +96,7 @@ public class TpchDBGenIngest
             .addColumn("shippriority", "md", "shippriority", BIGINT)
             .addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema PART_SCHEMA = RowSchema.newInstance()
+    private static final RowSchema PART_SCHEMA = RowSchema.newRowSchema()
             .addColumn("partkey", null, null, BIGINT)
             .addColumn("name", "md", "name", VARCHAR)
             .addColumn("mfgr", "md", "mfgr", VARCHAR)
@@ -107,7 +107,7 @@ public class TpchDBGenIngest
             .addColumn("retailprice", "md", "retailprice", DOUBLE)
             .addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema PARTSUPP_SCHEMA = RowSchema.newInstance()
+    private static final RowSchema PARTSUPP_SCHEMA = RowSchema.newRowSchema()
             .addColumn("uuid", null, null, VARCHAR)
             .addColumn("partkey", "md", "partkey", BIGINT, true)
             .addColumn("suppkey", "md", "suppkey", BIGINT)
@@ -115,12 +115,12 @@ public class TpchDBGenIngest
             .addColumn("supplycost", "md", "supplycost", DOUBLE)
             .addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema REGION_SCHEMA = RowSchema.newInstance()
+    private static final RowSchema REGION_SCHEMA = RowSchema.newRowSchema()
             .addColumn("regionkey", null, null, BIGINT)
             .addColumn("name", "md", "name", VARCHAR, true)
             .addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema SUPPLIER_SCHEMA = RowSchema.newInstance()
+    private static final RowSchema SUPPLIER_SCHEMA = RowSchema.newRowSchema()
             .addColumn("suppkey", null, null, BIGINT)
             .addColumn("name", "md", "name", VARCHAR, true)
             .addColumn("address", "md", "address", VARCHAR)

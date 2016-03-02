@@ -22,7 +22,7 @@ public class LargeDataTest
     private static final File OTHER_INPUT_FILE = new File("src/test/resources/datagen-other.txt.gz");
     private static final File FIRST_NAME_SELECT_OUTPUT = new File("src/test/resources/first_name_select.txt.gz");
 
-    private static final RowSchema INPUT_SCHEMA = RowSchema.newInstance()
+    private static final RowSchema INPUT_SCHEMA = RowSchema.newRowSchema()
             .addRowId()
             .addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR)
             .addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR)
@@ -33,7 +33,7 @@ public class LargeDataTest
             .addColumn("birthday", "metadata", "birthday", DateType.DATE)
             .addColumn("favorite_color", "metadata", "favorite_color", VarcharType.VARCHAR);
 
-    private static final RowSchema INDEXED_SCHEMA = RowSchema.newInstance()
+    private static final RowSchema INDEXED_SCHEMA = RowSchema.newRowSchema()
             .addRowId()
             .addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR, true)
             .addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR)

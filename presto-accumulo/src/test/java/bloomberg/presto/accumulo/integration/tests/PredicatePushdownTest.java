@@ -71,7 +71,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntWhereNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("weight", "metadata", "weight", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("weight", "metadata", "weight", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, BIGINT).addField(new Long(60), BIGINT);
@@ -85,7 +85,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntWhereNotNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("weight", "metadata", "weight", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("weight", "metadata", "weight", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, BIGINT).addField(new Long(60), BIGINT);
@@ -99,7 +99,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntWhereNullOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("weight", "metadata", "weight", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("weight", "metadata", "weight", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(60), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, BIGINT).addField(new Long(60), BIGINT);
@@ -113,7 +113,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntLess()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -126,7 +126,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntLessOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -139,7 +139,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -156,7 +156,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -168,7 +168,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntGreaterOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -181,7 +181,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntLessAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -194,7 +194,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntLessEqualAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -209,7 +209,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntLessAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -224,7 +224,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntLessEqualAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -239,7 +239,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntInRange()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -257,7 +257,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntWithOr()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -273,7 +273,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntWithComplexWhereing()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("fav_num", "metadata", "fav_num", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT).addColumn("fav_num", "metadata", "fav_num", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT).addField(new Long(15), BIGINT);
@@ -290,7 +290,7 @@ public class PredicatePushdownTest
     public void testSelectBooleanWhereNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(null, BOOLEAN).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(10L, BIGINT);
@@ -302,7 +302,7 @@ public class PredicatePushdownTest
     public void testSelectBooleanWhereNotNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(null, BOOLEAN).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(10L, BIGINT);
@@ -314,7 +314,7 @@ public class PredicatePushdownTest
     public void testSelectBooleanWhereNullOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(null, BOOLEAN).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(10L, BIGINT);
@@ -327,7 +327,7 @@ public class PredicatePushdownTest
     public void testSelectBooleanIsTrue()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("male", "metadata", "male", BOOLEAN);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Boolean(true), BOOLEAN);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Boolean(false), BOOLEAN);
@@ -339,7 +339,7 @@ public class PredicatePushdownTest
     public void testSelectBooleanIsFalse()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("male", "metadata", "male", BOOLEAN);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(true, BOOLEAN);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN);
@@ -351,7 +351,7 @@ public class PredicatePushdownTest
     public void testSelectBooleanIsTrueAndFalse()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("human", "metadata", "human", BOOLEAN);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("male", "metadata", "male", BOOLEAN).addColumn("human", "metadata", "human", BOOLEAN);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(true, BOOLEAN).addField(true, BOOLEAN);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN).addField(true, BOOLEAN);
@@ -364,7 +364,7 @@ public class PredicatePushdownTest
     public void testSelectBooleanInRange()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BOOLEAN);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("male", "metadata", "male", BOOLEAN);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(true, BOOLEAN);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(false, BOOLEAN);
@@ -376,7 +376,7 @@ public class PredicatePushdownTest
     public void testSelectDateWhereNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DATE).addField(10L, BIGINT);
@@ -389,7 +389,7 @@ public class PredicatePushdownTest
     public void testSelectDateWhereNotNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DATE).addField(10L, BIGINT);
@@ -402,7 +402,7 @@ public class PredicatePushdownTest
     public void testSelectDateWhereNullOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DATE).addField(10L, BIGINT);
@@ -415,7 +415,7 @@ public class PredicatePushdownTest
     public void testSelectDateLess()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -428,7 +428,7 @@ public class PredicatePushdownTest
     public void testSelectDateLessOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -441,7 +441,7 @@ public class PredicatePushdownTest
     public void testSelectDateEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -454,7 +454,7 @@ public class PredicatePushdownTest
     public void testSelectDateGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -467,7 +467,7 @@ public class PredicatePushdownTest
     public void testSelectDateGreaterOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -480,7 +480,7 @@ public class PredicatePushdownTest
     public void testSelectDateLessAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -493,7 +493,7 @@ public class PredicatePushdownTest
     public void testSelectDateLessEqualAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -508,7 +508,7 @@ public class PredicatePushdownTest
     public void testSelectDateLessAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -523,7 +523,7 @@ public class PredicatePushdownTest
     public void testSelectDateLessEqualAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -538,7 +538,7 @@ public class PredicatePushdownTest
     public void testSelectDateWithOr()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -554,7 +554,7 @@ public class PredicatePushdownTest
     public void testSelectDateInRange()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DATE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(c(2015, 12, 1), DATE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(c(2015, 12, 15), DATE);
@@ -570,7 +570,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleWhereNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("weight", "metadata", "weight", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("weight", "metadata", "weight", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(60), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DOUBLE).addField(new Double(60), DOUBLE);
@@ -584,7 +584,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleWhereNotNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("weight", "metadata", "weight", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("weight", "metadata", "weight", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(60), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DOUBLE).addField(new Double(60), DOUBLE);
@@ -598,7 +598,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleWhereNullOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("weight", "metadata", "weight", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("weight", "metadata", "weight", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(60), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, DOUBLE).addField(new Double(60), DOUBLE);
@@ -612,7 +612,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleLess()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -625,7 +625,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleLessOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -638,7 +638,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -655,7 +655,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -667,7 +667,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleGreaterOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -680,7 +680,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleLessAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -693,7 +693,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleLessEqualAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -708,7 +708,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleLessAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -723,7 +723,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleLessEqualAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -738,7 +738,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleInRange()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -756,7 +756,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleWithOr()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE);
@@ -772,7 +772,7 @@ public class PredicatePushdownTest
     public void testSelectDoubleWithComplexWhereing()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("fav_num", "metadata", "fav_num", DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", DOUBLE).addColumn("fav_num", "metadata", "fav_num", DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Double(0), DOUBLE).addField(new Double(0), DOUBLE);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Double(15), DOUBLE).addField(new Double(15), DOUBLE);
@@ -789,7 +789,7 @@ public class PredicatePushdownTest
     public void testSelectTimeWhereNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIME).addField(10L, BIGINT);
@@ -802,7 +802,7 @@ public class PredicatePushdownTest
     public void testSelectTimeWhereNotNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIME).addField(10L, BIGINT);
@@ -815,7 +815,7 @@ public class PredicatePushdownTest
     public void testSelectTimeWhereNullOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIME).addField(10L, BIGINT);
@@ -828,7 +828,7 @@ public class PredicatePushdownTest
     public void testSelectTimeLess()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -841,7 +841,7 @@ public class PredicatePushdownTest
     public void testSelectTimeLessOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -854,7 +854,7 @@ public class PredicatePushdownTest
     public void testSelectTimeEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -867,7 +867,7 @@ public class PredicatePushdownTest
     public void testSelectTimeGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -880,7 +880,7 @@ public class PredicatePushdownTest
     public void testSelectTimeGreaterOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -893,7 +893,7 @@ public class PredicatePushdownTest
     public void testSelectTimeLessAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -906,7 +906,7 @@ public class PredicatePushdownTest
     public void testSelectTimeLessEqualAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -921,7 +921,7 @@ public class PredicatePushdownTest
     public void testSelectTimeLessAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -936,7 +936,7 @@ public class PredicatePushdownTest
     public void testSelectTimeLessEqualAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -951,7 +951,7 @@ public class PredicatePushdownTest
     public void testSelectTimeWithOr()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -967,7 +967,7 @@ public class PredicatePushdownTest
     public void testSelectTimeInRange()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIME);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(t(0, 30, 0), TIME);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(t(12, 0, 30), TIME);
@@ -983,7 +983,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampWhereNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIMESTAMP).addField(10L, BIGINT);
@@ -996,7 +996,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampWhereNotNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIMESTAMP).addField(10L, BIGINT);
@@ -1009,7 +1009,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampWhereNullOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, TIMESTAMP).addField(10L, BIGINT);
@@ -1022,7 +1022,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampLess()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1035,7 +1035,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampLessOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1048,7 +1048,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1061,7 +1061,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1074,7 +1074,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampGreaterOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1087,7 +1087,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampLessAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1100,7 +1100,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampLessEqualAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1115,7 +1115,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampLessAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1130,7 +1130,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampLessEqualAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1145,7 +1145,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampWithOr()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1161,7 +1161,7 @@ public class PredicatePushdownTest
     public void testSelectTimestampInRange()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", TIMESTAMP);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ts(2015, 12, 1, 0, 30, 0), TIMESTAMP);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ts(2015, 12, 15, 12, 0, 30), TIMESTAMP);
@@ -1177,7 +1177,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryWhereNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARBINARY).addField(10L, BIGINT);
@@ -1190,7 +1190,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryWhereNotNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARBINARY).addField(10L, BIGINT);
@@ -1203,7 +1203,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryWhereNullOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARBINARY).addField(10L, BIGINT);
@@ -1216,7 +1216,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryLess()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1229,7 +1229,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryLessOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1242,7 +1242,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1255,7 +1255,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1268,7 +1268,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryGreaterOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1281,7 +1281,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryLessAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1294,7 +1294,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryLessEqualAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1309,7 +1309,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryLessAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1324,7 +1324,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryLessEqualAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1339,7 +1339,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryWithOr()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1355,7 +1355,7 @@ public class PredicatePushdownTest
     public void testSelectVarbinaryInRange()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc".getBytes(), VARBINARY);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def".getBytes(), VARBINARY);
@@ -1371,7 +1371,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharWhereNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARCHAR).addField(10L, BIGINT);
@@ -1384,7 +1384,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharWhereNotNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARCHAR).addField(10L, BIGINT);
@@ -1397,7 +1397,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharWhereNullOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, VARCHAR).addField(10L, BIGINT);
@@ -1410,7 +1410,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharLess()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1423,7 +1423,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharLessOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1436,7 +1436,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1449,7 +1449,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1462,7 +1462,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharGreaterOrEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1475,7 +1475,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharLessAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1488,7 +1488,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharLessEqualAndGreater()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1503,7 +1503,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharLessAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1518,7 +1518,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharLessEqualAndGreaterEqual()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1533,7 +1533,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharWithOr()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1549,7 +1549,7 @@ public class PredicatePushdownTest
     public void testSelectVarcharInRange()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("data", "metadata", "data", VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("data", "metadata", "data", VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField("abc", VARCHAR);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField("def", VARCHAR);
@@ -1566,7 +1566,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, arrayType).addField(10L, BIGINT);
@@ -1580,7 +1580,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, arrayType).addField(10L, BIGINT);
@@ -1594,7 +1594,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, arrayType).addField(10L, BIGINT);
@@ -1608,7 +1608,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1622,7 +1622,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1636,7 +1636,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1650,7 +1650,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1664,7 +1664,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1678,7 +1678,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1692,7 +1692,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1708,7 +1708,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1726,7 +1726,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1742,7 +1742,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1759,7 +1759,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         ArrayType arrayType = new ArrayType(VARCHAR);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(ARRAY_ABC, arrayType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(ARRAY_DEF, arrayType);
@@ -1776,7 +1776,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, mapType).addField(10L, BIGINT);
@@ -1790,7 +1790,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, mapType).addField(10L, BIGINT);
@@ -1804,7 +1804,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType).addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType).addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType).addField(10L, BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(null, mapType).addField(10L, BIGINT);
@@ -1820,7 +1820,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -1836,7 +1836,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -1850,7 +1850,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -1866,7 +1866,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -1882,7 +1882,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -1898,7 +1898,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -1914,7 +1914,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -1932,7 +1932,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -1950,7 +1950,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -1968,7 +1968,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -1989,7 +1989,7 @@ public class PredicatePushdownTest
             throws Exception
     {
         MapType mapType = new MapType(VARCHAR, BIGINT);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("ages", "metadata", "ages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("ages", "metadata", "ages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(MAP_ABC, mapType);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(MAP_DEF, mapType);
@@ -2005,7 +2005,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntNoWhereWithSplits()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -2023,7 +2023,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntWhereRecordKeyIs()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);
@@ -2037,7 +2037,7 @@ public class PredicatePushdownTest
     public void testSelectBigIntWhereRecordKeyInRange()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VARCHAR).addField(new Long(0), BIGINT);
         Row r2 = Row.newRow().addField("row2", VARCHAR).addField(new Long(15), BIGINT);

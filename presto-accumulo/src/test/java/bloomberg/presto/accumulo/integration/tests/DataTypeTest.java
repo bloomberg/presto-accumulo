@@ -60,7 +60,7 @@ public class DataTypeTest
     {
         Type elementType = VarcharType.VARCHAR;
         ArrayType arrayType = new ArrayType(elementType);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(elementType, ImmutableList.of("a", "b", "c")), arrayType);
         Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(elementType, ImmutableList.of("d", "e", "f")), arrayType);
@@ -74,7 +74,7 @@ public class DataTypeTest
     {
         ArrayType nestedArrayType = new ArrayType(VarcharType.VARCHAR);
         ArrayType arrayType = new ArrayType(nestedArrayType);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i"))), arrayType);
         Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r"))), arrayType);
@@ -90,7 +90,7 @@ public class DataTypeTest
         ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
         ArrayType arrayType = new ArrayType(nestedArrayType);
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         // @formatter:off
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa")))), arrayType);
@@ -108,7 +108,7 @@ public class DataTypeTest
         ArrayType nestedArrayType = new ArrayType(veryNestedArrayType);
         ArrayType arrayType = new ArrayType(nestedArrayType);
 
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("senders", "metadata", "senders", arrayType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("senders", "metadata", "senders", arrayType);
 
         // @formatter:off
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromArray(nestedArrayType, ImmutableList.of(ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa"))), ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa"))), ImmutableList.of(ImmutableList.of(ImmutableList.of("a", "b", "c"), ImmutableList.of("d", "e", "f"), ImmutableList.of("g", "h", "i")), ImmutableList.of(ImmutableList.of("j", "k", "l"), ImmutableList.of("m", "n", "o"), ImmutableList.of("p", "q", "r")), ImmutableList.of(ImmutableList.of("s", "t", "u"), ImmutableList.of("v", "w", "x"), ImmutableList.of("y", "z", "aa"))))), arrayType);
@@ -121,7 +121,7 @@ public class DataTypeTest
     public void testSelectBigInt()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BigintType.BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BigintType.BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(new Long(28), BigintType.BIGINT);
         Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(new Long(0), BigintType.BIGINT);
@@ -133,7 +133,7 @@ public class DataTypeTest
     public void testSelectBoolean()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("male", "metadata", "male", BooleanType.BOOLEAN);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("male", "metadata", "male", BooleanType.BOOLEAN);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(true, BooleanType.BOOLEAN);
         Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(false, BooleanType.BOOLEAN);
@@ -145,7 +145,7 @@ public class DataTypeTest
     public void testSelectDate()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("start_date", "metadata", "start_date", DateType.DATE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("start_date", "metadata", "start_date", DateType.DATE);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(c(2015, 12, 14), DateType.DATE);
         Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(c(2015, 12, 15), DateType.DATE);
@@ -157,7 +157,7 @@ public class DataTypeTest
     public void testSelectDouble()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("rate", "metadata", "rate", DoubleType.DOUBLE);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("rate", "metadata", "rate", DoubleType.DOUBLE);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(new Double(28.1234), DoubleType.DOUBLE);
 
@@ -173,7 +173,7 @@ public class DataTypeTest
         Type keyType = VarcharType.VARCHAR;
         Type valueType = BigintType.BIGINT;
         MapType mapType = new MapType(keyType, valueType);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("peopleages", "metadata", "peopleages", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("peopleages", "metadata", "peopleages", mapType);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of("a", 1, "b", 2, "c", 3)), mapType);
         Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of("d", 4, "e", 5, "f", 6)), mapType);
@@ -189,7 +189,7 @@ public class DataTypeTest
         Type keyMapType = new ArrayType(elementType);
         Type valueMapType = new ArrayType(elementType);
         MapType mapType = new MapType(keyMapType, valueMapType);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo", "metadata", "foo", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("foo", "metadata", "foo", mapType);
 
         // @formatter:off
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of(ImmutableList.of(1, 2, 3), ImmutableList.of(1, 2, 3))), mapType);
@@ -208,7 +208,7 @@ public class DataTypeTest
         Type keyMapType = new MapType(keyType, valueType);
         Type valueMapType = new MapType(keyType, valueType);
         MapType mapType = new MapType(keyMapType, valueMapType);
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("foo", "metadata", "foo", mapType);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("foo", "metadata", "foo", mapType);
 
         // @formatter:off
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(AccumuloRowSerializer.getBlockFromMap(mapType, ImmutableMap.of(ImmutableMap.of("a", 1, "b", 2, "c", 3), ImmutableMap.of("a", 1, "b", 2, "c", 3))), mapType);
@@ -222,7 +222,7 @@ public class DataTypeTest
     public void testSelectTime()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("last_login", "metadata", "last_login", TimeType.TIME);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("last_login", "metadata", "last_login", TimeType.TIME);
 
         Calendar cal = new GregorianCalendar();
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(new Time(cal.getTimeInMillis()), TimeType.TIME);
@@ -237,7 +237,7 @@ public class DataTypeTest
     public void testSelectTimestamp()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("last_login", "metadata", "last_login", TimestampType.TIMESTAMP);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("last_login", "metadata", "last_login", TimestampType.TIMESTAMP);
 
         Calendar cal = new GregorianCalendar();
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(new Timestamp(cal.getTimeInMillis()), TimestampType.TIMESTAMP);
@@ -252,7 +252,7 @@ public class DataTypeTest
     public void testSelectVarbinary()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("bytes", "metadata", "bytes", VarbinaryType.VARBINARY);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("bytes", "metadata", "bytes", VarbinaryType.VARBINARY);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField("Check out all this data!".getBytes(), VarbinaryType.VARBINARY);
 
@@ -265,7 +265,7 @@ public class DataTypeTest
     public void testSelectVarchar()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("name", "metadata", "name", VarcharType.VARCHAR);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("name", "metadata", "name", VarcharType.VARCHAR);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField("Alice", VarcharType.VARCHAR);
         Row r2 = Row.newRow().addField("row2", VarcharType.VARCHAR).addField("Bob", VarcharType.VARCHAR);
@@ -278,7 +278,7 @@ public class DataTypeTest
     public void testErrorOnOnlyOneNullField()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BigintType.BIGINT);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BigintType.BIGINT);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(60L, BigintType.BIGINT);
         Row r2 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(null, BigintType.BIGINT);
@@ -291,7 +291,7 @@ public class DataTypeTest
     public void testErrorOnBothFieldsNull()
             throws Exception
     {
-        RowSchema schema = RowSchema.newInstance().addRowId().addColumn("age", "metadata", "age", BigintType.BIGINT).addColumn("male", "metadata", "male", BooleanType.BOOLEAN);
+        RowSchema schema = RowSchema.newRowSchema().addRowId().addColumn("age", "metadata", "age", BigintType.BIGINT).addColumn("male", "metadata", "male", BooleanType.BOOLEAN);
 
         Row r1 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(60L, BigintType.BIGINT).addField(true, BooleanType.BOOLEAN);
         Row r2 = Row.newRow().addField("row1", VarcharType.VARCHAR).addField(null, BigintType.BIGINT).addField(null, BooleanType.BOOLEAN);
