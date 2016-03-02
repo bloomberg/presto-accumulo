@@ -79,7 +79,7 @@ public final class AccumuloColumnHandle
     }
 
     /**
-     * Gets the Presto connector ID. This is a JSON property.
+     * Gets the Presto connector ID.
      *
      * @return Connector ID
      */
@@ -90,7 +90,7 @@ public final class AccumuloColumnHandle
     }
 
     /**
-     * Gets the Presto column name. This is a JSON property.
+     * Gets the Presto column name.
      *
      * @return Presto column name
      */
@@ -101,7 +101,7 @@ public final class AccumuloColumnHandle
     }
 
     /**
-     * Gets the Accumulo column family. This is a JSON property.
+     * Gets the Accumulo column family.
      *
      * @return Column family
      */
@@ -112,7 +112,7 @@ public final class AccumuloColumnHandle
     }
 
     /**
-     * Gets the Accumulo column qualifier. This is a JSON property.
+     * Gets the Accumulo column qualifier.
      *
      * @return Column qualifier
      */
@@ -123,7 +123,7 @@ public final class AccumuloColumnHandle
     }
 
     /**
-     * Gets the Presto column type. This is a JSON property.
+     * Gets the Presto column type.
      *
      * @return Presto type
      */
@@ -134,7 +134,7 @@ public final class AccumuloColumnHandle
     }
 
     /**
-     * Gets the column ordinal within the row. This is a JSON property.
+     * Gets the column ordinal within the row.
      *
      * @return Column ordinal
      */
@@ -145,7 +145,7 @@ public final class AccumuloColumnHandle
     }
 
     /**
-     * Gets the column comment. This is a JSON property.
+     * Gets the column comment.
      *
      * @return Comment
      */
@@ -170,7 +170,7 @@ public final class AccumuloColumnHandle
 
     /**
      * Gets a Boolean value indicating whether or not this column contains entries in the index
-     * table. This is a JSON property.
+     * table.
      *
      * @return True if indexed, false otherwise
      */

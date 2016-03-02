@@ -88,7 +88,7 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the row ID. This method is JsonProperty.
+     * Gets the row ID.
      *
      * @return Row ID
      */
@@ -99,7 +99,7 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the schema name. This method is JsonProperty.
+     * Gets the schema name.
      *
      * @return Schema name
      */
@@ -110,7 +110,7 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the table name. This method is JsonProperty.
+     * Gets the table name.
      *
      * @return Table name
      */
@@ -158,7 +158,7 @@ public class AccumuloTable
     }
 
     /**
-     * Gets all configured columns of the Accumulo table. This method is JsonProperty.
+     * Gets all configured columns of the Accumulo table.
      *
      * @return The list of {@link AccumuloColumnHandle}
      */

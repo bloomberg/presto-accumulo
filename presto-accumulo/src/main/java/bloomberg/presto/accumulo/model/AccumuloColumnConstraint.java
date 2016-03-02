@@ -52,7 +52,7 @@ public class AccumuloColumnConstraint
 
     /**
      * Gets a Boolean value indicating whether or not this column contains entries in the index
-     * table. This is a JSON property.
+     * table.
      *
      * @return True if indexed, false otherwise
      */
@@ -63,7 +63,7 @@ public class AccumuloColumnConstraint
     }
 
     /**
-     * Gets the Presto column name. This is a JSON property.
+     * Gets the Presto column name.
      *
      * @return Presto column name
      */
@@ -74,7 +74,7 @@ public class AccumuloColumnConstraint
     }
 
     /**
-     * Gets the Accumulo column family. This is a JSON property.
+     * Gets the Accumulo column family.
      *
      * @return Column family
      */
@@ -85,7 +85,7 @@ public class AccumuloColumnConstraint
     }
 
     /**
-     * Gets the Accumulo column qualifier. This is a JSON property.
+     * Gets the Accumulo column qualifier.
      *
      * @return Column qualifier
      */
@@ -96,7 +96,7 @@ public class AccumuloColumnConstraint
     }
 
     /**
-     * Gets the Presto predicate Domain for this column. This is a JSON property.
+     * Gets the Presto predicate Domain for this column.
      *
      * @return Column qualifier
      */
@@ -107,7 +107,7 @@ public class AccumuloColumnConstraint
     }
 
     /**
-     * Sets the Presto predicate Domain for this column. This is a JSON setter function.
+     * Sets the Presto predicate Domain for this column.
      *
      * @param domain
      *            Column domain
