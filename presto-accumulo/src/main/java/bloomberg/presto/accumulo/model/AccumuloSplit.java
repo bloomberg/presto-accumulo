@@ -19,7 +19,6 @@ import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -97,7 +96,7 @@ public class AccumuloSplit
     }
 
     /**
-     * Gets the Presto connector ID. This is a JSON property.
+     * Gets the Presto connector ID.
      *
      * @return Connector ID
      */
@@ -108,7 +107,7 @@ public class AccumuloSplit
     }
 
     /**
-     * Gets the host:port string. This is a JSON property.
+     * Gets the host:port string.
      *
      * @return Host and port
      */
@@ -119,7 +118,7 @@ public class AccumuloSplit
     }
 
     /**
-     * Gets the Presto column name that is the Accumulo row ID
+     * Gets the Presto column name that is the Accumulo row ID.
      *
      * @return Row ID column
      */
@@ -130,7 +129,7 @@ public class AccumuloSplit
     }
 
     /**
-     * Gets the schema name of the Accumulo table
+     * Gets the schema name of the Accumulo table.
      *
      * @return Schema name
      */
@@ -141,7 +140,7 @@ public class AccumuloSplit
     }
 
     /**
-     * Gets the table name
+     * Gets the table name.
      *
      * @return Table name
      */
@@ -152,7 +151,7 @@ public class AccumuloSplit
     }
 
     /**
-     * Gets the full Accumulo table name, including namespace and table name
+     * Gets the full Accumulo table name, including namespace and table name.
      *
      * @return Full table name
      */
@@ -162,18 +161,33 @@ public class AccumuloSplit
         return (this.getSchema().equals("default") ? "" : this.getSchema() + ".") + this.getTable();
     }
 
-    @JsonGetter
+    /**
+     * Gets the {@link AccumuloRowSerializer} class name.
+     *
+     * @return Class name
+     */
+    @JsonProperty
     public String getSerializerClassName()
     {
         return this.serializerClassName;
     }
 
+    /**
+     * Gets the list of {@link RangeHandle} objects.
+     *
+     * @return List of range handles
+     */
     @JsonProperty
     public List<RangeHandle> getRangeHandles()
     {
         return rHandles;
     }
 
+    /**
+     * Converts and gets the list of Accumulo Range objects for scanner configuration.
+     *
+     * @return List of range handles
+     */
     @JsonIgnore
     public List<Range> getRanges()
     {
@@ -182,18 +196,36 @@ public class AccumuloSplit
         return ranges;
     }
 
+    /**
+     * JSON Setter function for the list of range handles
+     *
+     * @param rhandles
+     *            List of range handles
+     */
     @JsonSetter
     public void setRangeHandles(List<RangeHandle> rhandles)
     {
         this.rHandles = rhandles;
     }
 
+    /**
+     * Gets the list of {@link AccumuloColumnConstraint} objects.
+     *
+     * @return List of column constraints
+     */
     @JsonProperty
     public List<AccumuloColumnConstraint> getConstraints()
     {
         return constraints;
     }
 
+    /**
+     * Gets the Class object from the serializer class name
+     *
+     * @return Class object
+     * @throws PrestoException
+     *             If the class is not found on the classpath
+     */
     @SuppressWarnings("unchecked")
     @JsonIgnore
     public Class<? extends AccumuloRowSerializer> getSerializerClass()
@@ -207,18 +239,33 @@ public class AccumuloSplit
         }
     }
 
+    /**
+     * Gets a Boolean value indicating whether or not this split can be accessed remotely.
+     *
+     * @return If it is remotely accessible (which it is)
+     */
     @Override
     public boolean isRemotelyAccessible()
     {
         return true;
     }
 
+    /**
+     * Gets a list of host addresses where this split should be placed for processing.
+     *
+     * @return List of host address
+     */
     @Override
     public List<HostAddress> getAddresses()
     {
         return addresses;
     }
 
+    /**
+     * Gets this
+     *
+     * @return this
+     */
     @Override
     public Object getInfo()
     {
