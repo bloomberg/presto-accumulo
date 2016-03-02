@@ -125,7 +125,7 @@ public class AccumuloSplitManager
      * Gets the Domain for the range, or null if there is no constraint on the row ID
      *
      * @param rowIdName
-     *            Preto column of the row ID
+     *            Presto column of the row ID
      * @param constraint
      *            Query constraints
      * @return Domain on the row ID, or null if there is none
