@@ -154,6 +154,8 @@ public class AccumuloClient
 
         // Get and validate the column mapping has been set
         // TODO This kind of sucks from a user perspective, can we use comments instead?
+        // COMMENT syntax is not merged into master, see PR 4296
+        // https://github.com/facebook/presto/pull/4296
         Map<String, Pair<String, String>> mapping =
                 AccumuloTableProperties.getColumnMapping(meta.getProperties());
 
