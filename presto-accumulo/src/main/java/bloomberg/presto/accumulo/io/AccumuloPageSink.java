@@ -31,8 +31,6 @@ import org.apache.hadoop.io.Text;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -73,16 +71,7 @@ public class AccumuloPageSink
         requireNonNull(accConfig, "accConfig is null");
         requireNonNull(table, "table is null");
 
-        // Sort columns by ordinal, just in case
         this.columns = table.getColumns();
-        Collections.sort(columns, new Comparator<AccumuloColumnHandle>()
-        {
-            @Override
-            public int compare(AccumuloColumnHandle o1, AccumuloColumnHandle o2)
-            {
-                return Integer.compare(o1.getOrdinal(), o2.getOrdinal());
-            }
-        });
 
         // Fetch the row ID ordinal, throwing an exception if not found for safety
         for (AccumuloColumnHandle ach : columns) {
@@ -225,7 +214,7 @@ public class AccumuloPageSink
         Mutation m = new Mutation(value);
         for (AccumuloColumnHandle ach : columns) {
             // Skip the row ID ordinal
-            if (ach.getOrdinal() != rowIdOrdinal) {
+            if (ach.getOrdinal() == rowIdOrdinal) {
                 continue;
             }
 
