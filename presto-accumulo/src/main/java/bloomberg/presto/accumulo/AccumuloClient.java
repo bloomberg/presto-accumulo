@@ -214,16 +214,27 @@ public class AccumuloClient
             // Create the table!
             conn.tableOperations().create(table.getFullTableName());
 
+            // Set locality groups if configured
+            if (AccumuloTableProperties.hasLocalityGroups(tableProperties)) {
+                Map<String, Set<Text>> groups =
+                        AccumuloTableProperties.getLocalityGroups(tableProperties);
+                conn.tableOperations().setLocalityGroups(table.getFullTableName(), groups);
+                LOG.debug("Set locality groups to %s", groups);
+            }
+            else {
+                LOG.debug("No locality groups set");
+            }
+
             // If our table is indexed, create the index as well
             if (table.isIndexed()) {
                 // Create index table and set the locality groups
-                Map<String, Set<Text>> groups = Indexer.getLocalityGroups(table);
+                Map<String, Set<Text>> indexGroups = Indexer.getLocalityGroups(table);
                 conn.tableOperations().create(table.getIndexTableName());
-                conn.tableOperations().setLocalityGroups(table.getIndexTableName(), groups);
+                conn.tableOperations().setLocalityGroups(table.getIndexTableName(), indexGroups);
 
                 // Create index metrics table, attach iterators, and set locality groups
                 conn.tableOperations().create(table.getMetricsTableName());
-                conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), groups);
+                conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), indexGroups);
                 for (IteratorSetting s : Indexer.getMetricIterators(table)) {
                     conn.tableOperations().attachIterator(table.getMetricsTableName(), s);
                 }
@@ -232,8 +243,10 @@ public class AccumuloClient
             return table;
         }
         catch (Exception e) {
+            dropTable(table);
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                    "Accumulo error when creating table", e);
+                    "Accumulo error when creating table, check coordinator logs for more detail",
+                    e);
         }
     }
 

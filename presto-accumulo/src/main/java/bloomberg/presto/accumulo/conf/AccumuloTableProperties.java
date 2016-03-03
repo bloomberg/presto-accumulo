@@ -19,18 +19,23 @@ package bloomberg.presto.accumulo.conf;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import bloomberg.presto.accumulo.serializers.StringRowSerializer;
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.session.PropertyMetadata;
 import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.io.Text;
 
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.facebook.presto.spi.session.PropertyMetadata.booleanSessionProperty;
 import static com.facebook.presto.spi.session.PropertyMetadata.stringSessionProperty;
@@ -47,6 +52,7 @@ public final class AccumuloTableProperties
     private static final String COLUMN_MAPPING = "column_mapping";
     private static final String INDEX_COLUMNS = "index_columns";
     private static final String INTERNAL = "internal";
+    private static final String LOCALITY_GROUPS = "locality_groups";
     private static final String ROW_ID = "row_id";
     private static final String SERIALIZER = "serializer";
 
@@ -58,6 +64,7 @@ public final class AccumuloTableProperties
         PropertyMetadata<String> s1 = stringSessionProperty(COLUMN_MAPPING,
                 "Comma-delimited list of column metadata: col_name:col_family:col_qualifier,[...]",
                 null, false);
+
         PropertyMetadata<String> s2 =
                 stringSessionProperty(INDEX_COLUMNS,
                         "A comma-delimited list of Presto columns that are indexed in this table's "
@@ -68,11 +75,18 @@ public final class AccumuloTableProperties
                 "If true, a DROP TABLE statement WILL delete the corresponding Accumulo table. Default false.",
                 false, false);
 
-        PropertyMetadata<String> s4 = stringSessionProperty(ROW_ID,
+        PropertyMetadata<String> s4 = stringSessionProperty(LOCALITY_GROUPS,
+                "List of locality groups to set on the Accumulo table.  String format is locality "
+                        + "group name, colon, comma delimited list of column families in the group.  "
+                        + "Groups are delimited by pipes.  Example: group1:famA,famB,famC|"
+                        + "group2:famD,famE,famF|etc....  Default is no locality groups.",
+                null, false);
+
+        PropertyMetadata<String> s5 = stringSessionProperty(ROW_ID,
                 "If true, a DROP TABLE statement WILL delete the corresponding Accumulo table. Default false.",
                 null, false);
 
-        PropertyMetadata<String> s5 =
+        PropertyMetadata<String> s6 =
                 new PropertyMetadata<String>(SERIALIZER,
                         "Serializer for Accumulo data encodings. Can either be 'default', "
                                 + "'string', 'lexicoder', or a Java class name. Default is 'default', i.e. "
@@ -86,7 +100,7 @@ public final class AccumuloTableProperties
                                                 ? LexicoderRowSerializer.class.getName()
                                                 : (String) x)));
 
-        tableProperties = ImmutableList.of(s1, s2, s3, s4, s5);
+        tableProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6);
     }
 
     /**
@@ -149,6 +163,45 @@ public final class AccumuloTableProperties
     }
 
     /**
+     * Gets the configured locality groups for the table.
+     *
+     * @param tableProperties
+     *            The map of table properties
+     * @return The map of locality groups, or null if not set
+     */
+    public static Map<String, Set<Text>> getLocalityGroups(Map<String, Object> tableProperties)
+    {
+        String groupStr = (String) tableProperties.get(LOCALITY_GROUPS);
+        if (groupStr == null) {
+            return null;
+        }
+
+        Map<String, Set<Text>> groups = new HashMap<>();
+
+        // Split all configured locality groups
+        for (String group : groupStr.split("\\|")) {
+            String[] locGroups = group.split(":");
+
+            if (locGroups.length != 2) {
+                throw new PrestoException(StandardErrorCode.USER_ERROR,
+                        "Locality groups string is malformed");
+            }
+
+            String grpName = locGroups[0];
+            String[] fams = locGroups[1].split(",");
+
+            Set<Text> famTexts = new HashSet<>();
+            groups.put(grpName, famTexts);
+
+            for (String f : fams) {
+                famTexts.add(new Text(f));
+            }
+        }
+
+        return groups;
+    }
+
+    /**
      * Gets the configured row ID for the table
      *
      * @param tableProperties
@@ -170,6 +223,19 @@ public final class AccumuloTableProperties
     public static String getSerializerClass(Map<String, Object> tableProperties)
     {
         return (String) tableProperties.get(SERIALIZER);
+    }
+
+    /**
+     * Gets a Boolean value indicating whether or not the given table properties have locality
+     * groups set.
+     *
+     * @param tableProperties
+     *            The map of table properties
+     * @return True if locality groups is set, false otherwise
+     */
+    public static boolean hasLocalityGroups(Map<String, Object> tableProperties)
+    {
+        return tableProperties.containsKey(LOCALITY_GROUPS);
     }
 
     /**
