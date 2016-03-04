@@ -151,7 +151,7 @@ public class AccumuloClient
             }
         }
 
-        // Get and validate the column mapping has been set
+        // Get the column mappings
         // TODO This kind of sucks from a user perspective, can we use comments instead?
         // COMMENT syntax is not merged into master, see PR 4296
         // https://github.com/facebook/presto/pull/4296
@@ -191,16 +191,16 @@ public class AccumuloClient
         }
 
         // Finally create the AccumuloTable object
-        boolean internal = AccumuloTableProperties.isInternal(tableProperties);
+        boolean external = AccumuloTableProperties.isExternal(tableProperties);
         AccumuloTable table = new AccumuloTable(meta.getTable().getSchemaName(),
-                meta.getTable().getTableName(), columns, rowIdColumn, internal,
+                meta.getTable().getTableName(), columns, rowIdColumn, external,
                 AccumuloTableProperties.getSerializerClass(tableProperties));
 
         // Create dat metadata
         metaManager.createTableMetadata(table);
 
-        // If this table is not internal, then we are done here
-        if (!internal) {
+        // If this table is external, then we are done here
+        if (external) {
             return table;
         }
 
@@ -266,22 +266,24 @@ public class AccumuloClient
         // Remove the table metadata from Presto
         metaManager.deleteTableMetadata(stName);
 
-        // If the table is internal, we'll also clean up the Accumulo tables
-        if (table.isInternal()) {
-            try {
-                // delete the table
-                conn.tableOperations().delete(tn);
+        // If the table is external, we won't clean up the Accumulo tables
+        if (table.isExternal()) {
+            return;
+        }
 
-                // and delete our index tables
-                if (table.isIndexed()) {
-                    conn.tableOperations().delete(Indexer.getIndexTableName(stName));
-                    conn.tableOperations().delete(Indexer.getMetricsTableName(stName));
-                }
+        try {
+            // delete the table
+            conn.tableOperations().delete(tn);
+
+            // and delete our index tables
+            if (table.isIndexed()) {
+                conn.tableOperations().delete(Indexer.getIndexTableName(stName));
+                conn.tableOperations().delete(Indexer.getMetricsTableName(stName));
             }
-            catch (Exception e) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                        "Failed to delete table", e);
-            }
+        }
+        catch (Exception e) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to delete table",
+                    e);
         }
     }
 

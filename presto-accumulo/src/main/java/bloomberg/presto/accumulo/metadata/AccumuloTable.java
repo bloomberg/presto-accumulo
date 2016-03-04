@@ -37,7 +37,7 @@ import static java.util.Objects.requireNonNull;
 public class AccumuloTable
 {
     private final boolean indexed;
-    private final boolean internal;
+    private final boolean external;
     private final String rowId;
     private final String schema;
     private final String table;
@@ -56,18 +56,18 @@ public class AccumuloTable
      *            A list of {@link AccumuloColumnHandle} objects for the table
      * @param rowId
      *            The Presto column name that is the Accumulo row ID
-     * @param internal
-     *            Whether or not this table is internal, i.e. managed by Presto
+     * @param external
+     *            Whether or not this table is external, i.e. Presto only manages metadata
      * @param serializerClassName
      *            The qualified Java class name to (de)serialize data from Accumulo
      */
     @JsonCreator
     public AccumuloTable(@JsonProperty("schema") String schema, @JsonProperty("table") String table,
             @JsonProperty("columns") List<AccumuloColumnHandle> columns,
-            @JsonProperty("rowId") String rowId, @JsonProperty("internal") boolean internal,
+            @JsonProperty("rowId") String rowId, @JsonProperty("external") boolean external,
             @JsonProperty("serializerClassName") String serializerClassName)
     {
-        this.internal = requireNonNull(internal, "internal is null");
+        this.external = requireNonNull(external, "external is null");
         this.rowId = requireNonNull(rowId, "rowId is null");
         this.schema = requireNonNull(schema, "schema is null");
         this.table = requireNonNull(table, "table is null");
@@ -121,7 +121,7 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the full name of the index table. This method is ignored by jackson.
+     * Gets the full name of the index table.
      *
      * @see Indexer#getIndexTableName
      * @return Index table name
@@ -133,7 +133,7 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the full name of the metrics table. This method is ignored by jackson.
+     * Gets the full name of the metrics table.
      *
      * @see Indexer#getMetricsTableName
      * @return Metrics table name
@@ -145,8 +145,7 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the full table name of the Accumulo table, i.e. schemaName.tableName. This method is
-     * ignored by jackson.
+     * Gets the full table name of the Accumulo table, i.e. schemaName.tableName.
      *
      * @see AccumuloTable#getFullTableName
      * @return Full table name
@@ -169,7 +168,7 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the configured serializer class name. This method is a JsonProperty.
+     * Gets the configured serializer class name.
      *
      * @return The list of {@link AccumuloColumnHandle}
      */
@@ -180,8 +179,7 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the list of ColumnMetadata from each AccumuloColumnHandle. This method is ignored by
-     * jackson.
+     * Gets the list of ColumnMetadata from each AccumuloColumnHandle.
      *
      * @return The list of {@link ColumnMetadata}
      */
@@ -192,20 +190,19 @@ public class AccumuloTable
     }
 
     /**
-     * Gets a Boolean value indicating if the Accumulo tables are internal, i.e. managed by Presto.
-     * This method is a JsonProperty.
+     * Gets a Boolean value indicating if the Accumulo tables are external, i.e. Presto only manages
+     * metadata.
      *
-     * @return True if internal, false otherwise
+     * @return True if external, false otherwise
      */
     @JsonProperty
-    public boolean isInternal()
+    public boolean isExternal()
     {
-        return internal;
+        return external;
     }
 
     /**
      * Gets a Boolean value indicating if the Accumulo tables are internal, i.e. managed by Presto.
-     * This method is ignored by jackson.
      *
      * @return True if internal, false otherwise
      */
@@ -216,7 +213,7 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the Class object for the configured serializer. This property is ignored by jackson.
+     * Gets the Class object for the configured serializer.
      *
      * @return The serializer Class
      */
@@ -236,7 +233,6 @@ public class AccumuloTable
     /**
      * Gets the full table name of the Accumulo table, i.e. schemaName.tableName. If the schemaName
      * is 'default', then there is no Accumulo namespace and the table name is all that is returned.
-     * This method is ignored by jackson.
      *
      * @param schema
      *            Schema name
@@ -253,7 +249,6 @@ public class AccumuloTable
     /**
      * Gets the full table name of the Accumulo table, i.e. schemaName.tableName. If the schemaName
      * is 'default', then there is no Accumulo namespace and the table name is all that is returned.
-     * This method is ignored by jackson.
      *
      * @param stn
      *            SchemaTableName
@@ -268,9 +263,8 @@ public class AccumuloTable
     @Override
     public String toString()
     {
-        return toStringHelper(this).add("schemaName", schema)
-                .add("tableName", table).add("columns", columns).add("rowIdName", rowId)
-                .add("internal", internal).add("serializerClassName", serializerClassName)
-                .toString();
+        return toStringHelper(this).add("schemaName", schema).add("tableName", table)
+                .add("columns", columns).add("rowIdName", rowId).add("external", external)
+                .add("serializerClassName", serializerClassName).toString();
     }
 }

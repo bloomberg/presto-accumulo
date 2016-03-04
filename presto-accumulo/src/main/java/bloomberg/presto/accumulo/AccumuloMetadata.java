@@ -83,7 +83,7 @@ public class AccumuloMetadata
         SchemaTableName stName = tableMetadata.getTable();
         AccumuloTable table = client.createTable(tableMetadata);
         return new AccumuloTableHandle(connectorId, stName.getSchemaName(), stName.getTableName(),
-                table.getRowId(), table.isInternal(), table.getSerializerClass().getName());
+                table.getRowId(), table.isExternal(), table.getSerializerClass().getName());
     }
 
     /**
@@ -232,7 +232,7 @@ public class AccumuloMetadata
         }
 
         return new AccumuloTableHandle(connectorId, stName.getSchemaName(), stName.getTableName(),
-                table.getRowId(), table.isInternal(), table.getSerializerClass().getName());
+                table.getRowId(), table.isExternal(), table.getSerializerClass().getName());
     }
 
     /**

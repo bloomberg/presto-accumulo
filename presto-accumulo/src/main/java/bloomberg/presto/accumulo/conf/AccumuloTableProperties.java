@@ -51,7 +51,7 @@ public final class AccumuloTableProperties
 {
     private static final String COLUMN_MAPPING = "column_mapping";
     private static final String INDEX_COLUMNS = "index_columns";
-    private static final String INTERNAL = "internal";
+    private static final String EXTERNAL = "external";
     private static final String LOCALITY_GROUPS = "locality_groups";
     private static final String ROW_ID = "row_id";
     private static final String SERIALIZER = "serializer";
@@ -71,8 +71,9 @@ public final class AccumuloTableProperties
                                 + "corresponding index table.  Default is no indexed columns.",
                         "", false);
 
-        PropertyMetadata<Boolean> s3 = booleanSessionProperty(INTERNAL,
-                "If true, a DROP TABLE statement WILL delete the corresponding Accumulo table. Default false.",
+        PropertyMetadata<Boolean> s3 = booleanSessionProperty(EXTERNAL,
+                "If true, Presto will only do metadata operations for the table. Else, Presto will "
+                + "create and drop Accumulo tables where appropriate. Default false.",
                 false, false);
 
         PropertyMetadata<String> s4 = stringSessionProperty(LOCALITY_GROUPS,
@@ -239,15 +240,15 @@ public final class AccumuloTableProperties
     }
 
     /**
-     * Gets a Boolean value indicating whether or not this table should be internal and managed by
-     * Presto.
+     * Gets a Boolean value indicating whether or not this table is external and Presto should only
+     * manage metadata
      *
      * @param tableProperties
      *            The map of table properties
-     * @return True if the table is internal, false otherwise
+     * @return True if the table is external, false otherwise
      */
-    public static boolean isInternal(Map<String, Object> tableProperties)
+    public static boolean isExternal(Map<String, Object> tableProperties)
     {
-        return (Boolean) tableProperties.get(INTERNAL);
+        return (Boolean) tableProperties.get(EXTERNAL);
     }
 }
