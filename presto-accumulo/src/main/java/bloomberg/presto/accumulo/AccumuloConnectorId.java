@@ -18,9 +18,7 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Wrapper class for the connector ID, which is a String.
- *
- * TODO Why does this exist?
+ * Wrapper class for the connector ID, which is a String. Helps with the Guice injection, probably.
  */
 public final class AccumuloConnectorId
 {
