@@ -13,9 +13,14 @@
  */
 package bloomberg.presto.accumulo.conf;
 
+import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.StandardErrorCode;
 import io.airlift.configuration.Config;
 
 import javax.validation.constraints.NotNull;
+
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * File-based configuration properties for the Accumulo connector
@@ -27,6 +32,7 @@ public class AccumuloConfig
     private String username;
     private String password;
     private String zkMetadataRoot;
+    private String metaManClass;
     private Integer cardinalityCacheSize;
     private Integer cardinalityCacheExpireSeconds;
 
@@ -152,6 +158,55 @@ public class AccumuloConfig
     public void setZkMetadataRoot(String zkMetadataRoot)
     {
         this.zkMetadataRoot = zkMetadataRoot;
+    }
+
+    /**
+     * Gets the configured metadata manager. Default is the return value of
+     * {@link AccumuloMetadataManager#getDefault}
+     *
+     * @return Configured AccumuloMetadataManager
+     * @throws PrestoException
+     */
+    public AccumuloMetadataManager getMetadataManager()
+    {
+        try {
+            return metaManClass == null || metaManClass.equals("default")
+                    ? AccumuloMetadataManager.getDefault(this)
+                    : (AccumuloMetadataManager) Class.forName(metaManClass)
+                            .getConstructor(AccumuloConfig.class).newInstance(this);
+        }
+        catch (InstantiationException | IllegalAccessException | ClassNotFoundException
+                | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+                | SecurityException e) {
+            throw new PrestoException(StandardErrorCode.USER_ERROR, e);
+        }
+    }
+
+    /**
+     * Gets the class name of the configured metadata manager. Default is the class name of the
+     * class from
+     * {@link AccumuloMetadataManager#getDefault}
+     *
+     * @return Configured AccumuloMetadataManager class name
+     */
+    @NotNull
+    public String getMetadataManagerClass()
+    {
+        return metaManClass == null || metaManClass.equals("default")
+                ? AccumuloMetadataManager.getDefault(this).getClass().getCanonicalName()
+                : metaManClass;
+    }
+
+    /**
+     * Sets the AccumulMetadataManager class
+     *
+     * @param mmClass
+     *            Class name of metadata manager, or default
+     */
+    @Config("metadata.manager.class")
+    public void setMetadataManagerClass(String mmClass)
+    {
+        this.metaManClass = mmClass;
     }
 
     /**
