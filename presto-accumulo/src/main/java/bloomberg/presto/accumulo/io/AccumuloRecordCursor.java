@@ -73,8 +73,9 @@ public class AccumuloRecordCursor
     private final List<AccumuloColumnHandle> cHandles;
     private final String[] fieldToColumnName;
 
-    // TODO totalBytes stuff, currently just returning 0
-    private final long totalBytes = 0L;
+    private long bytesRead = 0L;
+    private long nanoStart = 0L;
+    private long nanoEnd = 0L;
     private final BatchScanner scan;
     private final Iterator<Entry<Key, Value>> iterator;
     private final AccumuloRowSerializer serializer;
@@ -157,38 +158,35 @@ public class AccumuloRecordCursor
 
     /**
      * Gets the total bytes that need to be scanned
-     * TODO Can we even know this value?
      *
      * @return Total bytes
      */
     @Override
     public long getTotalBytes()
     {
-        return totalBytes;
+        return 0L; // unknown value
     }
 
     /**
      * Gets the bytes that have been processed so far
-     * TODO
      *
      * @return Completed bytes
      */
     @Override
     public long getCompletedBytes()
     {
-        return totalBytes;
+        return bytesRead;
     }
 
     /**
      * Get the amount of time spent reading data, in nanoseconds
-     * TODO
      *
      * @return Read time nanos
      */
     @Override
     public long getReadTimeNanos()
     {
-        return 0;
+        return nanoStart > 0L ? (nanoEnd == 0 ? System.nanoTime() : nanoEnd) - nanoStart : 0L;
     }
 
     /**
@@ -213,6 +211,10 @@ public class AccumuloRecordCursor
     @Override
     public boolean advanceNextPosition()
     {
+        if (nanoStart == 0) {
+            nanoStart = System.nanoTime();
+        }
+
         // In this method, we are effectively doing what the WholeRowIterator is doing w/o the extra
         // overhead. We continually read key/value pairs from Accumulo, deserializing each entry
         // using the instance of AccumuloRowSerializer we were given until we see the row ID change.
@@ -250,6 +252,8 @@ public class AccumuloRecordCursor
             while (iterator.hasNext() && !braek) {
                 // Scan the key value pair and get the row ID
                 Entry<Key, Value> kv = iterator.next();
+
+                bytesRead += kv.getKey().getSize() + kv.getValue().getSize();
                 kv.getKey().getRow(rowID);
 
                 // If the row IDs are equivalent or there is no previous row
@@ -402,6 +406,7 @@ public class AccumuloRecordCursor
     public void close()
     {
         scan.close();
+        nanoEnd = System.nanoTime();
     }
 
     /**
