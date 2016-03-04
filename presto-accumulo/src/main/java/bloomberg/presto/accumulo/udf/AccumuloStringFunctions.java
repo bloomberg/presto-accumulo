@@ -18,7 +18,7 @@ public class AccumuloStringFunctions
     {}
 
     @Description("Returns a randomly generated UUID")
-    @ScalarFunction("uuid")
+    @ScalarFunction(value = "uuid", deterministic = false)
     @SqlType(StandardTypes.VARCHAR)
     public static Slice UUID()
     {
