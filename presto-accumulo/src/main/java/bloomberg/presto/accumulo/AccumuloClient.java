@@ -196,7 +196,38 @@ public class AccumuloClient
                 meta.getTable().getTableName(), columns, rowIdColumn, external,
                 AccumuloTableProperties.getSerializerClass(tableProperties));
 
-        // Create dat metadata
+        // Validate the Accumulo table exists if it is external
+        if (external) {
+            boolean tableExists = false;
+            boolean indexTableExists = false;
+            boolean indexMetricsTableExists = false;
+            try {
+                tableExists = conn.tableOperations().exists(table.getFullTableName());
+                indexTableExists = conn.tableOperations().exists(table.getIndexTableName());
+                indexMetricsTableExists =
+                        conn.tableOperations().exists(table.getMetricsTableName());
+            }
+            catch (Exception e) {
+                dropTable(table);
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Accumulo error when validating external tables", e);
+            }
+
+            if (!tableExists) {
+                throw new PrestoException(StandardErrorCode.USER_ERROR,
+                        "Cannot create external table w/o an Accumulo table. Create the "
+                                + "Accumulo table first.");
+            }
+
+            if (table.isIndexed() && (!indexTableExists || !indexMetricsTableExists)) {
+                throw new PrestoException(StandardErrorCode.USER_ERROR,
+                        "External table is indexed but the index table and/or index metrics table "
+                                + "do not exist.  Create these tables as well and configure the "
+                                + "correct iterators and locality groups. See the README");
+            }
+        }
+
+        // Okay, now we can actually create the metadata and tables. Promise.
         metaManager.createTableMetadata(table);
 
         // If this table is external, then we are done here
