@@ -29,7 +29,6 @@ import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -37,11 +36,9 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Output class for serializing Presto pages (blocks of rows of data) to Accumulo. This class
- * converts every page to an in-memory list of rows, then flushes them all to memory. In the event
- * of an error, the transaction is rolled back, which is effectively a no-op.
- *
- * TODO Probably should just write them out to the table instead of batching them in memory. Who
- * knows how big these pages are. Not strictly a rhetorical question.
+ * converts the rows from within a page to a collection of Accumulo Mutations, writing and indexed
+ * the rows. Writers are flushed and closed on commit, and if a rollback occurs... we'll you're
+ * gonna have a bad time.
  *
  * @see AccumuloPageSinkProvider
  */
@@ -52,7 +49,6 @@ public class AccumuloPageSink
     private final BatchWriter wrtr;
     private final Indexer indexer;
     private final List<AccumuloColumnHandle> columns;
-    private final List<Row> rows = new ArrayList<>();
     private Integer rowIdOrdinal;
 
     /**
@@ -122,15 +118,38 @@ public class AccumuloPageSink
     {
         // For each position within the page, i.e. row
         for (int position = 0; position < page.getPositionCount(); ++position) {
-            Row r = Row.newRow();
-            rows.add(r);
+            Row row = Row.newRow();
             // For each channel within the page, i.e. column
             for (int channel = 0; channel < page.getChannelCount(); ++channel) {
                 // Get the type for this channel
                 Type type = columns.get(channel).getType();
 
                 // Read the value from the page and append the field to the row
-                r.addField(TypeUtils.readNativeValue(type, page.getBlock(channel), position), type);
+                row.addField(TypeUtils.readNativeValue(type, page.getBlock(channel), position),
+                        type);
+            }
+
+            // Convert row to a Mutation
+            Mutation m = toMutation(row, rowIdOrdinal, columns, serializer);
+
+            // If this mutation has columns
+            if (m.size() > 0) {
+                try {
+                    // Write the mutation and index it
+                    wrtr.addMutation(m);
+                    if (indexer != null) {
+                        indexer.index(m);
+                    }
+                }
+                catch (MutationsRejectedException e) {
+                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
+                }
+            }
+            else {
+                // Else, this Mutation contains only a row ID and will throw an exception if
+                // added so, we throw one here with a more descriptive message!
+                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                        "At least one non-recordkey column must contain a non-null value");
             }
         }
     }
@@ -142,27 +161,6 @@ public class AccumuloPageSink
     public Collection<Slice> commit()
     {
         try {
-            // Convert each Row into a Mutation
-            for (Row row : rows) {
-                Mutation m = toMutation(row, rowIdOrdinal, columns, serializer);
-
-                // If this mutation has columns
-                if (m.size() > 0) {
-                    // Write the mutation and index it
-                    wrtr.addMutation(m);
-
-                    if (indexer != null) {
-                        indexer.index(m);
-                    }
-                }
-                else {
-                    // Else, this Mutation contains only a row ID and will throw an exception if
-                    // added so, we throw one here with a more descriptive message!
-                    throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
-                            "At least one non-recordkey column must contain a non-null value");
-                }
-            }
-
             // Done serializing rows, so flush and close the writer and indexer
             wrtr.flush();
             wrtr.close();
@@ -184,7 +182,7 @@ public class AccumuloPageSink
     @Override
     public void rollback()
     {
-        rows.clear();
+        // TODO Oh well?
     }
 
     /**
