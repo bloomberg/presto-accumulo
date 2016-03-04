@@ -22,7 +22,6 @@ import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
-import bloomberg.presto.accumulo.model.RangeHandle;
 import bloomberg.presto.accumulo.model.TabletSplitMetadata;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
@@ -379,14 +378,12 @@ public class AccumuloClient
                 // If locality is enabled and the key is not null, then fetch the row ID
                 // TODO null key should be first tablet, not default
                 if (fetchTabletLocations) {
-                    tabletSplits.add(
-                            new TabletSplitMetadata(getTabletLocation(tableName, r.getStartKey()),
-                                    ImmutableList.of(RangeHandle.from(r))));
+                    tabletSplits.add(new TabletSplitMetadata(
+                            getTabletLocation(tableName, r.getStartKey()), ImmutableList.of(r)));
                 }
                 else {
                     // else, just use the default location
-                    tabletSplits.add(new TabletSplitMetadata(defaultLocation,
-                            ImmutableList.of(RangeHandle.from(r))));
+                    tabletSplits.add(new TabletSplitMetadata(defaultLocation, ImmutableList.of(r)));
                 }
             }
 

@@ -3,6 +3,7 @@ package bloomberg.presto.accumulo.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import org.apache.accumulo.core.data.Range;
 
 import java.util.List;
 import java.util.Objects;
@@ -17,22 +18,22 @@ import static java.util.Objects.requireNonNull;
 public class TabletSplitMetadata
 {
     private final String hostPort;
-    private List<RangeHandle> rHandles;
+    private List<Range> ranges;
 
     /**
      * JSON creator for a new instance of {@link TabletSplitMetadata}
      *
      * @param hostPort
      *            Host:port pair of the Accumulo tablet server
-     * @param rHandles
-     *            List of {@link RangeHandle} objects for a single split
+     * @param ranges
+     *            List of Range objects for a single split
      */
     @JsonCreator
     public TabletSplitMetadata(@JsonProperty("hostPort") String hostPort,
-            @JsonProperty("rHandles") List<RangeHandle> rHandles)
+            @JsonProperty("ranges") List<Range> ranges)
     {
         this.hostPort = requireNonNull(hostPort, "hostPort is null");
-        this.rHandles = rHandles;
+        this.ranges = ranges;
     }
 
     /**
@@ -47,32 +48,32 @@ public class TabletSplitMetadata
     }
 
     /**
-     * Gets the list of {@link RangeHandle} objects
+     * Gets the list of Range objects
      *
-     * @return List of range handles
+     * @return List of ranges
      */
     @JsonProperty
-    public List<RangeHandle> getRangeHandles()
+    public List<Range> getRanges()
     {
-        return rHandles;
+        return ranges;
     }
 
     /**
-     * Sets the list of range handles
+     * Sets the list of ra nge handles
      *
-     * @param rHandles
+     * @param ranges
      *            List of range handles
      */
     @JsonSetter
-    public void setRangeHandles(List<RangeHandle> rHandles)
+    public void setRanges(List<Range> ranges)
     {
-        this.rHandles = rHandles;
+        this.ranges = ranges;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(hostPort, rHandles);
+        return Objects.hash(hostPort, ranges);
     }
 
     @Override
@@ -88,13 +89,13 @@ public class TabletSplitMetadata
 
         TabletSplitMetadata other = (TabletSplitMetadata) obj;
         return Objects.equals(this.hostPort, other.hostPort)
-                && Objects.equals(this.rHandles, other.rHandles);
+                && Objects.equals(this.ranges, other.ranges);
     }
 
     @Override
     public String toString()
     {
-        return toStringHelper(this).add("hostPort", hostPort).add("numHandles", rHandles.size())
+        return toStringHelper(this).add("hostPort", hostPort).add("numRanges", ranges.size())
                 .toString();
     }
 }

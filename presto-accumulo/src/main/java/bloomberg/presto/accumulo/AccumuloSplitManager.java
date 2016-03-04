@@ -111,8 +111,8 @@ public class AccumuloSplitManager
         List<ConnectorSplit> cSplits = new ArrayList<>();
         for (TabletSplitMetadata smd : tSplits) {
             cSplits.add(new AccumuloSplit(connectorId, schemaName, tableName, rowIdName,
-                    tableHandle.getSerializerClassName(), smd.getRangeHandles(),
-                    iteratorConstraints, smd.getHostPort()));
+                    tableHandle.getSerializerClassName(), smd.getRanges(), iteratorConstraints,
+                    smd.getHostPort()));
         }
 
         Collections.shuffle(cSplits);

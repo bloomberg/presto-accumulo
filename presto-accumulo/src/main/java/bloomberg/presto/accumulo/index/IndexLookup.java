@@ -4,7 +4,6 @@ import bloomberg.presto.accumulo.AccumuloClient;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.conf.AccumuloSessionProperties;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
-import bloomberg.presto.accumulo.model.RangeHandle;
 import bloomberg.presto.accumulo.model.TabletSplitMetadata;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
@@ -102,7 +101,7 @@ public class IndexLookup
     public boolean applyIndex(String schema, String table, ConnectorSession session,
             Collection<AccumuloColumnConstraint> constraints, Collection<Range> rowIdRanges,
             List<TabletSplitMetadata> tabletSplits)
-                    throws Exception
+            throws Exception
     {
         // Early out if index is disabled
         if (!AccumuloSessionProperties.isOptimizeIndexEnabled(session)) {
@@ -148,7 +147,7 @@ public class IndexLookup
         String metricsTable = Indexer.getMetricsTableName(schema, table);
         long numRows = getNumRowsInTable(metricsTable);
         double threshold = AccumuloSessionProperties.getIndexThreshold(session);
-        final Collection<Range> idxRanges;
+        final List<Range> idxRanges;
 
         // If the smallest cardinality in our list is above the lowest cardinality threshold, we
         // should look at intersecting the row ID ranges to try and get under the threshold
@@ -179,7 +178,7 @@ public class IndexLookup
                     getIndexRanges(indexTable,
                             ImmutableMap.of(cardinalities.get(0).getKey(),
                                     constraintRangePairs.get(cardinalities.get(0).getKey())),
-                    rowIdRanges);
+                            rowIdRanges);
         }
 
         // Okay, we now check how many rows we would scan by using the index vs. the overall number
@@ -272,10 +271,10 @@ public class IndexLookup
      * @return A collection of Ranges containing row IDs in the main table to scan
      * @throws TableNotFoundException
      */
-    private Collection<Range> getIndexRanges(String indexTable,
+    private List<Range> getIndexRanges(String indexTable,
             Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs,
             Collection<Range> rowIDRanges)
-                    throws TableNotFoundException
+            throws TableNotFoundException
     {
         Set<Range> finalRanges = null;
         // For each column/constraint pair
@@ -320,7 +319,7 @@ public class IndexLookup
         }
 
         // Return the final ranges for all constraint pairs
-        return finalRanges;
+        return new ArrayList<Range>(finalRanges);
     }
 
     /**
@@ -333,25 +332,21 @@ public class IndexLookup
      * @param prestoSplits
      *            The output collection for the tablet metadata
      */
-    private void binRanges(int numRangesPerBin, Collection<Range> splitRanges,
+    private void binRanges(int numRangesPerBin, List<Range> splitRanges,
             List<TabletSplitMetadata> prestoSplits)
     {
-        // Convert Ranges to RangeHandles so Jackson will work
-        List<RangeHandle> rHandles = new ArrayList<>();
-        splitRanges.stream().forEach(x -> rHandles.add(RangeHandle.from(x)));
-
         // Shuffle the handles to give an even distribution across all tablet splits
-        Collections.shuffle(rHandles);
+        Collections.shuffle(splitRanges);
 
         // Location here doesn't matter, I think this 9997 is left over from the connector example
         // Let's leave it to pay homage to where this thing came from
         String loc = "localhost:9997";
-        int toAdd = rHandles.size();
+        int toAdd = splitRanges.size();
         int fromIndex = 0;
         int toIndex = Math.min(toAdd, numRangesPerBin);
         do {
             // Add the sublist of range handles
-            prestoSplits.add(new TabletSplitMetadata(loc, rHandles.subList(fromIndex, toIndex)));
+            prestoSplits.add(new TabletSplitMetadata(loc, splitRanges.subList(fromIndex, toIndex)));
             toAdd -= toIndex - fromIndex;
             fromIndex = toIndex;
             toIndex += Math.min(toAdd, numRangesPerBin);

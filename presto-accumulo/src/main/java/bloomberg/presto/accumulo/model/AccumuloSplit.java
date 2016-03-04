@@ -22,9 +22,20 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.accumulo.core.data.Range;
+import org.apache.hadoop.io.DataInputBuffer;
+import org.apache.hadoop.io.DataOutputBuffer;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -45,7 +56,10 @@ public class AccumuloSplit
     private final String table;
     private String serializerClassName;
     private final List<HostAddress> addresses;
-    private List<RangeHandle> rHandles;
+
+    @JsonSerialize(contentUsing = RangeSerializer.class)
+    @JsonDeserialize(contentUsing = RangeDeserializer.class)
+    private List<Range> ranges;
     private List<AccumuloColumnConstraint> constraints;
 
     /**
@@ -61,8 +75,8 @@ public class AccumuloSplit
      *            Presto column mapping to the Accumulo row ID
      * @param serializerClassName
      *            Serializer class name for deserializing data stored in Accumulo
-     * @param rHandles
-     *            List of Accumulo RangeHandles (wrapper for Range) for this split
+     * @param ranges
+     *            List of Accumulo Ranges for this split
      * @param constraints
      *            List of constraints
      * @param hostPort
@@ -73,7 +87,7 @@ public class AccumuloSplit
             @JsonProperty("schema") String schema, @JsonProperty("table") String table,
             @JsonProperty("rowId") String rowId,
             @JsonProperty("serializerClassName") String serializerClassName,
-            @JsonProperty("rHandles") List<RangeHandle> rHandles,
+            @JsonProperty("ranges") List<Range> ranges,
             @JsonProperty("constraints") List<AccumuloColumnConstraint> constraints,
             @JsonProperty("hostPort") String hostPort)
     {
@@ -86,9 +100,9 @@ public class AccumuloSplit
         this.hostPort = requireNonNull(hostPort, "hostPort is null");
 
         // We don't "requireNotNull" this field, Jackson parses objects using a top-down approach,
-        // first parsing the AccumuloSplit, then parsing the nested RangeHandle object.
-        // Jackson will call setRangeHandle instead
-        this.rHandles = rHandles;
+        // first parsing the AccumuloSplit, then parsing the nested Range object.
+        // Jackson will call setRanges instead
+        this.ranges = ranges;
 
         // Parse the host address into a list of addresses, this would be an Accumulo Tablet server,
         // or some localhost thing
@@ -173,39 +187,26 @@ public class AccumuloSplit
     }
 
     /**
-     * Gets the list of {@link RangeHandle} objects.
+     * Gets the list of Ranges
      *
-     * @return List of range handles
+     * @return List of ranges
      */
     @JsonProperty
-    public List<RangeHandle> getRangeHandles()
-    {
-        return rHandles;
-    }
-
-    /**
-     * Converts and gets the list of Accumulo Range objects for scanner configuration.
-     *
-     * @return List of range handles
-     */
-    @JsonIgnore
     public List<Range> getRanges()
     {
-        List<Range> ranges = new ArrayList<>();
-        rHandles.stream().forEach(x -> ranges.add(x.getRange()));
         return ranges;
     }
 
     /**
-     * JSON Setter function for the list of range handles
+     * JSON setter function for the list of ranges
      *
-     * @param rhandles
-     *            List of range handles
+     * @param ranges
+     *            List of ranges
      */
     @JsonSetter
-    public void setRangeHandles(List<RangeHandle> rhandles)
+    public void setRanges(List<Range> ranges)
     {
-        this.rHandles = rhandles;
+        this.ranges = ranges;
     }
 
     /**
@@ -278,7 +279,42 @@ public class AccumuloSplit
         return toStringHelper(this).add("connectorId", connectorId).add("schema", schema)
                 .add("table", table).add("rowId", rowId)
                 .add("serializerClassName", serializerClassName).add("addresses", addresses)
-                .add("numHandles", rHandles.size()).add("constraints", constraints)
+                .add("numRanges", ranges.size()).add("constraints", constraints)
                 .add("hostPort", hostPort).toString();
+    }
+
+    public static final class RangeSerializer
+            extends JsonSerializer<Range>
+    {
+        final DataOutputBuffer dout = new DataOutputBuffer();
+
+        @Override
+        public void serialize(Range value, JsonGenerator jgen, SerializerProvider provider)
+                throws IOException, JsonProcessingException
+        {
+            dout.reset();
+            value.write(dout);
+            jgen.writeBinary(dout.getData(), 0, dout.getLength());
+        }
+    }
+
+    public static final class RangeDeserializer
+            extends JsonDeserializer<Range>
+    {
+        final DataOutputBuffer out = new DataOutputBuffer();
+        final DataInputBuffer buffer = new DataInputBuffer();
+
+        @Override
+        public Range deserialize(JsonParser jp, DeserializationContext ctxt)
+                throws IOException, JsonProcessingException
+        {
+            out.reset();
+            jp.readBinaryValue(out);
+
+            buffer.reset(out.getData(), out.getLength());
+            Range r = new Range();
+            r.readFields(buffer);
+            return r;
+        }
     }
 }
