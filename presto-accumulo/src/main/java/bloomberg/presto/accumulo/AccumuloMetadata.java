@@ -120,7 +120,6 @@ public class AccumuloMetadata
     {
         // Here, we just call drop table to rollback our create
         // Note that this will not delete the Accumulo tables if the table is external
-        // TODO Should it?
         AccumuloTableHandle th = checkType(tableHandle, AccumuloTableHandle.class, "table");
         client.dropTable(client.getTable(th.toSchemaTableName()));
     }
