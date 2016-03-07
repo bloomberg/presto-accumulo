@@ -26,6 +26,8 @@ import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 
 public class Splitter
 {
+    private static LexicoderRowSerializer serializer = new LexicoderRowSerializer();
+
     public static void run(AccumuloConfig conf, String schemaName, String tableName, int numSplits)
             throws Exception
     {
@@ -69,7 +71,7 @@ public class Splitter
 
         System.out.println("Splits are ");
         for (Text s : conn.tableOperations().listSplits(fullTableName)) {
-            System.out.println(LexicoderRowSerializer.decode(rowIdType, s.copyBytes()).toString());
+            System.out.println(serializer.decode(rowIdType, s.copyBytes()).toString());
         }
     }
 
@@ -78,25 +80,25 @@ public class Splitter
     {
         Pair<byte[], byte[]> firstLastRow = Indexer.getMinMaxRowIds(conn, table, conn.securityOperations().getUserAuthorizations(username));
 
-        System.out.println("Min is " + LexicoderRowSerializer.decode(rowIdType, firstLastRow.getLeft()).toString());
-        System.out.println("Max is " + LexicoderRowSerializer.decode(rowIdType, firstLastRow.getRight()).toString());
+        System.out.println("Min is " + serializer.decode(rowIdType, firstLastRow.getLeft()).toString());
+        System.out.println("Max is " + serializer.decode(rowIdType, firstLastRow.getRight()).toString());
         if (firstLastRow.getLeft() == null || firstLastRow.getRight() == null) {
             throw new InvalidActivityException("No data in metrics table for min and max row IDs, cannot split");
         }
 
         List<byte[]> splits = new ArrayList<>();
         if (rowIdType.equals(BIGINT)) {
-            long min = LexicoderRowSerializer.decode(rowIdType, firstLastRow.getLeft());
-            long max = LexicoderRowSerializer.decode(rowIdType, firstLastRow.getRight());
+            long min = serializer.decode(rowIdType, firstLastRow.getLeft());
+            long max = serializer.decode(rowIdType, firstLastRow.getRight());
 
             for (Long l : linspace(min, max, numSplits)) {
-                splits.add(LexicoderRowSerializer.encode(BIGINT, l));
+                splits.add(serializer.encode(BIGINT, l));
             }
         }
         else if (rowIdType.equals(VARCHAR)) {
             for (Long l : linspace(0, 255, numSplits + 2)) {
                 String v = String.format("%02x", l);
-                splits.add(LexicoderRowSerializer.encode(VARCHAR, v));
+                splits.add(serializer.encode(VARCHAR, v));
             }
         }
         else {
