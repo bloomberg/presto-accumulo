@@ -35,9 +35,6 @@ import static java.util.Objects.requireNonNull;
  * their own means for managing the metadata for the Accumulo connector. Implementors of this class
  * are expected to persist schema names, table names, and table definitions so they can be retrieved
  * throughput the lifetime of the Presto installation. Metadata must also be cleaned up on demand!
- * <br>
- * <br>
- * TODO Make this configurable like the comment sends
  */
 public abstract class AccumuloMetadataManager
 {

@@ -13,7 +13,6 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * JSON object for holding the Accumulo ranges(s) and the host/port information for a Presto split
- * TODO Can this be rolled into an AccumuloSplit?
  */
 public class TabletSplitMetadata
 {
