@@ -166,6 +166,7 @@ public class AccumuloConfig
      *
      * @return Configured AccumuloMetadataManager
      * @throws PrestoException
+     *             If an instance of the configured manager is unable to be created
      */
     public AccumuloMetadataManager getMetadataManager()
     {

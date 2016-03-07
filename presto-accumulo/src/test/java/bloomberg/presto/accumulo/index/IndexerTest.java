@@ -4,6 +4,7 @@ import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
+import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.type.ArrayType;
 import com.google.common.collect.ImmutableList;
 import org.apache.accumulo.core.client.AccumuloException;
@@ -29,12 +30,18 @@ import org.junit.Test;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import static bloomberg.presto.accumulo.serializers.LexicoderRowSerializer.encode;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 
 public class IndexerTest
 {
+    private static LexicoderRowSerializer serializer = new LexicoderRowSerializer();
+
+    private static byte[] encode(Type type, Object v)
+    {
+        return serializer.encode(type, v);
+    }
+
     private static final byte[] AGE = "age".getBytes();
     private static final byte[] CF = "cf".getBytes();
     private static final byte[] FIRSTNAME = "firstname".getBytes();

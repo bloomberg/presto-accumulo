@@ -81,13 +81,7 @@ public class AccumuloPageSink
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Row ID ordinal not found");
         }
 
-        try {
-            this.serializer = table.getSerializerClass().newInstance();
-        }
-        catch (Exception e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                    "Failed to factory table serializer from configured class", e);
-        }
+        this.serializer = table.getSerializerInstance();
 
         try {
             // Create a BatchWriter to the Accumulo table

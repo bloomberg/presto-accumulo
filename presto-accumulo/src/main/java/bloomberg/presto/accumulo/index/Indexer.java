@@ -5,7 +5,7 @@ import bloomberg.presto.accumulo.iterators.MaxByteArrayCombiner;
 import bloomberg.presto.accumulo.iterators.MinByteArrayCombiner;
 import bloomberg.presto.accumulo.metadata.AccumuloTable;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
-import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.StandardErrorCode;
@@ -152,6 +152,11 @@ public class Indexer
      */
     private final Map<ByteBuffer, Map<ByteBuffer, Type>> indexColumnTypes = new HashMap<>();
 
+    /**
+     * Serializer class for the table
+     */
+    private final AccumuloRowSerializer serializer;
+
     private Comparator<byte[]> byteArrayComparator = UnsignedBytes.lexicographicalComparator();
     private byte[] firstRow = null;
     private byte[] lastRow = null;
@@ -176,6 +181,7 @@ public class Indexer
         this.conn = conn;
         this.table = table;
         this.bwc = bwc;
+        this.serializer = table.getSerializerInstance();
 
         // Create our batch writer
         indexWrtr = conn.createBatchWriter(table.getIndexTableName(), bwc);
@@ -273,10 +279,9 @@ public class Indexer
                     // If this is an array type, then index each individual element in the array
                     if (Types.isArrayType(type)) {
                         Type eType = Types.getElementType(type);
-                        List<?> array = LexicoderRowSerializer.decode(type, cu.getValue());
+                        List<?> array = serializer.decode(type, cu.getValue());
                         for (Object v : array) {
-                            addIndexMutation(wrap(LexicoderRowSerializer.encode(eType, v)), idxCF,
-                                    m.getRow());
+                            addIndexMutation(wrap(serializer.encode(eType, v)), idxCF, m.getRow());
                         }
                     }
                     else {

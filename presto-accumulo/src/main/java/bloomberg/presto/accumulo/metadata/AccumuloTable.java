@@ -213,18 +213,19 @@ public class AccumuloTable
     }
 
     /**
-     * Gets the Class object for the configured serializer.
+     * Gets a new instance of the configured {@link AccumuloRowSerializer}
      *
-     * @return The serializer Class
+     * @return Class object
+     * @throws PrestoException
+     *             If the class is not found on the classpath
      */
-    @SuppressWarnings("unchecked")
     @JsonIgnore
-    public Class<? extends AccumuloRowSerializer> getSerializerClass()
+    public AccumuloRowSerializer getSerializerInstance()
     {
         try {
-            return (Class<? extends AccumuloRowSerializer>) Class.forName(serializerClassName);
+            return (AccumuloRowSerializer) Class.forName(serializerClassName).newInstance();
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
             throw new PrestoException(StandardErrorCode.USER_ERROR,
                     "Configured serializer class not found", e);
         }

@@ -22,7 +22,6 @@ import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter.CompareOp;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
-import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.StandardErrorCode;
@@ -596,7 +595,7 @@ public class AccumuloRecordCursor
             CompareOp op, Type type, Object value)
     {
         String name = String.format("%s:%d", col.getName(), priority.get());
-        byte[] valueBytes = LexicoderRowSerializer.encode(type, value);
+        byte[] valueBytes = serializer.encode(type, value);
         return new IteratorSetting(priority.getAndIncrement(), name, SingleColumnValueFilter.class,
                 SingleColumnValueFilter.getProperties(col.getFamily(), col.getQualifier(), op,
                         valueBytes));

@@ -13,11 +13,15 @@
  */
 package bloomberg.presto.accumulo.model;
 
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.ConnectorInsertTableHandle;
 import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorTableHandle;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
@@ -112,6 +116,25 @@ public final class AccumuloTableHandle
     public String getSerializerClassName()
     {
         return serializerClassName;
+    }
+
+    /**
+     * Gets a new instance of the configured {@link AccumuloRowSerializer}
+     *
+     * @return Class object
+     * @throws PrestoException
+     *             If the class is not found on the classpath
+     */
+    @JsonIgnore
+    public AccumuloRowSerializer getSerializerInstance()
+    {
+        try {
+            return (AccumuloRowSerializer) Class.forName(serializerClassName).newInstance();
+        }
+        catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            throw new PrestoException(StandardErrorCode.USER_ERROR,
+                    "Configured serializer class not found", e);
+        }
     }
 
     /**

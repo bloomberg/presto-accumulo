@@ -5,6 +5,7 @@ import bloomberg.presto.accumulo.conf.AccumuloConfig;
 import bloomberg.presto.accumulo.conf.AccumuloSessionProperties;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.TabletSplitMetadata;
+import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
@@ -94,13 +95,15 @@ public class IndexLookup
      * @param tabletSplits
      *            Output parameter containing the bundles of row IDs determined by the use of the
      *            index.
+     * @param serializer
+     *            Instance of a row serializer
      * @return True if the tablet splits are valid and should be used, false otherwise
      * @throws Exception
      *             If something bad happens. What are the odds?
      */
     public boolean applyIndex(String schema, String table, ConnectorSession session,
             Collection<AccumuloColumnConstraint> constraints, Collection<Range> rowIdRanges,
-            List<TabletSplitMetadata> tabletSplits)
+            List<TabletSplitMetadata> tabletSplits, AccumuloRowSerializer serializer)
             throws Exception
     {
         // Early out if index is disabled
@@ -115,7 +118,7 @@ public class IndexLookup
         Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs = new HashMap<>();
         for (AccumuloColumnConstraint acc : constraints) {
             if (acc.isIndexed()) {
-                constraintRangePairs.put(acc, AccumuloClient.getRangesFromDomain(acc.getDomain()));
+                constraintRangePairs.put(acc, AccumuloClient.getRangesFromDomain(acc.getDomain(), serializer));
             }
             else {
                 LOG.warn(

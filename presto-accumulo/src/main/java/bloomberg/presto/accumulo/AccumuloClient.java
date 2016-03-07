@@ -24,7 +24,6 @@ import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.TabletSplitMetadata;
 import bloomberg.presto.accumulo.serializers.AccumuloRowSerializer;
-import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorTableMetadata;
@@ -369,23 +368,26 @@ public class AccumuloClient
      *            Domain for the row ID
      * @param constraints
      *            Column constraints for the query
+     * @param serializer
+     *            Instance of a row serializer
      * @return List of TabletSplitMetadata objects for Presto
      */
     public List<TabletSplitMetadata> getTabletSplits(ConnectorSession session, String schema,
-            String table, Domain rowIdDom, List<AccumuloColumnConstraint> constraints)
+            String table, Domain rowIdDom, List<AccumuloColumnConstraint> constraints,
+            AccumuloRowSerializer serializer)
     {
         try {
             String tableName = AccumuloTable.getFullTableName(schema, table);
             LOG.debug("Getting tablet splits for table %s", tableName);
 
             // Get the initial Range based on the row ID domain
-            final Collection<Range> rowIdRanges = getRangesFromDomain(rowIdDom);
+            final Collection<Range> rowIdRanges = getRangesFromDomain(rowIdDom, serializer);
             final List<TabletSplitMetadata> tabletSplits = new ArrayList<>();
 
             // Check the secondary index based on the column constraints
             // If this returns true, return the tablet splits to Presto
             if (sIndexLookup.applyIndex(schema, table, session, constraints, rowIdRanges,
-                    tabletSplits)) {
+                    tabletSplits, serializer)) {
                 return tabletSplits;
             }
 
@@ -583,6 +585,8 @@ public class AccumuloClient
      *
      * @param dom
      *            Domain, can be null (returns (-inf, +inf) Range)
+     * @param serializer
+     *            Instance of an {@link AccumuloRowSerializer}
      * @return A collection of Accumulo Range objects
      * @throws AccumuloException
      *             If an Accumulo error occurs
@@ -591,8 +595,9 @@ public class AccumuloClient
      * @throws TableNotFoundException
      *             If the Accumulo table is not found
      */
-    public static Collection<Range> getRangesFromDomain(Domain dom)
-            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
+    public static Collection<Range> getRangesFromDomain(Domain dom,
+            AccumuloRowSerializer serializer)
+                    throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
         // if we have no predicate pushdown, use the full range
         if (dom == null) {
@@ -612,18 +617,15 @@ public class AccumuloClient
                     Type elementType = Types.getElementType(t);
                     for (Object o : AccumuloRowSerializer.getArrayFromBlock(elementType,
                             (Block) arrayBlock)) {
-                        // TODO Need to be using the table's serializer, not this one
                         // Find all locations like this and work on it
-                        ranges.add(
-                                new Range(new Text(LexicoderRowSerializer.encode(elementType, o))));
+                        ranges.add(new Range(new Text(serializer.encode(elementType, o))));
                     }
                 }
             }
             else {
                 // If it is not an array type, then this is just a list of values
                 for (Object o : dom.getValues().getDiscreteValues().getValues()) {
-                    // TODO like this place
-                    ranges.add(new Range(new Text(LexicoderRowSerializer.encode(t, o))));
+                    ranges.add(new Range(new Text(serializer.encode(t, o))));
                 }
             }
         }
@@ -631,7 +633,7 @@ public class AccumuloClient
             // This isn't an ANY clause, so convert the Presto Range to an Accumulo Range
             for (com.facebook.presto.spi.predicate.Range r : dom.getValues().getRanges()
                     .getOrderedRanges()) {
-                ranges.add(getRangeFromPrestoRange(r));
+                ranges.add(getRangeFromPrestoRange(r, serializer));
             }
         }
         return ranges;
@@ -642,22 +644,23 @@ public class AccumuloClient
      *
      * @param pRange
      *            Presto range
+     * @param serializer
+     *            Instance of an {@link AccumuloRowSerializer}
      * @return Accumulo range
      * @throws AccumuloException
      * @throws AccumuloSecurityException
      * @throws TableNotFoundException
      */
-    private static Range getRangeFromPrestoRange(com.facebook.presto.spi.predicate.Range pRange)
-            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
+    private static Range getRangeFromPrestoRange(com.facebook.presto.spi.predicate.Range pRange,
+            AccumuloRowSerializer serializer)
+                    throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
         final Range aRange;
         if (pRange.isAll()) {
             aRange = new Range();
         }
         else if (pRange.isSingleValue()) {
-            // TODO and here and all the below places
-            Text split = new Text(
-                    LexicoderRowSerializer.encode(pRange.getType(), pRange.getSingleValue()));
+            Text split = new Text(serializer.encode(pRange.getType(), pRange.getSingleValue()));
             aRange = new Range(split);
         }
         else {
@@ -665,28 +668,28 @@ public class AccumuloClient
                 // If low is unbounded, then create a range from (-inf, value), checking
                 // inclusivity
                 boolean inclusive = pRange.getHigh().getBound() == Bound.EXACTLY;
-                Text split = new Text(LexicoderRowSerializer.encode(pRange.getType(),
-                        pRange.getHigh().getValue()));
+                Text split =
+                        new Text(serializer.encode(pRange.getType(), pRange.getHigh().getValue()));
                 aRange = new Range(null, false, split, inclusive);
             }
             else if (pRange.getHigh().isUpperUnbounded()) {
                 // If high is unbounded, then create a range from (value, +inf), checking
                 // inclusivity
                 boolean inclusive = pRange.getLow().getBound() == Bound.EXACTLY;
-                Text split = new Text(LexicoderRowSerializer.encode(pRange.getType(),
-                        pRange.getLow().getValue()));
+                Text split =
+                        new Text(serializer.encode(pRange.getType(), pRange.getLow().getValue()));
                 aRange = new Range(split, inclusive, null, false);
             }
             else {
                 // If high is unbounded, then create a range from low to high, checking
                 // inclusivity
                 boolean startKeyInclusive = pRange.getLow().getBound() == Bound.EXACTLY;
-                Text startSplit = new Text(LexicoderRowSerializer.encode(pRange.getType(),
-                        pRange.getLow().getValue()));
+                Text startSplit =
+                        new Text(serializer.encode(pRange.getType(), pRange.getLow().getValue()));
 
                 boolean endKeyInclusive = pRange.getHigh().getBound() == Bound.EXACTLY;
-                Text endSplit = new Text(LexicoderRowSerializer.encode(pRange.getType(),
-                        pRange.getHigh().getValue()));
+                Text endSplit =
+                        new Text(serializer.encode(pRange.getType(), pRange.getHigh().getValue()));
                 aRange = new Range(startSplit, startKeyInclusive, endSplit, endKeyInclusive);
             }
         }

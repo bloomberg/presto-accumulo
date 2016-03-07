@@ -1,9 +1,11 @@
 package bloomberg.presto.accumulo.serializers;
 
+import bloomberg.presto.accumulo.Types;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.Type;
+import io.airlift.slice.Slice;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
@@ -15,6 +17,16 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import static com.facebook.presto.spi.type.BigintType.BIGINT;
+import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
+import static com.facebook.presto.spi.type.DateType.DATE;
+import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
+import static com.facebook.presto.spi.type.TimeType.TIME;
+import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
+import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
+import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+import static java.lang.String.format;
 
 /**
  * Implementation of {@link StringRowSerializer} that encodes and decodes Presto column values as
@@ -215,5 +227,95 @@ public class StringRowSerializer
     private String getFieldValue(String name)
     {
         return columnValues.get(name).toString();
+    }
+
+    @Override
+    public byte[] encode(Type type, Object v)
+    {
+        Text t = new Text();
+        if (Types.isArrayType(type)) {
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                    "arrays are not (yet?) supported for StringRowSerializer");
+        }
+        else if (Types.isMapType(type)) {
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                    "maps are not (yet?) supported for StringRowSerializer");
+        }
+        else if (type.equals(BIGINT) && v instanceof Integer) {
+            setLong(t, ((Integer) v).longValue());
+        }
+        else if (type.equals(BIGINT) && v instanceof Long) {
+            setLong(t, (Long) v);
+        }
+        else if (type.equals(BOOLEAN)) {
+            setBoolean(t, v.equals(Boolean.TRUE) ? true : false);
+        }
+        else if (type.equals(DATE)) {
+            setDate(t, (Date) v);
+        }
+        else if (type.equals(DOUBLE)) {
+            setDouble(t, (Double) v);
+        }
+        else if (type.equals(TIME)) {
+            setTime(t, (Time) v);
+        }
+        else if (type.equals(TIMESTAMP)) {
+            setTimestamp(t, (Timestamp) v);
+        }
+        else if (type.equals(VARBINARY)) {
+            setVarbinary(t, ((Slice) v).getBytes());
+        }
+        else if (type.equals(VARCHAR)) {
+            setVarchar(t, ((Slice) v).toStringUtf8());
+        }
+        else {
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                    format("StringLexicoder is unable to encode type %s, object is %s", type, v));
+        }
+
+        return t.copyBytes();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T decode(Type type, byte[] v)
+    {
+        String str = new String(v);
+        if (Types.isArrayType(type)) {
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                    "arrays are not (yet?) supported for StringRowSerializer");
+        }
+        else if (Types.isMapType(type)) {
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                    "maps are not (yet?) supported for StringRowSerializer");
+        }
+        else if (type.equals(BIGINT)) {
+            return (T) (Long) Long.parseLong(str);
+        }
+        else if (type.equals(BOOLEAN)) {
+            return (T) (Boolean) Boolean.parseBoolean(str);
+        }
+        else if (type.equals(DATE)) {
+            return (T) new Date(Long.parseLong(str));
+        }
+        else if (type.equals(DOUBLE)) {
+            return (T) (Double) Double.parseDouble(str);
+        }
+        else if (type.equals(TIME)) {
+            return (T) new Time(Long.parseLong(str));
+        }
+        else if (type.equals(TIMESTAMP)) {
+            return (T) new Timestamp(Long.parseLong(str));
+        }
+        else if (type.equals(VARBINARY)) {
+            return (T) v;
+        }
+        else if (type.equals(VARCHAR)) {
+            return (T) new String(v);
+        }
+        else {
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                    format("StringLexicoder is unable to encode type %s, object is %s", type, v));
+        }
     }
 }

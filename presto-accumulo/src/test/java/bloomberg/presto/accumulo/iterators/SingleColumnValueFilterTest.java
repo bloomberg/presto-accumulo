@@ -1,6 +1,7 @@
 package bloomberg.presto.accumulo.iterators;
 
 import bloomberg.presto.accumulo.iterators.SingleColumnValueFilter.CompareOp;
+import bloomberg.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.DateType;
@@ -29,18 +30,25 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 
-import static bloomberg.presto.accumulo.serializers.LexicoderRowSerializer.encode;
-
 @FixMethodOrder(value = MethodSorters.NAME_ASCENDING)
 public class SingleColumnValueFilterTest
 {
+    private static LexicoderRowSerializer serializer = new LexicoderRowSerializer();
+
+    private static byte[] encode(Type type, Object v)
+    {
+        return serializer.encode(type, v);
+    }
+
     private Random rand = new Random();
 
-    public boolean testFilter(String filterFam, String filterQual, CompareOp filterOp, Object filterValue, Type type, Key testKey, Object testValue)
-            throws IOException
+    public boolean testFilter(String filterFam, String filterQual, CompareOp filterOp,
+            Object filterValue, Type type, Key testKey, Object testValue)
+                    throws IOException
     {
         Value vFilterValue = new Value(encode(type, filterValue));
-        Map<String, String> opts = SingleColumnValueFilter.getProperties(filterFam, filterQual, filterOp, vFilterValue.get());
+        Map<String, String> opts = SingleColumnValueFilter.getProperties(filterFam, filterQual,
+                filterOp, vFilterValue.get());
 
         SingleColumnValueFilter filter = new SingleColumnValueFilter();
         filter.validateOptions(opts);
@@ -57,7 +65,8 @@ public class SingleColumnValueFilterTest
     {
         Value vFilterValue = new Value(encode(BigintType.BIGINT, 5L));
 
-        Map<String, String> opts = SingleColumnValueFilter.getProperties("cf", "cq1", CompareOp.EQUAL, vFilterValue.get());
+        Map<String, String> opts = SingleColumnValueFilter.getProperties("cf", "cq1",
+                CompareOp.EQUAL, vFilterValue.get());
 
         SingleColumnValueFilter filter = new SingleColumnValueFilter();
         filter.validateOptions(opts);
@@ -85,10 +94,13 @@ public class SingleColumnValueFilterTest
 
         for (long filterValue : values) {
             for (long testValue : values) {
-                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam, filterQual, op, filterValue, BigintType.BIGINT, wrongFam, testValue));
-                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam, filterQual, op, filterValue, BigintType.BIGINT, wrongQual, testValue));
+                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam,
+                        filterQual, op, filterValue, BigintType.BIGINT, wrongFam, testValue));
+                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam,
+                        filterQual, op, filterValue, BigintType.BIGINT, wrongQual, testValue));
 
-                boolean test = testFilter(filterFam, filterQual, op, filterValue, BigintType.BIGINT, matchingKey, testValue);
+                boolean test = testFilter(filterFam, filterQual, op, filterValue, BigintType.BIGINT,
+                        matchingKey, testValue);
 
                 if (func.apply(testValue, filterValue)) {
                     Assert.assertTrue(test);
@@ -158,10 +170,13 @@ public class SingleColumnValueFilterTest
 
         for (boolean filterValue : values) {
             for (boolean testValue : values) {
-                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam, filterQual, op, filterValue, BooleanType.BOOLEAN, wrongFam, testValue));
-                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam, filterQual, op, filterValue, BooleanType.BOOLEAN, wrongQual, testValue));
+                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam,
+                        filterQual, op, filterValue, BooleanType.BOOLEAN, wrongFam, testValue));
+                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam,
+                        filterQual, op, filterValue, BooleanType.BOOLEAN, wrongQual, testValue));
 
-                boolean test = testFilter(filterFam, filterQual, op, filterValue, BooleanType.BOOLEAN, matchingKey, testValue);
+                boolean test = testFilter(filterFam, filterQual, op, filterValue,
+                        BooleanType.BOOLEAN, matchingKey, testValue);
 
                 if (func.apply(testValue, filterValue)) {
                     Assert.assertTrue(test);
@@ -232,10 +247,15 @@ public class SingleColumnValueFilterTest
 
         for (Date filterValue : values) {
             for (Date testValue : values) {
-                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam, filterQual, op, filterValue.getTime(), DateType.DATE, wrongFam, testValue.getTime()));
-                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam, filterQual, op, filterValue.getTime(), DateType.DATE, wrongQual, testValue.getTime()));
+                Assert.assertFalse("Filter accepted key with wrong family",
+                        testFilter(filterFam, filterQual, op, filterValue.getTime(), DateType.DATE,
+                                wrongFam, testValue.getTime()));
+                Assert.assertFalse("Filter accepted key with wrong qual",
+                        testFilter(filterFam, filterQual, op, filterValue.getTime(), DateType.DATE,
+                                wrongQual, testValue.getTime()));
 
-                boolean test = testFilter(filterFam, filterQual, op, filterValue.getTime(), DateType.DATE, matchingKey, testValue.getTime());
+                boolean test = testFilter(filterFam, filterQual, op, filterValue.getTime(),
+                        DateType.DATE, matchingKey, testValue.getTime());
 
                 if (func.apply(testValue, filterValue)) {
                     Assert.assertTrue(test);
@@ -306,10 +326,13 @@ public class SingleColumnValueFilterTest
 
         for (double filterValue : values) {
             for (double testValue : values) {
-                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam, filterQual, op, filterValue, DoubleType.DOUBLE, wrongFam, testValue));
-                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam, filterQual, op, filterValue, DoubleType.DOUBLE, wrongQual, testValue));
+                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam,
+                        filterQual, op, filterValue, DoubleType.DOUBLE, wrongFam, testValue));
+                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam,
+                        filterQual, op, filterValue, DoubleType.DOUBLE, wrongQual, testValue));
 
-                boolean test = testFilter(filterFam, filterQual, op, filterValue, DoubleType.DOUBLE, matchingKey, testValue);
+                boolean test = testFilter(filterFam, filterQual, op, filterValue, DoubleType.DOUBLE,
+                        matchingKey, testValue);
 
                 if (func.apply(testValue, filterValue)) {
                     Assert.assertTrue(test);
@@ -380,10 +403,15 @@ public class SingleColumnValueFilterTest
 
         for (Time filterValue : values) {
             for (Time testValue : values) {
-                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam, filterQual, op, filterValue.getTime(), TimeType.TIME, wrongFam, testValue.getTime()));
-                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam, filterQual, op, filterValue.getTime(), TimeType.TIME, wrongQual, testValue.getTime()));
+                Assert.assertFalse("Filter accepted key with wrong family",
+                        testFilter(filterFam, filterQual, op, filterValue.getTime(), TimeType.TIME,
+                                wrongFam, testValue.getTime()));
+                Assert.assertFalse("Filter accepted key with wrong qual",
+                        testFilter(filterFam, filterQual, op, filterValue.getTime(), TimeType.TIME,
+                                wrongQual, testValue.getTime()));
 
-                boolean test = testFilter(filterFam, filterQual, op, filterValue.getTime(), TimeType.TIME, matchingKey, testValue.getTime());
+                boolean test = testFilter(filterFam, filterQual, op, filterValue.getTime(),
+                        TimeType.TIME, matchingKey, testValue.getTime());
 
                 if (func.apply(testValue, filterValue)) {
                     Assert.assertTrue(test);
@@ -454,10 +482,15 @@ public class SingleColumnValueFilterTest
 
         for (Timestamp filterValue : values) {
             for (Timestamp testValue : values) {
-                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam, filterQual, op, filterValue.getTime(), TimestampType.TIMESTAMP, wrongFam, testValue.getTime()));
-                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam, filterQual, op, filterValue.getTime(), TimestampType.TIMESTAMP, wrongQual, testValue.getTime()));
+                Assert.assertFalse("Filter accepted key with wrong family",
+                        testFilter(filterFam, filterQual, op, filterValue.getTime(),
+                                TimestampType.TIMESTAMP, wrongFam, testValue.getTime()));
+                Assert.assertFalse("Filter accepted key with wrong qual",
+                        testFilter(filterFam, filterQual, op, filterValue.getTime(),
+                                TimestampType.TIMESTAMP, wrongQual, testValue.getTime()));
 
-                boolean test = testFilter(filterFam, filterQual, op, filterValue.getTime(), TimestampType.TIMESTAMP, matchingKey, testValue.getTime());
+                boolean test = testFilter(filterFam, filterQual, op, filterValue.getTime(),
+                        TimestampType.TIMESTAMP, matchingKey, testValue.getTime());
 
                 if (func.apply(testValue, filterValue)) {
                     Assert.assertTrue(test);
@@ -528,10 +561,14 @@ public class SingleColumnValueFilterTest
 
         for (byte[] filterValue : bytes) {
             for (byte[] testValue : bytes) {
-                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam, filterQual, op, filterValue, VarbinaryType.VARBINARY, wrongFam, testValue));
-                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam, filterQual, op, filterValue, VarbinaryType.VARBINARY, wrongQual, testValue));
+                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam,
+                        filterQual, op, filterValue, VarbinaryType.VARBINARY, wrongFam, testValue));
+                Assert.assertFalse("Filter accepted key with wrong qual",
+                        testFilter(filterFam, filterQual, op, filterValue, VarbinaryType.VARBINARY,
+                                wrongQual, testValue));
 
-                boolean test = testFilter(filterFam, filterQual, op, filterValue, VarbinaryType.VARBINARY, matchingKey, testValue);
+                boolean test = testFilter(filterFam, filterQual, op, filterValue,
+                        VarbinaryType.VARBINARY, matchingKey, testValue);
 
                 if (func.apply(testValue, filterValue)) {
                     Assert.assertTrue(test);
@@ -547,42 +584,48 @@ public class SingleColumnValueFilterTest
     public void testVarbinaryLess()
             throws Exception
     {
-        testVarbinary(CompareOp.LESS, (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) < 0);
+        testVarbinary(CompareOp.LESS,
+                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) < 0);
     }
 
     @Test
     public void testVarbinaryLessOrEqual()
             throws Exception
     {
-        testVarbinary(CompareOp.LESS_OR_EQUAL, (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) <= 0);
+        testVarbinary(CompareOp.LESS_OR_EQUAL,
+                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) <= 0);
     }
 
     @Test
     public void testVarbinaryEqual()
             throws Exception
     {
-        testVarbinary(CompareOp.EQUAL, (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) == 0);
+        testVarbinary(CompareOp.EQUAL,
+                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) == 0);
     }
 
     @Test
     public void testVarbinaryNotEqual()
             throws Exception
     {
-        testVarbinary(CompareOp.NOT_EQUAL, (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) != 0);
+        testVarbinary(CompareOp.NOT_EQUAL,
+                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) != 0);
     }
 
     @Test
     public void testVarbinaryGreater()
             throws Exception
     {
-        testVarbinary(CompareOp.GREATER, (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) > 0);
+        testVarbinary(CompareOp.GREATER,
+                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) > 0);
     }
 
     @Test
     public void testVarbinaryGreaterOrEqual()
             throws Exception
     {
-        testVarbinary(CompareOp.GREATER_OR_EQUAL, (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) >= 0);
+        testVarbinary(CompareOp.GREATER_OR_EQUAL,
+                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) >= 0);
     }
 
     public void testVarchar(CompareOp op, BiFunction<String, String, Boolean> func)
@@ -602,10 +645,13 @@ public class SingleColumnValueFilterTest
 
         for (String filterValue : bytes) {
             for (String testValue : bytes) {
-                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam, filterQual, op, filterValue, VarcharType.VARCHAR, wrongFam, testValue));
-                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam, filterQual, op, filterValue, VarcharType.VARCHAR, wrongQual, testValue));
+                Assert.assertFalse("Filter accepted key with wrong family", testFilter(filterFam,
+                        filterQual, op, filterValue, VarcharType.VARCHAR, wrongFam, testValue));
+                Assert.assertFalse("Filter accepted key with wrong qual", testFilter(filterFam,
+                        filterQual, op, filterValue, VarcharType.VARCHAR, wrongQual, testValue));
 
-                boolean test = testFilter(filterFam, filterQual, op, filterValue, VarcharType.VARCHAR, matchingKey, testValue);
+                boolean test = testFilter(filterFam, filterQual, op, filterValue,
+                        VarcharType.VARCHAR, matchingKey, testValue);
 
                 if (func.apply(testValue, filterValue)) {
                     Assert.assertTrue(test);

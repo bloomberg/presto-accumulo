@@ -105,7 +105,8 @@ public class AccumuloSplitManager
         // Call out to our client to retrieve all tablet split metadata using the row ID domain
         // and the secondary index, if enabled and proper to do so
         List<TabletSplitMetadata> tSplits = client.getTabletSplits(session, schemaName, tableName,
-                rDom, getColumnConstraints(rowIdName, layoutHandle.getConstraint()));
+                rDom, getColumnConstraints(rowIdName, layoutHandle.getConstraint()),
+                tableHandle.getSerializerInstance());
 
         // Pack the tablet split metadata into a connector split
         List<ConnectorSplit> cSplits = new ArrayList<>();

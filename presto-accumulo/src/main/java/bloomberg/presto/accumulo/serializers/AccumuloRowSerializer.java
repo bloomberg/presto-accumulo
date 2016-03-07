@@ -314,6 +314,132 @@ public interface AccumuloRowSerializer
     public void setVarchar(Text text, String value);
 
     /**
+     * Encodes a Presto Java object to a byte array based on the given type.
+     *
+     * Java Lists and Maps can be converted to Blocks using
+     * {@link AccumuloRowSerializer#getBlockFromArray(Type, java.util.List)} and
+     * {@link AccumuloRowSerializer#getBlockFromMap(Type, Map)}
+     *
+     * <table summary="Expected data types">
+     * <tr>
+     * <th>Type to Encode</th>
+     * <th>Expected Java Object</th>
+     * </tr>
+     * <tr>
+     * <td>ARRAY</td>
+     * <td>com.facebook.presto.spi.block.Block</td>
+     * </tr>
+     * <tr>
+     * <td>BOOLEAN</td>
+     * <td>Boolean</td>
+     * </tr>
+     * <tr>
+     * <td>DATE</td>
+     * <td>java.sql.Date, Long</td>
+     * </tr>
+     * <tr>
+     * <td>DOUBLE</td>
+     * <td>Double</td>
+     * </tr>
+     * <tr>
+     * <td>LONG</td>
+     * <td>Long</td>
+     * </tr>
+     * <tr>
+     * <td>Map</td>
+     * <td>com.facebook.presto.spi.block.Block</td>
+     * </tr>
+     * <tr>
+     * <td>Time</td>
+     * <td>java.sql.Time, Long</td>
+     * </tr>
+     * <tr>
+     * <td>Timestamp</td>
+     * <td>java.sql.Timestamp, Long</td>
+     * </tr>
+     * <tr>
+     * <td>VARBINARY</td>
+     * <td>io.airlift.slice.Slice or byte[]</td>
+     * </tr>
+     * <tr>
+     * <td>VARCHAR</td>
+     * <td>io.airlift.slice.Slice or String</td>
+     * </tr>
+     * </table>
+     *
+     * @param type
+     *            The presto {@link com.facebook.presto.spi.type.Type}
+     * @param v
+     *            The Java object per the table in the method description
+     * @return Encoded bytes
+     */
+    public byte[] encode(Type type, Object v);
+
+    /**
+     * Generic function to decode the given byte array to a Java object based on the given type.
+     *
+     * Blocks from ARRAY and MAP types can be converted
+     * to Java Lists and Maps using {@link AccumuloRowSerializer#getArrayFromBlock(Type, Block)}
+     * and {@link AccumuloRowSerializer#getMapFromBlock(Type, Block)}
+     *
+     * <table summary="Expected data types">
+     * <tr>
+     * <th>Encoded Type</th>
+     * <th>Returned Java Object</th>
+     * </tr>
+     * <tr>
+     * <td>ARRAY</td>
+     * <td>List&lt;?&gt;</td>
+     * </tr>
+     * <tr>
+     * <td>BOOLEAN</td>
+     * <td>Boolean</td>
+     * </tr>
+     * <tr>
+     * <td>DATE</td>
+     * <td>Long</td>
+     * </tr>
+     * <tr>
+     * <td>DOUBLE</td>
+     * <td>Double</td>
+     * </tr>
+     * <tr>
+     * <td>LONG</td>
+     * <td>Long</td>
+     * </tr>
+     * <tr>
+     * <td>Map</td>
+     * <td>Map&lt;?,?&gt;</td>
+     * </tr>
+     * <tr>
+     * <td>Time</td>
+     * <td>Long</td>
+     * </tr>
+     * <tr>
+     * <td>Timestamp</td>
+     * <td>Long</td>
+     * </tr>
+     * <tr>
+     * <td>VARBINARY</td>
+     * <td>byte[]</td>
+     * </tr>
+     * <tr>
+     * <td>VARCHAR</td>
+     * <td>String</td>
+     * </tr>
+     * </table>
+     *
+     * @param type
+     *            The presto {@link com.facebook.presto.spi.type.Type}
+     * @param v
+     *            Encoded bytes to decode
+     * @param <T>
+     *            The Java type of the object that has been encoded to the given byte array
+     * @return The Java object per the table in the method description
+     */
+    public <T> T decode(Type type, byte[] v);
+
+    /**
      * Given the array element type and Presto Block, decodes the Block into a list of values.
      *
      * @param elementType
