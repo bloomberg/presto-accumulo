@@ -407,8 +407,7 @@ public class AccumuloClient
                     AccumuloSessionProperties.isOptimizeLocalityEnabled(session);
             String defaultLocation = "localhost:9997";
             for (Range r : splitRanges) {
-                // If locality is enabled and the key is not null, then fetch the row ID
-                // TODO null key should be first tablet, not default
+                // If locality is enabled, then fetch tablet location
                 if (fetchTabletLocations) {
                     tabletSplits.add(new TabletSplitMetadata(
                             getTabletLocation(tableName, r.getStartKey()), ImmutableList.of(r)));
@@ -474,10 +473,6 @@ public class AccumuloClient
     private String getTabletLocation(String table, Key key)
     {
         try {
-            if (key == null) {
-                return getDefaultTabletLocation(table);
-            }
-
             // Get the Accumulo table ID so we can scan some fun stuff
             String tableId = conn.tableOperations().tableIdMap().get(table);
 
@@ -492,35 +487,48 @@ public class AccumuloClient
             Key end = defaultTabletRow.followingKey(PartialKey.ROW);
             scan.setRange(new Range(start, end));
 
-            // Some text objects to compare what is scanned for what we are looking for
-            Text splitCompareKey = new Text();
-            key.getRow(splitCompareKey);
-            Text scannedCompareKey = new Text();
-
-            // Scan the table!
             String location = null;
-            for (Entry<Key, Value> kvp : scan) {
-                // Get the bytes of the key
-                byte[] keyBytes = kvp.getKey().getRow().copyBytes();
-
-                // Chop off some magic nonsense
-                scannedCompareKey.set(keyBytes, 3, keyBytes.length - 3);
-
-                // Compare the keys, moving along the tablets until the location is found
-                if (scannedCompareKey.getLength() > 0) {
-                    int compareTo = splitCompareKey.compareTo(scannedCompareKey);
-                    if (compareTo <= 0) {
-                        location = kvp.getValue().toString();
-                    }
-                    else {
-                        // all future tablets will be > this key
-                        break;
-                    }
+            if (key == null) {
+                // if the key is null, then it is -inf, so get first tablet location
+                for (Entry<Key, Value> kvp : scan) {
+                    location = kvp.getValue().toString();
+                    break;
                 }
             }
-            scan.close();
+            else {
+                // Else, we will need to scan through the tablet location data and find the location
 
-            // Return the location if not null, else the default tablet location is the way to go
+                // Create some text objects to do comparison for what we are looking for
+                Text splitCompareKey = new Text();
+                key.getRow(splitCompareKey);
+                Text scannedCompareKey = new Text();
+
+                // Scan the table!
+                for (Entry<Key, Value> kvp : scan) {
+                    // Get the bytes of the key
+                    byte[] keyBytes = kvp.getKey().getRow().copyBytes();
+
+                    // Chop off some magic nonsense
+                    scannedCompareKey.set(keyBytes, 3, keyBytes.length - 3);
+
+                    // Compare the keys, moving along the tablets until the location is found
+                    if (scannedCompareKey.getLength() > 0) {
+                        int compareTo = splitCompareKey.compareTo(scannedCompareKey);
+                        if (compareTo <= 0) {
+                            location = kvp.getValue().toString();
+                        }
+                        else {
+                            // all future tablets will be > this key
+                            break;
+                        }
+                    }
+                }
+                scan.close();
+            }
+
+            LOG.info("Key %s location %s", key != null ? key.getRow() : null, location);
+            // If we were unable to find the location for some reason, return the default tablet
+            // location
             return location != null ? location : getDefaultTabletLocation(table);
         }
         catch (Exception e) {
