@@ -407,7 +407,6 @@ public class AccumuloClient
                     AccumuloSessionProperties.isOptimizeLocalityEnabled(session);
             String defaultLocation = "localhost:9997";
             for (Range r : splitRanges) {
-                LOG.debug("Range is %s", r);
                 // If locality is enabled and the key is not null, then fetch the row ID
                 // TODO null key should be first tablet, not default
                 if (fetchTabletLocations) {
