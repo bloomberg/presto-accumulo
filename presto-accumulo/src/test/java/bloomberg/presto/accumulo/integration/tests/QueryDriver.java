@@ -383,6 +383,7 @@ public class QueryDriver
         expectedOutputs.clear();
         orderMatters = false;
         initialized = false;
+        rowIdName = "recordkey";
     }
 
     /**

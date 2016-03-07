@@ -19,30 +19,32 @@ import java.sql.Date;
 public class LargeDataTest
 {
     private static final File INPUT_FILE = new File("src/test/resources/datagen.txt.gz");
-    private static final File OTHER_INPUT_FILE = new File("src/test/resources/datagen-other.txt.gz");
-    private static final File FIRST_NAME_SELECT_OUTPUT = new File("src/test/resources/first_name_select.txt.gz");
+    private static final File OTHER_INPUT_FILE =
+            new File("src/test/resources/datagen-other.txt.gz");
+    private static final File FIRST_NAME_SELECT_OUTPUT =
+            new File("src/test/resources/first_name_select.txt.gz");
 
-    private static final RowSchema INPUT_SCHEMA = RowSchema.newRowSchema()
-            .addRowId()
-            .addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR)
-            .addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR)
-            .addColumn("address", "metadata", "address", VarcharType.VARCHAR)
-            .addColumn("city", "metadata", "city", VarcharType.VARCHAR)
-            .addColumn("state", "metadata", "state", VarcharType.VARCHAR)
-            .addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT)
-            .addColumn("birthday", "metadata", "birthday", DateType.DATE)
-            .addColumn("favorite_color", "metadata", "favorite_color", VarcharType.VARCHAR);
+    private static final RowSchema INPUT_SCHEMA =
+            RowSchema.newRowSchema().addRowId("recordkey", VarcharType.VARCHAR)
+                    .addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR)
+                    .addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR)
+                    .addColumn("address", "metadata", "address", VarcharType.VARCHAR)
+                    .addColumn("city", "metadata", "city", VarcharType.VARCHAR)
+                    .addColumn("state", "metadata", "state", VarcharType.VARCHAR)
+                    .addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT)
+                    .addColumn("birthday", "metadata", "birthday", DateType.DATE)
+                    .addColumn("favorite_color", "metadata", "favorite_color", VarcharType.VARCHAR);
 
-    private static final RowSchema INDEXED_SCHEMA = RowSchema.newRowSchema()
-            .addRowId()
-            .addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR, true)
-            .addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR)
-            .addColumn("address", "metadata", "address", VarcharType.VARCHAR)
-            .addColumn("city", "metadata", "city", VarcharType.VARCHAR)
-            .addColumn("state", "metadata", "state", VarcharType.VARCHAR)
-            .addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT)
-            .addColumn("birthday", "metadata", "birthday", DateType.DATE)
-            .addColumn("favorite_color", "metadata", "favorite_color", VarcharType.VARCHAR);
+    private static final RowSchema INDEXED_SCHEMA =
+            RowSchema.newRowSchema().addRowId("recordkey", VarcharType.VARCHAR)
+                    .addColumn("first_name", "metadata", "first_name", VarcharType.VARCHAR, true)
+                    .addColumn("last_name", "metadata", "last_name", VarcharType.VARCHAR)
+                    .addColumn("address", "metadata", "address", VarcharType.VARCHAR)
+                    .addColumn("city", "metadata", "city", VarcharType.VARCHAR)
+                    .addColumn("state", "metadata", "state", VarcharType.VARCHAR)
+                    .addColumn("zipcode", "metadata", "zipcode", BigintType.BIGINT)
+                    .addColumn("birthday", "metadata", "birthday", DateType.DATE)
+                    .addColumn("favorite_color", "metadata", "favorite_color", VarcharType.VARCHAR);
 
     private static final Integer NUM_RECORDS = 100000;
     private static final QueryDriver DRIVER1;
@@ -70,11 +72,16 @@ public class LargeDataTest
     public static void setupClass()
             throws Exception
     {
-        DRIVER1.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable").withInputSchema(INPUT_SCHEMA).withInputFile(INPUT_FILE).initialize();
+        DRIVER1.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withInputSchema(INPUT_SCHEMA).withInputFile(INPUT_FILE).initialize();
 
-        DRIVER2.withHost("localhost").withPort(8080).withSchema("default").withTable("testmyothertable").withInputSchema(INPUT_SCHEMA).withInputFile(OTHER_INPUT_FILE).initialize();
+        DRIVER2.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmyothertable").withInputSchema(INPUT_SCHEMA)
+                .withInputFile(OTHER_INPUT_FILE).initialize();
 
-        DRIVER3.withHost("localhost").withPort(8080).withSchema("default").withTable("testmyindexedtable").withInputSchema(INDEXED_SCHEMA).withInputFile(INPUT_FILE).initialize();
+        DRIVER3.withHost("localhost").withPort(8080).withSchema("default")
+                .withTable("testmyindexedtable").withInputSchema(INDEXED_SCHEMA)
+                .withInputFile(INPUT_FILE).initialize();
     }
 
     @AfterClass
@@ -100,7 +107,8 @@ public class LargeDataTest
     {
         String query = "SELECT * FROM testmytable " + "WHERE first_name in ('Darla')";
 
-        DRIVER1.withOutputSchema(INPUT_SCHEMA).withQuery(query).withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
+        DRIVER1.withOutputSchema(INPUT_SCHEMA).withQuery(query)
+                .withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
     }
 
     @Test
@@ -109,7 +117,8 @@ public class LargeDataTest
     {
         String query = "SELECT * FROM testmytable " + "WHERE first_name = 'Darla'";
 
-        DRIVER1.withOutputSchema(INPUT_SCHEMA).withQuery(query).withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
+        DRIVER1.withOutputSchema(INPUT_SCHEMA).withQuery(query)
+                .withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
     }
 
     @Test
@@ -118,16 +127,20 @@ public class LargeDataTest
     {
         String query = "SELECT * FROM testmyindexedtable " + "WHERE first_name = 'Darla'";
 
-        DRIVER1.withOutputSchema(INDEXED_SCHEMA).withQuery(query).withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
+        DRIVER1.withOutputSchema(INDEXED_SCHEMA).withQuery(query)
+                .withOutputFile(FIRST_NAME_SELECT_OUTPUT).runTest();
     }
 
     @Test
     public void testSelectCountMinMaxWhereFirstNameEquals()
             throws Exception
     {
-        Row r1 = Row.newRow().addField(13L, BigintType.BIGINT).addField(new Date(73859156000L), DateType.DATE).addField(new Date(1328445195000L), DateType.DATE);
+        Row r1 = Row.newRow().addField(13L, BigintType.BIGINT)
+                .addField(new Date(73859156000L), DateType.DATE)
+                .addField(new Date(1328445195000L), DateType.DATE);
 
-        String query = "SELECT COUNT(*) AS count, MIN(birthday), MAX(birthday) FROM testmytable " + "WHERE first_name = 'Darla'";
+        String query = "SELECT COUNT(*) AS count, MIN(birthday), MAX(birthday) FROM testmytable "
+                + "WHERE first_name = 'Darla'";
 
         DRIVER1.withQuery(query).withOutput(r1).runTest();
     }
@@ -138,7 +151,8 @@ public class LargeDataTest
     {
         Row r1 = Row.newRow().addField(6L, BigintType.BIGINT);
 
-        String query = "SELECT COUNT(*) AS count FROM testmytable tmt, testmyothertable tmot " + "WHERE tmt.zipcode = tmot.zipcode AND " + "tmt.birthday = tmot.birthday";
+        String query = "SELECT COUNT(*) AS count FROM testmytable tmt, testmyothertable tmot "
+                + "WHERE tmt.zipcode = tmot.zipcode AND " + "tmt.birthday = tmot.birthday";
 
         DRIVER1.withQuery(query).withOutput(r1).runTest();
     }

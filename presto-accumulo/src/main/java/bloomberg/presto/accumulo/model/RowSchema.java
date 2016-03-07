@@ -3,7 +3,6 @@ package bloomberg.presto.accumulo.model;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.VarcharType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,18 +27,16 @@ public class RowSchema
     /**
      * Adds the Row ID column to the schema
      *
+     * @param name
+     *            Name of the row ID column
+     * @param type
+     *            Presto type of the column
      * @return this, for chaining
      */
-    public RowSchema addRowId()
+    public RowSchema addRowId(String name, Type type)
     {
-        // TODO Fix this! Row ID doesn't have to be first anymore. Nope, not anymore.
-        if (columns.size() != 0) {
-            throw new PrestoException(StandardErrorCode.USER_ERROR,
-                    "Row ID must be the first column");
-        }
-
-        columns.add(new AccumuloColumnHandle("accumulo", "recordkey", null, null,
-                VarcharType.VARCHAR, columns.size(), "Accumulo row ID", false));
+        columns.add(new AccumuloColumnHandle("accumulo", name, null, null, type, columns.size(),
+                "Accumulo row ID", false));
         return this;
     }
 
