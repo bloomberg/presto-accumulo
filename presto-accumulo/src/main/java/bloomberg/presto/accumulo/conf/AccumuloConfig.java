@@ -17,10 +17,15 @@ import bloomberg.presto.accumulo.metadata.AccumuloMetadataManager;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
 import io.airlift.configuration.Config;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 
 import javax.validation.constraints.NotNull;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+
+import static java.lang.String.format;
 
 /**
  * File-based configuration properties for the Accumulo connector
@@ -255,5 +260,30 @@ public class AccumuloConfig
     public void setCardinalityCacheExpireSeconds(int cardinalityCacheExpireSeconds)
     {
         this.cardinalityCacheExpireSeconds = cardinalityCacheExpireSeconds;
+    }
+
+    public static AccumuloConfig from(File f)
+            throws ConfigurationException
+    {
+        if (!f.exists() || f.isDirectory()) {
+            throw new ConfigurationException(format("File %s does not exist or is a directory", f));
+        }
+
+        PropertiesConfiguration props = new PropertiesConfiguration(f);
+
+        props.setThrowExceptionOnMissing(true);
+
+        AccumuloConfig config = new AccumuloConfig();
+        config.setCardinalityCacheExpireSeconds(
+                props.getInt("cardinality.cache.expire.seconds", 300));
+        config.setCardinalityCacheSize(props.getInt("cardinality.cache.size", 100000));
+        config.setInstance(props.getString("instance"));
+        config.setMetadataManagerClass(props.getString("metadata.manager.class", "default"));
+        config.setPassword(props.getString("password"));
+        config.setUsername(props.getString("username"));
+        config.setZkMetadataRoot(props.getString("zookeeper.metadata.root", "/presto-accumulo"));
+        config.setZooKeepers(props.getString("zookeepers"));
+        return config;
+
     }
 }
