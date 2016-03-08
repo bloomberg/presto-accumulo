@@ -42,6 +42,7 @@ import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.Scanner;
+import org.apache.accumulo.core.client.TableExistsException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
@@ -318,6 +319,143 @@ public class AccumuloClient
     }
 
     /**
+     * Renames the metadata associated Accumulo table
+     *
+     * @param oldName
+     *            Old table name
+     * @param newName
+     *            New table name
+     */
+    public void renameTable(SchemaTableName oldName, SchemaTableName newName)
+    {
+        if (this.getTable(newName) != null) {
+            throw new PrestoException(StandardErrorCode.ALREADY_EXISTS,
+                    "Table " + newName + " already exists");
+        }
+
+        if (!oldName.getSchemaName().equals(newName.getSchemaName())) {
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                    "Accumulo does not support renaming tables to different namespaces (schemas)");
+        }
+
+        AccumuloTable oldTable = getTable(oldName);
+        AccumuloTable newTable = new AccumuloTable(newName.getSchemaName(), newName.getTableName(),
+                oldTable.getColumns(), oldTable.getRowId(), oldTable.isExternal(),
+                oldTable.getSerializerClassName());
+
+        // Probably being over-cautious on the failure conditions and rollbacks, but I suppose it is
+        // better to be safe than sink ships.
+
+        try {
+            // First, rename the Accumulo table in the event there is some issue
+            conn.tableOperations().rename(oldTable.getFullTableName(), newTable.getFullTableName());
+        }
+        catch (AccumuloSecurityException | TableNotFoundException | AccumuloException
+                | TableExistsException e) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to rename table",
+                    e);
+        }
+
+        // Rename index tables as well, if indexed, of course
+        if (oldTable.isIndexed()) {
+            try {
+                conn.tableOperations().rename(oldTable.getIndexTableName(),
+                        newTable.getIndexTableName());
+            }
+            catch (AccumuloSecurityException | TableNotFoundException | AccumuloException
+                    | TableExistsException e) {
+                try {
+                    conn.tableOperations().rename(newTable.getFullTableName(),
+                            oldTable.getFullTableName());
+                }
+                catch (Exception e1) {
+                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                            "Failed to rollback table rename", e1);
+                }
+
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Failed to rename index table", e);
+            }
+
+            try {
+                conn.tableOperations().rename(oldTable.getMetricsTableName(),
+                        newTable.getMetricsTableName());
+            }
+            catch (AccumuloSecurityException | TableNotFoundException | AccumuloException
+                    | TableExistsException e) {
+                try {
+                    conn.tableOperations().rename(newTable.getFullTableName(),
+                            oldTable.getFullTableName());
+                    conn.tableOperations().rename(newTable.getIndexTableName(),
+                            oldTable.getIndexTableName());
+                }
+                catch (Exception e1) {
+                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                            "Failed to rollback table rename", e1);
+                }
+
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Failed to rename index table", e);
+            }
+        }
+
+        try {
+            // We'll then create the metadata
+            metaManager.createTableMetadata(newTable);
+        }
+        catch (Exception e) {
+            // catch all to rollback the operation -- rename the table back
+            try {
+                conn.tableOperations().rename(newTable.getFullTableName(),
+                        oldTable.getFullTableName());
+
+                if (oldTable.isIndexed()) {
+                    conn.tableOperations().rename(newTable.getIndexTableName(),
+                            oldTable.getIndexTableName());
+                    conn.tableOperations().rename(newTable.getMetricsTableName(),
+                            oldTable.getMetricsTableName());
+                }
+            }
+            catch (Exception e1) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Failed to rename table", e1);
+            }
+
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to create metadata",
+                    e);
+        }
+
+        try {
+            // We'll then delete the metadata
+            metaManager.deleteTableMetadata(oldName);
+        }
+        catch (Exception e) {
+            try {
+                // catch all to rollback the operation -- rename the table back and create the old
+                // metadata
+                conn.tableOperations().rename(newTable.getFullTableName(),
+                        oldTable.getFullTableName());
+
+                if (oldTable.isIndexed()) {
+                    conn.tableOperations().rename(newTable.getIndexTableName(),
+                            oldTable.getIndexTableName());
+                    conn.tableOperations().rename(newTable.getMetricsTableName(),
+                            oldTable.getMetricsTableName());
+                }
+
+                metaManager.createTableMetadata(oldTable);
+            }
+            catch (Exception e1) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Failed to rollback rename table operation ", e1);
+            }
+
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to delete metadata",
+                    e);
+        }
+    }
+
+    /**
      * Gets all schema names via the {@link AccumuloMetadataManager}
      *
      * @return The set of schema names
@@ -345,7 +483,7 @@ public class AccumuloClient
      *
      * @param table
      *            The table to fetch
-     * @return The AccumuloTable
+     * @return The AccumuloTable or null if it does not exist
      */
     public AccumuloTable getTable(SchemaTableName table)
     {

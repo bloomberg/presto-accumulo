@@ -29,8 +29,10 @@ import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.ConnectorTableLayoutResult;
 import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.Constraint;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SchemaTablePrefix;
+import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.TableNotFoundException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -151,6 +153,29 @@ public class AccumuloMetadata
     {
         AccumuloTableHandle th = checkType(tableHandle, AccumuloTableHandle.class, "table");
         client.dropTable(client.getTable(th.toSchemaTableName()));
+    }
+
+    /**
+     * Renames the given table to the new table name
+     *
+     * @param session
+     *            Current client session
+     * @param tableHandle
+     *            Table metadata to rename
+     * @param newTableName
+     *            New table name!
+     */
+    @Override
+    public void renameTable(ConnectorSession session, ConnectorTableHandle tableHandle,
+            SchemaTableName newTableName)
+    {
+        if (client.getTable(newTableName) != null) {
+            throw new PrestoException(StandardErrorCode.USER_ERROR,
+                    "Table " + newTableName + " already exists");
+        }
+
+        AccumuloTableHandle th = checkType(tableHandle, AccumuloTableHandle.class, "table");
+        client.renameTable(th.toSchemaTableName(), newTableName);
     }
 
     /**
@@ -292,8 +317,7 @@ public class AccumuloMetadata
         AccumuloTableHandle tHandle = checkType(table, AccumuloTableHandle.class, "table");
         checkArgument(tHandle.getConnectorId().equals(connectorId),
                 "table is not for this connector");
-        return getTableMetadata(
-                new SchemaTableName(tHandle.getSchema(), tHandle.getTable()));
+        return getTableMetadata(new SchemaTableName(tHandle.getSchema(), tHandle.getTable()));
     }
 
     /**
