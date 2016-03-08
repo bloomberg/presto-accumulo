@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -36,12 +37,12 @@ import static java.util.Objects.requireNonNull;
  */
 public class AccumuloTable
 {
-    private final boolean indexed;
+    private boolean indexed;
     private final boolean external;
     private final String rowId;
     private final String schema;
     private final String table;
-    private final List<AccumuloColumnHandle> columns;
+    private List<AccumuloColumnHandle> columns;
     private final List<ColumnMetadata> columnsMetadata;
     private final String serializerClassName;
 
@@ -80,7 +81,7 @@ public class AccumuloTable
         ImmutableList.Builder<ColumnMetadata> cmb = ImmutableList.builder();
         for (AccumuloColumnHandle column : this.columns) {
             cmb.add(column.getColumnMetadata());
-            indexed = indexed || column.isIndexed();
+            indexed |= column.isIndexed();
         }
 
         this.indexed = indexed;
@@ -168,6 +169,68 @@ public class AccumuloTable
     }
 
     /**
+     * Adds a new column at the specified position, updating the ordinals of all columns if
+     * necessary. Will set the 'indexed' flag if this column is indexed but the table was not
+     * previously indexed.
+     *
+     * @param newColumn
+     *            New column to add
+     * @throws IndexOutOfBoundsException
+     *             If the ordinal negative or greater than or equal to the number of columns
+     */
+    @JsonIgnore
+    public void addColumn(AccumuloColumnHandle newColumn)
+    {
+        final List<AccumuloColumnHandle> newColumns;
+
+        // If this column is going to be appended instead of inserted
+        if (newColumn.getOrdinal() == columns.size()) {
+            // Validate this column does not already exist
+            for (AccumuloColumnHandle col : columns) {
+                if (col.getName().equals(newColumn.getName())) {
+                    throw new PrestoException(StandardErrorCode.ALREADY_EXISTS,
+                            "Column " + newColumn.getName() + " already exists in table");
+                }
+            }
+
+            // Copy the list and add the new column at the end
+            newColumns = new ArrayList<>(columns);
+            newColumns.add(newColumn);
+        }
+        else {
+            // Else, iterate through all existing columns, updating the ordinals and inserting the
+            // column at the appropriate place
+            newColumns = new ArrayList<>();
+            int ordinal = 0;
+            for (AccumuloColumnHandle col : columns) {
+                // Validate this column does not already exist
+                if (col.getName().equals(newColumn.getName())) {
+                    throw new PrestoException(StandardErrorCode.ALREADY_EXISTS,
+                            "Column " + newColumn.getName() + " already exists in table");
+                }
+
+                // Add the new column here
+                if (ordinal == newColumn.getOrdinal()) {
+                    newColumns.add(newColumn);
+                    ++ordinal;
+                }
+
+                // Update the ordinal and add the already existing column
+                col.setOrdinal(ordinal);
+                newColumns.add(col);
+
+                ++ordinal;
+            }
+        }
+
+        // Set the new column list
+        columns = ImmutableList.copyOf(newColumns);
+
+        // Update the index status of the table
+        indexed |= newColumn.isIndexed();
+    }
+
+    /**
      * Gets the configured serializer class name.
      *
      * @return The list of {@link AccumuloColumnHandle}
@@ -202,9 +265,9 @@ public class AccumuloTable
     }
 
     /**
-     * Gets a Boolean value indicating if the Accumulo tables are internal, i.e. managed by Presto.
+     * Gets a Boolean value indicating if the Accumulo tables are indexed
      *
-     * @return True if internal, false otherwise
+     * @return True if indexed, false otherwise
      */
     @JsonIgnore
     public boolean isIndexed()

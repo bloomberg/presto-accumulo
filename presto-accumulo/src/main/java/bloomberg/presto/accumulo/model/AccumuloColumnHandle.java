@@ -39,7 +39,7 @@ public final class AccumuloColumnHandle
     private final String family;
     private final String qualifier;
     private final Type type;
-    private final int ordinal;
+    private int ordinal;
     private final String comment;
 
     /**
@@ -157,6 +157,18 @@ public final class AccumuloColumnHandle
     public int getOrdinal()
     {
         return ordinal;
+    }
+
+    /**
+     * Setter method for the ordinal (for support of adding new columns)
+     *
+     * @param ordinal
+     *            New ordinal
+     */
+    @JsonSetter
+    public void setOrdinal(int ordinal)
+    {
+        this.ordinal = ordinal;
     }
 
     /**

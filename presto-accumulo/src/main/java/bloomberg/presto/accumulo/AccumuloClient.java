@@ -247,10 +247,10 @@ public class AccumuloClient
             // Create the table!
             conn.tableOperations().create(table.getFullTableName());
 
-            // Set locality groups if configured
-            if (AccumuloTableProperties.hasLocalityGroups(tableProperties)) {
-                Map<String, Set<Text>> groups =
-                        AccumuloTableProperties.getLocalityGroups(tableProperties);
+            Map<String, Set<Text>> groups =
+                    AccumuloTableProperties.getLocalityGroups(tableProperties);
+            // Set locality groups, if any
+            if (groups != null && groups.size() > 0) {
                 conn.tableOperations().setLocalityGroups(table.getFullTableName(), groups);
                 LOG.debug("Set locality groups to %s", groups);
             }
@@ -258,6 +258,28 @@ public class AccumuloClient
                 LOG.debug("No locality groups set");
             }
 
+            // Create index tables, if appropriate
+            createIndexTables(table);
+            return table;
+        }
+        catch (Exception e) {
+            dropTable(table);
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "Accumulo error when creating table, check coordinator logs for more detail",
+                    e);
+        }
+    }
+
+    /**
+     * Creates the index tables from the given Accumulo table. No op if
+     * {@link AccumuloTable#isIndexed()} is false.
+     *
+     * @param table
+     *            Table to create index tables
+     */
+    private void createIndexTables(AccumuloTable table)
+    {
+        try {
             // If our table is indexed, create the index as well
             if (table.isIndexed()) {
                 // Create index table and set the locality groups
@@ -272,13 +294,11 @@ public class AccumuloClient
                     conn.tableOperations().attachIterator(table.getMetricsTableName(), s);
                 }
             }
-
-            return table;
         }
         catch (Exception e) {
             dropTable(table);
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                    "Accumulo error when creating table, check coordinator logs for more detail",
+                    "Accumulo error when creating index tables, check coordinator logs for more detail",
                     e);
         }
     }
@@ -453,6 +473,35 @@ public class AccumuloClient
 
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to delete metadata",
                     e);
+        }
+    }
+
+    /**
+     * Adds a new column to an existing table
+     *
+     * @param table
+     *            Accumulo table to act on
+     * @param column
+     *            New column to add
+     * @throws IndexOutOfBoundsException
+     *             If the ordinal is greater than or equal to the number of columns
+     */
+    public void addColumn(AccumuloTable table, AccumuloColumnHandle column)
+            throws IndexOutOfBoundsException
+    {
+        // Add the column
+        table.addColumn(column);
+
+        // Recreate the table metadata with the new name and exit
+        metaManager.deleteTableMetadata(new SchemaTableName(table.getSchema(), table.getTable()));
+        metaManager.createTableMetadata(table);
+
+        // Validate index tables exist -- User may have added an index column to a previously
+        // un-indexed table
+        if (table.isIndexed() && !table.isExternal()) {
+            if (!conn.tableOperations().exists(table.getIndexTableName())) {
+                createIndexTables(table);
+            }
         }
     }
 
