@@ -12,7 +12,7 @@ A Presto connector for reading and writing data backed by Apache Accumulo.
 8. [External Tables](#external-tables)
 9. [Secondary Indexing](#secondary-indexing)
 10. [Session Properties](#session-properties)
-11. [Serializer](#serializer)
+11. [Serializers](#serializers)
 12. [Metadata Management](#metadata-management)
 
 ### Repository Contents
