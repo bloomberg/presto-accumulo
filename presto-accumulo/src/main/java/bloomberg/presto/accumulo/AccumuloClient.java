@@ -65,6 +65,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -452,6 +453,41 @@ public class AccumuloClient
 
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to delete metadata",
                     e);
+        }
+    }
+
+    /**
+     * Rename the column of an existing table
+     *
+     * @param table
+     *            Accumulo table to act on
+     * @param source
+     *            Existing column name
+     * @param target
+     *            New column name
+     */
+    public void renameColumn(AccumuloTable table, String source, String target)
+    {
+        boolean found = false;
+        // Locate the column to rename
+        for (AccumuloColumnHandle col : table.getColumns()) {
+            if (col.getName().equals(source)) {
+                found = true;
+
+                // Rename the column
+                col.setName(target);
+
+                // Recreate the table metadata with the new name and exit
+                metaManager.deleteTableMetadata(
+                        new SchemaTableName(table.getSchema(), table.getTable()));
+                metaManager.createTableMetadata(table);
+                break;
+            }
+        }
+
+        if (!found) {
+            throw new PrestoException(StandardErrorCode.USER_ERROR,
+                    format("Failed to find source column %s to rename to %s", source, target));
         }
     }
 

@@ -360,6 +360,34 @@ public class AccumuloMetadata
     }
 
     /**
+     * Renames the given column of the given table to a new column name.
+     *
+     * Note that this operation is an alias-only change. The Presto column mapping is unchanged,
+     * i.e. the Accumulo column family and qualifier are not updated, so the queried data will
+     * remain the same.
+     *
+     * @param session
+     *            client session
+     * @param tableHandle
+     *            Table handle
+     * @param source
+     *            Column handle to rename
+     * @param target
+     *            New column name
+     */
+    @Override
+    public void renameColumn(ConnectorSession session, ConnectorTableHandle tableHandle,
+            ColumnHandle source, String target)
+    {
+        AccumuloTableHandle tHandle =
+                checkType(tableHandle, AccumuloTableHandle.class, "tableHandle");
+        AccumuloColumnHandle cHandle =
+                checkType(source, AccumuloColumnHandle.class, "columnHandle");
+        AccumuloTable table = client.getTable(tHandle.toSchemaTableName());
+        client.renameColumn(table, cHandle.getName(), target);
+    }
+
+    /**
      * List all existing schemas
      *
      * @see AccumuloClient#getSchemaNames

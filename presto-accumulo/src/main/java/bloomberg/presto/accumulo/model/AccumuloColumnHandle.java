@@ -19,6 +19,7 @@ import com.facebook.presto.spi.type.Type;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 
 import java.util.Objects;
 
@@ -34,7 +35,7 @@ public final class AccumuloColumnHandle
 {
     private final boolean indexed;
     private final String connectorId;
-    private final String name;
+    private String name;
     private final String family;
     private final String qualifier;
     private final Type type;
@@ -98,6 +99,20 @@ public final class AccumuloColumnHandle
     public String getName()
     {
         return name;
+    }
+
+    /**
+     * Setter function for the column name
+     *
+     * Added to this class for column rename support
+     *
+     * @param name
+     *            New column name
+     */
+    @JsonSetter
+    public void setName(String name)
+    {
+        this.name = name;
     }
 
     /**
