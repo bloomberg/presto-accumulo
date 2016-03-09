@@ -13,78 +13,118 @@
  */
 package bloomberg.presto.accumulo.tools;
 
-import bloomberg.presto.accumulo.AccumuloClient;
-import bloomberg.presto.accumulo.AccumuloConnectorId;
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
-import bloomberg.presto.accumulo.metadata.AccumuloTable;
-import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
-import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.TypeSignature;
-import com.facebook.presto.type.TypeRegistry;
-import org.apache.accumulo.core.client.AccumuloException;
-import org.apache.accumulo.core.client.AccumuloSecurityException;
-import org.apache.commons.configuration.ConfigurationException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
+import org.reflections.Reflections;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 import static java.lang.String.format;
 
 public class Main
+        extends Configured
+        implements Tool
 {
+
+    private static List<Task> tasks = new ArrayList<>();
+
+    static {
+        try {
+            Reflections reflections = new Reflections("bloomberg.presto.accumulo.tools");
+            for (Class<? extends Task> task : reflections.getSubTypesOf(Task.class)) {
+                tasks.add(task.newInstance());
+            }
+        }
+        catch (InstantiationException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Task getTask(String name)
+    {
+        for (Task t : tasks) {
+            if (t.getTaskName().equals(name)) {
+                return t;
+            }
+        }
+
+        return null;
+    }
+
+    public static List<Task> getTasks()
+    {
+        // Sort by name
+        tasks.sort(new Comparator<Task>()
+        {
+            @Override
+            public int compare(Task o1, Task o2)
+            {
+                return o1.getTaskName().compareTo(o2.getTaskName());
+            }
+        });
+
+        return tasks;
+    }
+
+    @Override
+    public int run(String[] args)
+            throws Exception
+    {
+        if (args.length < 1) {
+            printHelp();
+            return 0;
+        }
+
+        String prestoHome = System.getenv("PRESTO_HOME");
+        AccumuloConfig config =
+                AccumuloConfig.from(new File(prestoHome, "etc/catalog/accumulo.properties"));
+
+        String toolName = args[0];
+        Task t = Main.getTask(toolName);
+        if (t == null) {
+            System.err.println(format("Unknown tool %s", toolName));
+            printHelp();
+            return 1;
+        }
+
+        if (t.isNumArgsOk(args.length - 1)) {
+            int code = t.run(config, Arrays.copyOfRange(args, 1, args.length));
+            if (code != 0) {
+                printHelp();
+            }
+            return code;
+        }
+        else {
+            System.err.println("Invalid number of parameters");
+            printHelp();
+            return 1;
+        }
+    }
+
+    private void printHelp()
+    {
+        System.out.println("Usage: java -jar <jarfile> <tool> [args]");
+        System.out.println("Available tools:");
+        for (Task t : getTasks()) {
+            System.out.println(t.getHelp());
+        }
+    }
+
     public static void main(String[] args)
-            throws ConfigurationException, AccumuloException, AccumuloSecurityException
+            throws Exception
     {
         String prestoHome = System.getenv("PRESTO_HOME");
         if (prestoHome == null) {
             System.err.println("PRESTO_HOME is not set");
             System.exit(1);
         }
-
-        if (args.length < 1) {
-            System.out.println("Usage: java -jar <jarfile> <tool> [args]");
-            System.out.println("Available tools:");
-            System.out.println("\taddcolumn <schema.name> <table.name> <presto.name> <presto.type> "
-                    + "<column.family> <column.qualifier> <indexed> [zero.based.ordinal]");
-            System.exit(0);
-        }
-
-        AccumuloConfig config =
-                AccumuloConfig.from(new File(prestoHome, "etc/catalog/accumulo.properties"));
-        AccumuloClient client = new AccumuloClient(new AccumuloConnectorId("accumulo"), config);
-
-        if (args[0].equals("addcolumn") && args.length >= 8) {
-            String schema = args[1];
-            String tablename = args[2];
-            String name = args[3];
-            Type type = new TypeRegistry().getType(TypeSignature.parseTypeSignature(args[4]));
-            String family = args[5];
-            String qualifier = args[6];
-            boolean indexed = Boolean.parseBoolean(args[7]);
-
-            String comment =
-                    String.format("Accumulo column %s:%s. Indexed: %b", family, qualifier, indexed);
-
-            AccumuloTable table = client.getTable(new SchemaTableName(schema, tablename));
-            if (table == null) {
-                System.err.println(format("Metadata for table %s.%s not found.  Does it exist?",
-                        schema, tablename));
-                System.exit(1);
-            }
-
-            int ordinal = args.length == 9 ? Integer.parseInt(args[8]) : table.getColumns().size();
-
-            AccumuloColumnHandle column = new AccumuloColumnHandle("accumulo", name, family,
-                    qualifier, type, ordinal, comment, indexed);
-            client.addColumn(table, column);
-        }
-        else {
-            System.err.println("Unknown tool " + args[0] + " or invalid number of parameters");
-            System.out.println("Usage: java -jar <jarfile> <tool> [args]");
-            System.out.println("Available tools:");
-            System.out.println("\taddcolumn <schema.name> <table.name> <presto.name> <presto.type> "
-                    + "<column.family> <column.qualifier> <indexed> [zero.based.ordinal]");
-            System.exit(1);
-        }
+        ToolRunner.run(new Configuration(), new Main(), args);
     }
 }
