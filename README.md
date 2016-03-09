@@ -19,6 +19,7 @@ A Presto connector for reading and writing data backed by Apache Accumulo.
 
 ### Repository Contents
 This repository contains five sub-projects:
+
 1. _presto_ - A patched version of Presto 0.131 containing support for the ANY clause.  This is similar to the __contains__ UDF that can be used to check if an element is in an array.  Users can use this clause instead of contains to enable predicate pushdown support -- and therefore the secondary index capability of the connector.
 2. _presto-accumulo_ - The Accumulo connector code for Presto.
 3. _presto-accumulo-iterators_ - A collection of Accumulo iterators to be installed on the TabletServers.  These iterators are required to user the connector.
