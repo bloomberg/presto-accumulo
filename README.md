@@ -1,4 +1,4 @@
-# presto-accumulo
+# Presto Accumulo!
 
 A Presto connector for reading and writing data backed by Apache Accumulo.
 ### Table of Contents
@@ -8,19 +8,22 @@ A Presto connector for reading and writing data backed by Apache Accumulo.
 4. [Installing the Connector](#installing-the-connector)
 5. [Installing the Iterator Dependency](#installing-the-iterator-dependency)
 6. [Connector Configuration](#connector-configuration)
-7. [Usage](#usage)
-8. [External Tables](#external-tables)
-9. [Secondary Indexing](#secondary-indexing)
-10. [Session Properties](#session-properties)
-11. [Serializers](#serializers)
-12. [Metadata Management](#metadata-management)
+7. [Unsupported Features](#unsupported-features)
+8. [Usage](#usage)
+9. [External Tables](#external-tables)
+10. [Secondary Indexing](#secondary-indexing)
+11. [Session Properties](#session-properties)
+12. [Serializers](#serializers)
+13. [Metadata Management](#metadata-management)
+14. [Adding Columns Management](#metadata-management)
 
 ### Repository Contents
-This repository contains four projects:
+This repository contains five sub-projects:
 1. _presto_ - A patched version of Presto 0.131 containing support for the ANY clause.  This is similar to the __contains__ UDF that can be used to check if an element is in an array.  Users can use this clause instead of contains to enable predicate pushdown support -- and therefore the secondary index capability of the connector.
-2. _presto-accumulo_ - The Accumulo connector code for Presto
+2. _presto-accumulo_ - The Accumulo connector code for Presto.
 3. _presto-accumulo-iterators_ - A collection of Accumulo iterators to be installed on the TabletServers.  These iterators are required to user the connector.
 4. _presto-accumulo-benchmark_ - An implementation of the TPC-H benchmarking suite for testing the connector.
+5. _presto-accumulo-tools_ - A Java project with some tools to help out with metadata management tasks that could not otherwise be done using SQL.
 
 ### Dependencies
 * Java 1.8 (required for connector)
@@ -101,6 +104,12 @@ __*Configuration Variables*__
 | metadata.manager.class           | default          | No       | Fully qualified classname for the Metadata Manager class.  Default is the ZooKeeperMetadataManager |
 | cardinality.cache.size           | 100000           | No       | Gets the size of the index cardinality cache                                                       |
 | cardinality.cache.expire.seconds | 300              | No       | Gets the expiration, in seconds, of the cardinality cache                                          |
+### Unsupported Features
+Of the available Presto DDL/DML statements and features, the Accumulo connector does __not__ support:
+* __*Adding columns via ALTER TABLE*__ : Use the `presto-accumulo-tools` subproject for adding new columns
+  * See the README in the `presto-accumulo-tools` folder for more details.
+* __*Views*__ : CREATE/DROP VIEW is not yet implemented for the connector
+* __*Transactions*__ : Transaction support was added in version 0.132 and has not yet been implemented for the connector
 
 ### Usage
 Simply begin using SQL to create a new table in Accumulo to begin working with data.  By default, the first column of the table definition is set to the Accumulo row ID.  This should be the primary key of your table, and keep in mind that any inserts of a row containing the same row ID is effectively an UPDATE as far as Accumulo is concerned, as the cell of the table will overwrite any existing rows.  The row ID can be any valid Presto datatype.  You can set the row ID using the `row_id` table property within the `WITH` clause of your table definition if you want the row ID to be in a different column than the first.  Simply set this property to the name of the presto column.
