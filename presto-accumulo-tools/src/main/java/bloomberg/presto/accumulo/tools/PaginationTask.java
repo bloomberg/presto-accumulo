@@ -74,8 +74,10 @@ public class PaginationTask
     private String tmpTableName;
     private PrestoConnection conn;
 
-    private long currentOffset = 0;
+    private long min = 0;
+    private long max = 0;
     private long maxOffset = 0;
+    private long pageSize = 20;
 
     private static final String TMP_TABLE = "tmp.table";
     private static final String MIN = "min";
@@ -106,7 +108,7 @@ public class PaginationTask
             "WHERE offset > ${" + MIN + "} AND OFFSET <= ${" + MAX + "}";    
     // @formatter:on
 
-    public int exec(int numRowsPerPage)
+    public int exec()
             throws Exception
     {
         try {
@@ -118,7 +120,8 @@ public class PaginationTask
                         new PrintWriter(System.out));
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-                while ((rs = this.next(numRowsPerPage)) != null) {
+                while (this.hasNext()) {
+                    rs = this.next();
                     ResultSetMetaData rsmd = rs.getMetaData();
                     int columnsNumber = rsmd.getColumnCount();
                     List<List<?>> rows = new ArrayList<>();
@@ -212,29 +215,57 @@ public class PaginationTask
         return 0;
     }
 
-    public ResultSet next(long numRows)
+    private ResultSet prevResultSet = null;
+
+    public boolean hasNext()
+    {
+        return max < maxOffset;
+    }
+
+    public ResultSet next()
             throws SQLException
     {
-        if (currentOffset >= maxOffset) {
-            return null;
+        if (max < maxOffset) {
+            // get min and max values to get for this result set, update current offset
+            min = max;
+            max = Math.min(max + pageSize, maxOffset);
         }
-
-        // get min and max values to get for this result set, update current offset
-        long min = currentOffset;
-        currentOffset = Math.min(currentOffset + numRows, maxOffset);
 
         Map<String, Object> queryProps = new HashMap<>();
         queryProps.put(SUBQUERY_COLUMNS, StringUtils.join(columns, ','));
         queryProps.put(TMP_TABLE, tmpTableName);
         queryProps.put(MIN, min);
-        queryProps.put(MAX, currentOffset);
+        queryProps.put(MAX, max);
 
         StrSubstitutor sub = new StrSubstitutor(queryProps);
-        String nextResultSetQuery = sub.replace(selectQueryTemplate);
+        String nextQuery = sub.replace(selectQueryTemplate);
 
-        LOG.info(format("Executing %s", nextResultSetQuery));
+        LOG.info(format("Executing %s", nextQuery));
         Statement stmt = conn.createStatement();
-        return stmt.executeQuery(nextResultSetQuery);
+        prevResultSet = stmt.executeQuery(nextQuery);
+        return prevResultSet;
+    }
+
+    public ResultSet previous()
+            throws SQLException
+    {
+        // get min and max values to get for this result set, update current offset
+        min = Math.max(min - pageSize, 0);
+        max = Math.max(max - pageSize, pageSize);
+
+        Map<String, Object> queryProps = new HashMap<>();
+        queryProps.put(SUBQUERY_COLUMNS, StringUtils.join(columns, ','));
+        queryProps.put(TMP_TABLE, tmpTableName);
+        queryProps.put(MIN, min);
+        queryProps.put(MAX, max);
+
+        StrSubstitutor sub = new StrSubstitutor(queryProps);
+        String prevQuery = sub.replace(selectQueryTemplate);
+
+        LOG.info(format("Executing %s", prevQuery));
+        Statement stmt = conn.createStatement();
+        prevResultSet = stmt.executeQuery(prevQuery);
+        return prevResultSet;
     }
 
     public void cleanup()
@@ -246,6 +277,10 @@ public class PaginationTask
 
         Statement stmt = conn.createStatement();
         stmt.execute("DROP TABLE " + tmpTableName);
+        tmpTableName = null;
+        min = 0;
+        max = 0;
+        maxOffset = 0;
     }
 
     public void setConfig(AccumuloConfig config)
@@ -296,8 +331,6 @@ public class PaginationTask
         this.columns = columns;
     }
 
-    // @formatter:on
-
     private void setSessionProperties(PrestoConnection conn)
     {
         if (rangeSplitsEnabled != null) {
@@ -321,6 +354,16 @@ public class PaginationTask
         }
     }
 
+    public void setPageSize(int size)
+    {
+        this.pageSize = size;
+    }
+
+    public long getPageSize()
+    {
+        return this.pageSize;
+    }
+
     private int checkParam(Object o, String name)
     {
         if (o == null) {
@@ -339,8 +382,10 @@ public class PaginationTask
         this.setPort(Integer.parseInt(args[1]));
         this.setQuery(IOUtils.toString(new FileInputStream(args[2])));
         this.setQueryColumnNames(args[3].split(","));
-        int numRowsPerPage = args.length == 5 ? Integer.parseInt(args[4]) : 20;
-        return this.exec(numRowsPerPage);
+        if (args.length == 5) {
+            this.setPageSize(Integer.parseInt(args[4]));
+        }
+        return this.exec();
     }
 
     @Override

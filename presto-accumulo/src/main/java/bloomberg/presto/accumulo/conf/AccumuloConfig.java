@@ -24,6 +24,7 @@ import javax.validation.constraints.NotNull;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
 
 import static java.lang.String.format;
 
@@ -262,15 +263,13 @@ public class AccumuloConfig
         this.cardinalityCacheExpireSeconds = cardinalityCacheExpireSeconds;
     }
 
-    public static AccumuloConfig from(File f)
+    public static AccumuloConfig fromFile(File f)
             throws ConfigurationException
     {
         if (!f.exists() || f.isDirectory()) {
             throw new ConfigurationException(format("File %s does not exist or is a directory", f));
         }
-
         PropertiesConfiguration props = new PropertiesConfiguration(f);
-
         props.setThrowExceptionOnMissing(true);
 
         AccumuloConfig config = new AccumuloConfig();
@@ -284,6 +283,24 @@ public class AccumuloConfig
         config.setZkMetadataRoot(props.getString("zookeeper.metadata.root", "/presto-accumulo"));
         config.setZooKeepers(props.getString("zookeepers"));
         return config;
+    }
 
+    public static AccumuloConfig fromURL(URL url)
+            throws ConfigurationException
+    {
+        PropertiesConfiguration props = new PropertiesConfiguration(url);
+        props.setThrowExceptionOnMissing(true);
+
+        AccumuloConfig config = new AccumuloConfig();
+        config.setCardinalityCacheExpireSeconds(
+                props.getInt("cardinality.cache.expire.seconds", 300));
+        config.setCardinalityCacheSize(props.getInt("cardinality.cache.size", 100000));
+        config.setInstance(props.getString("instance"));
+        config.setMetadataManagerClass(props.getString("metadata.manager.class", "default"));
+        config.setPassword(props.getString("password"));
+        config.setUsername(props.getString("username"));
+        config.setZkMetadataRoot(props.getString("zookeeper.metadata.root", "/presto-accumulo"));
+        config.setZooKeepers(props.getString("zookeepers"));
+        return config;
     }
 }

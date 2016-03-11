@@ -84,7 +84,7 @@ public class Main
 
         String prestoHome = System.getenv("PRESTO_HOME");
         AccumuloConfig config =
-                AccumuloConfig.from(new File(prestoHome, "etc/catalog/accumulo.properties"));
+                AccumuloConfig.fromFile(new File(prestoHome, "etc/catalog/accumulo.properties"));
 
         String toolName = args[0];
         Task t = Main.getTask(toolName);
