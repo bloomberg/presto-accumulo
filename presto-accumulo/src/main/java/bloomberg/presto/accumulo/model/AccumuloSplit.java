@@ -307,7 +307,7 @@ public class AccumuloSplit
                 .add("table", table).add("rowId", rowId)
                 .add("serializerClassName", serializerClassName).add("addresses", addresses)
                 .add("numRanges", ranges.size()).add("constraints", constraints)
-                .add("hostPort", hostPort).toString();
+                .add("scanAuths", scanAuths).add("hostPort", hostPort).toString();
     }
 
     public static final class RangeSerializer

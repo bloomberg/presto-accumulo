@@ -44,6 +44,8 @@ import static java.util.Objects.requireNonNull;
 public class AccumuloRecordSet
         implements RecordSet
 {
+    private static final Logger LOG = Logger.get(AccumuloRecordSet.class);
+
     private final List<AccumuloColumnHandle> columnHandles;
     private final List<AccumuloColumnConstraint> constraints;
     private final List<Type> columnTypes;
@@ -97,12 +99,12 @@ public class AccumuloRecordSet
             final Authorizations auths;
             if (split.hasScanAuths()) {
                 auths = new Authorizations(split.getScanAuths().split(","));
+                LOG.info("scan_auths set: %s", auths);
             }
             else {
                 auths = conn.securityOperations().getUserAuthorizations(config.getUsername());
+                LOG.info("scan_auths not set, using user auths: %s", auths);
             }
-
-            Logger.get(getClass()).debug("Set authorizations to %s", auths);
 
             // Create the BatchScanner and set the ranges from the split
             scan = conn.createBatchScanner(split.getFullTableName(), auths, 10);

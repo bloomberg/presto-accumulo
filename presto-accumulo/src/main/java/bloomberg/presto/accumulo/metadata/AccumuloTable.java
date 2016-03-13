@@ -346,6 +346,7 @@ public class AccumuloTable
     {
         return toStringHelper(this).add("schemaName", schema).add("tableName", table)
                 .add("columns", columns).add("rowIdName", rowId).add("external", external)
-                .add("serializerClassName", serializerClassName).toString();
+                .add("serializerClassName", serializerClassName).add("scanAuths", scanAuths)
+                .toString();
     }
 }

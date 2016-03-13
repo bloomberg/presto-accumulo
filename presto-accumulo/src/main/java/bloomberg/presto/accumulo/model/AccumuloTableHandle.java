@@ -209,7 +209,8 @@ public final class AccumuloTableHandle
                 && Objects.equals(this.table, other.table)
                 && Objects.equals(this.rowId, other.rowId)
                 && Objects.equals(this.external, other.external)
-                && Objects.equals(this.serializerClassName, other.serializerClassName);
+                && Objects.equals(this.serializerClassName, other.serializerClassName)
+                && Objects.equals(this.scanAuths, other.scanAuths);
     }
 
     @Override
@@ -217,6 +218,7 @@ public final class AccumuloTableHandle
     {
         return toStringHelper(this).add("connectorId", connectorId).add("schema", schema)
                 .add("table", table).add("rowId", rowId).add("internal", external)
-                .add("serializerClassName", serializerClassName).toString();
+                .add("serializerClassName", serializerClassName).add("scanAuths", scanAuths)
+                .toString();
     }
 }
