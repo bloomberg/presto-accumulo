@@ -55,6 +55,7 @@ public final class AccumuloTableProperties
     private static final String LOCALITY_GROUPS = "locality_groups";
     private static final String ROW_ID = "row_id";
     private static final String SERIALIZER = "serializer";
+    private static final String SCAN_AUTHS = "scan_auths";
 
     private final List<PropertyMetadata<?>> tableProperties;
 
@@ -73,7 +74,7 @@ public final class AccumuloTableProperties
 
         PropertyMetadata<Boolean> s3 = booleanSessionProperty(EXTERNAL,
                 "If true, Presto will only do metadata operations for the table. Else, Presto will "
-                + "create and drop Accumulo tables where appropriate. Default false.",
+                        + "create and drop Accumulo tables where appropriate. Default false.",
                 false, false);
 
         PropertyMetadata<String> s4 = stringSessionProperty(LOCALITY_GROUPS,
@@ -101,7 +102,11 @@ public final class AccumuloTableProperties
                                                 ? LexicoderRowSerializer.class.getName()
                                                 : (String) x)));
 
-        tableProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6);
+        PropertyMetadata<String> s7 = stringSessionProperty(SCAN_AUTHS,
+                "Scan-time authorizations set on the batch scanner.  Default is all scan authorizations for the user",
+                null, false);
+
+        tableProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7);
     }
 
     /**
@@ -212,6 +217,18 @@ public final class AccumuloTableProperties
     public static String getRowId(Map<String, Object> tableProperties)
     {
         return (String) tableProperties.get(ROW_ID);
+    }
+
+    /**
+     * Gets the scan authorizations, or null if all of the user's scan authorizations should be used
+     *
+     * @param tableProperties
+     *            The map of table properties
+     * @return The scan authorizations
+     */
+    public static String getScanAuthorizations(Map<String, Object> tableProperties)
+    {
+        return (String) tableProperties.get(SCAN_AUTHS);
     }
 
     /**

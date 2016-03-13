@@ -55,6 +55,7 @@ public class AccumuloSplit
     private final String schema;
     private final String table;
     private String serializerClassName;
+    private final String scanAuths;
     private final List<HostAddress> addresses;
 
     @JsonSerialize(contentUsing = RangeSerializer.class)
@@ -79,6 +80,9 @@ public class AccumuloSplit
      *            List of Accumulo Ranges for this split
      * @param constraints
      *            List of constraints
+     * @param scanAuths
+     *            Scan-time authorizations of the scanner, or null to use all user scan
+     *            authorizations
      * @param hostPort
      *            TabletServer host:port to give Presto a hint
      */
@@ -89,7 +93,7 @@ public class AccumuloSplit
             @JsonProperty("serializerClassName") String serializerClassName,
             @JsonProperty("ranges") List<Range> ranges,
             @JsonProperty("constraints") List<AccumuloColumnConstraint> constraints,
-            @JsonProperty("hostPort") String hostPort)
+            @JsonProperty("scanAuths") String scanAuths, @JsonProperty("hostPort") String hostPort)
     {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.rowId = requireNonNull(rowId, "rowId is null");
@@ -97,6 +101,7 @@ public class AccumuloSplit
         this.table = requireNonNull(table, "table is null");
         this.serializerClassName = serializerClassName;
         this.constraints = requireNonNull(constraints, "constraints is null");
+        this.scanAuths = scanAuths;
         this.hostPort = requireNonNull(hostPort, "hostPort is null");
 
         // We don't "requireNotNull" this field, Jackson parses objects using a top-down approach,
@@ -238,6 +243,28 @@ public class AccumuloSplit
             throw new PrestoException(StandardErrorCode.USER_ERROR,
                     "Configured serializer class not found", e);
         }
+    }
+
+    /**
+     * Gets the configured scan authorizations, or null if not set
+     *
+     * @return Scan authorizations
+     */
+    @JsonProperty
+    public String getScanAuths()
+    {
+        return scanAuths;
+    }
+
+    /**
+     * Gets a Boolean value indicating whether or not this split has any set scan authorizations
+     *
+     * @return True if set, false otherwise
+     */
+    @JsonIgnore
+    public boolean hasScanAuths()
+    {
+        return scanAuths != null;
     }
 
     /**

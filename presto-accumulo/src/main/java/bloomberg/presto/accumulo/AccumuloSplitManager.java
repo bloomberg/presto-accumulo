@@ -113,7 +113,7 @@ public class AccumuloSplitManager
         for (TabletSplitMetadata smd : tSplits) {
             cSplits.add(new AccumuloSplit(connectorId, schemaName, tableName, rowIdName,
                     tableHandle.getSerializerClassName(), smd.getRanges(), iteratorConstraints,
-                    smd.getHostPort()));
+                    tableHandle.getScanAuthorizations(), smd.getHostPort()));
         }
 
         Collections.shuffle(cSplits);

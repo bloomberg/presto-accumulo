@@ -25,8 +25,10 @@ import com.facebook.presto.spi.RecordSet;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
+import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.security.Authorizations;
 
 import java.util.List;
 
@@ -90,9 +92,20 @@ public class AccumuloRecordSet
         this.columnTypes = types.build();
 
         try {
+            // Get the scan-time authorizations from the connector split, or use the user's
+            // authorizations if not set
+            final Authorizations auths;
+            if (split.hasScanAuths()) {
+                auths = new Authorizations(split.getScanAuths().split(","));
+            }
+            else {
+                auths = conn.securityOperations().getUserAuthorizations(config.getUsername());
+            }
+
+            Logger.get(getClass()).debug("Set authorizations to %s", auths);
+
             // Create the BatchScanner and set the ranges from the split
-            scan = conn.createBatchScanner(split.getFullTableName(),
-                    conn.securityOperations().getUserAuthorizations(config.getUsername()), 10);
+            scan = conn.createBatchScanner(split.getFullTableName(), auths, 10);
             scan.setRanges(split.getRanges());
         }
         catch (Exception e) {

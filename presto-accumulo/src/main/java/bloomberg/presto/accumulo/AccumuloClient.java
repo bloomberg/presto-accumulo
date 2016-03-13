@@ -195,7 +195,8 @@ public class AccumuloClient
         boolean external = AccumuloTableProperties.isExternal(tableProperties);
         AccumuloTable table = new AccumuloTable(meta.getTable().getSchemaName(),
                 meta.getTable().getTableName(), columns, rowIdColumn, external,
-                AccumuloTableProperties.getSerializerClass(tableProperties));
+                AccumuloTableProperties.getSerializerClass(tableProperties),
+                AccumuloTableProperties.getScanAuthorizations(tableProperties));
 
         // Validate the Accumulo table exists if it is external
         if (external) {
@@ -362,7 +363,7 @@ public class AccumuloClient
         AccumuloTable oldTable = getTable(oldName);
         AccumuloTable newTable = new AccumuloTable(newName.getSchemaName(), newName.getTableName(),
                 oldTable.getColumns(), oldTable.getRowId(), oldTable.isExternal(),
-                oldTable.getSerializerClassName());
+                oldTable.getSerializerClassName(), oldTable.getScanAuthorizations());
 
         // Probably being over-cautious on the failure conditions and rollbacks, but I suppose it is
         // better to be safe than sink ships.

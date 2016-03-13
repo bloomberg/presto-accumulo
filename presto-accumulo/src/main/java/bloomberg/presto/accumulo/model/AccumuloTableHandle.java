@@ -39,6 +39,7 @@ public final class AccumuloTableHandle
     private final boolean external;
     private final String connectorId;
     private final String rowId;
+    private final String scanAuths;
     private final String schema;
     private final String serializerClassName;
     private final String table;
@@ -58,16 +59,21 @@ public final class AccumuloTableHandle
      *            Whether or not this table is internal, i.e. managed by Presto
      * @param serializerClassName
      *            The qualified Java class name to (de)serialize data from Accumulo
+     * @param scanAuths
+     *            Scan-time authorizations of the scanner, or null to use all user scan
+     *            authorizations
      */
     @JsonCreator
     public AccumuloTableHandle(@JsonProperty("connectorId") String connectorId,
             @JsonProperty("schema") String schema, @JsonProperty("table") String table,
             @JsonProperty("rowId") String rowId, @JsonProperty("external") boolean external,
-            @JsonProperty("serializerClassName") String serializerClassName)
+            @JsonProperty("serializerClassName") String serializerClassName,
+            @JsonProperty("scanAuths") String scanAuths)
     {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.external = requireNonNull(external, "external is null");
         this.rowId = requireNonNull(rowId, "rowId is null");
+        this.scanAuths = scanAuths;
         this.schema = requireNonNull(schema, "schema is null");
         this.serializerClassName =
                 requireNonNull(serializerClassName, "serializerClassName is null");
@@ -94,6 +100,17 @@ public final class AccumuloTableHandle
     public String getRowId()
     {
         return rowId;
+    }
+
+    /**
+     * Gets the configured scan authorizations, or null if not set
+     *
+     * @return Scan authorizations
+     */
+    @JsonProperty
+    public String getScanAuthorizations()
+    {
+        return scanAuths;
     }
 
     /**

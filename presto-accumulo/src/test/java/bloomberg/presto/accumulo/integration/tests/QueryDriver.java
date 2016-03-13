@@ -239,7 +239,8 @@ public class QueryDriver
         int eLength = rSchema.getLength();
 
         // auto-detect gzip compression based on filename
-        InputStream dataStream = file.getName().endsWith(".gz") ? new GZIPInputStream(new FileInputStream(file)) : new FileInputStream(file);
+        InputStream dataStream = file.getName().endsWith(".gz")
+                ? new GZIPInputStream(new FileInputStream(file)) : new FileInputStream(file);
 
         try (BufferedReader rdr = new BufferedReader(new InputStreamReader(dataStream))) {
             String line;
@@ -247,7 +248,9 @@ public class QueryDriver
                 String[] tokens = line.split("\\|");
 
                 if (tokens.length != eLength) {
-                    throw new RuntimeException(String.format("Record in file has %d tokens, expected %d, %s", tokens.length, eLength, line));
+                    throw new RuntimeException(
+                            String.format("Record in file has %d tokens, expected %d, %s",
+                                    tokens.length, eLength, line));
                 }
 
                 Row r = Row.newRow();
@@ -270,7 +273,8 @@ public class QueryDriver
                             r.addField(new Time(Long.parseLong(tokens[i]) * 1000), TimeType.TIME);
                             break;
                         case StandardTypes.TIMESTAMP:
-                            r.addField(new Timestamp(Long.parseLong(tokens[i]) * 1000), TimestampType.TIMESTAMP);
+                            r.addField(new Timestamp(Long.parseLong(tokens[i]) * 1000),
+                                    TimestampType.TIMESTAMP);
                             break;
                         case StandardTypes.VARBINARY:
                             r.addField(tokens[i].getBytes(), VarbinaryType.VARBINARY);
@@ -363,21 +367,25 @@ public class QueryDriver
         }
 
         // cleanup metadata folder
-        CuratorFramework zkclient = CuratorFrameworkFactory.newClient(config.getZooKeepers(), new ExponentialBackoffRetry(1000, 3));
+        CuratorFramework zkclient = CuratorFrameworkFactory.newClient(config.getZooKeepers(),
+                new ExponentialBackoffRetry(1000, 3));
         zkclient.start();
 
-        String schemaPath = String.format("%s/%s/%s", config.getZkMetadataRoot(), schema, tableName);
+        String schemaPath =
+                String.format("%s/%s/%s", config.getZkMetadataRoot(), schema, tableName);
         String tablePath = String.format("%s/%s/%s", config.getZkMetadataRoot(), schema, tableName);
 
         if (zkclient.checkExists().forPath(tablePath) != null) {
             zkclient.delete().deletingChildrenIfNeeded().forPath(tablePath);
         }
 
-        if (zkclient.checkExists().forPath(schemaPath) != null && zkclient.getChildren().forPath(schemaPath).isEmpty()) {
+        if (zkclient.checkExists().forPath(schemaPath) != null
+                && zkclient.getChildren().forPath(schemaPath).isEmpty()) {
             zkclient.delete().deletingChildrenIfNeeded().forPath(schemaPath);
         }
 
-        this.withHost("localhost").withPort(8080).withInputSchema(null).withSchema(null).withQuery(null).withTable(null);
+        this.withHost("localhost").withPort(8080).withInputSchema(null).withSchema(null)
+                .withQuery(null).withTable(null);
 
         inputs.clear();
         expectedOutputs.clear();
@@ -388,8 +396,11 @@ public class QueryDriver
 
     /**
      * Compares output of the actual data to the configured expected output
-     * @param actual The list of results from the query
-     * @param expected The list of expected results
+     *
+     * @param actual
+     *            The list of results from the query
+     * @param expected
+     *            The list of expected results
      * @return True if the output matches, false otherwise
      */
     public static boolean compareOutput(List<Row> actual, List<Row> expected, boolean orderMatters)
@@ -410,16 +421,19 @@ public class QueryDriver
     protected void initAccumulo()
             throws AccumuloException, AccumuloSecurityException
     {
-        ZooKeeperInstance inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
-        this.conn = inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword()));
+        ZooKeeperInstance inst =
+                new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
+        this.conn =
+                inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword()));
         metaManager = new ZooKeeperMetadataManager(config);
     }
 
     protected void createTable()
-            throws AccumuloException,
-            AccumuloSecurityException, TableExistsException, TableNotFoundException
+            throws AccumuloException, AccumuloSecurityException, TableExistsException,
+            TableNotFoundException
     {
-        String fulltable = this.getSchema().equals("default") ? this.getAccumuloTable() : this.getSchema() + "." + this.getAccumuloTable();
+        String fulltable = this.getSchema().equals("default") ? this.getAccumuloTable()
+                : this.getSchema() + "." + this.getAccumuloTable();
 
         conn.tableOperations().create(fulltable);
 
@@ -435,8 +449,10 @@ public class QueryDriver
         if (this.hasIndex()) {
             conn.tableOperations().create(Indexer.getIndexTableName(schema, tableName));
             conn.tableOperations().create(Indexer.getMetricsTableName(schema, tableName));
-            for (IteratorSetting s : Indexer.getMetricIterators(metaManager.getTable(new SchemaTableName(schema, tableName)))) {
-                conn.tableOperations().attachIterator(Indexer.getMetricsTableName(schema, tableName), s);
+            for (IteratorSetting s : Indexer.getMetricIterators(
+                    metaManager.getTable(new SchemaTableName(schema, tableName)))) {
+                conn.tableOperations()
+                        .attachIterator(Indexer.getMetricsTableName(schema, tableName), s);
             }
         }
     }
@@ -454,7 +470,9 @@ public class QueryDriver
         props.setProperty("user", "root");
         Connection conn = DriverManager.getConnection(this.getDbUrl(), props);
 
-        String insertInto = "INSERT INTO " + (this.getSchema().equals("default") ? this.getAccumuloTable() : this.getSchema() + '.' + this.getAccumuloTable()) + " VALUES ";
+        String insertInto =
+                "INSERT INTO " + (this.getSchema().equals("default") ? this.getAccumuloTable()
+                        : this.getSchema() + '.' + this.getAccumuloTable()) + " VALUES ";
         StringBuilder bldr = new StringBuilder(insertInto);
 
         int i = 0;
@@ -484,7 +502,9 @@ public class QueryDriver
     protected void pushPrestoMetadata()
             throws Exception
     {
-        metaManager.createTableMetadata(new AccumuloTable(getSchema(), getAccumuloTable(), inputSchema.getColumns(), rowIdName, false, this.serializer.getClass().getName()));
+        metaManager.createTableMetadata(
+                new AccumuloTable(getSchema(), getAccumuloTable(), inputSchema.getColumns(),
+                        rowIdName, false, this.serializer.getClass().getName(), null));
     }
 
     protected List<Row> execQuery()
@@ -519,11 +539,14 @@ public class QueryDriver
                     Array array = rs.getArray(j);
                     Type elementType = getType(array.getBaseTypeName());
                     Object[] elements = (Object[]) array.getArray();
-                    orow.addField(AccumuloRowSerializer.getBlockFromArray(elementType, Arrays.asList(elements)), new ArrayType(elementType));
+                    orow.addField(AccumuloRowSerializer.getBlockFromArray(elementType,
+                            Arrays.asList(elements)), new ArrayType(elementType));
                 }
                 else if (bloomberg.presto.accumulo.Types.isMapType(type)) {
                     Map<?, ?> map = (Map<?, ?>) rs.getObject(j);
-                    orow.addField(rs.wasNull() ? null : AccumuloRowSerializer.getBlockFromMap(type, map), type);
+                    orow.addField(
+                            rs.wasNull() ? null : AccumuloRowSerializer.getBlockFromMap(type, map),
+                            type);
                 }
                 else {
                     switch (type.getDisplayName()) {
@@ -568,7 +591,8 @@ public class QueryDriver
                             break;
                         }
                         default:
-                            throw new RuntimeException("Unknown SQL type " + rs.getMetaData().getColumnType(j));
+                            throw new RuntimeException(
+                                    "Unknown SQL type " + rs.getMetaData().getColumnType(j));
                     }
                 }
             }
@@ -592,7 +616,8 @@ public class QueryDriver
             case Types.ARRAY:
                 Array ar = rs.getArray(column);
                 if (ar != null) {
-                    Type t = typeManager.getType(TypeSignature.parseTypeSignature(rs.getArray(column).getBaseTypeName()));
+                    Type t = typeManager.getType(TypeSignature
+                            .parseTypeSignature(rs.getArray(column).getBaseTypeName()));
                     return new ArrayType(t);
                 }
                 else {
@@ -607,7 +632,8 @@ public class QueryDriver
             case Types.DOUBLE:
                 return DoubleType.DOUBLE;
             case Types.JAVA_OBJECT:
-                return typeManager.getType(TypeSignature.parseTypeSignature(rsmd.getColumnTypeName(column)));
+                return typeManager
+                        .getType(TypeSignature.parseTypeSignature(rsmd.getColumnTypeName(column)));
             case Types.TIME:
                 return TimeType.TIME;
             case Types.TIMESTAMP:
@@ -627,7 +653,8 @@ public class QueryDriver
         return typeManager.getType(TypeSignature.parseTypeSignature(name));
     }
 
-    protected static boolean validateWithoutOrder(final List<Row> actualOutputs, final List<Row> expectedOutputs)
+    protected static boolean validateWithoutOrder(final List<Row> actualOutputs,
+            final List<Row> expectedOutputs)
     {
         Set<Integer> verifiedExpecteds = new HashSet<Integer>();
         Set<Integer> unverifiedOutputs = new HashSet<Integer>();
@@ -642,7 +669,8 @@ public class QueryDriver
                 if (expected.equals(output)) {
                     found = true;
                     verifiedExpecteds.add(j);
-                    LOG.info(String.format("Matched expected output %s no %d at " + "position %d", output, j, i));
+                    LOG.info(String.format("Matched expected output %s no %d at " + "position %d",
+                            output, j, i));
                     break;
                 }
             }
@@ -669,7 +697,8 @@ public class QueryDriver
         return noErrors;
     }
 
-    protected static boolean validateWithOrder(final List<Row> actualOutputs, final List<Row> expectedOutputs)
+    protected static boolean validateWithOrder(final List<Row> actualOutputs,
+            final List<Row> expectedOutputs)
     {
         boolean noErrors = true;
         int i = 0;
@@ -677,10 +706,12 @@ public class QueryDriver
             Row output = actualOutputs.get(i);
             Row expected = expectedOutputs.get(i);
             if (expected.equals(output)) {
-                LOG.info(String.format("Matched expected output %s at " + "position %d", expected, i));
+                LOG.info(String.format("Matched expected output %s at " + "position %d", expected,
+                        i));
             }
             else {
-                LOG.error("Missing expected output %s at position %d, got %s.", expected, i, output);
+                LOG.error("Missing expected output %s at position %d, got %s.", expected, i,
+                        output);
                 noErrors = false;
             }
         }

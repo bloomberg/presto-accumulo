@@ -45,6 +45,7 @@ public class AccumuloTable
     private List<AccumuloColumnHandle> columns;
     private final List<ColumnMetadata> columnsMetadata;
     private final String serializerClassName;
+    private final String scanAuths;
 
     /***
      * Creates a new instance of AccumuloTable
@@ -61,12 +62,16 @@ public class AccumuloTable
      *            Whether or not this table is external, i.e. Presto only manages metadata
      * @param serializerClassName
      *            The qualified Java class name to (de)serialize data from Accumulo
+     * @param scanAuths
+     *            Scan-time authorizations of the scanner, or null to use all user scan
+     *            authorizations
      */
     @JsonCreator
     public AccumuloTable(@JsonProperty("schema") String schema, @JsonProperty("table") String table,
             @JsonProperty("columns") List<AccumuloColumnHandle> columns,
             @JsonProperty("rowId") String rowId, @JsonProperty("external") boolean external,
-            @JsonProperty("serializerClassName") String serializerClassName)
+            @JsonProperty("serializerClassName") String serializerClassName,
+            @JsonProperty("scanAuths") String scanAuths)
     {
         this.external = requireNonNull(external, "external is null");
         this.rowId = requireNonNull(rowId, "rowId is null");
@@ -75,6 +80,7 @@ public class AccumuloTable
         this.columns = ImmutableList.copyOf(requireNonNull(columns, "columns are null"));
         this.serializerClassName =
                 requireNonNull(serializerClassName, "serializerClassName is null");
+        this.scanAuths = scanAuths;
 
         boolean indexed = false;
         // Extract the ColumnMetadata from the handles for faster access
@@ -228,6 +234,17 @@ public class AccumuloTable
 
         // Update the index status of the table
         indexed |= newColumn.isIndexed();
+    }
+
+    /**
+     * Gets the configured scan authorizations, or null if not set
+     *
+     * @return Scan authorizations
+     */
+    @JsonProperty
+    public String getScanAuthorizations()
+    {
+        return scanAuths;
     }
 
     /**

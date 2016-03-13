@@ -84,7 +84,7 @@ public class IndexerTest
                 new ArrayType(VARCHAR), 3, "", true);
 
         table = new AccumuloTable("default", "index_test_table", ImmutableList.of(c1, c2, c3, c4),
-                "id", true, LexicoderRowSerializer.class.getCanonicalName());
+                "id", true, LexicoderRowSerializer.class.getCanonicalName(), null);
 
         conn.tableOperations().create(table.getFullTableName());
         conn.tableOperations().create(table.getIndexTableName());
