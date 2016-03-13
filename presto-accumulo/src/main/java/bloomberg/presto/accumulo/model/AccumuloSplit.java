@@ -55,7 +55,7 @@ public class AccumuloSplit
     private final String schema;
     private final String table;
     private String serializerClassName;
-    private final String scanAuths;
+    private final String scanAuthorizations;
     private final List<HostAddress> addresses;
 
     @JsonSerialize(contentUsing = RangeSerializer.class)
@@ -80,7 +80,7 @@ public class AccumuloSplit
      *            List of Accumulo Ranges for this split
      * @param constraints
      *            List of constraints
-     * @param scanAuths
+     * @param scanAuthorizations
      *            Scan-time authorizations of the scanner, or null to use all user scan
      *            authorizations
      * @param hostPort
@@ -93,7 +93,8 @@ public class AccumuloSplit
             @JsonProperty("serializerClassName") String serializerClassName,
             @JsonProperty("ranges") List<Range> ranges,
             @JsonProperty("constraints") List<AccumuloColumnConstraint> constraints,
-            @JsonProperty("scanAuths") String scanAuths, @JsonProperty("hostPort") String hostPort)
+            @JsonProperty("scanAuthorizations") String scanAuthorizations,
+            @JsonProperty("hostPort") String hostPort)
     {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.rowId = requireNonNull(rowId, "rowId is null");
@@ -101,7 +102,7 @@ public class AccumuloSplit
         this.table = requireNonNull(table, "table is null");
         this.serializerClassName = serializerClassName;
         this.constraints = requireNonNull(constraints, "constraints is null");
-        this.scanAuths = scanAuths;
+        this.scanAuthorizations = scanAuthorizations;
         this.hostPort = requireNonNull(hostPort, "hostPort is null");
 
         // We don't "requireNotNull" this field, Jackson parses objects using a top-down approach,
@@ -251,9 +252,9 @@ public class AccumuloSplit
      * @return Scan authorizations
      */
     @JsonProperty
-    public String getScanAuths()
+    public String getScanAuthorizations()
     {
-        return scanAuths;
+        return scanAuthorizations;
     }
 
     /**
@@ -262,9 +263,10 @@ public class AccumuloSplit
      * @return True if set, false otherwise
      */
     @JsonIgnore
-    public boolean hasScanAuths()
+    public boolean hasScanAuthorizations()
     {
-        return scanAuths != null;
+        return scanAuthorizations != null;
+
     }
 
     /**
@@ -307,7 +309,7 @@ public class AccumuloSplit
                 .add("table", table).add("rowId", rowId)
                 .add("serializerClassName", serializerClassName).add("addresses", addresses)
                 .add("numRanges", ranges.size()).add("constraints", constraints)
-                .add("scanAuths", scanAuths).add("hostPort", hostPort).toString();
+                .add("scanAuthorizations", scanAuthorizations).add("hostPort", hostPort).toString();
     }
 
     public static final class RangeSerializer

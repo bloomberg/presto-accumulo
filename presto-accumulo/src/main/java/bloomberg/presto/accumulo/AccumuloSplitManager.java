@@ -31,6 +31,7 @@ import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.predicate.TupleDomain.ColumnDomain;
 import com.google.common.collect.ImmutableList;
+import io.airlift.log.Logger;
 
 import javax.inject.Inject;
 
@@ -48,6 +49,8 @@ import static java.util.Objects.requireNonNull;
 public class AccumuloSplitManager
         implements ConnectorSplitManager
 {
+    private static final Logger LOG = Logger.get(AccumuloSplitManager.class);
+
     private final String connectorId;
     private final AccumuloClient client;
 
@@ -111,9 +114,11 @@ public class AccumuloSplitManager
         // Pack the tablet split metadata into a connector split
         List<ConnectorSplit> cSplits = new ArrayList<>();
         for (TabletSplitMetadata smd : tSplits) {
-            cSplits.add(new AccumuloSplit(connectorId, schemaName, tableName, rowIdName,
+            AccumuloSplit split = new AccumuloSplit(connectorId, schemaName, tableName, rowIdName,
                     tableHandle.getSerializerClassName(), smd.getRanges(), iteratorConstraints,
-                    tableHandle.getScanAuthorizations(), smd.getHostPort()));
+                    tableHandle.getScanAuthorizations(), smd.getHostPort());
+            LOG.debug("Added split %s", split);
+            cSplits.add(split);
         }
 
         Collections.shuffle(cSplits);

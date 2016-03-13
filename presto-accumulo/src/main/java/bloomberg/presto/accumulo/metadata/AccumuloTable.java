@@ -45,7 +45,7 @@ public class AccumuloTable
     private List<AccumuloColumnHandle> columns;
     private final List<ColumnMetadata> columnsMetadata;
     private final String serializerClassName;
-    private final String scanAuths;
+    private final String scanAuthorizations;
 
     /***
      * Creates a new instance of AccumuloTable
@@ -62,7 +62,7 @@ public class AccumuloTable
      *            Whether or not this table is external, i.e. Presto only manages metadata
      * @param serializerClassName
      *            The qualified Java class name to (de)serialize data from Accumulo
-     * @param scanAuths
+     * @param scanAuthorizations
      *            Scan-time authorizations of the scanner, or null to use all user scan
      *            authorizations
      */
@@ -71,7 +71,7 @@ public class AccumuloTable
             @JsonProperty("columns") List<AccumuloColumnHandle> columns,
             @JsonProperty("rowId") String rowId, @JsonProperty("external") boolean external,
             @JsonProperty("serializerClassName") String serializerClassName,
-            @JsonProperty("scanAuths") String scanAuths)
+            @JsonProperty("scanAuthorizations") String scanAuthorizations)
     {
         this.external = requireNonNull(external, "external is null");
         this.rowId = requireNonNull(rowId, "rowId is null");
@@ -80,7 +80,7 @@ public class AccumuloTable
         this.columns = ImmutableList.copyOf(requireNonNull(columns, "columns are null"));
         this.serializerClassName =
                 requireNonNull(serializerClassName, "serializerClassName is null");
-        this.scanAuths = scanAuths;
+        this.scanAuthorizations = scanAuthorizations;
 
         boolean indexed = false;
         // Extract the ColumnMetadata from the handles for faster access
@@ -244,7 +244,7 @@ public class AccumuloTable
     @JsonProperty
     public String getScanAuthorizations()
     {
-        return scanAuths;
+        return scanAuthorizations;
     }
 
     /**
@@ -346,7 +346,7 @@ public class AccumuloTable
     {
         return toStringHelper(this).add("schemaName", schema).add("tableName", table)
                 .add("columns", columns).add("rowIdName", rowId).add("external", external)
-                .add("serializerClassName", serializerClassName).add("scanAuths", scanAuths)
-                .toString();
+                .add("serializerClassName", serializerClassName)
+                .add("scanAuthorizations", scanAuthorizations).toString();
     }
 }

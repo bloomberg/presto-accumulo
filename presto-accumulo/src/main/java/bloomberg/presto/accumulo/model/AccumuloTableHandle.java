@@ -39,7 +39,7 @@ public final class AccumuloTableHandle
     private final boolean external;
     private final String connectorId;
     private final String rowId;
-    private final String scanAuths;
+    private final String scanAuthorizations;
     private final String schema;
     private final String serializerClassName;
     private final String table;
@@ -59,7 +59,7 @@ public final class AccumuloTableHandle
      *            Whether or not this table is internal, i.e. managed by Presto
      * @param serializerClassName
      *            The qualified Java class name to (de)serialize data from Accumulo
-     * @param scanAuths
+     * @param scanAuthorizations
      *            Scan-time authorizations of the scanner, or null to use all user scan
      *            authorizations
      */
@@ -68,12 +68,12 @@ public final class AccumuloTableHandle
             @JsonProperty("schema") String schema, @JsonProperty("table") String table,
             @JsonProperty("rowId") String rowId, @JsonProperty("external") boolean external,
             @JsonProperty("serializerClassName") String serializerClassName,
-            @JsonProperty("scanAuths") String scanAuths)
+            @JsonProperty("scanAuthorizations") String scanAuthorizations)
     {
         this.connectorId = requireNonNull(connectorId, "connectorId is null");
         this.external = requireNonNull(external, "external is null");
         this.rowId = requireNonNull(rowId, "rowId is null");
-        this.scanAuths = scanAuths;
+        this.scanAuthorizations = scanAuthorizations;
         this.schema = requireNonNull(schema, "schema is null");
         this.serializerClassName =
                 requireNonNull(serializerClassName, "serializerClassName is null");
@@ -110,7 +110,7 @@ public final class AccumuloTableHandle
     @JsonProperty
     public String getScanAuthorizations()
     {
-        return scanAuths;
+        return scanAuthorizations;
     }
 
     /**
@@ -210,7 +210,7 @@ public final class AccumuloTableHandle
                 && Objects.equals(this.rowId, other.rowId)
                 && Objects.equals(this.external, other.external)
                 && Objects.equals(this.serializerClassName, other.serializerClassName)
-                && Objects.equals(this.scanAuths, other.scanAuths);
+                && Objects.equals(this.scanAuthorizations, other.scanAuthorizations);
     }
 
     @Override
@@ -218,7 +218,7 @@ public final class AccumuloTableHandle
     {
         return toStringHelper(this).add("connectorId", connectorId).add("schema", schema)
                 .add("table", table).add("rowId", rowId).add("internal", external)
-                .add("serializerClassName", serializerClassName).add("scanAuths", scanAuths)
-                .toString();
+                .add("serializerClassName", serializerClassName)
+                .add("scanAuthorizations", scanAuthorizations).toString();
     }
 }

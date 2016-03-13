@@ -97,8 +97,8 @@ public class AccumuloRecordSet
             // Get the scan-time authorizations from the connector split, or use the user's
             // authorizations if not set
             final Authorizations auths;
-            if (split.hasScanAuths()) {
-                auths = new Authorizations(split.getScanAuths().split(","));
+            if (split.hasScanAuthorizations()) {
+                auths = new Authorizations(split.getScanAuthorizations().split(","));
                 LOG.info("scan_auths set: %s", auths);
             }
             else {
