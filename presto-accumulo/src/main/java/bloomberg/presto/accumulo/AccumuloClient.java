@@ -81,7 +81,6 @@ public class AccumuloClient
     private final Authorizations auths;
     private final Connector conn;
     private final ZooKeeperInstance inst;
-    private final IndexLookup sIndexLookup;
 
     /**
      * Creates a new instance of an AccumuloClient, injected by that Guice. Creates a connection to
@@ -106,7 +105,6 @@ public class AccumuloClient
                 new PasswordToken(config.getPassword().getBytes()));
         this.metaManager = config.getMetadataManager();
         this.auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
-        this.sIndexLookup = new IndexLookup(conn, conf, auths);
     }
 
     /**
@@ -607,6 +605,21 @@ public class AccumuloClient
             // Get the initial Range based on the row ID domain
             final Collection<Range> rowIdRanges = getRangesFromDomain(rowIdDom, serializer);
             final List<TabletSplitMetadata> tabletSplits = new ArrayList<>();
+
+            // Get the scan-time authorizations from the connector split, or use the user's
+            // authorizations if not set
+            String strAuths = this.getTable(new SchemaTableName(schema, table)).getScanAuthorizations();
+            final Authorizations scanAuths;
+            if (strAuths != null) {
+                scanAuths = new Authorizations(strAuths.split(","));
+                LOG.info("index scan auths set: %s", scanAuths);
+            }
+            else {
+                scanAuths = this.auths;
+                LOG.info("index scan auths not set, using user auths: %s", scanAuths);
+            }
+
+            IndexLookup sIndexLookup = new IndexLookup(conn, conf, scanAuths);
 
             // Check the secondary index based on the column constraints
             // If this returns true, return the tablet splits to Presto
