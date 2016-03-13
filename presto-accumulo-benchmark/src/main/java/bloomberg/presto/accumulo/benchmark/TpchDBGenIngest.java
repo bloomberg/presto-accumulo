@@ -51,8 +51,7 @@ public class TpchDBGenIngest
     private static final String SUPPLIER_ROW_ID = "suppkey";
 
     private static final RowSchema CUSTOMER_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("custkey", null, null, BIGINT)
-            .addColumn("name", "md", "name", VARCHAR)
+            .addColumn("custkey", null, null, BIGINT).addColumn("name", "md", "name", VARCHAR)
             .addColumn("address", "md", "address", VARCHAR)
             .addColumn("nationkey", "md", "nationkey", BIGINT)
             .addColumn("phone", "md", "phone", VARCHAR)
@@ -61,8 +60,7 @@ public class TpchDBGenIngest
             .addColumn("comment", "md", "comment", VARCHAR);
 
     private static final RowSchema LINEITEM_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("uuid", null, null, VARCHAR)
-            .addColumn("orderkey", "md", "orderkey", BIGINT)
+            .addColumn("uuid", null, null, VARCHAR).addColumn("orderkey", "md", "orderkey", BIGINT)
             .addColumn("partkey", "md", "partkey", BIGINT)
             .addColumn("suppkey", "md", "suppkey", BIGINT)
             .addColumn("linenumber", "md", "linenumber", BIGINT)
@@ -79,15 +77,14 @@ public class TpchDBGenIngest
             .addColumn("shipmode", "md", "shipmode", VARCHAR, true)
             .addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema NATION_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("nationkey", null, null, BIGINT)
-            .addColumn("name", "md", "name", VARCHAR, true)
-            .addColumn("regionkey", "md", "regionkey", BIGINT)
-            .addColumn("comment", "md", "comment", VARCHAR);
+    private static final RowSchema NATION_SCHEMA =
+            RowSchema.newRowSchema().addColumn("nationkey", null, null, BIGINT)
+                    .addColumn("name", "md", "name", VARCHAR, true)
+                    .addColumn("regionkey", "md", "regionkey", BIGINT)
+                    .addColumn("comment", "md", "comment", VARCHAR);
 
     private static final RowSchema ORDERS_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("orderkey", null, null, BIGINT)
-            .addColumn("custkey", "md", "custkey", BIGINT)
+            .addColumn("orderkey", null, null, BIGINT).addColumn("custkey", "md", "custkey", BIGINT)
             .addColumn("orderstatus", "md", "orderstatus", VARCHAR)
             .addColumn("totalprice", "md", "totalprice", DOUBLE)
             .addColumn("orderdate", "md", "orderdate", DATE, true)
@@ -97,8 +94,7 @@ public class TpchDBGenIngest
             .addColumn("comment", "md", "comment", VARCHAR);
 
     private static final RowSchema PART_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("partkey", null, null, BIGINT)
-            .addColumn("name", "md", "name", VARCHAR)
+            .addColumn("partkey", null, null, BIGINT).addColumn("name", "md", "name", VARCHAR)
             .addColumn("mfgr", "md", "mfgr", VARCHAR)
             .addColumn("brand", "md", "brand", VARCHAR, true)
             .addColumn("type", "md", "type", VARCHAR, true)
@@ -107,22 +103,21 @@ public class TpchDBGenIngest
             .addColumn("retailprice", "md", "retailprice", DOUBLE)
             .addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema PARTSUPP_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("uuid", null, null, VARCHAR)
-            .addColumn("partkey", "md", "partkey", BIGINT, true)
-            .addColumn("suppkey", "md", "suppkey", BIGINT)
-            .addColumn("availqty", "md", "availqty", BIGINT)
-            .addColumn("supplycost", "md", "supplycost", DOUBLE)
-            .addColumn("comment", "md", "comment", VARCHAR);
+    private static final RowSchema PARTSUPP_SCHEMA =
+            RowSchema.newRowSchema().addColumn("uuid", null, null, VARCHAR)
+                    .addColumn("partkey", "md", "partkey", BIGINT, true)
+                    .addColumn("suppkey", "md", "suppkey", BIGINT)
+                    .addColumn("availqty", "md", "availqty", BIGINT)
+                    .addColumn("supplycost", "md", "supplycost", DOUBLE)
+                    .addColumn("comment", "md", "comment", VARCHAR);
 
-    private static final RowSchema REGION_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("regionkey", null, null, BIGINT)
-            .addColumn("name", "md", "name", VARCHAR, true)
-            .addColumn("comment", "md", "comment", VARCHAR);
+    private static final RowSchema REGION_SCHEMA =
+            RowSchema.newRowSchema().addColumn("regionkey", null, null, BIGINT)
+                    .addColumn("name", "md", "name", VARCHAR, true)
+                    .addColumn("comment", "md", "comment", VARCHAR);
 
     private static final RowSchema SUPPLIER_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("suppkey", null, null, BIGINT)
-            .addColumn("name", "md", "name", VARCHAR, true)
+            .addColumn("suppkey", null, null, BIGINT).addColumn("name", "md", "name", VARCHAR, true)
             .addColumn("address", "md", "address", VARCHAR)
             .addColumn("nationkey", "md", "nationkey", BIGINT)
             .addColumn("phone", "md", "phone", VARCHAR)
@@ -137,7 +132,8 @@ public class TpchDBGenIngest
             throw new FileNotFoundException("Given datagen directory does not exist");
         }
 
-        List<File> dataFiles = Arrays.asList(dbgenDir.listFiles()).stream().filter(x -> x.getName().endsWith(".tbl")).collect(Collectors.toList());
+        List<File> dataFiles = Arrays.asList(dbgenDir.listFiles()).stream()
+                .filter(x -> x.getName().endsWith(".tbl")).collect(Collectors.toList());
 
         if (dataFiles.isEmpty()) {
             throw new FileNotFoundException("No table files found in datagen directory");
@@ -145,8 +141,10 @@ public class TpchDBGenIngest
 
         AccumuloMetadataManager mgr = AccumuloMetadataManager.getDefault(accConfig);
 
-        ZooKeeperInstance inst = new ZooKeeperInstance(accConfig.getInstance(), accConfig.getZooKeepers());
-        Connector conn = inst.getConnector(accConfig.getUsername(), new PasswordToken(accConfig.getPassword()));
+        ZooKeeperInstance inst =
+                new ZooKeeperInstance(accConfig.getInstance(), accConfig.getZooKeepers());
+        Connector conn = inst.getConnector(accConfig.getUsername(),
+                new PasswordToken(accConfig.getPassword()));
         AccumuloRowSerializer serializer = AccumuloRowSerializer.getDefault();
         for (File df : dataFiles) {
             String tableName = FilenameUtils.removeExtension(df.getName());
@@ -155,7 +153,8 @@ public class TpchDBGenIngest
             RowSchema rowSchema = schemaFromFile(tableName);
             String rowIdName = rowIdFromFile(tableName);
 
-            AccumuloTable table = new AccumuloTable(schema, tableName, rowSchema.getColumns(), rowIdName, true, serializer.getClass().getCanonicalName());
+            AccumuloTable table = new AccumuloTable(schema, tableName, rowSchema.getColumns(),
+                    rowIdName, true, serializer.getClass().getCanonicalName(), null);
 
             mgr.createTableMetadata(table);
 
@@ -176,7 +175,8 @@ public class TpchDBGenIngest
                 Map<String, Set<Text>> groups = Indexer.getLocalityGroups(table);
 
                 conn.tableOperations().create(table.getIndexTableName());
-                System.out.println(String.format("Created index table %s", table.getIndexTableName()));
+                System.out.println(
+                        String.format("Created index table %s", table.getIndexTableName()));
                 conn.tableOperations().setLocalityGroups(table.getIndexTableName(), groups);
 
                 conn.tableOperations().create(table.getMetricsTableName());
@@ -185,9 +185,12 @@ public class TpchDBGenIngest
                     conn.tableOperations().attachIterator(table.getMetricsTableName(), s);
                 }
 
-                System.out.println(String.format("Created index metrics table %s", table.getMetricsTableName()));
+                System.out.println(String.format("Created index metrics table %s",
+                        table.getMetricsTableName()));
 
-                indexer = new Indexer(conn, conn.securityOperations().getUserAuthorizations(accConfig.getUsername()), table, new BatchWriterConfig());
+                indexer = new Indexer(conn,
+                        conn.securityOperations().getUserAuthorizations(accConfig.getUsername()),
+                        table, new BatchWriterConfig());
             }
             else {
                 indexer = null;
@@ -211,7 +214,8 @@ public class TpchDBGenIngest
                 }
             }
 
-            System.out.println(String.format("Reading rows from file %s, writing to table %s", df, fullTableName));
+            System.out.println(String.format("Reading rows from file %s, writing to table %s", df,
+                    fullTableName));
             String line;
             int numRows = 0, numIdxRows = 0;
             boolean hasUuid = hasUuid(tableName);
