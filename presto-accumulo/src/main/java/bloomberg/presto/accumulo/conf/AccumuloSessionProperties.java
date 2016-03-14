@@ -47,6 +47,7 @@ public final class AccumuloSessionProperties
     private static final String INT_INDEX_THRESHOLD = "index_threshold";
     private static final String INT_INDEX_LOWEST_CARDINALITY_THRESHOLD =
             "index_lowest_cardinality_threshold";
+    private static final String INT_INDEX_METRICS_ENABLED = "index_metrics_enabled";
 
     public static final String OPTIMIZE_COLUMN_FILTERS_ENABLED =
             "accumulo." + INT_OPTIMIZE_COLUMN_FILTERS_ENABLED;
@@ -59,6 +60,7 @@ public final class AccumuloSessionProperties
     public static final String INDEX_THRESHOLD = "accumulo." + INT_INDEX_THRESHOLD;
     public static final String INDEX_LOWEST_CARDINALITY_THRESHOLD =
             "accumulo." + INT_INDEX_LOWEST_CARDINALITY_THRESHOLD;
+    public static final String INDEX_METRICS_ENABLED = "accumulo." + INT_INDEX_METRICS_ENABLED;
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -94,8 +96,11 @@ public final class AccumuloSessionProperties
                         + "of computing an intersection of ranges in the secondary index. "
                         + "Secondary index must be enabled.  Default .01",
                 .01, false);
+        PropertyMetadata<Boolean> s8 = booleanSessionProperty(INT_INDEX_METRICS_ENABLED,
+                "Set to true to enable usage of the metrics table to optimize usage of the index.  "
+                + "Default true", true, false);
 
-        sessionProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7);
+        sessionProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7, s8);
     }
 
     /**
@@ -109,7 +114,7 @@ public final class AccumuloSessionProperties
     }
 
     /**
-     * Gets a boolean valid indicating whether or not the column filter optimization is enabled.
+     * Gets a Boolean value indicating whether or not the column filter optimization is enabled.
      *
      * @param session
      *            The current session
@@ -121,7 +126,7 @@ public final class AccumuloSessionProperties
     }
 
     /**
-     * Gets a boolean valid indicating whether or not the locality optimization is enabled.
+     * Gets a Boolean value indicating whether or not the locality optimization is enabled.
      *
      * @param session
      *            The current session
@@ -133,7 +138,7 @@ public final class AccumuloSessionProperties
     }
 
     /**
-     * Gets a boolean valid indicating whether or not ranges in non-indexed scans will
+     * Gets a Boolean value indicating whether or not ranges in non-indexed scans will
      * be split on tablets
      *
      * @param session
@@ -146,7 +151,7 @@ public final class AccumuloSessionProperties
     }
 
     /**
-     * Gets a boolean valid indicating whether or not utilization of the index is enabled
+     * Gets a Boolean value indicating whether or not utilization of the index is enabled
      *
      * @param session
      *            The current session
@@ -199,5 +204,17 @@ public final class AccumuloSessionProperties
     public static double getIndexSmallCardThreshold(ConnectorSession session)
     {
         return session.getProperty(INT_INDEX_LOWEST_CARDINALITY_THRESHOLD, Double.class);
+    }
+
+    /**
+     * Gets a Boolean value indicating whether or not utilization of the index metrics is enabled
+     *
+     * @param session
+     *            The current session
+     * @return True if enabled, false otherwise
+     */
+    public static boolean isIndexMetricsEnabled(ConnectorSession session)
+    {
+        return session.getProperty(INT_INDEX_METRICS_ENABLED, Boolean.class);
     }
 }

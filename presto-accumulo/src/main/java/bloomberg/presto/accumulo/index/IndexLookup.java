@@ -133,6 +133,34 @@ public class IndexLookup
             return false;
         }
 
+        // If metrics are not enabled
+        if (!AccumuloSessionProperties.isIndexMetricsEnabled(session)) {
+            LOG.debug("Use of index metrics is disabled");
+            // Get the ranges via the index table
+            final List<Range> idxRanges =
+                    getIndexRanges(Indexer.getIndexTableName(schema, table), constraintRangePairs,
+                            rowIdRanges);
+
+            // Bin the ranges into TabletMetadataSplits and return true to use the tablet splits
+            binRanges(AccumuloSessionProperties.getNumIndexRowsPerSplit(session), idxRanges,
+                    tabletSplits);
+            LOG.debug("Number of splits for %s.%s is %d with %d ranges", schema, table,
+                    tabletSplits.size(), idxRanges.size());
+            return true;
+        }
+        else {
+            LOG.debug("Use of index metrics is enabled");
+            // Get ranges using the metrics
+            return getRangesWithMetrics(session, schema, table, constraintRangePairs, rowIdRanges,
+                    tabletSplits);
+        }
+    }
+
+    private boolean getRangesWithMetrics(ConnectorSession session, String schema, String table,
+            Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs,
+            Collection<Range> rowIdRanges, List<TabletSplitMetadata> tabletSplits)
+            throws Exception
+    {
         // Get the cardinalities from the metrics table
         List<Pair<AccumuloColumnConstraint, Long>> cardinalities =
                 ccCache.getCardinalities(schema, table, constraintRangePairs);
