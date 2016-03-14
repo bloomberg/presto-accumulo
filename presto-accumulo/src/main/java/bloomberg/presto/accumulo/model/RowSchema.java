@@ -136,4 +136,22 @@ public class RowSchema
     {
         return columns.size();
     }
+
+    /**
+     * Creates a new {@link RowSchema} from a list of {@link AccumuloColumnHandle} objects. Does not
+     * validate the schema.
+     *
+     * @param cols
+     *            Column handles
+     * @return Row schema
+     */
+    public static RowSchema fromColumns(List<AccumuloColumnHandle> cols)
+    {
+        RowSchema schema = RowSchema.newRowSchema();
+        for (AccumuloColumnHandle ach : cols) {
+            schema.addColumn(ach.getName(), ach.getFamily(), ach.getQualifier(), ach.getType(),
+                    ach.isIndexed());
+        }
+        return schema;
+    }
 }

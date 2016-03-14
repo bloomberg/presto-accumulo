@@ -40,6 +40,7 @@ public class AccumuloTable
     private boolean indexed;
     private final boolean external;
     private final String rowId;
+    private final Integer rowIdOrdinal;
     private final String schema;
     private final String table;
     private List<AccumuloColumnHandle> columns;
@@ -83,13 +84,20 @@ public class AccumuloTable
         this.scanAuthorizations = scanAuthorizations;
 
         boolean indexed = false;
+        Integer rido = null;
+
         // Extract the ColumnMetadata from the handles for faster access
         ImmutableList.Builder<ColumnMetadata> cmb = ImmutableList.builder();
         for (AccumuloColumnHandle column : this.columns) {
             cmb.add(column.getColumnMetadata());
             indexed |= column.isIndexed();
+            if (column.getName().equals(this.rowId)) {
+                rido = column.getOrdinal();
+            }
         }
 
+        this.rowIdOrdinal = requireNonNull(rido,
+                "rowIdOrdinal is null, enable to locate rowId in given column list");
         this.indexed = indexed;
         this.columnsMetadata = cmb.build();
     }
@@ -290,6 +298,17 @@ public class AccumuloTable
     public boolean isIndexed()
     {
         return indexed;
+    }
+
+    /**
+     * Gets the ordinal of the row ID column
+     *
+     * @return Row ID ordinal
+     */
+    @JsonIgnore
+    public int getRowIdOrdinal()
+    {
+        return this.rowIdOrdinal;
     }
 
     /**
