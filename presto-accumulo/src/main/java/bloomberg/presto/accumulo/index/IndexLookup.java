@@ -147,12 +147,12 @@ public class IndexLookup
                         tabletSplits);
                 LOG.debug("Number of splits for %s.%s is %d with %d ranges", schema, table,
                         tabletSplits.size(), idxRanges.size());
-                return true;
             }
             else {
                 LOG.debug("Query would return no results, returning empty list of splits");
-                return false;
             }
+
+            return true;
         }
         else {
             LOG.debug("Use of index metrics is enabled");
