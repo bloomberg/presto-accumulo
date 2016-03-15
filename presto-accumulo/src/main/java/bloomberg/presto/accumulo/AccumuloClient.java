@@ -772,7 +772,7 @@ public class AccumuloClient
         }
         catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                    "Failed to get tablet location");
+                    "Failed to get tablet location", e);
         }
     }
 
@@ -812,7 +812,7 @@ public class AccumuloClient
         }
         catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                    "Failed to get tablet location");
+                    "Failed to get tablet location", e);
         }
     }
 
