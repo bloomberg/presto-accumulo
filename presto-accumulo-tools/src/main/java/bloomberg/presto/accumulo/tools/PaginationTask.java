@@ -64,11 +64,13 @@ public class PaginationTask
     private AccumuloConfig config;
     private String host;
     private Integer port;
+    private Boolean localityEnabled;
     private Boolean rangeSplitsEnabled;
     private Boolean indexEnabled;
     private Boolean indexMetricsEnabled;
     private Double indexThreshold;
     private Double lowestCardinalityThreshold;
+    private Integer rowsPerSplit;
     private String query;
     private String[] columns = null;
 
@@ -106,7 +108,7 @@ public class PaginationTask
     private final String selectQueryTemplate = 
             "SELECT ${" + SUBQUERY_COLUMNS + "} " +
             "FROM ${" + TMP_TABLE + "} " +
-            "WHERE offset > ${" + MIN + "} AND OFFSET <= ${" + MAX + "}";    
+            "WHERE offset > ${" + MIN + "} AND offset <= ${" + MAX + "}";    
     // @formatter:on
 
     public int exec()
@@ -117,8 +119,8 @@ public class PaginationTask
             if (runQuery() == 0) {
                 ResultSet rs;
                 // Then, begin the pagination
-                AlignedTablePrinter table = new AlignedTablePrinter(Arrays.asList(columns),
-                        new PrintWriter(System.out));
+                AlignedTablePrinter table =
+                        new AlignedTablePrinter(Arrays.asList(columns), new PrintWriter(System.out));
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
                 while (this.hasNext()) {
@@ -135,8 +137,8 @@ public class PaginationTask
                     }
 
                     table.printRows(rows, false);
-                    System.out.println(
-                            "--------- Press enter to move onto the next page, or enter 'q' to quit ---------");
+                    System.out
+                            .println("--------- Press enter to move onto the next page, or enter 'q' to quit ---------");
 
                     // wait for user input
                     String line = in.readLine();
@@ -329,9 +331,19 @@ public class PaginationTask
         this.indexMetricsEnabled = indexMetricsEnabled;
     }
 
+    public void setLocalityEnabled(Boolean localityEnabled)
+    {
+        this.localityEnabled = localityEnabled;
+    }
+
     public void setLowestCardinalityThreshold(Double lowestCardinalityThreshold)
     {
         this.lowestCardinalityThreshold = lowestCardinalityThreshold;
+    }
+
+    public void setRowsPerSplit(Integer rowsPerSplit)
+    {
+        this.rowsPerSplit = rowsPerSplit;
     }
 
     public void setQuery(String query)
@@ -359,6 +371,11 @@ public class PaginationTask
                     Boolean.toString(indexEnabled));
         }
 
+        if (localityEnabled != null) {
+            conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_LOCALITY_ENABLED,
+                    Boolean.toString(localityEnabled));
+        }
+
         if (indexThreshold != null) {
             conn.setSessionProperty(AccumuloSessionProperties.INDEX_THRESHOLD,
                     Double.toString(indexThreshold));
@@ -367,6 +384,11 @@ public class PaginationTask
         if (lowestCardinalityThreshold != null) {
             conn.setSessionProperty(AccumuloSessionProperties.INDEX_LOWEST_CARDINALITY_THRESHOLD,
                     Double.toString(lowestCardinalityThreshold));
+        }
+
+        if (rowsPerSplit != null) {
+            conn.setSessionProperty(AccumuloSessionProperties.INDEX_ROWS_PER_SPLIT,
+                    Integer.toString(rowsPerSplit));
         }
 
         if (indexMetricsEnabled != null) {
@@ -418,7 +440,8 @@ public class PaginationTask
     @Override
     public String getHelp()
     {
-        return "\t" + TASK_NAME
+        return "\t"
+                + TASK_NAME
                 + " <presto.host> <presto.port> <query.file> <query.return.columns> [results.per.page]";
     }
 
