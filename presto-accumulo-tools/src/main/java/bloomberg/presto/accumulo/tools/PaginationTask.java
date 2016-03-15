@@ -169,7 +169,7 @@ public class PaginationTask
         if (numErrors > 0) {
             return 1;
         }
-        
+
         // Clean up any previously run queries in the event the user did not call it explicitly
         cleanup();
 
@@ -279,9 +279,15 @@ public class PaginationTask
             return;
         }
 
-        String dropTable = "DROP TABLE " + tmpTableName;
-        LOG.info(format("Executing %s", dropTable));
-        conn.createStatement().execute(dropTable);
+        try {
+            String dropTable = "DROP TABLE " + tmpTableName;
+            LOG.info(format("Executing %s", dropTable));
+            conn.createStatement().execute(dropTable);
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+
         tmpTableName = null;
         min = 0;
         max = 0;
