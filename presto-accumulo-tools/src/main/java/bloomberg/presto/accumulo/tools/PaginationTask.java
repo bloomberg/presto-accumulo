@@ -66,6 +66,7 @@ public class PaginationTask
     private Integer port;
     private Boolean rangeSplitsEnabled;
     private Boolean indexEnabled;
+    private Boolean indexMetricsEnabled;
     private Double indexThreshold;
     private Double lowestCardinalityThreshold;
     private String query;
@@ -168,6 +169,9 @@ public class PaginationTask
         if (numErrors > 0) {
             return 1;
         }
+        
+        // Clean up any previously run queries in the event the user did not call it explicitly
+        cleanup();
 
         String dbUrl = String.format("%s%s:%d/%s", SCHEME, host, port, CATALOG);
 
@@ -275,8 +279,9 @@ public class PaginationTask
             return;
         }
 
-        Statement stmt = conn.createStatement();
-        stmt.execute("DROP TABLE " + tmpTableName);
+        String dropTable = "DROP TABLE " + tmpTableName;
+        LOG.info(format("Executing %s", dropTable));
+        conn.createStatement().execute(dropTable);
         tmpTableName = null;
         min = 0;
         max = 0;
@@ -311,6 +316,11 @@ public class PaginationTask
     public void setIndexThreshold(Double indexThreshold)
     {
         this.indexThreshold = indexThreshold;
+    }
+
+    public void setIndexMetricsEnabled(Boolean indexMetricsEnabled)
+    {
+        this.indexMetricsEnabled = indexMetricsEnabled;
     }
 
     public void setLowestCardinalityThreshold(Double lowestCardinalityThreshold)
@@ -351,6 +361,11 @@ public class PaginationTask
         if (lowestCardinalityThreshold != null) {
             conn.setSessionProperty(AccumuloSessionProperties.INDEX_LOWEST_CARDINALITY_THRESHOLD,
                     Double.toString(lowestCardinalityThreshold));
+        }
+
+        if (indexMetricsEnabled != null) {
+            conn.setSessionProperty(AccumuloSessionProperties.INDEX_METRICS_ENABLED,
+                    Boolean.toString(indexMetricsEnabled));
         }
     }
 
