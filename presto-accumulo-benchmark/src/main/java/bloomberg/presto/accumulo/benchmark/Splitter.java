@@ -73,6 +73,8 @@ public class Splitter
         for (Text s : conn.tableOperations().listSplits(fullTableName)) {
             System.out.println(serializer.decode(rowIdType, s.copyBytes()).toString());
         }
+        
+        Thread.sleep(60000);
     }
 
     private static List<byte[]> getSplits(Type rowIdType, Connector conn, AccumuloTable table, String username, int numSplits)
@@ -91,14 +93,17 @@ public class Splitter
             long min = serializer.decode(rowIdType, firstLastRow.getLeft());
             long max = serializer.decode(rowIdType, firstLastRow.getRight());
 
-            for (Long l : linspace(min, max, numSplits)) {
+            for (Long l : linspace(min, max, numSplits + 2)) {
                 splits.add(serializer.encode(BIGINT, l));
+                System.out.println(l);
             }
         }
         else if (rowIdType.equals(VARCHAR)) {
+            System.out.println("Splits to add are:");
             for (Long l : linspace(0, 255, numSplits + 2)) {
                 String v = String.format("%02x", l);
                 splits.add(serializer.encode(VARCHAR, v));
+                System.out.println(v);
             }
         }
         else {
@@ -115,10 +120,10 @@ public class Splitter
     {
         List<Long> result = new ArrayList<>();
 
-        long step = (stop - start) / (n - 1);
+        double step = (double)(stop - start) / (double)(n - 1);
 
-        for (int i = 0; i <= n - 2; i++) {
-            result.add(start + (i * step));
+        for (double i = 0; i <= n - 2; ++i) {
+            result.add((long)((double)start + (i * step)));
         }
         result.add(stop);
 
