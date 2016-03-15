@@ -118,7 +118,8 @@ public class IndexLookup
         Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs = new HashMap<>();
         for (AccumuloColumnConstraint acc : constraints) {
             if (acc.isIndexed()) {
-                constraintRangePairs.put(acc, AccumuloClient.getRangesFromDomain(acc.getDomain(), serializer));
+                constraintRangePairs.put(acc,
+                        AccumuloClient.getRangesFromDomain(acc.getDomain(), serializer));
             }
             else {
                 LOG.warn(
@@ -137,16 +138,21 @@ public class IndexLookup
         if (!AccumuloSessionProperties.isIndexMetricsEnabled(session)) {
             LOG.debug("Use of index metrics is disabled");
             // Get the ranges via the index table
-            final List<Range> idxRanges =
-                    getIndexRanges(Indexer.getIndexTableName(schema, table), constraintRangePairs,
-                            rowIdRanges);
+            final List<Range> idxRanges = getIndexRanges(Indexer.getIndexTableName(schema, table),
+                    constraintRangePairs, rowIdRanges);
 
-            // Bin the ranges into TabletMetadataSplits and return true to use the tablet splits
-            binRanges(AccumuloSessionProperties.getNumIndexRowsPerSplit(session), idxRanges,
-                    tabletSplits);
-            LOG.debug("Number of splits for %s.%s is %d with %d ranges", schema, table,
-                    tabletSplits.size(), idxRanges.size());
-            return true;
+            if (idxRanges.size() > 0) {
+                // Bin the ranges into TabletMetadataSplits and return true to use the tablet splits
+                binRanges(AccumuloSessionProperties.getNumIndexRowsPerSplit(session), idxRanges,
+                        tabletSplits);
+                LOG.debug("Number of splits for %s.%s is %d with %d ranges", schema, table,
+                        tabletSplits.size(), idxRanges.size());
+                return true;
+            }
+            else {
+                LOG.debug("Query would return no results, returning empty list of splits");
+                return false;
+            }
         }
         else {
             LOG.debug("Use of index metrics is enabled");
