@@ -154,4 +154,20 @@ public class RowSchema
         }
         return schema;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder bldr = new StringBuilder("{");
+        for (AccumuloColumnHandle ach : columns) {
+            bldr.append(ach.getName()).append(' ').append(ach.getType()).append(',');
+        }
+
+        if (bldr.length() > 1) {
+            bldr.deleteCharAt(bldr.length() - 1);
+        }
+
+        bldr.append('}');
+        return bldr.toString();
+    }
 }

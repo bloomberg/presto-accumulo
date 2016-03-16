@@ -176,7 +176,11 @@ public class Row
 
         if (fields.length != schema.getLength()) {
             throw new PrestoException(StandardErrorCode.INVALID_FUNCTION_ARGUMENT,
-                    "Number of split tokens is not equal to schema length");
+                    String.format(
+                            "Number of split tokens is not equal to schema length.  "
+                                    + "Expected %s received %s. Schema: %s, fields {%s}, delimiter %s",
+                            schema.getLength(), fields.length, schema,
+                            StringUtils.join(fields, ","), delimiter));
         }
 
         for (int i = 0; i < fields.length; ++i) {
