@@ -76,6 +76,8 @@ import static java.util.Objects.requireNonNull;
 public class AccumuloClient
 {
     private static final Logger LOG = Logger.get(AccumuloClient.class);
+    private static final String DUMMY_LOCATION = "localhost:9997";
+
     private final AccumuloConfig conf;
     private final AccumuloMetadataManager metaManager;
     private final Authorizations auths;
@@ -251,10 +253,10 @@ public class AccumuloClient
             // Set locality groups, if any
             if (groups != null && groups.size() > 0) {
                 conn.tableOperations().setLocalityGroups(table.getFullTableName(), groups);
-                LOG.debug("Set locality groups to %s", groups);
+                LOG.info("Set locality groups to %s", groups);
             }
             else {
-                LOG.debug("No locality groups set");
+                LOG.info("No locality groups set");
             }
 
             // Create index tables, if appropriate
@@ -600,7 +602,7 @@ public class AccumuloClient
     {
         try {
             String tableName = AccumuloTable.getFullTableName(schema, table);
-            LOG.debug("Getting tablet splits for table %s", tableName);
+            LOG.info("Getting tablet splits for table %s", tableName);
 
             // Get the initial Range based on the row ID domain
             final Collection<Range> rowIdRanges = getRangesFromDomain(rowIdDom, serializer);
@@ -644,7 +646,9 @@ public class AccumuloClient
             // Create TabletSplitMetadata objects for each range
             boolean fetchTabletLocations =
                     AccumuloSessionProperties.isOptimizeLocalityEnabled(session);
-            String defaultLocation = "localhost:9997";
+
+            LOG.info("Fetching tablet locations: %s", fetchTabletLocations);
+
             for (Range r : splitRanges) {
                 // If locality is enabled, then fetch tablet location
                 if (fetchTabletLocations) {
@@ -653,12 +657,12 @@ public class AccumuloClient
                 }
                 else {
                     // else, just use the default location
-                    tabletSplits.add(new TabletSplitMetadata(defaultLocation, ImmutableList.of(r)));
+                    tabletSplits.add(new TabletSplitMetadata(DUMMY_LOCATION, ImmutableList.of(r)));
                 }
             }
 
             // Log some fun stuff and return the tablet splits
-            LOG.debug("Number of splits for table %s is %d with %d ranges", tableName,
+            LOG.info("Number of splits for table %s is %d with %d ranges", tableName,
                     tabletSplits.size(), splitRanges.size());
             return tabletSplits;
         }
@@ -706,8 +710,7 @@ public class AccumuloClient
      *            Fully-qualified table name
      * @param key
      *            Key to locate
-     * @return The table location, or the default location via
-     *         {@link AccumuloClient#getDefaultTabletLocation(String)}
+     * @return The tablet location, or DUMMY_LOCATION if an error occurs
      */
     private String getTabletLocation(String table, Key key)
     {
@@ -771,8 +774,9 @@ public class AccumuloClient
             return location != null ? location : getDefaultTabletLocation(table);
         }
         catch (Exception e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                    "Failed to get tablet location", e);
+            LOG.error("Failed to get tablet location, returning dummy location", e);
+            e.printStackTrace();
+            return DUMMY_LOCATION;
         }
     }
 
@@ -811,8 +815,9 @@ public class AccumuloClient
             return location;
         }
         catch (Exception e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                    "Failed to get tablet location", e);
+            LOG.error("Failed to get tablet location, returning dummy location", e);
+            e.printStackTrace();
+            return DUMMY_LOCATION;
         }
     }
 

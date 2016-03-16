@@ -108,11 +108,11 @@ public class IndexLookup
     {
         // Early out if index is disabled
         if (!AccumuloSessionProperties.isOptimizeIndexEnabled(session)) {
-            LOG.debug("Secondary index is disabled");
+            LOG.info("Secondary index is disabled");
             return false;
         }
 
-        LOG.debug("Secondary index is enabled");
+        LOG.info("Secondary index is enabled");
 
         // Collect Accumulo ranges for each indexed column constraint
         Map<AccumuloColumnConstraint, Collection<Range>> constraintRangePairs = new HashMap<>();
@@ -130,13 +130,13 @@ public class IndexLookup
 
         // If there is no constraints on an index column, we again will bail out
         if (constraintRangePairs.size() == 0) {
-            LOG.debug("Query contains no constraints on indexed columns, skipping secondary index");
+            LOG.info("Query contains no constraints on indexed columns, skipping secondary index");
             return false;
         }
 
         // If metrics are not enabled
         if (!AccumuloSessionProperties.isIndexMetricsEnabled(session)) {
-            LOG.debug("Use of index metrics is disabled");
+            LOG.info("Use of index metrics is disabled");
             // Get the ranges via the index table
             final List<Range> idxRanges = getIndexRanges(Indexer.getIndexTableName(schema, table),
                     constraintRangePairs, rowIdRanges);
@@ -145,17 +145,17 @@ public class IndexLookup
                 // Bin the ranges into TabletMetadataSplits and return true to use the tablet splits
                 binRanges(AccumuloSessionProperties.getNumIndexRowsPerSplit(session), idxRanges,
                         tabletSplits);
-                LOG.debug("Number of splits for %s.%s is %d with %d ranges", schema, table,
+                LOG.info("Number of splits for %s.%s is %d with %d ranges", schema, table,
                         tabletSplits.size(), idxRanges.size());
             }
             else {
-                LOG.debug("Query would return no results, returning empty list of splits");
+                LOG.info("Query would return no results, returning empty list of splits");
             }
 
             return true;
         }
         else {
-            LOG.debug("Use of index metrics is enabled");
+            LOG.info("Use of index metrics is enabled");
             // Get ranges using the metrics
             return getRangesWithMetrics(session, schema, table, constraintRangePairs, rowIdRanges,
                     tabletSplits);
@@ -176,7 +176,7 @@ public class IndexLookup
 
         // If first entry has cardinality zero, the query would have no results
         if (cardinalities.get(0).getRight() == 0) {
-            LOG.debug("Query would return no results, returning empty list of splits");
+            LOG.info("Query would return no results, returning empty list of splits");
             return true;
         }
 
@@ -194,7 +194,7 @@ public class IndexLookup
             if (cardinalities.size() == 1) {
                 long numEntries = cardinalities.get(0).getRight();
                 double ratio = ((double) numEntries / (double) numRows);
-                LOG.debug(
+                LOG.info(
                         "Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b",
                         numEntries, numRows, ratio, threshold, ratio < threshold);
                 if (ratio >= threshold) {
@@ -203,14 +203,14 @@ public class IndexLookup
             }
 
             // Else, get the intersection of all row IDs for all column constraints
-            LOG.debug("%d indexed columns, intersecting ranges", constraintRangePairs.size());
+            LOG.info("%d indexed columns, intersecting ranges", constraintRangePairs.size());
             idxRanges = getIndexRanges(indexTable, constraintRangePairs, rowIdRanges);
-            LOG.debug("Intersection results in %d ranges from secondary index", idxRanges.size());
+            LOG.info("Intersection results in %d ranges from secondary index", idxRanges.size());
         }
         else {
             // Else, we don't need to intersect the columns and we can just use the column with the
             // lowest cardinality, so get all those row IDs in a set of ranges.
-            LOG.debug("Not intersecting columns, using column with lowest cardinality ");
+            LOG.info("Not intersecting columns, using column with lowest cardinality ");
             idxRanges =
                     getIndexRanges(indexTable,
                             ImmutableMap.of(cardinalities.get(0).getKey(),
@@ -222,7 +222,7 @@ public class IndexLookup
         // of rows
         long numEntries = idxRanges.size();
         double ratio = (double) numEntries / (double) numRows;
-        LOG.debug(
+        LOG.info(
                 "Use of index would scan %d of %d rows, ratio %s. Threshold %2f, Using for table? %b",
                 numEntries, numRows, ratio, threshold, ratio < threshold, table);
 
@@ -231,7 +231,7 @@ public class IndexLookup
             // Bin the ranges into TabletMetadataSplits and return true to use the tablet splits
             binRanges(AccumuloSessionProperties.getNumIndexRowsPerSplit(session), idxRanges,
                     tabletSplits);
-            LOG.debug("Number of splits for %s.%s is %d with %d ranges", schema, table,
+            LOG.info("Number of splits for %s.%s is %d with %d ranges", schema, table,
                     tabletSplits.size(), idxRanges.size());
             return true;
         }
@@ -258,7 +258,7 @@ public class IndexLookup
         long lowCard = cardinalities.get(0).getRight();
         double ratio = ((double) lowCard / (double) numRows);
         double threshold = AccumuloSessionProperties.getIndexSmallCardThreshold(session);
-        LOG.debug("Lowest cardinality is %d, num rows is %d, ratio is %2f with threshold of %f",
+        LOG.info("Lowest cardinality is %d, num rows is %d, ratio is %2f with threshold of %f",
                 lowCard, numRows, ratio, threshold);
         return ratio > threshold;
     }
@@ -291,7 +291,7 @@ public class IndexLookup
         }
         scan.close();
 
-        LOG.debug("Number of rows in table is %d", numRows);
+        LOG.info("Number of rows in table is %d", numRows);
         return numRows;
     }
 
@@ -337,7 +337,7 @@ public class IndexLookup
                 }
             }
 
-            LOG.debug("Retrieved %d ranges for column %s", columnRanges.size(),
+            LOG.info("Retrieved %d ranges for column %s", columnRanges.size(),
                     e.getKey().getName());
 
             // If finalRanges is null, we have not yet added any column ranges
