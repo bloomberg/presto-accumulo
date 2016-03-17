@@ -26,6 +26,7 @@ import java.util.List;
 import static com.facebook.presto.spi.session.PropertyMetadata.booleanSessionProperty;
 import static com.facebook.presto.spi.session.PropertyMetadata.doubleSessionProperty;
 import static com.facebook.presto.spi.session.PropertyMetadata.integerSessionProperty;
+import static com.facebook.presto.spi.session.PropertyMetadata.stringSessionProperty;
 
 /**
  * Class contains all session-based properties for the Accumulo connector.
@@ -48,6 +49,7 @@ public final class AccumuloSessionProperties
     private static final String INT_INDEX_LOWEST_CARDINALITY_THRESHOLD =
             "index_lowest_cardinality_threshold";
     private static final String INT_INDEX_METRICS_ENABLED = "index_metrics_enabled";
+    private static final String INT_SCAN_USERNAME = "scan_username";
 
     public static final String OPTIMIZE_COLUMN_FILTERS_ENABLED =
             "accumulo." + INT_OPTIMIZE_COLUMN_FILTERS_ENABLED;
@@ -61,6 +63,7 @@ public final class AccumuloSessionProperties
     public static final String INDEX_LOWEST_CARDINALITY_THRESHOLD =
             "accumulo." + INT_INDEX_LOWEST_CARDINALITY_THRESHOLD;
     public static final String INDEX_METRICS_ENABLED = "accumulo." + INT_INDEX_METRICS_ENABLED;
+    public static final String SCAN_USERNAME = "accumulo." + INT_SCAN_USERNAME;
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -99,8 +102,13 @@ public final class AccumuloSessionProperties
         PropertyMetadata<Boolean> s8 = booleanSessionProperty(INT_INDEX_METRICS_ENABLED,
                 "Set to true to enable usage of the metrics table to optimize usage of the index.  "
                 + "Default true", true, false);
+        PropertyMetadata<String> s9 =
+                stringSessionProperty(INT_SCAN_USERNAME,
+                        "User to impersonate when scanning the tables.  "
+                                + "This property trumps the scan_auths table property.  "
+                                + "Default is the user in the configuration file.", null, false);
 
-        sessionProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7, s8);
+        sessionProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7, s8, s9);
     }
 
     /**
@@ -216,5 +224,17 @@ public final class AccumuloSessionProperties
     public static boolean isIndexMetricsEnabled(ConnectorSession session)
     {
         return session.getProperty(INT_INDEX_METRICS_ENABLED, Boolean.class);
+    }
+
+    /**
+     * Gets the user to impersonate during the scan of a table
+     *
+     * @param session
+     *            The current session
+     * @return The set user, or null if not set
+     */
+    public static String getScanUsername(ConnectorSession session)
+    {
+        return session.getProperty(INT_SCAN_USERNAME, String.class);
     }
 }

@@ -14,6 +14,7 @@
 package bloomberg.presto.accumulo.io;
 
 import bloomberg.presto.accumulo.conf.AccumuloConfig;
+import bloomberg.presto.accumulo.conf.AccumuloSessionProperties;
 import bloomberg.presto.accumulo.model.AccumuloColumnConstraint;
 import bloomberg.presto.accumulo.model.AccumuloColumnHandle;
 import bloomberg.presto.accumulo.model.AccumuloSplit;
@@ -26,6 +27,8 @@ import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
 import io.airlift.log.Logger;
+import org.apache.accumulo.core.client.AccumuloException;
+import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.security.Authorizations;
@@ -94,24 +97,58 @@ public class AccumuloRecordSet
         this.columnTypes = types.build();
 
         try {
-            // Get the scan-time authorizations from the connector split, or use the user's
-            // authorizations if not set
-            final Authorizations auths;
-            if (split.hasScanAuthorizations()) {
-                auths = new Authorizations(split.getScanAuthorizations().split(","));
-                LOG.info("scan_auths set: %s", auths);
-            }
-            else {
-                auths = conn.securityOperations().getUserAuthorizations(config.getUsername());
-                LOG.info("scan_auths not set, using user auths: %s", auths);
-            }
-
             // Create the BatchScanner and set the ranges from the split
-            scan = conn.createBatchScanner(split.getFullTableName(), auths, 10);
+            scan = conn.createBatchScanner(split.getFullTableName(),
+                    getScanAuthorizations(session, split, config, conn), 10);
             scan.setRanges(split.getRanges());
         }
         catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
+        }
+    }
+
+    /**
+     * Gets the scan authorizations to use for scanning tables.<br>
+     * <br>
+     * In order of priority: session username authorizations, then table property, then the default
+     * connector auths
+     *
+     * @param session
+     *            Current session
+     * @param split
+     *            Accumulo split
+     * @param config
+     *            Connector config
+     * @param conn
+     *            Accumulo connector
+     * @return Scan authorizations
+     * @throws AccumuloException
+     *             If a generic Accumulo error occurs
+     * @throws AccumuloSecurityException
+     *             If a security exception occurs
+     */
+    private Authorizations getScanAuthorizations(ConnectorSession session, AccumuloSplit split,
+            AccumuloConfig config, Connector conn)
+            throws AccumuloException, AccumuloSecurityException
+    {
+        String sessionScanUser = AccumuloSessionProperties.getScanUsername(session);
+        if (sessionScanUser != null) {
+            Authorizations scanAuths =
+                    conn.securityOperations().getUserAuthorizations(sessionScanUser);
+            LOG.info("Using session scan auths for user %s: %s", sessionScanUser, scanAuths);
+            return scanAuths;
+        }
+
+        if (split.hasScanAuthorizations()) {
+            Authorizations auths = new Authorizations(split.getScanAuthorizations().split(","));
+            LOG.info("scan_auths table property set: %s", auths);
+            return auths;
+        }
+        else {
+            Authorizations auths =
+                    conn.securityOperations().getUserAuthorizations(config.getUsername());
+            LOG.info("scan_auths table property not set, using user auths: %s", auths);
+            return auths;
         }
     }
 

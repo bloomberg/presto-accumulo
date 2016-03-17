@@ -608,26 +608,19 @@ public class AccumuloClient
             final Collection<Range> rowIdRanges = getRangesFromDomain(rowIdDom, serializer);
             final List<TabletSplitMetadata> tabletSplits = new ArrayList<>();
 
-            // Get the scan-time authorizations from the connector split, or use the user's
-            // authorizations if not set
-            String strAuths = this.getTable(new SchemaTableName(schema, table)).getScanAuthorizations();
-            final Authorizations scanAuths;
-            if (strAuths != null) {
-                scanAuths = new Authorizations(strAuths.split(","));
-                LOG.info("index scan auths set: %s", scanAuths);
-            }
-            else {
-                scanAuths = this.auths;
-                LOG.info("index scan auths not set, using user auths: %s", scanAuths);
-            }
+            // Use the secondary index, if enabled
+            if (AccumuloSessionProperties.isOptimizeIndexEnabled(session)) {
+                // Get the scan authorizations to query the index and create the index lookup
+                // utility
+                final Authorizations scanAuths = getScanAuthorizations(session, schema, table);
+                IndexLookup sIndexLookup = new IndexLookup(conn, conf, scanAuths);
 
-            IndexLookup sIndexLookup = new IndexLookup(conn, conf, scanAuths);
-
-            // Check the secondary index based on the column constraints
-            // If this returns true, return the tablet splits to Presto
-            if (sIndexLookup.applyIndex(schema, table, session, constraints, rowIdRanges,
-                    tabletSplits, serializer)) {
-                return tabletSplits;
+                // Check the secondary index based on the column constraints
+                // If this returns true, return the tablet splits to Presto
+                if (sIndexLookup.applyIndex(schema, table, session, constraints, rowIdRanges,
+                        tabletSplits, serializer)) {
+                    return tabletSplits;
+                }
             }
 
             // If we can't (or shouldn't) use the secondary index,
@@ -669,6 +662,47 @@ public class AccumuloClient
         catch (Exception e) {
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to get splits", e);
         }
+    }
+
+    /**
+     * Gets the scan authorizations to use for scanning tables.<br>
+     * <br>
+     * In order of priority: session username authorizations, then table property, then the default
+     * connector auths
+     *
+     * @param session
+     *            Current session
+     * @param schema
+     *            Schema name
+     * @param table
+     *            Table Name
+     * @return Scan authorizations
+     * @throws AccumuloException
+     *             If a generic Accumulo error occurs
+     * @throws AccumuloSecurityException
+     *             If a security exception occurs
+     */
+    private Authorizations getScanAuthorizations(ConnectorSession session, String schema,
+            String table)
+            throws AccumuloException, AccumuloSecurityException
+    {
+        String sessionScanUser = AccumuloSessionProperties.getScanUsername(session);
+        if (sessionScanUser != null) {
+            Authorizations scanAuths =
+                    conn.securityOperations().getUserAuthorizations(sessionScanUser);
+            LOG.info("Using session scan auths for user %s: %s", sessionScanUser, scanAuths);
+            return scanAuths;
+        }
+
+        String strAuths = this.getTable(new SchemaTableName(schema, table)).getScanAuthorizations();
+        if (strAuths != null) {
+            Authorizations scanAuths = new Authorizations(strAuths.split(","));
+            LOG.info("scan_auths table property set, using: %s", scanAuths);
+            return scanAuths;
+        }
+
+        LOG.info("scan_auths table property not set, using connector auths: %s", this.auths);
+        return this.auths;
     }
 
     /**
@@ -837,9 +871,8 @@ public class AccumuloClient
      * @throws TableNotFoundException
      *             If the Accumulo table is not found
      */
-    public static Collection<Range> getRangesFromDomain(Domain dom,
-            AccumuloRowSerializer serializer)
-                    throws AccumuloException, AccumuloSecurityException, TableNotFoundException
+    public static Collection<Range> getRangesFromDomain(Domain dom, AccumuloRowSerializer serializer)
+            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
         // if we have no predicate pushdown, use the full range
         if (dom == null) {
