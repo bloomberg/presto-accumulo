@@ -15,6 +15,7 @@ package bloomberg.presto.accumulo;
 
 import com.facebook.presto.spi.Connector;
 import com.facebook.presto.spi.ConnectorFactory;
+import com.facebook.presto.spi.ConnectorHandleResolver;
 import com.facebook.presto.spi.type.TypeManager;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
@@ -83,5 +84,11 @@ public class AccumuloConnectorFactory
         catch (Exception e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    @Override
+    public ConnectorHandleResolver getHandleResolver()
+    {
+        return new AccumuloHandleResolver();
     }
 }

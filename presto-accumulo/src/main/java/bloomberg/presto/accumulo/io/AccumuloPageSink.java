@@ -31,6 +31,7 @@ import org.apache.hadoop.io.Text;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
 
@@ -102,81 +103,6 @@ public class AccumuloPageSink
             throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
                     "Accumulo error when creating BatchWriter and/or Indexer", e);
         }
-    }
-
-    /**
-     * Appends a page
-     */
-    @Override
-    public void appendPage(Page page, Block sampleWeightBlock)
-    {
-        // For each position within the page, i.e. row
-        for (int position = 0; position < page.getPositionCount(); ++position) {
-            Row row = Row.newRow();
-            // For each channel within the page, i.e. column
-            for (int channel = 0; channel < page.getChannelCount(); ++channel) {
-                // Get the type for this channel
-                Type type = columns.get(channel).getType();
-
-                // Read the value from the page and append the field to the row
-                row.addField(TypeUtils.readNativeValue(type, page.getBlock(channel), position),
-                        type);
-            }
-
-            // Convert row to a Mutation
-            Mutation m = toMutation(row, rowIdOrdinal, columns, serializer);
-
-            // If this mutation has columns
-            if (m.size() > 0) {
-                try {
-                    // Write the mutation and index it
-                    wrtr.addMutation(m);
-                    if (indexer != null) {
-                        indexer.index(m);
-                    }
-                }
-                catch (MutationsRejectedException e) {
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
-                }
-            }
-            else {
-                // Else, this Mutation contains only a row ID and will throw an exception if
-                // added so, we throw one here with a more descriptive message!
-                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
-                        "At least one non-recordkey column must contain a non-null value");
-            }
-        }
-    }
-
-    /**
-     * Commit the insert to Accumulo, flushing out all rows
-     */
-    @Override
-    public Collection<Slice> commit()
-    {
-        try {
-            // Done serializing rows, so flush and close the writer and indexer
-            wrtr.flush();
-            wrtr.close();
-            if (indexer != null) {
-                indexer.close();
-            }
-        }
-        catch (MutationsRejectedException e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
-        }
-
-        // TODO Look into any use of the metadata for writing out the rows
-        return ImmutableList.of();
-    }
-
-    /**
-     * Rollback the page appending
-     */
-    @Override
-    public void rollback()
-    {
-        // TODO Oh well?
     }
 
     /**
@@ -272,5 +198,74 @@ public class AccumuloPageSink
                     throw new UnsupportedOperationException("Unsupported type " + type);
             }
         }
+    }
+
+    @Override
+    public CompletableFuture<?> appendPage(Page page, Block sampleWeightBlock)
+    {
+        // For each position within the page, i.e. row
+        for (int position = 0; position < page.getPositionCount(); ++position) {
+            Row row = Row.newRow();
+            // For each channel within the page, i.e. column
+            for (int channel = 0; channel < page.getChannelCount(); ++channel) {
+                // Get the type for this channel
+                Type type = columns.get(channel).getType();
+
+                // Read the value from the page and append the field to the row
+                row.addField(TypeUtils.readNativeValue(type, page.getBlock(channel), position),
+                        type);
+            }
+
+            // Convert row to a Mutation
+            Mutation m = toMutation(row, rowIdOrdinal, columns, serializer);
+
+            // If this mutation has columns
+            if (m.size() > 0) {
+                try {
+                    // Write the mutation and index it
+                    wrtr.addMutation(m);
+                    if (indexer != null) {
+                        indexer.index(m);
+                    }
+                }
+                catch (MutationsRejectedException e) {
+                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
+                }
+            }
+            else {
+                // Else, this Mutation contains only a row ID and will throw an exception if
+                // added so, we throw one here with a more descriptive message!
+                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                        "At least one non-recordkey column must contain a non-null value");
+            }
+        }
+
+        return NOT_BLOCKED;
+    }
+
+    @Override
+    public Collection<Slice> finish()
+    {
+        try {
+            // Done serializing rows, so flush and close the writer and indexer
+            wrtr.flush();
+            wrtr.close();
+            if (indexer != null) {
+                indexer.close();
+            }
+        }
+        catch (MutationsRejectedException e) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
+        }
+
+        // TODO Look into any use of the metadata for writing out the rows
+        return ImmutableList.of();
+    }
+
+    @Override
+    public void abort()
+    {
+        // TODO Auto-generated method stub
+
     }
 }

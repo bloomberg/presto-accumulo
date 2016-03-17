@@ -17,6 +17,7 @@ import com.facebook.presto.sql.tree.AliasedRelation;
 import com.facebook.presto.sql.tree.AllColumns;
 import com.facebook.presto.sql.tree.ArithmeticBinaryExpression;
 import com.facebook.presto.sql.tree.AstVisitor;
+import com.facebook.presto.sql.tree.BinaryLiteral;
 import com.facebook.presto.sql.tree.BooleanLiteral;
 import com.facebook.presto.sql.tree.ComparisonExpression;
 import com.facebook.presto.sql.tree.Cube;
@@ -120,9 +121,14 @@ public class TreePrinter
                     process(node.getWhere().get(), indentLevel + 1);
                 }
 
-                if (!node.getGroupBy().isEmpty()) {
-                    for (GroupingElement groupingElement : node.getGroupBy()) {
-                        print(indentLevel, "GroupBy");
+                if (node.getGroupBy().isPresent()) {
+                    String distinct = "";
+                    if (node.getGroupBy().get().isDistinct()) {
+                        distinct = "[DISTINCT]";
+                    }
+                    print(indentLevel, "GroupBy" + distinct);
+                    for (GroupingElement groupingElement : node.getGroupBy().get().getGroupingElements()) {
+                        print(indentLevel, "SimpleGroupBy");
                         if (groupingElement instanceof SimpleGroupBy) {
                             for (Expression column : ((SimpleGroupBy) groupingElement).getColumnExpressions()) {
                                 process(column, indentLevel + 1);
@@ -245,6 +251,13 @@ public class TreePrinter
             protected Void visitStringLiteral(StringLiteral node, Integer indentLevel)
             {
                 print(indentLevel, "String[" + node.getValue() + "]");
+                return null;
+            }
+
+            @Override
+            protected Void visitBinaryLiteral(BinaryLiteral node, Integer indentLevel)
+            {
+                print(indentLevel, "Binary[" + node.toHexString() + "]");
                 return null;
             }
 

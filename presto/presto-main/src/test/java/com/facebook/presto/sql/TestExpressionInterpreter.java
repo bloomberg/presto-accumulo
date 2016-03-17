@@ -20,6 +20,7 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.type.SqlTimestampWithTimeZone;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.VarbinaryType;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.ExpressionInterpreter;
 import com.facebook.presto.sql.planner.Symbol;
@@ -32,6 +33,7 @@ import com.facebook.presto.sql.tree.LikePredicate;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.QualifiedNameReference;
 import com.facebook.presto.sql.tree.StringLiteral;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.slice.Slice;
@@ -41,12 +43,12 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
@@ -58,19 +60,24 @@ import static com.facebook.presto.spi.type.TimeType.TIME;
 import static com.facebook.presto.spi.type.TimeZoneKey.getTimeZoneKey;
 import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
 import static com.facebook.presto.sql.ExpressionFormatter.formatExpression;
 import static com.facebook.presto.sql.analyzer.ExpressionAnalyzer.getExpressionTypes;
 import static com.facebook.presto.sql.planner.ExpressionInterpreter.expressionInterpreter;
 import static com.facebook.presto.sql.planner.ExpressionInterpreter.expressionOptimizer;
 import static io.airlift.slice.Slices.utf8Slice;
+import static java.lang.String.format;
 import static java.util.Locale.ENGLISH;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class TestExpressionInterpreter
 {
+    private static final int TEST_VARCHAR_TYPE_LENGTH = 17;
     private static final Map<Symbol, Type> SYMBOL_TYPES = ImmutableMap.<Symbol, Type>builder()
             .put(new Symbol("bound_long"), BIGINT)
-            .put(new Symbol("bound_string"), VARCHAR)
+            .put(new Symbol("bound_string"), createVarcharType(TEST_VARCHAR_TYPE_LENGTH))
+            .put(new Symbol("bound_varbinary"), VarbinaryType.VARBINARY)
             .put(new Symbol("bound_double"), DOUBLE)
             .put(new Symbol("bound_boolean"), BOOLEAN)
             .put(new Symbol("bound_date"), DATE)
@@ -158,6 +165,9 @@ public class TestExpressionInterpreter
         assertOptimizedEquals("bound_long = unbound_long", "1234 = unbound_long");
 
         assertOptimizedEquals("10151082135029368 = 10151082135029369", "false");
+
+        assertOptimizedEquals("bound_varbinary = X'a b'", "true");
+        assertOptimizedEquals("bound_varbinary = X'a d'", "false");
     }
 
     @Test
@@ -274,9 +284,9 @@ public class TestExpressionInterpreter
 
         // evaluate should execute
         Object value = evaluate("random()");
-        Assert.assertTrue(value instanceof Double);
+        assertTrue(value instanceof Double);
         double randomValue = (double) value;
-        Assert.assertTrue(0 <= randomValue && randomValue < 1);
+        assertTrue(0 <= randomValue && randomValue < 1);
     }
 
     @Test
@@ -289,11 +299,11 @@ public class TestExpressionInterpreter
         assertOptimizedEquals("3 between null and 4", "null");
         assertOptimizedEquals("3 between 2 and null", "null");
 
-        assertOptimizedEquals("'c' between 'b' and 'd'", "true");
-        assertOptimizedEquals("'b' between 'c' and 'd'", "false");
+        assertOptimizedEquals("'cc' between 'b' and 'd'", "true");
+        assertOptimizedEquals("'b' between 'cc' and 'd'", "false");
         assertOptimizedEquals("null between 'b' and 'd'", "null");
-        assertOptimizedEquals("'c' between null and 'd'", "null");
-        assertOptimizedEquals("'c' between 'b' and null", "null");
+        assertOptimizedEquals("'cc' between null and 'd'", "null");
+        assertOptimizedEquals("'cc' between 'b' and null", "null");
 
         assertOptimizedEquals("bound_long between 1000 and 2000", "true");
         assertOptimizedEquals("bound_long between 3 and 4", "false");
@@ -301,7 +311,9 @@ public class TestExpressionInterpreter
         assertOptimizedEquals("bound_string between 'a' and 'b'", "false");
 
         assertOptimizedEquals("bound_long between unbound_long and 2000 + 1", "1234 between unbound_long and 2001");
-        assertOptimizedEquals("bound_string between unbound_string and 'bar'", "'hello' between unbound_string and 'bar'");
+        assertOptimizedEquals(
+                "bound_string between unbound_string and 'bar'",
+                format("CAST('hello' AS VARCHAR(%s)) between unbound_string and 'bar'", TEST_VARCHAR_TYPE_LENGTH));
     }
 
     @Test
@@ -574,10 +586,10 @@ public class TestExpressionInterpreter
                 "else 1 " +
                 "end",
                 "" +
-                        "case " +
-                        "when unbound_long = 1234 then 33 " +
-                        "else 1 " +
-                        "end");
+                "case " +
+                "when unbound_long = 1234 then 33 " +
+                "else 1 " +
+                "end");
 
         assertOptimizedMatches("case when 0 / 0 = 0 then 1 end",
                 "case when cast(fail() as boolean) then 1 end");
@@ -806,6 +818,25 @@ public class TestExpressionInterpreter
     }
 
     @Test
+    public void testTry()
+            throws Exception
+    {
+        assertOptimizedEquals("TRY(2/1)", "2");
+        assertOptimizedEquals("TRY(2/0)", "null");
+        assertOptimizedEquals("COALESCE(TRY(2/0), 0)", "0");
+
+        assertOptimizedEquals("TRY(CAST (CAST (bound_long AS VARCHAR) AS BIGINT))", "bound_long");
+        assertOptimizedEquals("TRY(CAST (CONCAT('a', CAST (bound_long AS VARCHAR)) AS BIGINT))", "null");
+        assertOptimizedEquals("COALESCE(TRY(CAST (CONCAT('a', CAST (bound_long AS VARCHAR)) AS BIGINT)), 0)", "0");
+
+        assertOptimizedEquals("TRY(ABS(-2))", "2");
+        assertOptimizedEquals("42 + TRY(ABS(-9223372036854775807 - 1))", "null");
+
+        assertOptimizedEquals("JSON_FORMAT(TRY(JSON '[]')) || unbound_string", "'[]' || unbound_string");
+        assertOptimizedEquals("JSON_FORMAT(TRY(JSON 'INVALID')) || unbound_string", "null");
+    }
+
+    @Test
     public void testLike()
             throws Exception
     {
@@ -924,6 +955,26 @@ public class TestExpressionInterpreter
         optimize("0 / 0");
     }
 
+    @Test
+    public void testMassiveArrayConstructor()
+    {
+        optimize(format("ARRAY [%s]", Joiner.on(", ").join(IntStream.range(0, 10_000).mapToObj(i -> "(bound_long + " + i + ")").iterator())));
+        optimize(format("ARRAY [%s]", Joiner.on(", ").join(IntStream.range(0, 10_000).mapToObj(i -> "'" + i + "'").iterator())));
+        optimize(format("ARRAY [%s]", Joiner.on(", ").join(IntStream.range(0, 10_000).mapToObj(i -> "ARRAY['" + i + "']").iterator())));
+    }
+
+    @Test
+    public void testArrayConstructor()
+    {
+        optimize("ARRAY []");
+        assertOptimizedEquals("ARRAY [(unbound_long + 0), (unbound_long + 1), (unbound_long + 2)]",
+                "array_constructor((unbound_long + 0), (unbound_long + 1), (unbound_long + 2))");
+        assertOptimizedEquals("ARRAY [(bound_long + 0), (unbound_long + 1), (bound_long + 2)]",
+                "array_constructor((bound_long + 0), (unbound_long + 1), (bound_long + 2))");
+        assertOptimizedEquals("ARRAY [(bound_long + 0), (unbound_long + 1), NULL]",
+                "array_constructor((bound_long + 0), (unbound_long + 1), NULL)");
+    }
+
     @Test(expectedExceptions = PrestoException.class)
     public void testArraySubscriptConstantNegativeIndex()
     {
@@ -962,6 +1013,8 @@ public class TestExpressionInterpreter
 
         optimize("interval '3' day * unbound_long");
         optimize("interval '3' year * unbound_long");
+
+        assertEquals(optimize("X'1234'"), Slices.wrappedBuffer((byte) 0x12, (byte) 0x34));
     }
 
     private static void assertLike(byte[] value, String pattern, boolean expected)
@@ -1035,6 +1088,8 @@ public class TestExpressionInterpreter
                         return utf8Slice("%el%");
                     case "bound_timestamp_with_timezone":
                         return new SqlTimestampWithTimeZone(new DateTime(1970, 1, 1, 1, 0, 0, 999, DateTimeZone.UTC).getMillis(), getTimeZoneKey("Z"));
+                    case "bound_varbinary":
+                        return Slices.wrappedBuffer((byte) 0xab);
                 }
 
                 return new QualifiedNameReference(symbol.toQualifiedName());

@@ -192,7 +192,7 @@ public final class AccumuloColumnHandle
     {
         // TODO Partition key? Technically the row ID would be partitioned, not sure what this does
         // for Presto, though.
-        return new ColumnMetadata(name, type, false, comment, false);
+        return new ColumnMetadata(name, type, comment, false);
     }
 
     /**

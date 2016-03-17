@@ -18,7 +18,6 @@ import bloomberg.presto.accumulo.conf.AccumuloTableProperties;
 import bloomberg.presto.accumulo.io.AccumuloPageSinkProvider;
 import bloomberg.presto.accumulo.io.AccumuloRecordSetProvider;
 import com.facebook.presto.spi.Connector;
-import com.facebook.presto.spi.ConnectorHandleResolver;
 import com.facebook.presto.spi.ConnectorMetadata;
 import com.facebook.presto.spi.ConnectorPageSinkProvider;
 import com.facebook.presto.spi.ConnectorRecordSetProvider;
@@ -154,17 +153,6 @@ public class AccumuloConnector
     public List<PropertyMetadata<?>> getSessionProperties()
     {
         return sessionProperties.getSessionProperties();
-    }
-
-    /**
-     * Gets the handle resolver, an instance of {@link AccumuloHandleResolver}
-     *
-     * @return Handle resolver
-     */
-    @Override
-    public ConnectorHandleResolver getHandleResolver()
-    {
-        return handleResolver;
     }
 
     /**

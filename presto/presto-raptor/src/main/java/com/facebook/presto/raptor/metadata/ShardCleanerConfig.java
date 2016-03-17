@@ -29,12 +29,11 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class ShardCleanerConfig
 {
     private Duration maxTransactionAge = new Duration(1, DAYS);
+    private Duration transactionCleanerInterval = new Duration(10, MINUTES);
     private Duration localCleanerInterval = new Duration(1, HOURS);
     private Duration localCleanTime = new Duration(4, HOURS);
-    private Duration localPurgeTime = new Duration(3, DAYS);
     private Duration backupCleanerInterval = new Duration(5, MINUTES);
     private Duration backupCleanTime = new Duration(1, DAYS);
-    private Duration backupPurgeTime = new Duration(3, DAYS);
     private int backupDeletionThreads = 50;
 
     @NotNull
@@ -55,13 +54,28 @@ public class ShardCleanerConfig
 
     @NotNull
     @MinDuration("1m")
+    public Duration getTransactionCleanerInterval()
+    {
+        return transactionCleanerInterval;
+    }
+
+    @Config("raptor.transaction-cleaner-interval")
+    @ConfigDescription("How often to cleanup expired transactions")
+    public ShardCleanerConfig setTransactionCleanerInterval(Duration transactionCleanerInterval)
+    {
+        this.transactionCleanerInterval = transactionCleanerInterval;
+        return this;
+    }
+
+    @NotNull
+    @MinDuration("1m")
     public Duration getLocalCleanerInterval()
     {
         return localCleanerInterval;
     }
 
     @Config("raptor.local-cleaner-interval")
-    @ConfigDescription("How often to check for local shards that need to be cleaned up")
+    @ConfigDescription("How often to discover local shards that need to be cleaned up")
     public ShardCleanerConfig setLocalCleanerInterval(Duration localCleanerInterval)
     {
         this.localCleanerInterval = localCleanerInterval;
@@ -75,24 +89,10 @@ public class ShardCleanerConfig
     }
 
     @Config("raptor.local-clean-time")
-    @ConfigDescription("How long to wait after deletion before cleaning local shards")
+    @ConfigDescription("How long to wait after discovery before cleaning local shards")
     public ShardCleanerConfig setLocalCleanTime(Duration localCleanTime)
     {
         this.localCleanTime = localCleanTime;
-        return this;
-    }
-
-    @NotNull
-    public Duration getLocalPurgeTime()
-    {
-        return localPurgeTime;
-    }
-
-    @Config("raptor.local-purge-time")
-    @ConfigDescription("How long to wait after cleaning before purging local shards")
-    public ShardCleanerConfig setLocalPurgeTime(Duration localPurgeTime)
-    {
-        this.localPurgeTime = localPurgeTime;
         return this;
     }
 
@@ -122,20 +122,6 @@ public class ShardCleanerConfig
     public ShardCleanerConfig setBackupCleanTime(Duration backupCleanTime)
     {
         this.backupCleanTime = backupCleanTime;
-        return this;
-    }
-
-    @NotNull
-    public Duration getBackupPurgeTime()
-    {
-        return backupPurgeTime;
-    }
-
-    @Config("raptor.backup-purge-time")
-    @ConfigDescription("How long to wait after cleaning before purging backup shards")
-    public ShardCleanerConfig setBackupPurgeTime(Duration backupPurgeTime)
-    {
-        this.backupPurgeTime = backupPurgeTime;
         return this;
     }
 

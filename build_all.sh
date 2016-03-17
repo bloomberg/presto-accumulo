@@ -3,8 +3,7 @@
 # Builds/installs all presto-accumulo projects
 
 # Project build order
-
-PROJECTS=( "presto-accumulo" "presto-accumulo-iterators" "presto-accumulo-benchmark" "presto-accumulo-tools" )
+PROJECTS=( "presto" "presto-accumulo" "presto-accumulo-iterators" "presto-accumulo-benchmark" "presto-accumulo-tools" )
 
 for PROJ in ${PROJECTS[@]}; do
     cd $PROJ

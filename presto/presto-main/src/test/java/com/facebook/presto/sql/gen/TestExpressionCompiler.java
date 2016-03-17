@@ -23,8 +23,10 @@ import com.facebook.presto.operator.scalar.StringFunctions;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.type.SqlTimestamp;
 import com.facebook.presto.spi.type.SqlTimestampWithTimeZone;
+import com.facebook.presto.spi.type.SqlVarbinary;
 import com.facebook.presto.spi.type.TimeZoneKey;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.VarcharType;
 import com.facebook.presto.sql.tree.Extract.Field;
 import com.facebook.presto.type.LikeFunctions;
 import com.google.common.base.Preconditions;
@@ -39,6 +41,7 @@ import io.airlift.joni.Regex;
 import io.airlift.log.Logger;
 import io.airlift.log.Logging;
 import io.airlift.slice.Slice;
+import io.airlift.slice.Slices;
 import io.airlift.units.Duration;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -64,8 +67,11 @@ import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.TimeZoneKey.UTC_KEY;
 import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.TimestampWithTimeZoneType.TIMESTAMP_WITH_TIME_ZONE;
+import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
 import static com.facebook.presto.type.JsonType.JSON;
+import static com.facebook.presto.type.UnknownType.UNKNOWN;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
@@ -169,9 +175,11 @@ public class TestExpressionCompiler
         assertExecute("true", BOOLEAN, true);
         assertExecute("false", BOOLEAN, false);
         assertExecute("42", BIGINT, 42L);
-        assertExecute("'foo'", VARCHAR, "foo");
+        assertExecute("'foo'", createVarcharType(3), "foo");
         assertExecute("4.2", DOUBLE, 4.2);
         assertExecute("1 + 1", BIGINT, 2L);
+        assertExecute("X' 1 f'", VARBINARY, new SqlVarbinary(Slices.wrappedBuffer((byte) 0x1f).getBytes()));
+        assertExecute("X' '", VARBINARY, new SqlVarbinary(new byte[0]));
         assertExecute("bound_long", BIGINT, 1234L);
         assertExecute("bound_string", VARCHAR, "hello");
         assertExecute("bound_double", DOUBLE, 12.34);
@@ -180,6 +188,7 @@ public class TestExpressionCompiler
         assertExecute("bound_pattern", VARCHAR, "%el%");
         assertExecute("bound_null_string", VARCHAR, null);
         assertExecute("bound_timestamp_with_timezone", TIMESTAMP_WITH_TIME_ZONE, new SqlTimestampWithTimeZone(new DateTime(1970, 1, 1, 0, 1, 0, 999, DateTimeZone.UTC).getMillis(), TimeZoneKey.getTimeZoneKey("Z")));
+        assertExecute("bound_binary_literal", VARBINARY, new SqlVarbinary(new byte[]{(byte) 0xab}));
 
         // todo enable when null output type is supported
         // assertExecute("null", null);
@@ -235,7 +244,7 @@ public class TestExpressionCompiler
         }
 
         for (String value : stringLefts) {
-            assertExecute(generateExpression("%s", value), VARCHAR, value == null ? null : value);
+            assertExecute(generateExpression("%s", value), varcharType(value), value == null ? null : value);
             assertExecute(generateExpression("%s is null", value), BOOLEAN, value == null);
             assertExecute(generateExpression("%s is not null", value), BOOLEAN, value != null);
         }
@@ -396,13 +405,27 @@ public class TestExpressionCompiler
                 assertExecute(generateExpression("%s <= %s", left, right), BOOLEAN, left == null || right == null ? null : left.compareTo(right) <= 0);
 
                 assertExecute(generateExpression("%s || %s", left, right), VARCHAR, left == null || right == null ? null : left + right);
+
                 assertExecute(generateExpression("%s is distinct from %s", left, right), BOOLEAN, !Objects.equals(left, right));
 
-                assertExecute(generateExpression("nullif(%s, %s)", left, right), VARCHAR, nullIf(left, right));
+                assertExecute(generateExpression("nullif(%s, %s)", left, right), varcharType(left), nullIf(left, right));
             }
         }
 
         Futures.allAsList(futures).get();
+    }
+
+    private static VarcharType varcharType(String... values)
+    {
+        return varcharType(Arrays.asList(values));
+    }
+
+    private static VarcharType varcharType(List<String> values)
+    {
+        if (values.stream().anyMatch(Objects::isNull)) {
+            return VARCHAR;
+        }
+        return createVarcharType(values.stream().mapToInt(String::length).max().getAsInt());
     }
 
     private static Object nullIf(Object left, Object right)
@@ -548,6 +571,25 @@ public class TestExpressionCompiler
     }
 
     @Test
+    public void testTry()
+            throws Exception
+    {
+        assertExecute("try(cast(null as bigint))", BIGINT, null);
+        assertExecute("try(cast('123' as bigint))", BIGINT, 123L);
+        assertExecute("try(cast('foo' as bigint))", BIGINT, null);
+        assertExecute("try(cast('foo' as bigint)) + try(cast('123' as bigint))", BIGINT, null);
+        assertExecute("try(cast (cast (123 AS VARCHAR) AS BIGINT))", BIGINT, 123L);
+        assertExecute("coalesce(cast (CONCAT('123', CAST (123 AS VARCHAR)) AS BIGINT), 0)", BIGINT, 123123L);
+        assertExecute("try(cast (CONCAT(bound_string, CAST (123 AS VARCHAR)) AS BIGINT))", BIGINT, null);
+        assertExecute("coalesce(try(cast (concat('a', cast (123 AS VARCHAR)) AS BIGINT)), 0)", BIGINT, 0L);
+        assertExecute("123 + TRY(ABS(-9223372036854775807 - 1))", BIGINT, null);
+        assertExecute("JSON_FORMAT(TRY(JSON '[]')) || '123'", VARCHAR, "[]123");
+        assertExecute("JSON_FORMAT(TRY(JSON 'INVALID')) || '123'", VARCHAR, null);
+
+        Futures.allAsList(futures).get();
+    }
+
+    @Test
     public void testTryCast()
             throws Exception
     {
@@ -634,12 +676,14 @@ public class TestExpressionCompiler
     public void testIf()
             throws Exception
     {
-        // todo enable when null output type is supported
-        //assertExecute("if(null and true, 1, 0)", 0L);
+        assertExecute("if(null and true, 1, 0)", BIGINT, 0L);
         for (Boolean condition : booleanValues) {
             for (String trueValue : stringLefts) {
                 for (String falseValue : stringRights) {
-                    assertExecute(generateExpression("if(%s, %s, %s)", condition, trueValue, falseValue), VARCHAR, condition != null && condition ? trueValue : falseValue);
+                    assertExecute(
+                            generateExpression("if(%s, %s, %s)", condition, trueValue, falseValue),
+                            varcharType(trueValue, falseValue),
+                            condition != null && condition ? trueValue : falseValue);
                 }
             }
         }
@@ -667,7 +711,7 @@ public class TestExpressionCompiler
                     else {
                         expected = "else";
                     }
-                    assertExecute(generateExpression("case %s when %s then 'first' when %s then 'second' else 'else' end", value, firstTest, secondTest), VARCHAR, expected);
+                    assertExecute(generateExpression("case %s when %s then 'first' when %s then 'second' else 'else' end", value, firstTest, secondTest), createVarcharType(6), expected);
                 }
             }
         }
@@ -687,7 +731,7 @@ public class TestExpressionCompiler
                     else {
                         expected = null;
                     }
-                    assertExecute(generateExpression("case %s when %s then 'first' when %s then 'second' end", value, firstTest, secondTest), VARCHAR, expected);
+                    assertExecute(generateExpression("case %s when %s then 'first' when %s then 'second' end", value, firstTest, secondTest), createVarcharType(6), expected);
                 }
             }
         }
@@ -719,7 +763,7 @@ public class TestExpressionCompiler
                     List<String> expressions = formatExpression("case when %s = %s then 'first' when %s = %s then 'second' else 'else' end",
                             Arrays.<Object>asList(value, firstTest, value, secondTest),
                             ImmutableList.of("double", "bigint", "double", "double"));
-                    assertExecute(expressions, VARCHAR, expected);
+                    assertExecute(expressions, createVarcharType(6), expected);
                 }
             }
         }
@@ -750,7 +794,7 @@ public class TestExpressionCompiler
                     List<String> expressions = formatExpression("case when %s = %s then 'first' when %s = %s then 'second' end",
                             Arrays.<Object>asList(value, firstTest, value, secondTest),
                             ImmutableList.of("double", "bigint", "double", "double"));
-                    assertExecute(expressions, VARCHAR, expected);
+                    assertExecute(expressions, createVarcharType(6), expected);
                 }
             }
         }
@@ -842,6 +886,12 @@ public class TestExpressionCompiler
                     value == null ? null : testValues.contains(value) ? true : null);
         }
 
+        // Test null-handling in default case of InCodeGenerator
+        assertExecute("1 in (100, 101, if(rand()>=0, 1), if(rand()<0, 1))", BOOLEAN, true);
+        assertExecute("1 in (100, 101, if(rand()<0, 1), if(rand()>=0, 1))", BOOLEAN, true);
+        assertExecute("2 in (100, 101, if(rand()>=0, 1), if(rand()<0, 1))", BOOLEAN, null);
+        assertExecute("2 in (100, 101, if(rand()<0, 1), if(rand()>=0, 1))", BOOLEAN, null);
+
         Futures.allAsList(futures).get();
     }
 
@@ -914,7 +964,9 @@ public class TestExpressionCompiler
                     else {
                         expected = StringFunctions.substr(utf8Slice(value), start, length).toStringUtf8();
                     }
-                    assertExecute(generateExpression("substr(%s, %s, %s)", value, start, length), VARCHAR, expected);
+                    VarcharType expectedType = value != null ? createVarcharType(value.length()) : VARCHAR;
+
+                    assertExecute(generateExpression("substr(%s, %s, %s)", value, start, length), expectedType, expected);
                 }
             }
         }
@@ -1087,17 +1139,28 @@ public class TestExpressionCompiler
         assertExecute("coalesce(cast(null as bigint), 9.0, cast(null as bigint))", DOUBLE, 9.0);
         assertExecute("coalesce(cast(null as double), 9.0, cast(null as double))", DOUBLE, 9.0);
 
-        assertExecute("coalesce('foo', 'bar')", VARCHAR, "foo");
-        assertExecute("coalesce('foo', null)", VARCHAR, "foo");
+        assertExecute("coalesce('foo', 'banana')", createVarcharType(6), "foo");
+        assertExecute("coalesce('foo', null)", createVarcharType(3), "foo");
         assertExecute("coalesce('foo', cast(null as varchar))", VARCHAR, "foo");
-        assertExecute("coalesce(null, 'foo', 'bar')", VARCHAR, "foo");
-        assertExecute("coalesce(null, 'foo', null)", VARCHAR, "foo");
+        assertExecute("coalesce(null, 'foo', 'banana')", createVarcharType(6), "foo");
+        assertExecute("coalesce(null, 'foo', null)", createVarcharType(3), "foo");
         assertExecute("coalesce(null, 'foo', cast(null as varchar))", VARCHAR, "foo");
         assertExecute("coalesce(cast(null as varchar), 'foo', 'bar')", VARCHAR, "foo");
         assertExecute("coalesce(cast(null as varchar), 'foo', null)", VARCHAR, "foo");
         assertExecute("coalesce(cast(null as varchar), 'foo', cast(null as varchar))", VARCHAR, "foo");
 
         assertExecute("coalesce(cast(null as bigint), null, cast(null as bigint))", BIGINT, null);
+
+        Futures.allAsList(futures).get();
+    }
+
+    @Test
+    public void testNullifForUnknown()
+            throws Exception
+    {
+        assertExecute("nullif(NULL, NULL)", UNKNOWN, null);
+        assertExecute("nullif(NULL, 2)", UNKNOWN, null);
+        assertExecute("nullif(2, NULL)", BIGINT, 2);
 
         Futures.allAsList(futures).get();
     }

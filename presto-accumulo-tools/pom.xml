@@ -5,14 +5,14 @@
 
 	<groupId>bloomberg.presto</groupId>
 	<artifactId>presto-accumulo-tools</artifactId>
-	<version>0.131</version>
+	<version>0.142-ANY</version>
 	<description>Tools to assist with the Accumulo connector for presto</description>
 	<packaging>jar</packaging>
 
 	<properties>
 		<accumulo.version>1.6.2</accumulo.version>
 		<app.main.class>bloomberg.presto.accumulo.tools.Main</app.main.class>
-		<presto.version>0.131</presto.version>
+		<presto.version>0.142-ANY</presto.version>
 		<project.build.targetJdk>1.8</project.build.targetJdk>
 		<protobuf.version>2.6.1</protobuf.version>
 	</properties>

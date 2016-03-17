@@ -14,44 +14,43 @@
 package com.facebook.presto.connector.informationSchema;
 
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.spi.Connector;
-import com.facebook.presto.spi.ConnectorHandleResolver;
-import com.facebook.presto.spi.ConnectorMetadata;
-import com.facebook.presto.spi.ConnectorPageSourceProvider;
-import com.facebook.presto.spi.ConnectorSplitManager;
 import com.facebook.presto.spi.NodeManager;
+import com.facebook.presto.spi.connector.ConnectorMetadata;
+import com.facebook.presto.spi.connector.ConnectorPageSourceProvider;
+import com.facebook.presto.spi.connector.ConnectorSplitManager;
+import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
+import com.facebook.presto.spi.transaction.IsolationLevel;
+import com.facebook.presto.transaction.InternalConnector;
+import com.facebook.presto.transaction.TransactionId;
 
 import static java.util.Objects.requireNonNull;
 
 public class InformationSchemaConnector
-        implements Connector
+        implements InternalConnector
 {
-    private final ConnectorHandleResolver handleResolver;
     private final ConnectorMetadata metadata;
     private final ConnectorSplitManager splitManager;
     private final ConnectorPageSourceProvider pageSourceProvider;
 
-    public InformationSchemaConnector(String connectorId, String catalogName, NodeManager nodeManager, Metadata metadata)
+    public InformationSchemaConnector(String catalogName, NodeManager nodeManager, Metadata metadata)
     {
-        requireNonNull(connectorId, "connectorId is null");
         requireNonNull(catalogName, "catalogName is null");
         requireNonNull(nodeManager, "nodeManager is null");
         requireNonNull(metadata, "metadata is null");
 
-        this.handleResolver = new InformationSchemaHandleResolver(connectorId);
-        this.metadata = new InformationSchemaMetadata(connectorId, catalogName);
+        this.metadata = new InformationSchemaMetadata(catalogName);
         this.splitManager = new InformationSchemaSplitManager(nodeManager);
         this.pageSourceProvider = new InformationSchemaPageSourceProvider(metadata);
     }
 
     @Override
-    public ConnectorHandleResolver getHandleResolver()
+    public ConnectorTransactionHandle beginTransaction(TransactionId transactionId, IsolationLevel isolationLevel, boolean readOnly)
     {
-        return handleResolver;
+        return new InformationSchemaTransactionHandle(transactionId);
     }
 
     @Override
-    public ConnectorMetadata getMetadata()
+    public ConnectorMetadata getMetadata(ConnectorTransactionHandle transactionHandle)
     {
         return metadata;
     }

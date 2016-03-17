@@ -20,7 +20,7 @@ A Presto connector for reading and writing data backed by Apache Accumulo.
 ### Repository Contents
 This repository contains five sub-projects:
 
-1. _presto_ - A patched version of Presto 0.131 containing support for the ANY clause.  This is similar to the __contains__ UDF that can be used to check if an element is in an array.  Users can use this clause instead of contains to enable predicate pushdown support -- and therefore the secondary index capability of the connector.
+1. _presto_ - A patched version of Presto 0.142 containing support for the ANY clause.  This is similar to the __contains__ UDF that can be used to check if an element is in an array.  Users can use this clause instead of contains to enable predicate pushdown support -- and therefore the secondary index capability of the connector.
 2. _presto-accumulo_ - The Accumulo connector code for Presto.
 3. _presto-accumulo-iterators_ - A collection of Accumulo iterators to be installed on the TabletServers.  These iterators are required to user the connector.
 4. _presto-accumulo-benchmark_ - An implementation of the TPC-H benchmarking suite for testing the connector.
@@ -40,9 +40,6 @@ Change directories to `presto`, build the server with Maven, and deploy this ver
 # After cloning the repository:
 cd presto/
 
-# Clean up any archived Presto versions from your Maven repository -- we will be overwriting presto version 0.131
-rm -rf ~/.m2/repository/com/facebook/presto
-
 # Install patched presto into Maven repository (Best go get some coffee -- these'll take a while)
 mvn clean install -DskipTests
 
@@ -51,10 +48,10 @@ mvn clean install -DskipTests
 mvn clean package -DskipTests
 
 # Install presto-server package and configure Presto as normal per their documentation
-cp presto-server/target/presto-server-0.131.tar.gz # some place
+cp presto-server/target/presto-server-0.142-ANY.tar.gz # some place
 
-# You can use this Presto CLI jar file, or the pre-built one for version 0.131.
-cp presto-cli/target/presto-cli-0.131-executable.jar # some place
+# You can use this Presto CLI jar file
+cp presto-cli/target/presto-cli-0.142-ANY-executable.jar # some place
 ```
 
 ### Installing the Connector

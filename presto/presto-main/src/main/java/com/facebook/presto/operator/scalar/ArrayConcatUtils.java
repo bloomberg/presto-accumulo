@@ -24,27 +24,6 @@ public final class ArrayConcatUtils
 {
     private ArrayConcatUtils() {}
 
-    public static Block concat(Type elementType, Block leftBlock, Block rightBlock)
-    {
-        if (leftBlock.getPositionCount() == 0) {
-            return rightBlock;
-        }
-        if (rightBlock.getPositionCount() == 0) {
-            return leftBlock;
-        }
-
-        int totalSize = leftBlock.getSizeInBytes() + rightBlock.getSizeInBytes();
-        int totalEntries = leftBlock.getPositionCount() + rightBlock.getPositionCount();
-        BlockBuilder blockBuilder = elementType.createBlockBuilder(new BlockBuilderStatus(), totalEntries, (int) Math.ceil(totalSize / (double) totalEntries));
-        for (int i = 0; i < leftBlock.getPositionCount(); i++) {
-            elementType.appendTo(leftBlock, i, blockBuilder);
-        }
-        for (int i = 0; i < rightBlock.getPositionCount(); i++) {
-            elementType.appendTo(rightBlock, i, blockBuilder);
-        }
-        return blockBuilder.build();
-    }
-
     // Usage of appendElement: ArrayToElementConcatFunction
     @UsedByGeneratedCode
     public static Block appendElement(Type elementType, Block block, long value)

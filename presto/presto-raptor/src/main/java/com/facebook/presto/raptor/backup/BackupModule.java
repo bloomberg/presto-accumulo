@@ -22,6 +22,7 @@ import com.google.inject.Scopes;
 import com.google.inject.util.Providers;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
+import io.airlift.configuration.ConfigurationAwareModule;
 
 import javax.annotation.Nullable;
 import javax.inject.Singleton;
@@ -58,6 +59,9 @@ public class BackupModule
             if (module == null) {
                 binder.addError("Unknown backup provider: %s", provider);
             }
+            else if (module instanceof ConfigurationAwareModule) {
+                install((ConfigurationAwareModule) module);
+            }
             else {
                 binder.install(module);
             }
@@ -78,7 +82,12 @@ public class BackupModule
             return Optional.empty();
         }
 
-        BackupStore proxy = new TimeoutBackupStore(store, connectorId.toString(), config.getTimeout());
+        BackupStore proxy = new TimeoutBackupStore(
+                store,
+                connectorId.toString(),
+                config.getTimeout(),
+                config.getTimeoutThreads());
+
         lifeCycleManager.addInstance(proxy);
         return Optional.of(proxy);
     }

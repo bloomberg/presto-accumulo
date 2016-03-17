@@ -84,7 +84,6 @@ public class ChildReplacer
                 node.getType(),
                 node.getPartitionFunction(),
                 newChildren,
-                node.getOutputSymbols(),
                 node.getInputs());
     }
 
@@ -166,6 +165,12 @@ public class ChildReplacer
     }
 
     @Override
+    public PlanNode visitGroupId(GroupIdNode node, List<PlanNode> newChildren)
+    {
+        return new GroupIdNode(node.getId(), Iterables.getOnlyElement(newChildren), node.getInputSymbols(), node.getGroupingSets(), node.getGroupIdSymbol());
+    }
+
+    @Override
     public PlanNode visitMarkDistinct(MarkDistinctNode node, List<PlanNode> newChildren)
     {
         return new MarkDistinctNode(node.getId(), Iterables.getOnlyElement(newChildren), node.getMarkerSymbol(), node.getDistinctSymbols(), node.getHashSymbol());
@@ -215,24 +220,38 @@ public class ChildReplacer
     @Override
     public PlanNode visitTableWriter(TableWriterNode node, List<PlanNode> newChildren)
     {
-        return new TableWriterNode(node.getId(), Iterables.getOnlyElement(newChildren), node.getTarget(), node.getColumns(), node.getColumnNames(), node.getOutputSymbols(), node.getSampleWeightSymbol());
+        return new TableWriterNode(
+                node.getId(),
+                Iterables.getOnlyElement(newChildren),
+                node.getTarget(),
+                node.getColumns(),
+                node.getColumnNames(),
+                node.getOutputSymbols(),
+                node.getSampleWeightSymbol(),
+                node.getPartitionFunction());
     }
 
     @Override
-    public PlanNode visitTableCommit(TableCommitNode node, List<PlanNode> newChildren)
+    public PlanNode visitTableFinish(TableFinishNode node, List<PlanNode> newChildren)
     {
-        return new TableCommitNode(node.getId(), Iterables.getOnlyElement(newChildren), node.getTarget(), node.getOutputSymbols());
+        return new TableFinishNode(node.getId(), Iterables.getOnlyElement(newChildren), node.getTarget(), node.getOutputSymbols());
     }
 
     @Override
     public PlanNode visitUnion(UnionNode node, List<PlanNode> newChildren)
     {
-        return new UnionNode(node.getId(), newChildren, node.getSymbolMapping());
+        return new UnionNode(node.getId(), newChildren, node.getSymbolMapping(), node.getOutputSymbols());
     }
 
     @Override
     public PlanNode visitDelete(DeleteNode node, List<PlanNode> newChildren)
     {
         return new DeleteNode(node.getId(), Iterables.getOnlyElement(newChildren), node.getTarget(), node.getRowId(), node.getOutputSymbols());
+    }
+
+    @Override
+    public PlanNode visitEnforceSingleRow(EnforceSingleRowNode node, List<PlanNode> newChildren)
+    {
+        return new EnforceSingleRowNode(node.getId(), Iterables.getOnlyElement(newChildren));
     }
 }

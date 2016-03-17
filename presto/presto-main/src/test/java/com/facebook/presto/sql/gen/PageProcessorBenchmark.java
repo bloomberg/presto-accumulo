@@ -30,7 +30,6 @@ import com.facebook.presto.sql.tree.ExpressionTreeRewriter;
 import com.facebook.presto.testing.TestingSession;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -108,7 +107,7 @@ public class PageProcessorBenchmark
         types = projections.stream().map(RowExpression::getType).collect(toList());
 
         inputPage = createPage(types, dictionaryBlocks);
-        processor = new ExpressionCompiler(createTestMetadataManager()).compilePageProcessor(getFilter(type), projections);
+        processor = new ExpressionCompiler(createTestMetadataManager()).compilePageProcessor(getFilter(type), projections).get();
     }
 
     @Benchmark
@@ -175,7 +174,6 @@ public class PageProcessorBenchmark
         return SqlToRowExpressionTranslator.translate(inputReferenceExpression, SCALAR, expressionTypes, METADATA.getFunctionRegistry(), METADATA.getTypeManager(), TEST_SESSION, true);
     }
 
-    @NotNull
     private static Page createPage(List<? extends Type> types, boolean dictionary)
     {
         if (dictionary) {

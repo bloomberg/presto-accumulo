@@ -29,11 +29,9 @@ import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.MapType;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
-import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -144,7 +142,7 @@ public final class SessionPropertyManager
                     sessionProperty.getCatalogName(),
                     sessionProperty.getPropertyName(),
                     propertyMetadata.getDescription(),
-                    propertyMetadata.getSqlType().getTypeSignature().toString(),
+                    propertyMetadata.getSqlType().getDisplayName(),
                     propertyMetadata.isHidden()));
         }
 
@@ -188,10 +186,9 @@ public final class SessionPropertyManager
         }
     }
 
-    @NotNull
     public static Object evaluatePropertyValue(Expression expression, Type expectedType, Session session, Metadata metadata)
     {
-        Object value = evaluateConstantExpression(expression, expectedType, metadata, session, ImmutableSet.of());
+        Object value = evaluateConstantExpression(expression, expectedType, metadata, session);
 
         // convert to object value type of SQL type
         BlockBuilder blockBuilder = expectedType.createBlockBuilder(new BlockBuilderStatus(), 1);
@@ -204,7 +201,6 @@ public final class SessionPropertyManager
         return objectValue;
     }
 
-    @NotNull
     public static String serializeSessionProperty(Type type, Object value)
     {
         if (value == null) {
@@ -228,7 +224,6 @@ public final class SessionPropertyManager
         throw new PrestoException(INVALID_SESSION_PROPERTY, format("Session property type %s is not supported", type));
     }
 
-    @NotNull
     private static Object deserializeSessionProperty(Type type, String value)
     {
         if (value == null) {

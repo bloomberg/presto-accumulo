@@ -30,7 +30,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
 import com.facebook.presto.sql.planner.plan.SimplePlanRewriter;
-import com.facebook.presto.sql.planner.plan.TableCommitNode;
+import com.facebook.presto.sql.planner.plan.TableFinishNode;
 import com.facebook.presto.sql.planner.plan.TableScanNode;
 import com.facebook.presto.sql.planner.plan.TableWriterNode;
 import com.facebook.presto.sql.planner.plan.UnionNode;
@@ -95,7 +95,8 @@ public class BeginTableWrite
                     node.getColumns(),
                     node.getColumnNames(),
                     node.getOutputSymbols(),
-                    node.getSampleWeightSymbol());
+                    node.getSampleWeightSymbol(),
+                    node.getPartitionFunction());
         }
 
         @Override
@@ -111,7 +112,7 @@ public class BeginTableWrite
         }
 
         @Override
-        public PlanNode visitTableCommit(TableCommitNode node, RewriteContext<Context> context)
+        public PlanNode visitTableFinish(TableFinishNode node, RewriteContext<Context> context)
         {
             PlanNode child = node.getSource();
 
@@ -121,7 +122,7 @@ public class BeginTableWrite
             context.get().addMaterializedHandle(originalTarget, newTarget);
             child = child.accept(this, context);
 
-            return new TableCommitNode(node.getId(), child, newTarget, node.getOutputSymbols());
+            return new TableFinishNode(node.getId(), child, newTarget, node.getOutputSymbols());
         }
 
         public TableWriterNode.WriterTarget getTarget(PlanNode node)
@@ -146,7 +147,7 @@ public class BeginTableWrite
             // TODO: begin these operations in pre-execution step, not here
             if (target instanceof TableWriterNode.CreateName) {
                 TableWriterNode.CreateName create = (TableWriterNode.CreateName) target;
-                return new TableWriterNode.CreateHandle(metadata.beginCreateTable(session, create.getCatalog(), create.getTableMetadata()));
+                return new TableWriterNode.CreateHandle(metadata.beginCreateTable(session, create.getCatalog(), create.getTableMetadata(), create.getLayout()));
             }
             if (target instanceof TableWriterNode.InsertReference) {
                 TableWriterNode.InsertReference insert = (TableWriterNode.InsertReference) target;

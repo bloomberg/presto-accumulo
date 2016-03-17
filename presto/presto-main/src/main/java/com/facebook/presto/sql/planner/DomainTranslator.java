@@ -21,10 +21,12 @@ import com.facebook.presto.spi.predicate.Marker;
 import com.facebook.presto.spi.predicate.NullableValue;
 import com.facebook.presto.spi.predicate.Range;
 import com.facebook.presto.spi.predicate.Ranges;
+import com.facebook.presto.spi.predicate.SortedRangeSet;
 import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.predicate.ValueSet;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.sql.FunctionInvoker;
 import com.facebook.presto.sql.analyzer.ExpressionAnalyzer;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.tree.AstVisitor;
@@ -41,8 +43,10 @@ import com.facebook.presto.sql.tree.LongLiteral;
 import com.facebook.presto.sql.tree.NotExpression;
 import com.facebook.presto.sql.tree.NullLiteral;
 import com.facebook.presto.sql.tree.QualifiedNameReference;
+import com.facebook.presto.type.TypeRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.PeekingIterator;
 import com.google.common.math.DoubleMath;
 
 import javax.annotation.Nullable;
@@ -58,7 +62,6 @@ import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.sql.ExpressionUtils.and;
 import static com.facebook.presto.sql.ExpressionUtils.combineConjuncts;
 import static com.facebook.presto.sql.ExpressionUtils.combineDisjunctsWithDefault;
-import static com.facebook.presto.sql.ExpressionUtils.flipComparison;
 import static com.facebook.presto.sql.ExpressionUtils.or;
 import static com.facebook.presto.sql.planner.LiteralInterpreter.toExpression;
 import static com.facebook.presto.sql.tree.BooleanLiteral.FALSE_LITERAL;
@@ -72,6 +75,7 @@ import static com.facebook.presto.sql.tree.ComparisonExpression.Type.NOT_EQUAL;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.collect.Iterators.peekingIterator;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.FLOOR;
 import static java.util.Objects.requireNonNull;
@@ -138,54 +142,97 @@ public final class DomainTranslator
         return combineDisjunctsWithDefault(disjuncts, TRUE_LITERAL);
     }
 
+    private static Expression processRange(Type type, Range range, QualifiedNameReference reference)
+    {
+        if (range.isAll()) {
+            return TRUE_LITERAL;
+        }
+
+        if (isBetween(range)) {
+            // specialize the range with BETWEEN expression if possible b/c it is currently more efficient
+            return new BetweenPredicate(reference, toExpression(range.getLow().getValue(), type), toExpression(range.getHigh().getValue(), type));
+        }
+
+        List<Expression> rangeConjuncts = new ArrayList<>();
+        if (!range.getLow().isLowerUnbounded()) {
+            switch (range.getLow().getBound()) {
+                case ABOVE:
+                    rangeConjuncts.add(new ComparisonExpression(GREATER_THAN, reference, toExpression(range.getLow().getValue(), type)));
+                    break;
+                case EXACTLY:
+                    rangeConjuncts.add(new ComparisonExpression(GREATER_THAN_OR_EQUAL, reference, toExpression(range.getLow().getValue(),
+                            type)));
+                    break;
+                case BELOW:
+                    throw new IllegalStateException("Low Marker should never use BELOW bound: " + range);
+                default:
+                    throw new AssertionError("Unhandled bound: " + range.getLow().getBound());
+            }
+        }
+        if (!range.getHigh().isUpperUnbounded()) {
+            switch (range.getHigh().getBound()) {
+                case ABOVE:
+                    throw new IllegalStateException("High Marker should never use ABOVE bound: " + range);
+                case EXACTLY:
+                    rangeConjuncts.add(new ComparisonExpression(LESS_THAN_OR_EQUAL, reference, toExpression(range.getHigh().getValue(), type)));
+                    break;
+                case BELOW:
+                    rangeConjuncts.add(new ComparisonExpression(LESS_THAN, reference, toExpression(range.getHigh().getValue(), type)));
+                    break;
+                default:
+                    throw new AssertionError("Unhandled bound: " + range.getHigh().getBound());
+            }
+        }
+        // If rangeConjuncts is null, then the range was ALL, which should already have been checked for
+        checkState(!rangeConjuncts.isEmpty());
+        return combineConjuncts(rangeConjuncts);
+    }
+
+    private static Expression combineRangeWithExcludedPoints(Type type, QualifiedNameReference reference, Range range, List<Expression> excludedPoints)
+    {
+        if (excludedPoints.isEmpty()) {
+            return processRange(type, range, reference);
+        }
+
+        Expression excludedPointsExpression = new NotExpression(new InPredicate(reference, new InListExpression(excludedPoints)));
+        if (excludedPoints.size() == 1) {
+            excludedPointsExpression = new ComparisonExpression(NOT_EQUAL, reference, getOnlyElement(excludedPoints));
+        }
+
+        return combineConjuncts(processRange(type, range, reference), excludedPointsExpression);
+    }
+
     private static List<Expression> extractDisjuncts(Type type, Ranges ranges, QualifiedNameReference reference)
     {
         List<Expression> disjuncts = new ArrayList<>();
         List<Expression> singleValues = new ArrayList<>();
-        for (Range range : ranges.getOrderedRanges()) {
-            checkState(!range.isAll()); // Already checked
+        List<Range> orderedRanges = ranges.getOrderedRanges();
+
+        SortedRangeSet sortedRangeSet = SortedRangeSet.copyOf(type, orderedRanges);
+        SortedRangeSet complement = sortedRangeSet.complement();
+
+        List<Range> singleValueExclusionsList = complement.getOrderedRanges().stream().filter(Range::isSingleValue).collect(toList());
+        List<Range> originalUnionSingleValues = SortedRangeSet.copyOf(type, singleValueExclusionsList).union(sortedRangeSet).getOrderedRanges();
+        PeekingIterator<Range> singleValueExclusions = peekingIterator(singleValueExclusionsList.iterator());
+
+        for (Range range : originalUnionSingleValues) {
             if (range.isSingleValue()) {
                 singleValues.add(toExpression(range.getSingleValue(), type));
+                continue;
             }
-            else if (isBetween(range)) {
-                // Specialize the range with BETWEEN expression if possible b/c it is currently more efficient
-                disjuncts.add(new BetweenPredicate(reference, toExpression(range.getLow().getValue(), type), toExpression(range.getHigh().getValue(), type)));
+
+            // attempt to optimize ranges that can be coalesced as long as single value points are excluded
+            List<Expression> singleValuesInRange = new ArrayList<>();
+            while (singleValueExclusions.hasNext() && range.contains(singleValueExclusions.peek())) {
+                singleValuesInRange.add(toExpression(singleValueExclusions.next().getSingleValue(), type));
             }
-            else {
-                List<Expression> rangeConjuncts = new ArrayList<>();
-                if (!range.getLow().isLowerUnbounded()) {
-                    switch (range.getLow().getBound()) {
-                        case ABOVE:
-                            rangeConjuncts.add(new ComparisonExpression(GREATER_THAN, reference, toExpression(range.getLow().getValue(), type)));
-                            break;
-                        case EXACTLY:
-                            rangeConjuncts.add(new ComparisonExpression(GREATER_THAN_OR_EQUAL, reference, toExpression(range.getLow().getValue(),
-                                    type)));
-                            break;
-                        case BELOW:
-                            throw new IllegalStateException("Low Marker should never use BELOW bound: " + range);
-                        default:
-                            throw new AssertionError("Unhandled bound: " + range.getLow().getBound());
-                    }
-                }
-                if (!range.getHigh().isUpperUnbounded()) {
-                    switch (range.getHigh().getBound()) {
-                        case ABOVE:
-                            throw new IllegalStateException("High Marker should never use ABOVE bound: " + range);
-                        case EXACTLY:
-                            rangeConjuncts.add(new ComparisonExpression(LESS_THAN_OR_EQUAL, reference, toExpression(range.getHigh().getValue(), type)));
-                            break;
-                        case BELOW:
-                            rangeConjuncts.add(new ComparisonExpression(LESS_THAN, reference, toExpression(range.getHigh().getValue(), type)));
-                            break;
-                        default:
-                            throw new AssertionError("Unhandled bound: " + range.getHigh().getBound());
-                    }
-                }
-                // If rangeConjuncts is null, then the range was ALL, which should already have been checked for
-                checkState(!rangeConjuncts.isEmpty());
-                disjuncts.add(combineConjuncts(rangeConjuncts));
+
+            if (!singleValuesInRange.isEmpty()) {
+                disjuncts.add(combineRangeWithExcludedPoints(type, reference, range, singleValuesInRange));
+                continue;
             }
+
+            disjuncts.add(processRange(type, range, reference));
         }
 
         // Add back all of the possible single values either as an equality or an IN predicate
@@ -364,38 +411,51 @@ public final class DomainTranslator
             NormalizedSimpleComparison normalized = optionalNormalized.get();
 
             Symbol symbol = Symbol.fromQualifiedName(normalized.getNameReference().getName());
-            Type type = checkedTypeLookup(symbol);
+            Type fieldType = checkedTypeLookup(symbol);
             NullableValue value = normalized.getValue();
 
-            // Handle the cases where implicit coercions can happen in comparisons
-            // TODO: how to abstract this out
-            if (value.getType().equals(DOUBLE) && type.equals(BIGINT)) {
+            // when the field is BIGINT and the value is DOUBLE, transform the expression in such a way that
+            // the semantics are preserved while doing the comparisons in terms of double
+            // TODO: figure out a way to generalize this for other types
+            if (value.getType().equals(DOUBLE) && fieldType.equals(BIGINT)) {
                 return process(coerceDoubleToLongComparison(normalized), complement);
             }
-            if (value.getType().equals(BIGINT) && type.equals(DOUBLE)) {
-                value = NullableValue.of(DOUBLE, ((Long) value.getValue()).doubleValue());
+
+            Optional<NullableValue> coercedValue = coerce(value, fieldType);
+            if (!coercedValue.isPresent()) {
+                return super.visitComparisonExpression(node, complement);
             }
 
             if (node.getType().equals(ComparisonExpression.Type.ANY)) {
-                if (type.getTypeSignature().getBase().equals(StandardTypes.ARRAY)) {
-                    Type elementType = type.getTypeParameters().get(0);
+                if (fieldType.getTypeSignature().getBase().equals(StandardTypes.ARRAY)) {
+                    Type elementType = fieldType.getTypeParameters().get(0);
                     checkState(value.isNull() || value.getType().equals(elementType), "INVARIANT: ANY comparison array element type must be the same as value");
                     return createComparisonExtractionResult(normalized.getComparisonType(), symbol, elementType, value.getValue(), complement);
                 }
                 else if (value.getType().getTypeSignature().getBase().equals(StandardTypes.ARRAY))  {
                     Type elementType = value.getType().getTypeParameters().get(0);
-                    checkState(value.isNull() || type.equals(elementType), "INVARIANT: ANY comparison array element type must be the same as value");
+                    checkState(value.isNull() || fieldType.equals(elementType), "INVARIANT: ANY comparison array element type must be the same as value");
                     return createComparisonExtractionResult(normalized.getComparisonType(), symbol, value.getType(), value.getValue(), complement);
                 }
                 else {
                     throw new IllegalStateException("INVARIANT: ANY comparison array element type must be the same as value");
                 }
             }
-            else {
-                checkState(value.isNull() || value.getType().equals(type), "INVARIANT: comparison should be working on the same types");
-            }
 
-            return createComparisonExtractionResult(normalized.getComparisonType(), symbol, type, value.getValue(), complement);
+            return createComparisonExtractionResult(normalized.getComparisonType(), symbol, fieldType, coercedValue.get().getValue(), complement);
+        }
+
+        private Optional<NullableValue> coerce(NullableValue value, Type targetType)
+        {
+            if (!TypeRegistry.canCoerce(value.getType(), targetType)) {
+                return Optional.empty();
+            }
+            if (value.isNull()) {
+                return Optional.of(NullableValue.asNull(targetType));
+            }
+            Object coercedValue = new FunctionInvoker(metadata.getFunctionRegistry())
+                    .invoke(metadata.getFunctionRegistry().getCoercion(value.getType(), targetType), session.toConnectorSession(), value.getValue());
+            return Optional.of(NullableValue.of(targetType, coercedValue));
         }
 
         private ExtractionResult createComparisonExtractionResult(ComparisonExpression.Type comparisonType, Symbol column, Type type, @Nullable Object value, boolean complement)
@@ -565,7 +625,7 @@ public final class DomainTranslator
             return Optional.of(new NormalizedSimpleComparison((QualifiedNameReference) left, comparison.getType(), new NullableValue(expressionTypes.get(comparison.getRight()), right)));
         }
         if (right instanceof QualifiedNameReference && !(left instanceof Expression)) {
-            return Optional.of(new NormalizedSimpleComparison((QualifiedNameReference) right, flipComparison(comparison.getType()), new NullableValue(expressionTypes.get(comparison.getLeft()), left)));
+            return Optional.of(new NormalizedSimpleComparison((QualifiedNameReference) right, comparison.getType().flip(), new NullableValue(expressionTypes.get(comparison.getLeft()), left)));
         }
         return Optional.empty();
     }

@@ -46,6 +46,7 @@ import com.facebook.presto.sql.tree.SimpleCaseExpression;
 import com.facebook.presto.sql.tree.SortItem;
 import com.facebook.presto.sql.tree.SubqueryExpression;
 import com.facebook.presto.sql.tree.SubscriptExpression;
+import com.facebook.presto.sql.tree.TryExpression;
 import com.facebook.presto.sql.tree.WhenClause;
 import com.facebook.presto.sql.tree.Window;
 import com.facebook.presto.sql.tree.WindowFrame;
@@ -62,7 +63,6 @@ import java.util.Set;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.MUST_BE_AGGREGATE_OR_GROUP_BY;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.NESTED_AGGREGATION;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.NESTED_WINDOW;
-import static com.facebook.presto.sql.analyzer.SemanticErrorCode.NOT_SUPPORTED;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.facebook.presto.util.Types.checkType;
 import static com.google.common.base.Preconditions.checkState;
@@ -153,8 +153,8 @@ class AggregationAnalyzer
         @Override
         protected Boolean visitSubqueryExpression(SubqueryExpression node, Void context)
         {
-            throw new SemanticException(NOT_SUPPORTED, node, "Scalar subqueries not yet supported");
-        }
+            return true;
+       }
 
         @Override
         protected Boolean visitSubscriptExpression(SubscriptExpression node, Void context)
@@ -430,6 +430,12 @@ class AggregationAnalyzer
             }
 
             return !node.getDefaultValue().isPresent() || process(node.getDefaultValue().get(), context);
+        }
+
+        @Override
+        protected Boolean visitTryExpression(TryExpression node, Void context)
+        {
+            return process(node.getInnerExpression(), context);
         }
 
         @Override

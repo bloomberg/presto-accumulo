@@ -45,6 +45,7 @@ public final class SchemaDaoUtil
 
     private static void createTables(SchemaDao dao)
     {
+        dao.createTableDistributions();
         dao.createTableTables();
         dao.createTableColumns();
         dao.createTableViews();
@@ -54,9 +55,8 @@ public final class SchemaDaoUtil
         dao.createTableExternalBatches();
         dao.createTableTransactions();
         dao.createTableCreatedShards();
-        dao.createTableCreatedShardNodes();
         dao.createTableDeletedShards();
-        dao.createTableDeletedShardNodes();
+        dao.createTableBuckets();
     }
 
     private static void sleep(Duration duration)

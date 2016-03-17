@@ -230,7 +230,7 @@ public final class HttpPageBufferClient
 
         // abort the output buffer on the remote node; response of delete is ignored
         if (shouldSendDelete) {
-            httpClient.executeAsync(prepareDelete().setUri(location).build(), createStatusResponseHandler());
+            sendDelete();
         }
     }
 
@@ -295,25 +295,29 @@ public final class HttpPageBufferClient
                 resetErrors();
 
                 List<Page> pages;
-                synchronized (HttpPageBufferClient.this) {
-                    if (taskInstanceId == null) {
-                        taskInstanceId = result.getTaskInstanceId();
-                    }
+                try {
+                    synchronized (HttpPageBufferClient.this) {
+                        if (taskInstanceId == null) {
+                            taskInstanceId = result.getTaskInstanceId();
+                        }
 
-                    if (!isNullOrEmpty(taskInstanceId) && !result.getTaskInstanceId().equals(taskInstanceId)) {
-                        // TODO: update error message
-                        Throwable t = new PrestoException(REMOTE_TASK_MISMATCH, REMOTE_TASK_MISMATCH_ERROR);
-                        handleFailure(t);
-                        return;
-                    }
+                        if (!isNullOrEmpty(taskInstanceId) && !result.getTaskInstanceId().equals(taskInstanceId)) {
+                            // TODO: update error message
+                            throw new PrestoException(REMOTE_TASK_MISMATCH, REMOTE_TASK_MISMATCH_ERROR);
+                        }
 
-                    if (result.getToken() == token) {
-                        pages = result.getPages();
-                        token = result.getNextToken();
+                        if (result.getToken() == token) {
+                            pages = result.getPages();
+                            token = result.getNextToken();
+                        }
+                        else {
+                            pages = ImmutableList.of();
+                        }
                     }
-                    else {
-                        pages = ImmutableList.of();
-                    }
+                }
+                catch (PrestoException e) {
+                    handleFailure(e);
+                    return;
                 }
 
                 // add pages
@@ -398,6 +402,9 @@ public final class HttpPageBufferClient
 
     private void handleFailure(Throwable t)
     {
+        // Can not delegate to other callback while holding a lock on this
+        checkNotHoldsLock();
+
         requestsFailed.incrementAndGet();
         requestsCompleted.incrementAndGet();
 
@@ -521,9 +528,12 @@ public final class HttpPageBufferClient
                 throw new PageTransportErrorException(format("Expected response code to be 200, but was %s %s: %s", response.getStatusCode(), response.getStatusMessage(), request.getUri()));
             }
 
+            // invalid content type can happen when an error page is returned, but is unlikely given the above 200
             String contentType = response.getHeader(CONTENT_TYPE);
-            if ((contentType == null) || !mediaTypeMatches(contentType, PRESTO_PAGES_TYPE)) {
-                // this can happen when an error page is returned, but is unlikely given the above 200
+            if (contentType == null) {
+                throw new PageTransportErrorException(format("%s header is not set: %s %s", CONTENT_TYPE, request.getUri(), response));
+            }
+            if (!mediaTypeMatches(contentType, PRESTO_PAGES_TYPE)) {
                 throw new PageTransportErrorException(format("Expected %s response from server but got %s: %s", PRESTO_PAGES_TYPE, contentType, request.getUri()));
             }
 

@@ -40,6 +40,7 @@ import static io.airlift.units.DataSize.Unit.MEGABYTE;
 @DefunctConfig({
         "hive.file-system-cache-ttl",
         "hive.max-global-split-iterator-threads",
+        "hive.optimized-reader.enabled"
 })
 public class HiveClientConfig
 {
@@ -98,19 +99,20 @@ public class HiveClientConfig
     private boolean pinS3ClientToCurrentRegion;
 
     private HiveStorageFormat hiveStorageFormat = HiveStorageFormat.RCBINARY;
+    private HiveCompressionCodec hiveCompressionCodec = HiveCompressionCodec.GZIP;
     private boolean respectTableFormat = true;
     private boolean immutablePartitions;
     private int maxPartitionsPerWriter = 100;
 
     private List<String> resourceConfigFiles;
 
-    private boolean optimizedReaderEnabled = true;
     private boolean parquetOptimizedReaderEnabled;
 
     private boolean parquetPredicatePushdownEnabled;
 
     private boolean assumeCanonicalPartitionKeys;
 
+    private boolean useOrcColumnNames;
     private DataSize orcMaxMergeDistance = new DataSize(1, MEGABYTE);
     private DataSize orcMaxBufferSize = new DataSize(8, MEGABYTE);
     private DataSize orcStreamBufferSize = new DataSize(8, MEGABYTE);
@@ -478,6 +480,18 @@ public class HiveClientConfig
         return this;
     }
 
+    public HiveCompressionCodec getHiveCompressionCodec()
+    {
+        return hiveCompressionCodec;
+    }
+
+    @Config("hive.compression-codec")
+    public HiveClientConfig setHiveCompressionCodec(HiveCompressionCodec hiveCompressionCodec)
+    {
+        this.hiveCompressionCodec = hiveCompressionCodec;
+        return this;
+    }
+
     public boolean isRespectTableFormat()
     {
         return respectTableFormat;
@@ -757,20 +771,6 @@ public class HiveClientConfig
     }
 
     @Deprecated
-    public boolean isOptimizedReaderEnabled()
-    {
-        return optimizedReaderEnabled;
-    }
-
-    @Deprecated
-    @Config("hive.optimized-reader.enabled")
-    public HiveClientConfig setOptimizedReaderEnabled(boolean optimizedReaderEnabled)
-    {
-        this.optimizedReaderEnabled = optimizedReaderEnabled;
-        return this;
-    }
-
-    @Deprecated
     public boolean isParquetPredicatePushdownEnabled()
     {
         return parquetPredicatePushdownEnabled;
@@ -795,6 +795,19 @@ public class HiveClientConfig
     public HiveClientConfig setParquetOptimizedReaderEnabled(boolean parquetOptimizedReaderEnabled)
     {
         this.parquetOptimizedReaderEnabled = parquetOptimizedReaderEnabled;
+        return this;
+    }
+
+    public boolean isUseOrcColumnNames()
+    {
+        return useOrcColumnNames;
+    }
+
+    @Config("hive.orc.use-column-names")
+    @ConfigDescription("Access ORC columns using names from the file")
+    public HiveClientConfig setUseOrcColumnNames(boolean useOrcColumnNames)
+    {
+        this.useOrcColumnNames = useOrcColumnNames;
         return this;
     }
 
@@ -850,7 +863,7 @@ public class HiveClientConfig
     }
 
     public boolean isUseParquetColumnNames()
-   {
+    {
         return useParquetColumnNames;
     }
 
