@@ -85,11 +85,6 @@
 			<artifactId>presto-cli</artifactId>
 			<version>${presto.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>bloomberg-compliance</groupId>
-			<artifactId>event-datagen</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
