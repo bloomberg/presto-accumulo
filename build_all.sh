@@ -3,11 +3,11 @@
 # Builds/installs all presto-accumulo projects
 
 # Project build order
-PROJECTS=( "presto" "presto-accumulo" "presto-accumulo-iterators" "presto-accumulo-benchmark" "presto-accumulo-tools" )
+PROJECTS=( "presto-accumulo-iterators" "presto" "presto-accumulo-benchmark" "presto-accumulo-tools" )
 
 for PROJ in ${PROJECTS[@]}; do
     cd $PROJ
-    mvn clean install -DskipTests
+    mvn -T 1C clean install -DskipTests
     if [[ $? -ne 0 ]]; then
         echo "Build of $PROJ failed"
         exit 1

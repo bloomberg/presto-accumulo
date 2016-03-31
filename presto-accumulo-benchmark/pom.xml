@@ -3,7 +3,7 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>bloomberg.presto</groupId>
+    <groupId>com.facebook.presto</groupId>
     <artifactId>presto-accumulo-benchmark</artifactId>
     <version>0.142-ANY</version>
     <description>Presto - Accumulo Connector</description>
@@ -60,8 +60,13 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>bloomberg.presto</groupId>
+            <groupId>com.facebook.presto</groupId>
             <artifactId>presto-accumulo</artifactId>
+            <version>${presto.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-main</artifactId>
             <version>${presto.version}</version>
         </dependency>
         <dependency>

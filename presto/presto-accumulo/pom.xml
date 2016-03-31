@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.facebook.presto</groupId>
+        <artifactId>presto-root</artifactId>
+        <version>0.142-ANY</version>
+    </parent>
+
+    <artifactId>presto-accumulo</artifactId>
+    <description>Presto - Accumulo Connector</description>
+    <packaging>presto-plugin</packaging>
+
+    <properties>
+        <accumulo.version>1.6.2</accumulo.version>
+        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+        <curator.version>2.9.1</curator.version>
+        <jackson.version>2.4.4</jackson.version>
+        <junit.version>4.12</junit.version>
+        <mdep.analyze.skip>true</mdep.analyze.skip>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <ignoredUsedUndeclaredDependencies>
+                                <ignoredUsedUndeclaredDependency>org.apache.hadoop:hadoop-common</ignoredUsedUndeclaredDependency>
+                            </ignoredUsedUndeclaredDependencies>
+                            <!-- ZooKeeper is incorrectly flagged as unused -->
+                            <ignoredUnusedDeclaredDependencies>
+                                <ignoredUnusedDeclaredDependency>org.apache.zookeeper:zookeeper</ignoredUnusedDeclaredDependency>
+                            </ignoredUnusedDeclaredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.ning.maven.plugins</groupId>
+                <artifactId>maven-dependency-versions-check-plugin</artifactId>
+                <configuration>
+                    <exceptions>
+                        <exception>
+                            <groupId>org.apache.zookeeper</groupId>
+                            <artifactId>zookeeper</artifactId>
+                            <expectedVersion>3.4.6</expectedVersion>
+                            <resolvedVersion>3.3.6</resolvedVersion>
+                        </exception>
+                    </exceptions>
+                    <exceptions>
+                        <exception>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-log4j12</artifactId>
+                            <expectedVersion>1.7.5</expectedVersion>
+                            <resolvedVersion>1.6.1</resolvedVersion>
+                        </exception>
+                    </exceptions>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>${argLine}</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.ning.maven.plugins</groupId>
+                <artifactId>maven-duplicate-finder-plugin</artifactId>
+                <configuration>
+                    <!-- Must disable failed build due to conflicts, results 
+                        in NullPointerException -->
+                    <failBuildInCaseOfConflict>false</failBuildInCaseOfConflict>
+                    <!--<exceptions> <exception> <conflictingDependencies> 
+                        <dependency> <groupId>asm</groupId> <artifactId>asm</artifactId> </dependency> 
+                        <dependency> <groupId>org.ow2.asm</groupId> <artifactId>asm-all</artifactId> 
+                        </dependency> </conflictingDependencies> <packages> <package>org.objectweb.asm</package> 
+                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
+                        <groupId>com.sun.jersey</groupId> <artifactId>jersey-core</artifactId> </dependency> 
+                        <dependency> <groupId>javax.ws.rs</groupId> <artifactId>javax.ws.rs-api</artifactId> 
+                        </dependency> </conflictingDependencies> <packages> <package>javax.ws.rs</package> 
+                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
+                        <groupId>org.slf4j</groupId> <artifactId>slf4j-jdk14</artifactId> </dependency> 
+                        <dependency> <groupId>org.slf4j</groupId> <artifactId>slf4j-log4j12</artifactId> 
+                        </dependency> </conflictingDependencies> <packages> <package>org.slf4j.impl</package> 
+                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
+                        <groupId>com.sun.jersey</groupId> <artifactId>jersey-server</artifactId> 
+                        </dependency> <dependency> <groupId>org.glassfish.jersey.core</groupId> <artifactId>jersey-server</artifactId> 
+                        </dependency> </conflictingDependencies> <packages> <package>com.sun.research.ws.wadl</package> 
+                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
+                        <groupId>commons-beanutils</groupId> <artifactId>commons-beanutils</artifactId> 
+                        </dependency> <dependency> <groupId>commons-beanutils</groupId> <artifactId>commons-beanutils-core</artifactId> 
+                        </dependency> <dependency> <groupId>commons-collections</groupId> <artifactId>commons-collections</artifactId> 
+                        </dependency> </conflictingDependencies> <packages> <package>org.apache.commons</package> 
+                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
+                        <groupId>commons-logging</groupId> <artifactId>commons-logging</artifactId> 
+                        </dependency> <dependency> <groupId>org.slf4j</groupId> <artifactId>jcl-over-slf4j</artifactId> 
+                        </dependency> </conflictingDependencies> <packages> <package>org.apache.commons.logging</package> 
+                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
+                        <groupId>javax.servlet</groupId> <artifactId>javax.servlet-api</artifactId> 
+                        </dependency> <dependency> <groupId>org.glassfish</groupId> <artifactId>javax.servlet</artifactId> 
+                        </dependency> </conflictingDependencies> <packages> <package>javax.servlet</package> 
+                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
+                        <groupId>log4j</groupId> <artifactId>log4j</artifactId> </dependency> <dependency> 
+                        <groupId>org.slf4j</groupId> <artifactId>log4j-over-slf4j</artifactId> </dependency> 
+                        </conflictingDependencies> <packages> <package>org.apache.log4j</package> 
+                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
+                        <groupId>org.apache.hadoop</groupId> <artifactId>hadoop-yarn-api</artifactId> 
+                        </dependency> <dependency> <groupId>org.apache.hadoop</groupId> <artifactId>hadoop-yarn-common</artifactId> 
+                        </dependency> </conflictingDependencies> <packages> <package>org.apache.hadoop.yarn</package> 
+                        </packages> </exception> </exceptions> -->
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-accumulo-iterators</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.beust</groupId>
+                    <artifactId>jcommander</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-beanutils</groupId>
+                    <artifactId>commons-beanutils-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-utils</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.accumulo</groupId>
+            <artifactId>accumulo-core</artifactId>
+            <version>${accumulo.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.beust</groupId>
+                    <artifactId>jcommander</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-beanutils</groupId>
+                    <artifactId>commons-beanutils-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-utils</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-utils</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-framework</artifactId>
+            <version>${curator.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-client</artifactId>
+            <version>${curator.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>3.4.6</version><!--$NO-MVN-MAN-VER$ -->
+        </dependency>
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-main</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>bootstrap</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>log</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>configuration</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>1.6</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-beanutils</groupId>
+                    <artifactId>commons-beanutils-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>annotations</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Presto SPI -->
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-spi</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>slice</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- for testing -->
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-tpch</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-jdbc</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.airlift.tpch</groupId>
+            <artifactId>tpch</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
