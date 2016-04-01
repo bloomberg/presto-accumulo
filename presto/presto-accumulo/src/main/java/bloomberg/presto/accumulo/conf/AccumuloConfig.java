@@ -33,6 +33,16 @@ import static java.lang.String.format;
  */
 public class AccumuloConfig
 {
+    public static final String INSTANCE = "instance";
+    public static final String ZOOKEEPERS = "zookeepers";
+    public static final String USERNAME = "username";
+    public static final String PASSWORD = "password";
+    public static final String ZOOKEEPER_METADATA_ROOT = "zookeeper.metadata.root";
+    public static final String METADATA_MANAGER_CLASS = "metadata.manager.class";
+    public static final String CARDINALITY_CACHE_SIZE = "cardinality.cache.size";
+    public static final String CARDINALITY_CACHE_EXPIRE_SECONDS =
+            "cardinality.cache.expire.seconds";
+
     private String instance;
     private String zooKeepers;
     private String username;
@@ -60,7 +70,7 @@ public class AccumuloConfig
      *            Accumulo instance name
      * @return this, for chaining
      */
-    @Config("instance")
+    @Config(INSTANCE)
     public AccumuloConfig setInstance(String instance)
     {
         this.instance = instance;
@@ -85,7 +95,7 @@ public class AccumuloConfig
      *            ZooKeeper connect string
      * @return this, for chaining
      */
-    @Config("zookeepers")
+    @Config(ZOOKEEPERS)
     public AccumuloConfig setZooKeepers(String zooKeepers)
     {
         this.zooKeepers = zooKeepers;
@@ -111,7 +121,7 @@ public class AccumuloConfig
      *            Accumulo user name
      * @return this, for chaining
      */
-    @Config("username")
+    @Config(USERNAME)
     public AccumuloConfig setUsername(String username)
     {
         this.username = username;
@@ -136,7 +146,7 @@ public class AccumuloConfig
      *            Accumulo password
      * @return this, for chaining
      */
-    @Config("password")
+    @Config(PASSWORD)
     public AccumuloConfig setPassword(String password)
     {
         this.password = password;
@@ -160,7 +170,7 @@ public class AccumuloConfig
      * @param zkMetadataRoot
      *            Root znode
      */
-    @Config("zookeeper.metadata.root")
+    @Config(ZOOKEEPER_METADATA_ROOT)
     public void setZkMetadataRoot(String zkMetadataRoot)
     {
         this.zkMetadataRoot = zkMetadataRoot;
@@ -210,7 +220,7 @@ public class AccumuloConfig
      * @param mmClass
      *            Class name of metadata manager, or default
      */
-    @Config("metadata.manager.class")
+    @Config(METADATA_MANAGER_CLASS)
     public void setMetadataManagerClass(String mmClass)
     {
         this.metaManClass = mmClass;
@@ -233,7 +243,7 @@ public class AccumuloConfig
      * @param cardinalityCacheSize
      *            Size of the cache
      */
-    @Config("cardinality.cache.size")
+    @Config(CARDINALITY_CACHE_SIZE)
     public void setCardinalityCacheSize(int cardinalityCacheSize)
     {
         this.cardinalityCacheSize = cardinalityCacheSize;
@@ -257,7 +267,7 @@ public class AccumuloConfig
      * @param cardinalityCacheExpireSeconds
      *            Cache expiration value
      */
-    @Config("cardinality.cache.expire.seconds")
+    @Config(CARDINALITY_CACHE_EXPIRE_SECONDS)
     public void setCardinalityCacheExpireSeconds(int cardinalityCacheExpireSeconds)
     {
         this.cardinalityCacheExpireSeconds = cardinalityCacheExpireSeconds;
@@ -274,14 +284,14 @@ public class AccumuloConfig
 
         AccumuloConfig config = new AccumuloConfig();
         config.setCardinalityCacheExpireSeconds(
-                props.getInt("cardinality.cache.expire.seconds", 300));
-        config.setCardinalityCacheSize(props.getInt("cardinality.cache.size", 100000));
-        config.setInstance(props.getString("instance"));
-        config.setMetadataManagerClass(props.getString("metadata.manager.class", "default"));
-        config.setPassword(props.getString("password"));
-        config.setUsername(props.getString("username"));
-        config.setZkMetadataRoot(props.getString("zookeeper.metadata.root", "/presto-accumulo"));
-        config.setZooKeepers(props.getString("zookeepers"));
+                props.getInt(CARDINALITY_CACHE_EXPIRE_SECONDS, 300));
+        config.setCardinalityCacheSize(props.getInt(CARDINALITY_CACHE_SIZE, 100000));
+        config.setInstance(props.getString(INSTANCE));
+        config.setMetadataManagerClass(props.getString(METADATA_MANAGER_CLASS, "default"));
+        config.setPassword(props.getString(PASSWORD));
+        config.setUsername(props.getString(USERNAME));
+        config.setZkMetadataRoot(props.getString(ZOOKEEPER_METADATA_ROOT, "/presto-accumulo"));
+        config.setZooKeepers(props.getString(ZOOKEEPERS));
         return config;
     }
 
@@ -293,14 +303,14 @@ public class AccumuloConfig
 
         AccumuloConfig config = new AccumuloConfig();
         config.setCardinalityCacheExpireSeconds(
-                props.getInt("cardinality.cache.expire.seconds", 300));
-        config.setCardinalityCacheSize(props.getInt("cardinality.cache.size", 100000));
-        config.setInstance(props.getString("instance"));
-        config.setMetadataManagerClass(props.getString("metadata.manager.class", "default"));
-        config.setPassword(props.getString("password"));
-        config.setUsername(props.getString("username"));
-        config.setZkMetadataRoot(props.getString("zookeeper.metadata.root", "/presto-accumulo"));
-        config.setZooKeepers(props.getString("zookeepers"));
+                props.getInt(CARDINALITY_CACHE_EXPIRE_SECONDS, 300));
+        config.setCardinalityCacheSize(props.getInt(CARDINALITY_CACHE_SIZE, 100000));
+        config.setInstance(props.getString(INSTANCE));
+        config.setMetadataManagerClass(props.getString(METADATA_MANAGER_CLASS, "default"));
+        config.setPassword(props.getString(PASSWORD));
+        config.setUsername(props.getString(USERNAME));
+        config.setZkMetadataRoot(props.getString(ZOOKEEPER_METADATA_ROOT, "/presto-accumulo"));
+        config.setZooKeepers(props.getString(ZOOKEEPERS));
         return config;
     }
 }
