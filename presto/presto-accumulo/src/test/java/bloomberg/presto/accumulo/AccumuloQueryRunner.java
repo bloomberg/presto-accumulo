@@ -112,7 +112,16 @@ public final class AccumuloQueryRunner
         String with = properties.isEmpty() ? "" : format(" WITH (%s)", properties);
 
         @Language("SQL")
-        String sql = format("CREATE TABLE %s%s AS SELECT * FROM %s", target, with, source);
+        String sql;
+        switch (target) {
+            case "lineitem":
+            case "partsupp":
+                sql = format("CREATE TABLE %s%s AS SELECT UUID() AS uuid, * FROM %s", target, with, source);
+                break;
+            default:
+                sql = format("CREATE TABLE %s%s AS SELECT * FROM %s", target, with, source);
+                break;
+        }
 
         log.info("Running import for %s", target, sql);
         log.info("%s", sql);
