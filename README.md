@@ -5,26 +5,24 @@ A Presto connector for reading and writing data backed by Apache Accumulo.
 1. [Repository Contents](#repository-contents)
 2. [Dependencies](#dependencies)
 3. [Installing the Patched Presto](#installing-the-patched-presto)
-4. [Installing the Connector](#installing-the-connector)
-5. [Installing the Iterator Dependency](#installing-the-iterator-dependency)
-6. [Connector Configuration](#connector-configuration)
-7. [Unsupported Features](#unsupported-features)
-8. [Usage](#usage)
-9. [External Tables](#external-tables)
-10. [Secondary Indexing](#secondary-indexing)
-11. [Session Properties](#session-properties)
-12. [Serializers](#serializers)
-13. [Metadata Management](#metadata-management)
-14. [Adding Columns Management](#metadata-management)
+4. [Installing the Iterator Dependency](#installing-the-iterator-dependency)
+5. [Connector Configuration](#connector-configuration)
+6. [Unsupported Features](#unsupported-features)
+7. [Usage](#usage)
+8. [External Tables](#external-tables)
+9. [Secondary Indexing](#secondary-indexing)
+10. [Session Properties](#session-properties)
+11. [Serializers](#serializers)
+12. [Metadata Management](#metadata-management)
+13. [Adding Columns Management](#metadata-management)
 
 ### Repository Contents
 This repository contains five sub-projects:
 
-1. _presto_ - A patched version of Presto 0.142 containing support for the ANY clause.  This is similar to the __contains__ UDF that can be used to check if an element is in an array.  Users can use this clause instead of contains to enable predicate pushdown support -- and therefore the secondary index capability of the connector.
-2. _presto-accumulo_ - The Accumulo connector code for Presto.
-3. _presto-accumulo-iterators_ - A collection of Accumulo iterators to be installed on the TabletServers.  These iterators are required to user the connector.
-4. _presto-accumulo-benchmark_ - An implementation of the TPC-H benchmarking suite for testing the connector.
-5. _presto-accumulo-tools_ - A Java project with some tools to help out with metadata management tasks that could not otherwise be done using SQL.
+1. _presto_ - A patched version of Presto 0.142 containing support for the ANY clause.  This is similar to the __contains__ UDF that can be used to check if an element is in an array.  Users can use this clause instead of contains to enable predicate pushdown support -- and therefore the secondary index capability of the connector.  This folder also contains the `presto-accumulo` connector code.
+2. _presto-accumulo-iterators_ - A collection of Accumulo iterators to be installed on the TabletServers.  These iterators are required to user the connector.
+3. _presto-accumulo-benchmark_ - An implementation of the TPC-H benchmarking suite for testing the connector.
+4. _presto-accumulo-tools_ - A Java project with some tools to help out with metadata management tasks that could not otherwise be done using SQL.
 
 ### Dependencies
 * Java 1.8 (required for connector)
@@ -35,7 +33,7 @@ This repository contains five sub-projects:
 * _presto-accumulo-iterators_ (Built and installed from this repository)
 
 ### Installing the Patched Presto
-Change directories to `presto`, build the server with Maven, and deploy this version.
+Change directories to `presto`, build the server with Maven, and deploy this version.  This version contains the `presto-accumulo` module.
 ```bash
 # After cloning the repository:
 cd presto/
@@ -52,17 +50,6 @@ cp presto-server/target/presto-server-0.142-ANY.tar.gz # some place
 
 # You can use this Presto CLI jar file
 cp presto-cli/target/presto-cli-0.142-ANY-executable.jar # some place
-```
-
-### Installing the Connector
-In order to use the connector, build the presto-accumulo connector using Maven.  This will create a directory containing all JAR file dependencies for the connector to function.  Copy the contents of this directory into an ```accumulo``` directory under ```$PRESTO_HOME/plugin```.  Note the `PRESTO_HOME` environment variable only exists if you've created it -- it points to the root installation directory of Presto.
-
-```bash 
-# After cloning the repository:
-cd presto-accumulo/
-mvn clean package -DskipTests
-mkdir -p $PRESTO_HOME/plugin/accumulo/
-cp target/presto-accumulo-0.*/* $PRESTO_HOME/plugin/accumulo/
 ```
 
 ### Installing the Iterator Dependency
