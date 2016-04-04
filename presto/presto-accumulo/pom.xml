@@ -80,10 +80,10 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
                 <configuration>
-                    <argLine>${argLine}</argLine>
+                    <header>${project.basedir}/src/license/LICENSE-HEADER.txt</header>
                 </configuration>
             </plugin>
             <plugin>
