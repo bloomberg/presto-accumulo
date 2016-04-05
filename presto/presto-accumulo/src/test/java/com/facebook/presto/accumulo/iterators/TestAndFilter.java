@@ -26,7 +26,6 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-import static com.facebook.presto.accumulo.iterators.AndFilter.andFilters;
 import static com.facebook.presto.accumulo.iterators.SingleColumnValueFilter.getProperties;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;

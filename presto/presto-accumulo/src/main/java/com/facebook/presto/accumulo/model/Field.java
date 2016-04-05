@@ -16,8 +16,8 @@
 package com.facebook.presto.accumulo.model;
 
 import com.facebook.presto.accumulo.Types;
-import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.accumulo.io.AccumuloPageSink;
+import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.ArrayBlock;

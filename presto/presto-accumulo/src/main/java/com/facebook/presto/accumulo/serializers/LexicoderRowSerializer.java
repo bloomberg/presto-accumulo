@@ -148,7 +148,7 @@ public class LexicoderRowSerializer
     public Block getArray(String name, Type type)
     {
         Type elementType = Types.getElementType(type);
-        return getBlockFromArray(elementType,
+        return AccumuloRowSerializer.getBlockFromArray(elementType,
                 decode(type, getFieldValue(name)));
     }
 
@@ -209,7 +209,7 @@ public class LexicoderRowSerializer
     @Override
     public Block getMap(String name, Type type)
     {
-        return getBlockFromMap(type, decode(type, getFieldValue(name)));
+        return AccumuloRowSerializer.getBlockFromMap(type, decode(type, getFieldValue(name)));
     }
 
     @Override
@@ -277,10 +277,10 @@ public class LexicoderRowSerializer
         Object toEncode;
         if (Types.isArrayType(type)) {
             toEncode =
-                    getArrayFromBlock(Types.getElementType(type), (Block) v);
+                    AccumuloRowSerializer.getArrayFromBlock(Types.getElementType(type), (Block) v);
         }
         else if (Types.isMapType(type)) {
-            toEncode = getMapFromBlock(type, (Block) v);
+            toEncode = AccumuloRowSerializer.getMapFromBlock(type, (Block) v);
         }
         else if (type.equals(BOOLEAN)) {
             toEncode = v.equals(Boolean.TRUE) ? LexicoderRowSerializer.TRUE
