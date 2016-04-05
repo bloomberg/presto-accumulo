@@ -28,9 +28,16 @@ import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
-import com.facebook.presto.spi.type.StandardTypes;
+import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.BooleanType;
+import com.facebook.presto.spi.type.DateType;
+import com.facebook.presto.spi.type.DoubleType;
+import com.facebook.presto.spi.type.TimeType;
+import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeUtils;
+import com.facebook.presto.spi.type.VarbinaryType;
+import com.facebook.presto.spi.type.VarcharType;
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Slice;
 import org.apache.accumulo.core.client.AccumuloException;
@@ -184,33 +191,32 @@ public class AccumuloPageSink
             serializer.setMap(value, type, field.getMap());
         }
         else {
-            switch (type.getDisplayName()) {
-                case StandardTypes.BIGINT:
-                    serializer.setLong(value, field.getBigInt());
-                    break;
-                case StandardTypes.BOOLEAN:
-                    serializer.setBoolean(value, field.getBoolean());
-                    break;
-                case StandardTypes.DATE:
-                    serializer.setDate(value, field.getDate());
-                    break;
-                case StandardTypes.DOUBLE:
-                    serializer.setDouble(value, field.getDouble());
-                    break;
-                case StandardTypes.TIME:
-                    serializer.setTime(value, field.getTime());
-                    break;
-                case StandardTypes.TIMESTAMP:
-                    serializer.setTimestamp(value, field.getTimestamp());
-                    break;
-                case StandardTypes.VARBINARY:
-                    serializer.setVarbinary(value, field.getVarbinary());
-                    break;
-                case StandardTypes.VARCHAR:
-                    serializer.setVarchar(value, field.getVarchar());
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Unsupported type " + type);
+            if (type instanceof BigintType) {
+                serializer.setLong(value, field.getBigInt());
+            }
+            else if (type instanceof BooleanType) {
+                serializer.setBoolean(value, field.getBoolean());
+            }
+            else if (type instanceof DateType) {
+                serializer.setDate(value, field.getDate());
+            }
+            else if (type instanceof DoubleType) {
+                serializer.setDouble(value, field.getDouble());
+            }
+            else if (type instanceof TimeType) {
+                serializer.setTime(value, field.getTime());
+            }
+            else if (type instanceof TimestampType) {
+                serializer.setTimestamp(value, field.getTimestamp());
+            }
+            else if (type instanceof VarbinaryType) {
+                serializer.setVarbinary(value, field.getVarbinary());
+            }
+            else if (type instanceof VarcharType) {
+                serializer.setVarchar(value, field.getVarchar());
+            }
+            else {
+                throw new UnsupportedOperationException("Unsupported type " + type);
             }
         }
     }

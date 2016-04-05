@@ -22,12 +22,16 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.ArrayBlock;
 import com.facebook.presto.spi.block.Block;
+import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.DateType;
+import com.facebook.presto.spi.type.DoubleType;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.TimeType;
 import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.VarbinaryType;
+import com.facebook.presto.spi.type.VarcharType;
 import io.airlift.slice.Slice;
 
 import java.sql.Date;
@@ -449,24 +453,27 @@ public class Field
         }
 
         // Validate the object is the given type
-        switch (type.getDisplayName()) {
-            case StandardTypes.BIGINT:
-            case StandardTypes.BOOLEAN:
-            case StandardTypes.DOUBLE:
-                return value.toString();
-            case StandardTypes.DATE:
-                return "DATE '" + ((Date) value).toString() + "'";
-            case StandardTypes.TIME:
-                return "TIME '" + ((Time) value).toString() + "'";
-            case StandardTypes.TIMESTAMP:
-                return "TIMESTAMP '" + ((Timestamp) value).toString() + "'";
-            case StandardTypes.VARBINARY:
-                return "CAST('" + new String((byte[]) value) + "' AS VARBINARY)";
-            case StandardTypes.VARCHAR:
-                return "'" + value.toString().replaceAll("'", "''") + "'";
-            default:
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                        "Unsupported PrestoType " + type);
+        if (type instanceof BigintType || type instanceof BooleanType || type instanceof DoubleType) {
+            return value.toString();
+        }
+        else if (type instanceof DateType) {
+            return "DATE '" + ((Date) value).toString() + "'";
+        }
+        else if (type instanceof TimeType) {
+            return "TIME '" + ((Time) value).toString() + "'";
+        }
+        else if (type instanceof TimestampType) {
+            return "TIMESTAMP '" + ((Timestamp) value).toString() + "'";
+        }
+        else if (type instanceof  VarbinaryType) {
+            return "CAST('" + new String((byte[]) value) + "' AS VARBINARY)";
+        }
+        else if (type instanceof VarcharType) {
+            return "'" + value.toString().replaceAll("'", "''") + "'";
+        }
+        else {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "Unsupported PrestoType " + type);
         }
     }
 
@@ -507,86 +514,86 @@ public class Field
         }
 
         // And now for the plain types
-        switch (t.getDisplayName()) {
-            case StandardTypes.BIGINT:
-                // Auto-convert integers to Longs
-                if (v instanceof Integer) {
-                    return Long.valueOf((Integer) v);
-                }
-                if (!(v instanceof Long)) {
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                            "Object is not a Long, but " + v.getClass());
-                }
-                break;
-            case StandardTypes.BOOLEAN:
-                if (!(v instanceof Boolean)) {
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                            "Object is not a Boolean, but " + v.getClass());
-                }
-                return new Boolean((boolean) v);
-            case StandardTypes.DATE:
-                if (v instanceof Long) {
-                    return new Date((Long) v);
-                }
-
-                if (v instanceof Calendar) {
-                    return new Date(((Calendar) v).getTime().getTime());
-                }
-
-                if (!(v instanceof Date)) {
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                            "Object is not a Calendar, Date, or Long, but " + v.getClass());
-                }
-                break;
-            case StandardTypes.DOUBLE:
-                if (!(v instanceof Double)) {
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                            "Object is not a Double, but " + v.getClass());
-                }
-                break;
-            case StandardTypes.TIME:
-                if (v instanceof Long) {
-                    return new Time((Long) v);
-                }
-
-                if (!(v instanceof Time)) {
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                            "Object is not a Time, but " + v.getClass());
-                }
-                break;
-            case StandardTypes.TIMESTAMP:
-                if (v instanceof Long) {
-                    return new Timestamp((Long) v);
-                }
-
-                if (!(v instanceof Timestamp)) {
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                            "Object is not a Timestamp, but " + v.getClass());
-                }
-                break;
-            case StandardTypes.VARBINARY:
-                if (v instanceof Slice) {
-                    return ((Slice) v).getBytes();
-                }
-
-                if (!(v instanceof byte[])) {
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                            "Object is not a byte[], but " + v.getClass());
-                }
-                break;
-            case StandardTypes.VARCHAR:
-                if (v instanceof Slice) {
-                    return new String(((Slice) v).getBytes());
-                }
-
-                if (!(v instanceof String)) {
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                            "Object is not a String, but " + v.getClass());
-                }
-                break;
-            default:
+        if (t instanceof BigintType) {
+            // Auto-convert integers to Longs
+            if (v instanceof Integer) {
+                return Long.valueOf((Integer) v);
+            }
+            if (!(v instanceof Long)) {
                 throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                        "Unsupported PrestoType " + t);
+                        "Object is not a Long, but " + v.getClass());
+            }
+        }
+        else if (t instanceof BooleanType) {
+            if (!(v instanceof Boolean)) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Object is not a Boolean, but " + v.getClass());
+            }
+            return new Boolean((boolean) v);
+        }
+        else if (t instanceof DateType) {
+            if (v instanceof Long) {
+                return new Date((Long) v);
+            }
+
+            if (v instanceof Calendar) {
+                return new Date(((Calendar) v).getTime().getTime());
+            }
+
+            if (!(v instanceof Date)) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Object is not a Calendar, Date, or Long, but " + v.getClass());
+            }
+        }
+        else if (t instanceof DoubleType) {
+            if (!(v instanceof Double)) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Object is not a Double, but " + v.getClass());
+            }
+        }
+        else if (t instanceof TimeType) {
+            if (v instanceof Long) {
+                return new Time((Long) v);
+            }
+
+            if (!(v instanceof Time)) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Object is not a Time, but " + v.getClass());
+            }
+        }
+        else if (t instanceof TimestampType) {
+            if (v instanceof Long) {
+                return new Timestamp((Long) v);
+            }
+
+            if (!(v instanceof Timestamp)) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Object is not a Timestamp, but " + v.getClass());
+            }
+        }
+        else if (t instanceof VarbinaryType) {
+            if (v instanceof Slice) {
+                return ((Slice) v).getBytes();
+            }
+
+            if (!(v instanceof byte[])) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Object is not a byte[], but " + v.getClass());
+            }
+        }
+        else if (t instanceof VarcharType) {
+            if (v instanceof Slice) {
+                return new String(((Slice) v).getBytes());
+            }
+
+            if (!(v instanceof String)) {
+                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                        "Object is not a String, but " + v.getClass());
+            }
+        }
+        else {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                    "Unsupported PrestoType " + t);
         }
 
         return v;

@@ -33,6 +33,8 @@ import com.facebook.presto.spi.predicate.Marker.Bound;
 import com.facebook.presto.spi.predicate.Range;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.VarbinaryType;
+import com.facebook.presto.spi.type.VarcharType;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 import org.apache.accumulo.core.client.BatchScanner;
@@ -56,8 +58,6 @@ import static com.facebook.presto.spi.type.DateType.DATE;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.TimeType.TIME;
 import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
-import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
-import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
@@ -388,15 +388,17 @@ public class AccumuloRecordCursor
     @Override
     public Slice getSlice(int field)
     {
-        checkFieldType(field, VARBINARY, VARCHAR);
-        switch (getType(field).getDisplayName()) {
-            case StandardTypes.VARBINARY:
-                return Slices.wrappedBuffer(serializer.getVarbinary(fieldToColumnName[field]));
-            case StandardTypes.VARCHAR:
-                return Slices.utf8Slice(serializer.getVarchar(fieldToColumnName[field]));
-            default:
+        Type type = getType(field);
+
+        if (type instanceof VarbinaryType) {
+            return Slices.wrappedBuffer(serializer.getVarbinary(fieldToColumnName[field]));
+        }
+        else if (type instanceof VarcharType) {
+            return Slices.utf8Slice(serializer.getVarchar(fieldToColumnName[field]));
+        }
+        else {
                 throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
-                        "Unsupported type " + getType(field));
+                        "Unsupported type " + type);
         }
     }
 

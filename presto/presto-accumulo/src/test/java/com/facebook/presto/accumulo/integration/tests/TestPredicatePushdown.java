@@ -39,6 +39,7 @@ import static com.facebook.presto.spi.type.TimeType.TIME;
 import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
 
 public class TestPredicatePushdown
 {
@@ -2149,6 +2150,262 @@ public class TestPredicatePushdown
 
         HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
                 .withQuery("SELECT * FROM testmytable WHERE data IN ('abc', 'ghi', 'jkl', 'a')")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
+                .withOutput(r1, r3, r5, r4).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharWhereNull()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3))
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4))
+                .addField("abc", createVarcharType(3)).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4))
+                .addField(null, createVarcharType(3)).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4))
+                .addField("ghi", createVarcharType(3)).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data IS NULL").withInputSchema(schema)
+                .withInput(r1, r2, r3).withOutput(r2).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharWhereNotNull()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3))
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4))
+                .addField("abc", createVarcharType(3)).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4))
+                .addField(null, createVarcharType(3)).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4))
+                .addField("ghi", createVarcharType(3)).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data IS NOT NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r3).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharWhereNullOrEqual()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3))
+                .addColumn("age", "metadata", "age", BIGINT);
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4))
+                .addField("abc", createVarcharType(3)).addField(10L, BIGINT);
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4))
+                .addField(null, createVarcharType(3)).addField(10L, BIGINT);
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4))
+                .addField("ghi", createVarcharType(3)).addField(10L, BIGINT);
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data = 'abc' OR data IS NULL")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharLess()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data < 'def'").withInputSchema(schema)
+                .withInput(r1, r2, r3).withOutput(r1).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharLessOrEqual()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data <= 'def'").withInputSchema(schema)
+                .withInput(r1, r2, r3).withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharEqual()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data = 'def'").withInputSchema(schema)
+                .withInput(r1, r2, r3).withOutput(r2).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharGreater()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data > 'def'").withInputSchema(schema)
+                .withInput(r1, r2, r3).withOutput(r3).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharGreaterOrEqual()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data >= 'def'").withInputSchema(schema)
+                .withInput(r1, r2, r3).withOutput(r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharLessAndGreater()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE " + "data > 'abc' AND " + "data < 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3).withOutput(r2).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharLessEqualAndGreater()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+        Row r4 = Row.newRow().addField("row4", createVarcharType(4)).addField("aaa", createVarcharType(3));
+        Row r5 = Row.newRow().addField("row5", createVarcharType(4)).addField("jkl", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE " + "data > 'abc' AND " + "data <= 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r2, r3).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharLessAndGreaterEqual()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+        Row r4 = Row.newRow().addField("row4", createVarcharType(4)).addField("aaa", createVarcharType(3));
+        Row r5 = Row.newRow().addField("row5", createVarcharType(4)).addField("jkl", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE " + "data >= 'abc' AND " + "data < 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2).runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharLessEqualAndGreaterEqual()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+        Row r4 = Row.newRow().addField("row4", createVarcharType(4)).addField("aaa", createVarcharType(3));
+        Row r5 = Row.newRow().addField("row5", createVarcharType(4)).addField("jkl", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery(
+                        "SELECT * FROM testmytable WHERE " + "data >= 'abc' AND " + "data <= 'ghi'")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5).withOutput(r1, r2, r3)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharWithOr()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+        Row r4 = Row.newRow().addField("row4", createVarcharType(4)).addField("aaa", createVarcharType(3));
+        Row r5 = Row.newRow().addField("row5", createVarcharType(4)).addField("jkl", createVarcharType(3));
+        Row r6 = Row.newRow().addField("row6", createVarcharType(4)).addField("mno", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE (" + "(data > 'abc' AND "
+                        + "data <= 'ghi')) OR (" + "(data >= 'jkl' AND " + "data < 'mno'))")
+                .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6).withOutput(r2, r3, r5)
+                .runTest();
+    }
+
+    @Test
+    public void testSelectLengthyVarcharInRange()
+            throws Exception
+    {
+        RowSchema schema = RowSchema.newRowSchema().addRowId("recordkey", createVarcharType(4))
+                .addColumn("data", "metadata", "data", createVarcharType(3));
+
+        Row r1 = Row.newRow().addField("row1", createVarcharType(4)).addField("abc", createVarcharType(3));
+        Row r2 = Row.newRow().addField("row2", createVarcharType(4)).addField("def", createVarcharType(3));
+        Row r3 = Row.newRow().addField("row3", createVarcharType(4)).addField("ghi", createVarcharType(3));
+        Row r4 = Row.newRow().addField("row4", createVarcharType(4)).addField("aaa", createVarcharType(3));
+        Row r5 = Row.newRow().addField("row5", createVarcharType(4)).addField("jkl", createVarcharType(3));
+        Row r6 = Row.newRow().addField("row6", createVarcharType(4)).addField("mno", createVarcharType(3));
+
+        HARNESS.withHost("localhost").withPort(8080).withSchema("default").withTable("testmytable")
+                .withQuery("SELECT * FROM testmytable WHERE data IN ('abc', 'ghi', 'jkl', 'aaa')")
                 .withInputSchema(schema).withInput(r1, r2, r3, r4, r5, r6)
                 .withOutput(r1, r3, r5, r4).runTest();
     }

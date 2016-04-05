@@ -16,14 +16,12 @@
 package com.facebook.presto.accumulo;
 
 import com.facebook.presto.Session;
-import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.testing.MaterializedResult;
 import com.facebook.presto.tests.AbstractTestDistributedQueries;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.intellij.lang.annotations.Language;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.Test;
 
 import java.util.List;
 
@@ -57,7 +55,7 @@ public class TestAccumuloDistributedQueries
             throws Exception
     {
         try {
-            // Adding columns via SQL are not supported until adding columns with comments are supported
+            // TODO Adding columns via SQL are not supported until adding columns with comments are supported
             super.testAddColumn();
         }
         catch (Exception e) {
@@ -70,7 +68,7 @@ public class TestAccumuloDistributedQueries
             throws Exception
     {
         try {
-            // TODO Support VARCHAR(n) types
+            // TODO Views are not yet supported
             // Override because base class error: Must have at least one non-row ID column
             assertUpdate("CREATE TABLE test_table_1 WITH (column_mapping = 'b:b:b') AS SELECT 'abcdefg' a, 1 b", 1);
             assertUpdate("CREATE VIEW test_view_1 AS SELECT a FROM test_table_1");
@@ -87,7 +85,7 @@ public class TestAccumuloDistributedQueries
             assertUpdate("DROP TABLE test_table_1");
         }
         catch (Exception e) {
-            assertEquals("Unsupported PrestoType varchar(7)", e.getMessage());
+            assertEquals("This connector does not support creating views", e.getMessage());
         }
     }
 
@@ -158,7 +156,7 @@ public class TestAccumuloDistributedQueries
 //                "SELECT UUID() AS uuid, orderkey FROM orders ORDER BY orderkey LIMIT 10",
 //                "SELECT 10");
 
-//        TODO Unsupported PrestoType varchar(1)
+//        Function "UUID" not found
 //        this.assertCreateTableAsSelect(
 //                "test_unicode",
 //                "unicode:cf:unicode",
@@ -272,7 +270,7 @@ public class TestAccumuloDistributedQueries
                     "SELECT 2 * count(*) FROM orders");
         }
         catch (Exception e) {
-
+            // no-op
         }
         finally {
             assertUpdate("DROP TABLE test_insert");
