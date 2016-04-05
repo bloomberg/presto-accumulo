@@ -551,5 +551,5 @@ table properties.
 
 If you have a need to programmatically manipulate the ZooKeeper metadata
 for Accumulo, take a look at
-``bloomberg.presto.accumulo.metadata.ZooKeeperMetadataManager`` for some
+``com.facebook.presto.accumulo.metadata.ZooKeeperMetadataManager`` for some
 Java code to simplify the process.
