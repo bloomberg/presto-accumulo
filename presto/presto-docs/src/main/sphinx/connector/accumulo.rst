@@ -14,84 +14,37 @@
 .. limitations under the License.
 
 Accumulo Connector
-================
+==================
 
 The Accumulo connector supports reading and writing data from Apache Accumulo.
+Please read this page thoroughly to understand the capabilities and features of the connector.
 
 Table of Contents
-~~~~~~~~~~~~~~~~~~~
-#. `Repository Contents <#repository-contents>`__
+~~~~~~~~~~~~~~~~~
 #. `Dependencies <#dependencies>`__
-#. `Installing the Patched Presto <#installing-the-patched-presto>`__
 #. `Installing the Iterator Dependency <#installing-the-iterator-dependency>`__
 #. `Connector Configuration <#connector-configuration>`__
 #. `Unsupported Features <#unsupported-features>`__
 #. `Usage <#usage>`__
+#. `Indexing Columns <#indexing-columns>`__
+#. `Loading Data <#loadingdata>`__
 #. `External Tables <#external-tables>`__
-#. `Secondary Indexing <#secondary-indexing>`__
+#. `Table Properties <#table-properties>`__
 #. `Session Properties <#session-properties>`__
+#. `Adding Columns <#adding-columns>`__
 #. `Serializers <#serializers>`__
 #. `Metadata Management <#metadata-management>`__
 
-Repository Contents
-~~~~~~~~~~~~~~~~~~~
-
-This repository contains five sub-projects:
-
-1. *presto* - A patched version of Presto 0.142 containing support for
-   the ANY clause. This is similar to the **contains** UDF that can be
-   used to check if an element is in an array. Users can use this clause
-   instead of contains to enable predicate pushdown support -- and
-   therefore the secondary index capability of the connector. This
-   folder also contains the ``presto-accumulo`` connector code.
-2. *presto-accumulo-iterators* - A collection of Accumulo iterators to
-   be installed on the TabletServers. These iterators are required to
-   user the connector.
-3. *presto-accumulo-benchmark* - An implementation of the TPC-H
-   benchmarking suite for testing the connector.
-4. *presto-accumulo-tools* - A Java project with some tools to help out
-   with metadata management tasks that could not otherwise be done using
-   SQL.
-
 Dependencies
 ~~~~~~~~~~~~
-
 -  Java 1.8 (required for connector)
 -  Java 1.7 (``accumulo.jdk.version == 1.7 ? required : !required``)
 -  Maven
 -  Accumulo
--  *presto* (Built and installed from this repository)
--  *presto-accumulo-iterators* (Built and installed from this
-   repository)
-
-Installing the Patched Presto
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Change directories to ``presto``, build the server with Maven, and
-deploy this version. This version contains the ``presto-accumulo``
-module.
-
-.. code:: bash
-
-    # After cloning the repository:
-    cd presto/
-
-    # Install patched presto into Maven repository (Best go get some coffee -- these'll take a while)
-    mvn clean install -DskipTests
-
-    # Best go get some coffee -- these'll both take
-    # Package presto
-    mvn clean package -DskipTests
-
-    # Install presto-server package and configure Presto as normal per their documentation
-    cp presto-server/target/presto-server-0.142-ANY.tar.gz # some place
-
-    # You can use this Presto CLI jar file
-    cp presto-cli/target/presto-cli-0.142-ANY-executable.jar # some place
+-  *presto-accumulo-iterators*, from `https://github.com/bloomberg/presto-accumulo <https://github.com/bloomberg/presto-accumulo>`_
 
 Installing the Iterator Dependency
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 There is a separate Maven project in this repository,
 ``presto-accumulo-iterators``, which contains customer iterators in
 order to push various information in a SQL WHERE clause to Accumulo for
@@ -106,9 +59,10 @@ a JDK 1.8-compliant version.
 
 .. code:: bash
 
-    cd presto-accumulo-iterators/
+    git clone https://github.com/bloomberg/presto-accumulo.git
+    cd presto-accumulo/presto-accumulo-iterators/
 
-    # Update pom.xml to JDK 1.8 if necessary, i.e. Accumulo JVM is JDK 1.8
+    # Update pom.xml to JDK 1.8 if necessary
     mvn clean install -DskipTests
 
     # For each TabletServer node:
@@ -118,7 +72,6 @@ a JDK 1.8-compliant version.
 
 Connector Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~
-
 See ``presto-accumulo/etc/catalog/accumulo.properties`` for an example
 configuration of the Accumulo connector. Fill in the appropriate values
 to fit your cluster, then copy this file into
@@ -132,47 +85,39 @@ Restart the Presto server, then use the presto client with the
 
     presto --server localhost:8080 --catalog accumulo --schema default
 
-***Configuration Variables***
-
-+-----------------+----------+------+---------------------------------------------+
-| Parameter Name  | Default  | Requ | Description                                 |
-|                 | Value    | ired |                                             |
-+=================+==========+======+=============================================+
-| connector.name  | (none)   | Yes  | Name of the connector. Do not change!       |
-+-----------------+----------+------+---------------------------------------------+
-| instance        | (none)   | Yes  | Name of the Accumulo instance               |
-+-----------------+----------+------+---------------------------------------------+
-| zookeepers      | (none)   | Yes  | ZooKeeper connect string                    |
-+-----------------+----------+------+---------------------------------------------+
-| username        | (none)   | Yes  | Accumulo user for Presto                    |
-+-----------------+----------+------+---------------------------------------------+
-| password        | (none)   | Yes  | Accumulo password for user                  |
-+-----------------+----------+------+---------------------------------------------+
-| zookeeper.metad | /presto- | No   | Root znode for storing metadata. Only       |
-| ata.root        | accumulo |      | relevant if using default Metadata Manager  |
-+-----------------+----------+------+---------------------------------------------+
-| metadata.manage | default  | No   | Fully qualified classname for the Metadata  |
-| r.class         |          |      | Manager class. Default is the               |
-|                 |          |      | ZooKeeperMetadataManager                    |
-+-----------------+----------+------+---------------------------------------------+
-| cardinality.cac | 100000   | No   | Gets the size of the index cardinality      |
-| he.size         |          |      | cache                                       |
-+-----------------+----------+------+---------------------------------------------+
-| cardinality.cac | 300      | No   | Gets the expiration, in seconds, of the     |
-| he.expire.secon |          |      | cardinality cache                           |
-| ds              |          |      |                                             |
-+-----------------+----------+------+---------------------------------------------+
+Configuration Variables
+-----------------------
++----------------------------------+------------------+----------+--------------------------------------------------------------------------------------------------+
+| Parameter Name                   | Default Value    | Required | Description                                                                                      |
++==================================+==================+==========+==================================================================================================+
+| connector.name                   | (none)           | Yes      | Name of the connector. Do not change!                                                            |
++----------------------------------+------------------+----------+--------------------------------------------------------------------------------------------------+
+| instance                         | (none)           | Yes      | Name of the Accumulo instance                                                                    |
++----------------------------------+------------------+----------+--------------------------------------------------------------------------------------------------+
+| zookeepers                       | (none)           | Yes      | ZooKeeper connect string                                                                         |
++----------------------------------+------------------+----------+--------------------------------------------------------------------------------------------------+
+| username                         | (none)           | Yes      | Accumulo user for Presto                                                                         |
++----------------------------------+------------------+----------+--------------------------------------------------------------------------------------------------+
+| password                         | (none)           | Yes      | Accumulo password for user                                                                       |
++----------------------------------+------------------+----------+--------------------------------------------------------------------------------------------------+
+| zookeeper.metadata.root          | /presto-accumulo | No       | Root znode for storing metadata. Only relevant if using default Metadata Manager                 |
++----------------------------------+------------------+----------+--------------------------------------------------------------------------------------------------+
+| metadata.manager.class           | default          | No       | Fully qualified classname for the MetadataManager class. Default is the ZooKeeperMetadataManager |
++----------------------------------+------------------+----------+--------------------------------------------------------------------------------------------------+
+| cardinality.cache.size           | 100000           | No       | Gets the size of the index cardinality cache                                                     |
++----------------------------------+------------------+----------+--------------------------------------------------------------------------------------------------+
+| cardinality.cache.expire.seconds | 300              | No       | Gets the expiration, in seconds, of the cardinality cache                                        |
++----------------------------------+------------------+----------+--------------------------------------------------------------------------------------------------+
 
 Unsupported Features
 ~~~~~~~~~~~~~~~~~~~~
 
-Of the available Presto DDL/DML statements and features, the Accumulo
-connector does **not** support: \* ***Adding columns via ALTER TABLE***
-: Use the ``presto-accumulo-tools`` subproject for adding new columns \*
-See the README in the ``presto-accumulo-tools`` folder for more details.
-\* ***Views*** : CREATE/DROP VIEW is not yet implemented for the
-connector \* ***Transactions*** : Transaction support was added in
-version 0.132 and has not yet been implemented for the connector
+Of the available Presto DDL/DML statements and features, the Accumulo connector does **not** support:
+
+- **Adding columns via ALTER TABLE**: While you cannot add columns via SQL, you can using a tool.
+  See the below section on `Adding Columns <#adding-columns>`__ for more.
+- **Views** : CREATE/DROP VIEW is not yet implemented for the connector
+- **Transactions** : Transaction support has not yet been implemented for the connector
 
 Usage
 ~~~~~
@@ -180,21 +125,23 @@ Usage
 Simply begin using SQL to create a new table in Accumulo to begin
 working with data. By default, the first column of the table definition
 is set to the Accumulo row ID. This should be the primary key of your
-table, and keep in mind that any inserts of a row containing the same
-row ID is effectively an UPDATE as far as Accumulo is concerned, as the
-cell of the table will overwrite any existing rows. The row ID can be
-any valid Presto datatype. You can set the row ID using the ``row_id``
-table property within the ``WITH`` clause of your table definition if
-you want the row ID to be in a different column than the first. Simply
-set this property to the name of the presto column.
+table, and keep in mind that any ``INSERT statements`` containing the same
+row ID is effectively an UPDATE as far as Accumulo is concerned, as any
+previous data in the cell will be overwritten. The row ID can be
+any valid Presto datatype. If the first column is not your primary key, you
+can set the row ID using the ``row_id`` table property within the ``WITH``
+clause of your table definition. Simply set this property to the name of the presto column.
 
 When creating a table using SQL, you **must** specify a
 ``column_mapping`` table property. The value of this property is a
-comma-delimited list of triples, -- presto column **:** accumulo column
+comma-delimited list of triples, presto column **:** accumulo column
 family **:** accumulo column qualifier, with one triple for every
 non-row ID column. This sets the mapping of the Presto column name to
-the corresponding Accumulo column family and column qualifier. For
-example:
+the corresponding Accumulo column family and column qualifier.
+
+For a full list of table properties, see `Table Properties <#table-properties>`__.
+
+For example:
 
 .. code:: sql
 
@@ -203,10 +150,11 @@ example:
       column_mapping = 'name:metadata:name,age:metadata:age,birthday:metadata:date');
 
 You can then issue INSERT statements to put data into Accumulo.
-***WARNING***: While issuing ``INSERT`` statements sure is convenient,
+
+**WARNING**: While issuing ``INSERT`` statements sure is convenient,
 this method of loading data into Accumulo is low-throughput. You'll want
-to write ``Mutations`` (and index ``Mutations``) directly to the tables
-if throughput is a concern. And why wouldn't it be?
+to use the Accumulo APIs to write ``Mutations`` directly to the tables.
+See the section on `Loading Data <#loading-data>`__ for more details.
 
 .. code:: sql
 
@@ -253,6 +201,102 @@ tables.
 
     DROP TABLE myschema.scientists;
 
+Indexing Columns
+~~~~~~~~~~~~~~~~~~
+
+Internally, the connector creates an Accumulo ``Range`` and packs it in
+a split. This split gets passed to a Presto Worker to read the data from
+the ``Range`` via a ``BatchScanner``. When issuing a query that results
+in a full table scan, each Presto Worker gets a single ``Range`` that
+maps to a single tablet of the table. When issuing a query with a
+predicate (i.e. ``WHERE x = 10`` clause), Presto passes the values
+within the predicate (``10``) to the connector so it can use this
+information to scan less data. When the Accumulo row ID is used as part
+of the predicate clause, this narrows down the ``Range`` lookup to quickly
+retrieve a subset of data from Accumulo.
+
+But what about the other columns? If you're frequently querying on
+non-row ID columns, you should consider using the **indexing**
+feature built into the Accumulo connector. This feature can drastically
+reduce query runtime when selecting a handful of values from the table,
+and the heavy lifting is done for you when loading data via Presto
+``INSERT`` statements (though, keep in mind writing data to Accumulo via
+``INSERT`` does not have high throughput).
+
+To enable indexing, add the ``index_columns`` table property and specify
+a comma-delimited list of Presto column names you wish to index (we use the
+``string`` serializer here to help with this example -- you
+should be using the default ``lexicoder`` serializer).
+
+.. code:: sql
+
+    presto:default> CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE)
+    WITH (
+      column_mapping = 'name:metadata:name,age:metadata:age,birthday:metadata:date',
+      serializer = 'string',
+      index_columns='name,age,birthday'
+    );
+
+After creating the table, we see there are an additional two Accumulo
+tables to store the index and metrics.
+
+::
+
+    root@default> tables
+    accumulo.metadata
+    accumulo.root
+    myschema.scientists
+    myschema.scientists_idx
+    myschema.scientists_idx_metrics
+    trace
+
+After inserting data, we can look at the index table and see there are
+indexed values for the name, age, and birthday columns. The connector
+queries this index table
+
+.. code:: sql
+
+    presto:default> INSERT INTO myschema.scientists VALUES
+    ('row1', 'Grace Hopper', 109, DATE '1906-12-09' ),
+    ('row2', 'Alan Turing', 103, DATE '1912-06-23' );
+
+    root@default> scan -t myschema.scientists_idx
+    -21011 metadata_date:row2 []
+    -23034 metadata_date:row1 []
+    103 metadata_age:row2 []
+    109 metadata_age:row1 []
+    Alan Turing metadata_name:row2 []
+    Grace Hopper metadata_name:row1 []
+
+When issuing a query with a ``WHERE`` clause against indexed columns,
+the connector searches the index table for all row IDs that contain the
+value within the predicate. These row IDs are bundled into a Presto
+split as single-value ``Range`` objects (the number of row IDs per split
+is controlled by the value of ``accumulo.index_rows_per_split``) and
+passed to a Presto worker to be configured in the ``BatchScanner`` which
+scans the data table.
+
+.. code:: sql
+
+    presto:default> SELECT * FROM myschema.scientists WHERE age = 109;
+     recordkey |     name     | age |  birthday
+    -----------+--------------+-----+------------
+     row1      | Grace Hopper | 109 | 1906-12-09
+    (1 row)
+
+Loading Data
+~~~~~~~~~~~~
+The Accumulo connector supports loading data via INSERT statements, however
+this method tends to be low-throughput and should not be relied on when throughput
+is a concern. Instead, users of the connector should use the ``PrestoBatchWriter``
+tool that is provided as part of the presto-accumulo-tools subproject in the
+`presto-accumulo repository <https://github.com/bloomberg/presto-accumulo>`_.
+
+The ``PrestoBatchWriter`` is a wrapper class for the typical ``BatchWriter`` that
+leverages the Presto/Accumulo metadata to write Mutations to the main data table.
+In particular, it handles indexing the given mutations on any indexed columns.
+Usage of the tool is provided in the README in the `repository <https://github.com/bloomberg/presto-accumulo>`_.
+
 External Tables
 ~~~~~~~~~~~~~~~
 
@@ -269,6 +313,17 @@ issuing the ``CREATE`` statement. This will make the table an *external*
 table, and a ``DROP TABLE`` command will **only** delete the metadata
 associated with the table -- the Accumulo tables and data remain
 untouched.
+
+External tables can be a bit more difficult to work with, as the data is stored
+in an expected format. If the data is not stored correctly, then you're
+gonna have a bad time. Users still provided a ``column_mapping`` property
+when creating the table. This creates the mapping of Presto column name
+to the column family/qualifier for the cell of the table. The value of the
+cell is stored in the ``Value`` of the Accumulo key/value pair. By default,
+this value is expected to be serialized using Accumulo's *lexicoder* API.
+If you are storing values as strings, you can specify a different serializer
+using the ``serializer`` property of the table. See the section on
+`Table Properties <#table-properties>`__ for more information.
 
 Note that the Accumulo table and any index tables (if applicable) must
 exist prior to creating the external table. First, we create an Accumulo
@@ -316,88 +371,36 @@ it is *external*.
     external_table
     trace
 
-Secondary Indexing
+Table Properties
 ~~~~~~~~~~~~~~~~~~
 
-Internally, the connector creates an Accumulo ``Range`` and packs it in
-a split. This split gets passed to a Presto Worker to read the data from
-the ``Range`` via a ``BatchScanner``. When issuing a query that results
-in a full table scan, each Presto Worker gets a single ``Range`` that
-maps to a single tablet of the table. When issuing a query with a
-predicate (i.e. ``WHERE x = 10`` clause), Presto passes the values
-within the predicate (``10``) to the connector so it can use this
-information to scan less data. When the Accumulo row ID is queried on,
-this is a single-value ``Range`` lookup and we can quickly retrieve the
-data from Accumulo.
-
-But what about the other columns? If you're frequently querying on
-non-row ID columns, you should consider using the ``secondary indexing``
-feature built into the Accumulo connector. This feature can drastically
-reduce query runtime when selecting a handful of values from the table,
-and the heavy lifting is done for you when loading data via Presto
-``INSERT`` statements (though, keep in mind writing data to Accumulo via
-``INSERT`` does not have high throughput. There is an indexing tool in
-the API to assist in automatically indexing your Accumulo tables.
-
-To enable indexing, add the ``index_columns`` table property and specify
-a comma-delimited list of Presto column names you wish to index (we also
-use the ``string`` serializer here to help with this example -- you
-should be using the default ``lexicoder``).
+Table property usage example:
 
 .. code:: sql
 
-    presto:default> CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
+    CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE)
     WITH (
       column_mapping = 'name:metadata:name,age:metadata:age,birthday:metadata:date',
-      serializer = 'string',
-      index_columns='name,age,birthday'
+      index_columns = 'name,age'
     );
 
-After creating the table, we see there are an additional two Accumulo
-tables to store the index and metrics.
-
-::
-
-    root@default> tables
-    accumulo.metadata
-    accumulo.root
-    myschema.scientists
-    myschema.scientists_idx
-    myschema.scientists_idx_metrics
-    trace
-
-After inserting data, we can look at the index table and see there are
-indexed values for the name, age, and birthday columns. The connector
-queries this index table
-
-.. code:: sql
-
-    presto:default> INSERT INTO myschema.scientists VALUES
-    ('row1', 'Grace Hopper', 109, DATE '1906-12-09' ),
-    ('row2', 'Alan Turing', 103, DATE '1912-06-23' );
-
-    root@default> scan -t myschema.scientists_idx
-    -21011 metadata_date:row2 []
-    -23034 metadata_date:row1 []
-    103 metadata_age:row2 []
-    109 metadata_age:row1 []
-    Alan Turing metadata_name:row2 []
-    Grace Hopper metadata_name:row1 []
-
-When issuing a query with a ``WHERE`` clause against indexed columns,
-the connector searches the index table for all row IDs that contain the
-value within the predicate. These row IDs are bundled into a Presto
-split as single-value ``Range`` objects (the number of row IDs per split
-is controlled by the value of ``accumulo.index_rows_per_split``) and
-passed to Presto to query.
-
-.. code:: sql
-
-    presto:default> SELECT * FROM myschema.scientists WHERE age = 109;
-     recordkey |     name     | age |  birthday  
-    -----------+--------------+-----+------------
-     row1      | Grace Hopper | 109 | 1906-12-09 
-    (1 row)
++-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Property Name   | Required | Default Value  | Description                                                                                                                                                                                                                                                                        |
++=================+==========+================+====================================================================================================================================================================================================================================================================================+
+| column_mapping  | Yes      | (none)         | Comma-delimited list of column metadata: col_name:col_family:col_qualifier,[...]                                                                                                                                                                                                   |
++-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| index_columns   | No       | (none)         | A comma-delimited list of Presto columns that are indexed in this table's corresponding index table                                                                                                                                                                                |
++-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| external        | No       | false          | If true, Presto will only do metadata operations for the table. Else, Presto will create and drop Accumulo tables where appropriate.                                                                                                                                               |
++-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| locality_groups | No       | (none)         | List of locality groups to set on the Accumulo table. Only valid on internal tables. String format is locality group name, colon, comma delimited list of column families in the group. Groups are delimited by pipes. Example: group1:famA,famB,famC|group2:famD,famE,famF|etc... |
++-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| row_id          | No       | (first column) | Presto column name that maps to the Accumulo row ID.                                                                                                                                                                                                                               |
++-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| serializer      | No       | default        | Serializer for Accumulo data encodings. Can either be 'default', 'string', 'lexicoder', or a Java class name. Default is 'default', i.e. the value from AccumuloRowSerializer.getDefault(), i.e. 'lexicoder'.                                                                      |
++-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| scan_auths      | No       | (user auths)   | Scan-time authorizations set on the batch scanner.                                                                                                                                                                                                                                 |
++-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 Session Properties
 ~~~~~~~~~~~~~~~~~~
@@ -409,44 +412,39 @@ SESSION clause at the top of your Presto script:
 
     SET SESSION accumulo.column_filter_optimizations_enabled = false;
 
-+--------------+------+--------------------------------------------------------+
-| Property     | Defa | Description                                            |
-| Name         | ult  |                                                        |
-|              | Valu |                                                        |
-|              | e    |                                                        |
-+==============+======+========================================================+
-| accumulo.opt | fals | Experimental. Set to true to enable the column value   |
-| imize\_colum | e    | filter pushdowns. Default false. Should stay false,    |
-| n\_filters\_ |      | for now.                                               |
-| enabled      |      |                                                        |
-+--------------+------+--------------------------------------------------------+
-| accumulo.opt | true | Set to true to enable data locality for non-indexed    |
-| imize\_local |      | scans. Default true.                                   |
-| ity\_enabled |      |                                                        |
-+--------------+------+--------------------------------------------------------+
-| accumulo.opt | true | Set to true to split non-indexed queries by tablet     |
-| imize\_split |      | splits. Should generally be true.                      |
-| \_ranges\_en |      |                                                        |
-| abled        |      |                                                        |
-+--------------+------+--------------------------------------------------------+
-| accumulo.opt | true | Set to true to enable usage of the secondary index on  |
-| imize\_index |      | query. Default true.                                   |
-| \_enabled    |      |                                                        |
-+--------------+------+--------------------------------------------------------+
-| accumulo.ind | 1000 | The number of Accumulo row IDs that are packed into a  |
-| ex\_rows\_pe | 0    | single Presto split. Default 10000                     |
-| r\_split     |      |                                                        |
-+--------------+------+--------------------------------------------------------+
-| accumulo.ind | .2   | The ratio between number of rows to be scanned based   |
-| ex\_threshol |      | on the secondary index over the total number of rows.  |
-| d            |      | If the ratio is below this threshold, the secondary    |
-|              |      | index will be used. Default 0.2.                       |
-+--------------+------+--------------------------------------------------------+
-| accumulo.ind | .01  | The threshold where the column with the lowest         |
-| ex\_lowest\_ |      | cardinality will be used instead of computing an       |
-| cardinality\ |      | intersection of ranges in the secondary index.         |
-| _threshold   |      | Secondary index must be enabled. Default .01.          |
-+--------------+------+--------------------------------------------------------+
++---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Property Name                               | Default Value | Description                                                                                                                                                           |
++=============================================+===============+=======================================================================================================================================================================+
+| accumulo.optimize_column_filter_pushdowns   | false         | Experimental. Set to true to enable the column value filter pushdowns                                                                                                 |
++---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| accumulo.optimize_locality_enabled          | true          | Set to true to enable data locality for non-indexed scans                                                                                                             |
++---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| accumulo.optimize_split_ranges_enabled      | true          | Set to true to split non-indexed queries by tablet splits. Should generally be true.                                                                                  |
++---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| accumulo.optimize_index_enabled             | true          | Set to true to enable usage of the secondary index on query                                                                                                           |
++---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| accumulo.index_rows_per_split               | 10000         | The number of Accumulo row IDs that are packed into a single Presto split                                                                                             |
++---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| accumulo.index_threshold                    | 0.2           | The ratio between number of rows to be scanned based on the index over the total number of rows.  If the ratio is below this threshold, the index will be used.       |
++---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| accumulo.index_lowest_cardinality_threshold | 0.01          | The threshold where the column with the lowest cardinality will be used instead of computing an intersection of ranges in the index. Secondary index must be enabled. |
++---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| accumulo.index_metrics_enabled              | true          | Set to true to enable usage of the metrics table to optimize usage of the index                                                                                       |
++---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| accumulo.scan_username                      | (config)      | User to impersonate when scanning the tables. This property trumps the scan_auths table property. Default is the user in the connector configuration file.            |
++---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+Adding Columns
+~~~~~~~~~~~~~~
+
+Adding a new column to an existing table cannot be done today via
+``ALTER TABLE [table] ADD COLUMN [name] [type]`` because of the additional
+metadata required for the columns to work; the column family, qualifier,
+and if the column is indexed.
+
+Instead, you can use one of the utilities in the
+`presto-accumulo-tools <https://github.com/bloomberg/presto-accumulo/tree/master/presto-accumulo-tools>`__
+sub-project of the ``presto-accumulo`` repository.  Documentation and usage can be found in the README.
 
 Serializers
 ~~~~~~~~~~~
@@ -462,7 +460,7 @@ serializer that treats values as Java ``String`` and a ``lexicoder``
 serializer that leverages Accumulo's Lexicoder API to store values. The
 default serializer is the ``lexicoder`` serializer, as this serializer
 does not require expensive conversion operations back and forth between
-``String`` objects and the Presto types -- the object is encoded as a
+``String`` objects and the Presto types -- the cell's value is encoded as a
 byte array.
 
 You can change the default the serializer by specifying the
@@ -470,7 +468,7 @@ You can change the default the serializer by specifying the
 ``lexicoder``), ``string`` or ``lexicoder`` for the built-in types, or
 you could provide your own implementation by extending
 ``AccumuloRowSerializer``, adding it to the Presto ``CLASSPATH``, and
-specifying the fully-qualified Java class name.
+specifying the fully-qualified Java class name in the connector configuration.
 
 .. code:: sql
 
@@ -484,6 +482,8 @@ specifying the fully-qualified Java class name.
     ('row1', 'Grace Hopper', 109, DATE '1906-12-09' ),
     ('row2', 'Alan Turing', 103, DATE '1912-06-23' );
 
+.. code:: bash
+
     root@default> scan -t myschema.scientists
     row1 metadata:age []    \x08\x80\x00\x00\x00\x00\x00\x00m
     row1 metadata:date []    \x08\x7F\xFF\xFF\xFF\xFF\xFF\xA6\x06
@@ -491,6 +491,8 @@ specifying the fully-qualified Java class name.
     row2 metadata:age []    \x08\x80\x00\x00\x00\x00\x00\x00g
     row2 metadata:date []    \x08\x7F\xFF\xFF\xFF\xFF\xFF\xAD\xED
     row2 metadata:name []    Alan Turing
+
+.. code:: sql
 
     presto:default> CREATE TABLE myschema.stringy_scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
     WITH (
@@ -502,6 +504,8 @@ specifying the fully-qualified Java class name.
     ('row1', 'Grace Hopper', 109, DATE '1906-12-09' ),
     ('row2', 'Alan Turing', 103, DATE '1912-06-23' );
 
+.. code:: bash
+
     root@default> scan -t myschema.stringy_scientists
     row1 metadata:age []    109
     row1 metadata:date []    -23034
@@ -509,6 +513,8 @@ specifying the fully-qualified Java class name.
     row2 metadata:age []    103
     row2 metadata:date []    -21011
     row2 metadata:name []    Alan Turing
+
+.. code:: sql
 
     CREATE TABLE myschema.custom_scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
     WITH (
@@ -541,7 +547,7 @@ The data of the ``table`` ZooKeeper node is a serialized
 ``AccumuloTable`` Java object (which resides in the connector code).
 This table contains the schema (namespace) name, table name, column
 definitions, the serializer to use for the table, and any additional
-metadata.
+table properties.
 
 If you have a need to programmatically manipulate the ZooKeeper metadata
 for Accumulo, take a look at

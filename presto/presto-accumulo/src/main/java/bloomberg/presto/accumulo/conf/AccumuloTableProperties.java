@@ -77,21 +77,21 @@ public final class AccumuloTableProperties
                 false, false);
 
         PropertyMetadata<String> s4 = stringSessionProperty(LOCALITY_GROUPS,
-                "List of locality groups to set on the Accumulo table.  String format is locality "
-                        + "group name, colon, comma delimited list of column families in the group.  "
-                        + "Groups are delimited by pipes.  Example: group1:famA,famB,famC|"
-                        + "group2:famD,famE,famF|etc....  Default is no locality groups.",
+                "List of locality groups to set on the Accumulo table.  Only valid on internal tables.  "
+                        + "String format is locality group name, colon, comma delimited list of column "
+                        + "families in the group.  Groups are delimited by pipes.  Example: "
+                        + "group1:famA,famB,famC|group2:famD,famE,famF|etc....  Default is no locality groups.",
                 null, false);
 
         PropertyMetadata<String> s5 = stringSessionProperty(ROW_ID,
-                "If true, a DROP TABLE statement WILL delete the corresponding Accumulo table. Default false.",
+                "Presto column name that maps to the Accumulo row ID.  Default is the first column.",
                 null, false);
 
         PropertyMetadata<String> s6 =
                 new PropertyMetadata<String>(SERIALIZER,
                         "Serializer for Accumulo data encodings. Can either be 'default', "
                                 + "'string', 'lexicoder', or a Java class name. Default is 'default', i.e. "
-                                + "the value from AccumuloRowSerializer.getDefault()",
+                                + "the value from AccumuloRowSerializer.getDefault(), i.e. 'lexicoder'.",
                         VarcharType.VARCHAR, String.class,
                         AccumuloRowSerializer.getDefault().getClass().getName(), false,
                         x -> x.equals("default")

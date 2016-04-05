@@ -89,9 +89,9 @@ public final class AccumuloSessionProperties
                         + "Default 10000",
                 10000, false);
         PropertyMetadata<Double> s6 = doubleSessionProperty(INT_INDEX_THRESHOLD,
-                "The ratio between number of rows to be scanned based on the secondary index over "
+                "The ratio between number of rows to be scanned based on the index over "
                         + "the total number of rows.  If the ratio is below this threshold, "
-                        + "the secondary index will be used.  Default .2",
+                        + "the index will be used.  Default .2",
                 0.2, false);
         PropertyMetadata<Double> s7 = doubleSessionProperty(INT_INDEX_LOWEST_CARDINALITY_THRESHOLD,
                 "The threshold where the column with the lowest cardinality will be used instead "
