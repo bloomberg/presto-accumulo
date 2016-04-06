@@ -520,6 +520,10 @@ public class AccumuloClient
      */
     public void renameColumn(AccumuloTable table, String source, String target)
     {
+        if (table.getRowId().equals(source)) {
+            table.setRowId(target);
+        }
+
         boolean found = false;
         // Locate the column to rename
         for (AccumuloColumnHandle col : table.getColumns()) {

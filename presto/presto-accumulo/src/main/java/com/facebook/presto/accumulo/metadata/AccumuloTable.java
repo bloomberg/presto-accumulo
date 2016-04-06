@@ -25,6 +25,7 @@ import com.facebook.presto.spi.StandardErrorCode;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public class AccumuloTable
 {
     private boolean indexed;
     private final boolean external;
-    private final String rowId;
+    private String rowId;
     private final Integer rowIdOrdinal;
     private final String schema;
     private final String table;
@@ -115,6 +116,16 @@ public class AccumuloTable
         return rowId;
     }
 
+    /**
+     * Sets the row ID column name.
+     *
+     * @@param rowId Row ID
+     */
+    @JsonSetter
+    public void setRowId(String rowId)
+    {
+        this.rowId = rowId;
+    }
     /**
      * Gets the schema name.
      *

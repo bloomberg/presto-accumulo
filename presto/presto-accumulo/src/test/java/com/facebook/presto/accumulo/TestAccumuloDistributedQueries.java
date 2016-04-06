@@ -254,10 +254,10 @@ public class TestAccumuloDistributedQueries
 
         assertQuery("SELECT orderdate, orderkey FROM test_insert",
                 "SELECT orderdate, orderkey FROM orders"
-                + " UNION ALL SELECT null, -1"
-                + " UNION ALL SELECT DATE '2001-01-01', null"
-                + " UNION ALL SELECT DATE '2001-01-02', -2"
-                + " UNION ALL SELECT DATE '2001-01-03', -3");
+                        + " UNION ALL SELECT null, -1"
+                        + " UNION ALL SELECT DATE '2001-01-01', null"
+                        + " UNION ALL SELECT DATE '2001-01-02', -2"
+                        + " UNION ALL SELECT DATE '2001-01-03', -3");
 
         // UNION query produces columns in the opposite order
         // of how they are declared in the table schema
@@ -273,25 +273,19 @@ public class TestAccumuloDistributedQueries
     public void testRenameColumn()
             throws Exception
     {
-        try {
-            // TODO rowIdOrdinal is null, enable to locate rowId in given column list
-            // Override because base class error: Must have at least one non-row ID column
-            assertUpdate("CREATE TABLE test_rename_column WITH (column_mapping = 'a:a:a') AS SELECT 123 x, 456 a", 1);
+        // Override because base class error: Must have at least one non-row ID column
+        assertUpdate("CREATE TABLE test_rename_column WITH (column_mapping = 'a:a:a') AS SELECT 123 x, 456 a", 1);
 
-            assertUpdate("ALTER TABLE test_rename_column RENAME COLUMN x TO y");
-            MaterializedResult materializedRows = computeActual("SELECT y FROM test_rename_column");
-            assertEquals(getOnlyElement(materializedRows.getMaterializedRows()).getField(0), 123L);
+        assertUpdate("ALTER TABLE test_rename_column RENAME COLUMN x TO y");
+        MaterializedResult materializedRows = computeActual("SELECT y FROM test_rename_column");
+        assertEquals(getOnlyElement(materializedRows.getMaterializedRows()).getField(0), 123L);
 
-            assertUpdate("ALTER TABLE test_rename_column RENAME COLUMN y TO Z");
-            materializedRows = computeActual("SELECT z FROM test_rename_column");
-            assertEquals(getOnlyElement(materializedRows.getMaterializedRows()).getField(0), 123L);
+        assertUpdate("ALTER TABLE test_rename_column RENAME COLUMN y TO Z");
+        materializedRows = computeActual("SELECT z FROM test_rename_column");
+        assertEquals(getOnlyElement(materializedRows.getMaterializedRows()).getField(0), 123L);
 
-            assertUpdate("DROP TABLE test_rename_column");
-            assertFalse(queryRunner.tableExists(getSession(), "test_rename_column"));
-        }
-        catch (Exception e) {
-            assertEquals("Error fetching table", e.getMessage());
-        }
+        assertUpdate("DROP TABLE test_rename_column");
+        assertFalse(queryRunner.tableExists(getSession(), "test_rename_column"));
     }
 
     @Override
