@@ -148,7 +148,12 @@ public class AccumuloPageSink
     {
         // Set our value to the row ID
         Text value = new Text();
-        setText(row.getField(rowIdOrdinal), value, serializer);
+        Field rField = row.getField(rowIdOrdinal);
+        if (rField.isNull()) {
+            throw new PrestoException(StandardErrorCode.USER_ERROR, "Column mapped as the Accumulo row ID cannot be null");
+        }
+
+        setText(rField, value, serializer);
 
         // Iterate through all the column handles, setting the Mutation's columns
         Mutation m = new Mutation(value);

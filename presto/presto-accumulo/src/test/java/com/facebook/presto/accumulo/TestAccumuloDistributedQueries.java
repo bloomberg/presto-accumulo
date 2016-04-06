@@ -237,44 +237,36 @@ public class TestAccumuloDistributedQueries
     public void testInsert()
             throws Exception
     {
-        try {
-            // TODO NullPointerException
-            // Override because base class error: Must specify column mapping property
-            @Language("SQL") String query = "SELECT UUID() AS uuid, orderdate, orderkey FROM orders";
+        // Override because base class error: Must specify column mapping property
+        @Language("SQL") String query = "SELECT UUID() AS uuid, orderdate, orderkey FROM orders";
 
-            assertUpdate("CREATE TABLE test_insert WITH (column_mapping = 'orderdate:orderdate:orderdate,orderkey:orderkey:orderkey') AS " + query + " WITH NO DATA", 0);
-            assertQuery("SELECT count(*) FROM test_insert", "SELECT 0");
+        assertUpdate("CREATE TABLE test_insert WITH (column_mapping = 'orderdate:cf:orderdate,orderkey:cf:orderkey') AS " + query + " WITH NO DATA", 0);
+        assertQuery("SELECT count(*) FROM test_insert", "SELECT 0");
 
-            assertUpdate("INSERT INTO test_insert " + query, "SELECT count(*) FROM orders");
+        assertUpdate("INSERT INTO test_insert " + query, "SELECT count(*) FROM orders");
 
-            assertQuery("SELECT orderdate, orderkey FROM test_insert", "SELECT orderdate, orderkey FROM orders");
+        assertQuery("SELECT orderdate, orderkey FROM test_insert", "SELECT orderdate, orderkey FROM orders");
+        // Override because base class error: Cannot insert null row ID
+        assertUpdate("INSERT INTO test_insert (uuid, orderkey) VALUES ('000000', -1)", 1);
+        assertUpdate("INSERT INTO test_insert (uuid, orderdate) VALUES ('000001', DATE '2001-01-01')", 1);
+        assertUpdate("INSERT INTO test_insert (uuid, orderkey, orderdate) VALUES ('000002', -2, DATE '2001-01-02')", 1);
+        assertUpdate("INSERT INTO test_insert (uuid, orderdate, orderkey) VALUES ('000003', DATE '2001-01-03', -3)", 1);
 
-            assertUpdate("INSERT INTO test_insert (orderkey) VALUES (-1)", 1);
-            assertUpdate("INSERT INTO test_insert (orderdate) VALUES (DATE '2001-01-01')", 1);
-            assertUpdate("INSERT INTO test_insert (orderkey, orderdate) VALUES (-2, DATE '2001-01-02')", 1);
-            assertUpdate("INSERT INTO test_insert (orderdate, orderkey) VALUES (DATE '2001-01-03', -3)", 1);
+        assertQuery("SELECT orderdate, orderkey FROM test_insert",
+                "SELECT orderdate, orderkey FROM orders"
+                + " UNION ALL SELECT null, -1"
+                + " UNION ALL SELECT DATE '2001-01-01', null"
+                + " UNION ALL SELECT DATE '2001-01-02', -2"
+                + " UNION ALL SELECT DATE '2001-01-03', -3");
 
-            assertQuery("SELECT * FROM test_insert", query
-                    + " UNION ALL SELECT null, -1"
-                    + " UNION ALL SELECT DATE '2001-01-01', null"
-                    + " UNION ALL SELECT DATE '2001-01-02', -2"
-                    + " UNION ALL SELECT DATE '2001-01-03', -3");
-
-            // UNION query produces columns in the opposite order
-            // of how they are declared in the table schema
-            assertUpdate(
-                    "INSERT INTO test_insert (orderkey, orderdate) " +
-                            "SELECT orderkey, orderdate FROM orders " +
-                            "UNION ALL " +
-                            "SELECT orderkey, orderdate FROM orders",
-                    "SELECT 2 * count(*) FROM orders");
-        }
-        catch (Exception e) {
-            // no-op
-        }
-        finally {
-            assertUpdate("DROP TABLE test_insert");
-        }
+        // UNION query produces columns in the opposite order
+        // of how they are declared in the table schema
+        assertUpdate(
+                "INSERT INTO test_insert (uuid, orderkey, orderdate) " +
+                        "SELECT UUID() AS uuid, orderkey, orderdate FROM orders " +
+                        "UNION ALL " +
+                        "SELECT UUID() AS uuid, orderkey, orderdate FROM orders",
+                "SELECT 2 * count(*) FROM orders");
     }
 
     @Override
