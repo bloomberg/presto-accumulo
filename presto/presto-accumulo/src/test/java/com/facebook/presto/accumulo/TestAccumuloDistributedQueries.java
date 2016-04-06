@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.intellij.lang.annotations.Language;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.Test;
 
 import java.util.List;
 
@@ -369,52 +370,125 @@ public class TestAccumuloDistributedQueries
     public void testBuildFilteredLeftJoin()
             throws Exception
     {
-        try {
-            // TODO Figure this out
-            super.testBuildFilteredLeftJoin();
-        }
-        catch (Exception e) {
-            assertEquals("type does not match result", e.getMessage());
-        }
+        // Override because of extra UUID column in lineitem table, cannot SELECT *
+        assertQuery("SELECT "
+                + "lineitem.orderkey, partkey, suppkey, linenumber, quantity, "
+                + "extendedprice, discount, tax, returnflag, linestatus, "
+                + "shipdate, commitdate, receiptdate, shipinstruct, shipmode, lineitem.comment "
+                + "FROM lineitem LEFT JOIN (SELECT * FROM orders WHERE orderkey % 2 = 0) a ON lineitem.orderkey = a.orderkey");
     }
 
     @Override
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testJoinWithAlias()
             throws Exception
     {
-        try {
-            // TODO Figure this out
-            super.testJoinWithAlias();
-        }
-        catch (Exception e) {
-            assertEquals("type does not match result", e.getMessage());
-        }
+        // Override because of extra UUID column in lineitem table, cannot SELECT *
+        // Cannot munge test to pass due to aliased data set 'x' containing duplicate orderkey and comment columns
+        super.testJoinWithAlias();
     }
 
     @Override
     public void testProbeFilteredLeftJoin()
             throws Exception
     {
-        try {
-            // TODO Figure this out
-            super.testProbeFilteredLeftJoin();
-        }
-        catch (Exception e) {
-            assertEquals("type does not match result", e.getMessage());
-        }
+        // Override because of extra UUID column in lineitem table, cannot SELECT *
+        assertQuery("SELECT "
+                + "a.orderkey, partkey, suppkey, linenumber, quantity, "
+                + "extendedprice, discount, tax, returnflag, linestatus, "
+                + "shipdate, commitdate, receiptdate, shipinstruct, shipmode, a.comment "
+                + "FROM (SELECT * FROM lineitem WHERE orderkey % 2 = 0) a LEFT JOIN orders ON a.orderkey = orders.orderkey");
     }
 
     @Override
     public void testScalarSubquery()
             throws Exception
     {
-        try {
-            // TODO Figure this out
-            super.testScalarSubquery();
+        // Override because of extra UUID column in lineitem table, cannot SELECT *
+
+        // nested
+        assertQuery("SELECT (SELECT (SELECT (SELECT 1)))");
+
+        // aggregation
+        assertQuery("SELECT "
+                + "orderkey, partkey, suppkey, linenumber, quantity, "
+                + "extendedprice, discount, tax, returnflag, linestatus, "
+                + "shipdate, commitdate, receiptdate, shipinstruct, shipmode, comment "
+                + "FROM lineitem WHERE orderkey = \n"
+                + "(SELECT max(orderkey) FROM orders)");
+
+        // no output
+        assertQuery("SELECT "
+                + "orderkey, partkey, suppkey, linenumber, quantity, "
+                + "extendedprice, discount, tax, returnflag, linestatus, "
+                + "shipdate, commitdate, receiptdate, shipinstruct, shipmode, comment "
+                + "FROM lineitem WHERE orderkey = \n"
+                + "(SELECT orderkey FROM orders WHERE 0=1)");
+
+        // no output matching with null test
+        assertQuery("SELECT "
+                + "orderkey, partkey, suppkey, linenumber, quantity, "
+                + "extendedprice, discount, tax, returnflag, linestatus, "
+                + "shipdate, commitdate, receiptdate, shipinstruct, shipmode, comment "
+                + "FROM lineitem WHERE \n"
+                + "(SELECT orderkey FROM orders WHERE 0=1) "
+                + "is null");
+        assertQuery("SELECT "
+                + "orderkey, partkey, suppkey, linenumber, quantity, "
+                + "extendedprice, discount, tax, returnflag, linestatus, "
+                + "shipdate, commitdate, receiptdate, shipinstruct, shipmode, comment "
+                + "FROM lineitem WHERE \n"
+                + "(SELECT orderkey FROM orders WHERE 0=1) "
+                + "is not null");
+
+        // subquery results and in in-predicate
+        assertQuery("SELECT (SELECT 1) IN (1, 2, 3)");
+        assertQuery("SELECT (SELECT 1) IN (   2, 3)");
+
+        // multiple subqueries
+        assertQuery("SELECT (SELECT 1) = (SELECT 3)");
+        assertQuery("SELECT (SELECT 1) < (SELECT 3)");
+        assertQuery("SELECT COUNT(*) FROM lineitem WHERE " +
+                "(SELECT min(orderkey) FROM orders)" +
+                "<" +
+                "(SELECT max(orderkey) FROM orders)");
+
+        // distinct
+        assertQuery("SELECT DISTINCT orderkey FROM lineitem " +
+                "WHERE orderkey BETWEEN" +
+                "   (SELECT avg(orderkey) FROM orders) - 10 " +
+                "   AND" +
+                "   (SELECT avg(orderkey) FROM orders) + 10");
+
+        // subqueries with joins
+        for (String joinType : ImmutableList.of("INNER", "LEFT OUTER")) {
+            assertQuery("SELECT l.orderkey, COUNT(*) " +
+                    "FROM lineitem l " + joinType + " JOIN orders o ON l.orderkey = o.orderkey " +
+                    "WHERE l.orderkey BETWEEN" +
+                    "   (SELECT avg(orderkey) FROM orders) - 10 " +
+                    "   AND" +
+                    "   (SELECT avg(orderkey) FROM orders) + 10 " +
+                    "GROUP BY l.orderkey");
         }
-        catch (Exception e) {
-            assertEquals("type does not match result", e.getMessage());
-        }
+
+        // subqueries with ORDER BY
+        assertQuery("SELECT orderkey, totalprice FROM orders ORDER BY (SELECT 2)");
+
+        // subquery returns multiple rows
+        String multipleRowsErrorMsg = "Scalar sub-query has returned multiple rows";
+        assertQueryFails("SELECT "
+                        + "orderkey, partkey, suppkey, linenumber, quantity, "
+                        + "extendedprice, discount, tax, returnflag, linestatus, "
+                        + "shipdate, commitdate, receiptdate, shipinstruct, shipmode, comment "
+                        + "FROM lineitem WHERE orderkey = (\n"
+                        + "SELECT orderkey FROM orders ORDER BY totalprice)",
+                multipleRowsErrorMsg);
+        assertQueryFails("SELECT orderkey, totalprice FROM orders ORDER BY (VALUES 1, 2)",
+                multipleRowsErrorMsg);
+
+        // exposes a bug in optimize hash generation because EnforceSingleNode does not
+        // support more than one column from the underlying query
+        assertQuery("SELECT custkey, (SELECT DISTINCT custkey FROM orders ORDER BY custkey LIMIT 1) FROM orders");
     }
 
     @Override
