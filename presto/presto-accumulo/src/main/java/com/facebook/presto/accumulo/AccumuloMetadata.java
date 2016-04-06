@@ -30,6 +30,7 @@ import com.facebook.presto.spi.ConnectorTableLayout;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.ConnectorTableLayoutResult;
 import com.facebook.presto.spi.ConnectorTableMetadata;
+import com.facebook.presto.spi.ConnectorViewDefinition;
 import com.facebook.presto.spi.Constraint;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
@@ -39,6 +40,7 @@ import com.facebook.presto.spi.TableNotFoundException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 
 import javax.inject.Inject;
@@ -182,6 +184,104 @@ public class AccumuloMetadata
     }
 
     /**
+     * Create the view metadata
+     *
+     * @param session
+     *            Current client session
+     * @param viewName
+     *            Name of the view to create
+     * @param viewData
+     *            Data of the view
+     * @param replace
+     *            True to replace any existing view, false otherwise
+     */
+    @Override
+    public void createView(ConnectorSession session, SchemaTableName viewName, String viewData, boolean replace)
+    {
+        Logger.get(getClass()).info("createView %s %s %s %s", session, viewName, viewData, replace);
+        client.createView(viewName, viewData, replace);
+    }
+
+    /**
+     * Drop the view metadata
+     *
+     * @param session
+     *            Current client session
+     * @param viewName
+     *            Name of the view to create
+     */
+    @Override
+    public void dropView(ConnectorSession session, SchemaTableName viewName)
+    {
+        Logger.get(getClass()).info("dropView %s %s", session, viewName);
+        client.dropView(viewName);
+    }
+
+    /**
+     * Gets all views that match the given prefix
+     *
+     * @param session
+     *            Current client session
+     * @param prefix
+     *            View prefix
+     * @return Map of view names to the definition
+     */
+    @Override
+    public Map<SchemaTableName, ConnectorViewDefinition> getViews(ConnectorSession session, SchemaTablePrefix prefix)
+    {
+        Logger.get(getClass()).info("getViews %s %s", session, prefix);
+        ImmutableMap.Builder<SchemaTableName, ConnectorViewDefinition> bldr = ImmutableMap.builder();
+        for (SchemaTableName stName : listViews(session, prefix.getSchemaName())) {
+            bldr.put(stName, new ConnectorViewDefinition(stName, Optional.empty(), client.getView(stName).getData()));
+        }
+        Logger.get(getClass()).info("views are %s", bldr.build());
+        return bldr.build();
+    }
+
+    /**
+     * Gets all views in the given schema, or all schemas if null
+     *
+     * @param session
+     *            Current client session
+     * @param schemaNameOrNull
+     *            Schema to list for the views, or null to list all schemas
+     * @return List of views
+     */
+    @Override
+    public List<SchemaTableName> listViews(ConnectorSession session, String schemaNameOrNull)
+    {
+        return listViews(schemaNameOrNull);
+    }
+
+    /**
+     * Gets all views in the given schema, or all schemas if null
+     *
+     * @param schemaNameOrNull
+     *            Schema to list for the views, or null to list all schemas
+     * @return List of views
+     */
+    private List<SchemaTableName> listViews(String schemaNameOrNull)
+    {
+        Logger.get(getClass()).info("listViews %s", schemaNameOrNull);
+        ImmutableList.Builder<SchemaTableName> bldr = ImmutableList.builder();
+
+        if (schemaNameOrNull == null) {
+            for (String schema : client.getSchemaNames()) {
+                for (String view : client.getViewNames(schema)) {
+                    bldr.add(new SchemaTableName(schema, view));
+                }
+            }
+        }
+        else {
+            for (String view : client.getViewNames(schemaNameOrNull)) {
+                bldr.add(new SchemaTableName(schemaNameOrNull, view));
+            }
+        }
+
+        return bldr.build();
+    }
+
+    /**
      * Begin an insert of data into an Accumulo table. This is for new inserts, not for a CTAS.
      *
      * @param session
@@ -254,14 +354,20 @@ public class AccumuloMetadata
             return null;
         }
 
-        AccumuloTable table = client.getTable(stName);
-        if (table == null) {
+        // Need to validate that SchemaTableName is a table
+        if (!this.listViews(session, stName.getSchemaName()).contains(stName)) {
+            AccumuloTable table = client.getTable(stName);
+            if (table == null) {
+                return null;
+            }
+
+            return new AccumuloTableHandle(connectorId, table.getSchema(), table.getTable(),
+                    table.getRowId(), table.isExternal(), table.getSerializerClassName(),
+                    table.getScanAuthorizations());
+        }
+        else {
             return null;
         }
-
-        return new AccumuloTableHandle(connectorId, stName.getSchemaName(), stName.getTableName(),
-                table.getRowId(), table.isExternal(), table.getSerializerClassName(),
-                table.getScanAuthorizations());
     }
 
     /**
@@ -471,12 +577,18 @@ public class AccumuloMetadata
             return null;
         }
 
-        AccumuloTable table = client.getTable(stn);
-        if (table == null) {
+        // Need to validate that SchemaTableName is a table
+        if (!this.listViews(stn.getSchemaName()).contains(stn)) {
+            AccumuloTable table = client.getTable(stn);
+            if (table == null) {
+                return null;
+            }
+
+            return new ConnectorTableMetadata(stn, table.getColumnsMetadata());
+        }
+        else {
             return null;
         }
-
-        return new ConnectorTableMetadata(stn, table.getColumnsMetadata());
     }
 
     /**

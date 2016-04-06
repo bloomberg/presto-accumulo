@@ -22,6 +22,7 @@ import com.facebook.presto.accumulo.index.IndexLookup;
 import com.facebook.presto.accumulo.index.Indexer;
 import com.facebook.presto.accumulo.metadata.AccumuloMetadataManager;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
+import com.facebook.presto.accumulo.metadata.AccumuloView;
 import com.facebook.presto.accumulo.model.AccumuloColumnConstraint;
 import com.facebook.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.accumulo.model.TabletSplitMetadata;
@@ -480,6 +481,46 @@ public class AccumuloClient
     }
 
     /**
+     * Creates a new view with the given name and data.  Replaces a view if 'replace' is true.
+     *
+     * @param viewName
+     *            Name of the view
+     * @param viewData
+     *            Data for the view
+     * @param replace
+     *            True to replace, false otherwise
+     */
+    public void createView(SchemaTableName viewName, String viewData, boolean replace)
+    {
+        if (!replace && this.getSchemaNames().contains(viewName.getSchemaName())) {
+            if (this.getViewNames(viewName.getSchemaName()).contains(viewName.getTableName())) {
+                throw new PrestoException(StandardErrorCode.ALREADY_EXISTS, "View already exists");
+            }
+
+            if (this.getTableNames(viewName.getSchemaName()).contains(viewName.getTableName())) {
+                throw new PrestoException(StandardErrorCode.ALREADY_EXISTS, "View already exists as data table");
+            }
+        }
+
+        if (replace && getView(viewName) != null) {
+            metaManager.deleteViewMetadata(viewName);
+        }
+
+        metaManager.createViewMetadata(new AccumuloView(viewName.getSchemaName(), viewName.getTableName(), viewData));
+    }
+
+    /**
+     * Drops the given view
+     *
+     * @param viewName
+     *            View to drop
+     */
+    public void dropView(SchemaTableName viewName)
+    {
+        metaManager.deleteViewMetadata(viewName);
+    }
+
+    /**
      * Adds a new column to an existing table
      *
      * @param table
@@ -581,6 +622,32 @@ public class AccumuloClient
     {
         requireNonNull(table, "schema table name is null");
         return metaManager.getTable(table);
+    }
+
+    /**
+     * Gets all view names from the given schema
+     *
+     * @param schema
+     *            The schema to get table names from
+     * @return The set of table names
+     */
+    public Set<String> getViewNames(String schema)
+    {
+        requireNonNull(schema, "schema is null");
+        return metaManager.getViewNames(schema);
+    }
+
+    /**
+     * Gets the {@link AccumuloView} for the given name via the {@link AccumuloMetadataManager}
+     *
+     * @param viewName
+     *            The view to fetch
+     * @return The AccumuloView or null if it does not exist
+     */
+    public AccumuloView getView(SchemaTableName viewName)
+    {
+        requireNonNull(viewName, "schema table name is null");
+        return metaManager.getView(viewName);
     }
 
     /**

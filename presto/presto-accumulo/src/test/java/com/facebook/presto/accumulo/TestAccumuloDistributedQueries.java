@@ -68,26 +68,20 @@ public class TestAccumuloDistributedQueries
     public void testCompatibleTypeChangeForView()
             throws Exception
     {
-        try {
-            // TODO Views are not yet supported
-            // Override because base class error: Must have at least one non-row ID column
-            assertUpdate("CREATE TABLE test_table_1 WITH (column_mapping = 'b:b:b') AS SELECT 'abcdefg' a, 1 b", 1);
-            assertUpdate("CREATE VIEW test_view_1 AS SELECT a FROM test_table_1");
+        // Override because base class error: Must have at least one non-row ID column
+        assertUpdate("CREATE TABLE test_table_1 WITH (column_mapping = 'b:b:b') AS SELECT 'abcdefg' a, 1 b", 1);
+        assertUpdate("CREATE VIEW test_view_1 AS SELECT a FROM test_table_1");
 
-            assertQuery("SELECT * FROM test_view_1", "VALUES 'abcdefg'");
+        assertQuery("SELECT * FROM test_view_1", "VALUES 'abcdefg'");
 
-            // replace table with a version that's implicitly coercible to the previous one
-            assertUpdate("DROP TABLE test_table_1");
-            assertUpdate("CREATE TABLE test_table_1 AS SELECT 'abc' a", 1);
+        // replace table with a version that's implicitly coercible to the previous one
+        assertUpdate("DROP TABLE test_table_1");
+        assertUpdate("CREATE TABLE test_table_1 WITH (column_mapping = 'b:b:b') AS SELECT 'abc' a, 1 b", 1);
 
-            assertQuery("SELECT * FROM test_view_1", "VALUES 'abc'");
+        assertQuery("SELECT * FROM test_view_1", "VALUES 'abc'");
 
-            assertUpdate("DROP VIEW test_view_1");
-            assertUpdate("DROP TABLE test_table_1");
-        }
-        catch (Exception e) {
-            assertEquals("This connector does not support creating views", e.getMessage());
-        }
+        assertUpdate("DROP VIEW test_view_1");
+        assertUpdate("DROP TABLE test_table_1");
     }
 
     @Override
@@ -338,32 +332,6 @@ public class TestAccumuloDistributedQueries
             }
         }
         //  assertTrue(sampleSizeFound, "Table sample returned unexpected number of rows");
-    }
-
-    @Override
-    public void testView()
-            throws Exception
-    {
-        try {
-            // TODO Views are not yet supported
-            super.testView();
-        }
-        catch (Exception e) {
-            assertEquals("This connector does not support creating views", e.getMessage());
-        }
-    }
-
-    @Override
-    public void testViewMetadata()
-            throws Exception
-    {
-        try {
-            // TODO Views are not yet supported
-            super.testViewMetadata();
-        }
-        catch (Exception e) {
-            assertEquals("This connector does not support creating views", e.getMessage());
-        }
     }
 
     @Override

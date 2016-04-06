@@ -74,14 +74,14 @@ public abstract class AccumuloMetadataManager
     }
 
     /**
-     * Gets all schema names based on the metadata.
+     * Gets all schema names for views and tables based on the metadata
      *
      * @return Set of all schema names
      */
     public abstract Set<String> getSchemaNames();
 
     /**
-     * Gets all table names that have the given schema. The returns table names should not contain
+     * Gets all table names that have the given schema. The returned table names should not contain
      * the schema.
      *
      * @param schema
@@ -100,6 +100,25 @@ public abstract class AccumuloMetadataManager
     public abstract AccumuloTable getTable(SchemaTableName table);
 
     /**
+     * Gets all view names that have the given schema. The returned table names should not contain
+     * the schema.
+     *
+     * @param schema
+     *            Schema name
+     * @return Set of all view names with the given schema
+     */
+    public abstract Set<String> getViewNames(String schema);
+
+    /**
+     * Gets the {@link AccumuloView} object for the given schema and view
+     *
+     * @param table
+     *            Schema and view name
+     * @return The AccumuloTable object, or null if does not exist.
+     */
+    public abstract AccumuloView getView(SchemaTableName table);
+
+    /**
      * Creates and store table metadata for the given table
      *
      * @param table
@@ -114,6 +133,54 @@ public abstract class AccumuloMetadataManager
      *            Schema and table name
      */
     public abstract void deleteTableMetadata(SchemaTableName stName);
+
+    /**
+     * Creates and stores view metadata
+     *
+     * @param view
+     *            View to create metadata for
+     */
+    public abstract void createViewMetadata(AccumuloView view);
+
+    /**
+     * Destroy the metadata for the given view
+     *
+     * @param stName
+     *            Schema and view name
+     */
+    public abstract void deleteViewMetadata(SchemaTableName stName);
+
+    /**
+     * Gets a Boolean value indicating whether or not the given byte array can be deserialized to an {@link AccumuloTable} object
+     *
+     * @param data
+     *            Data to check
+     * @return True if the bytes are an AccumuloTable, false otherwise
+     * @throws IOException
+     *             If an IOException occurs
+     */
+    protected boolean isAccumuloTable(byte[] data)
+            throws IOException
+    {
+        // AccumuloTable does not contain a 'data' node
+        return !mapper.reader().readTree(new String(data)).has("data");
+    }
+
+    /**
+     * Gets a Boolean value indicating whether or not the given byte array can be deserialized to an {@link AccumuloView} object
+     *
+     * @param data
+     *            Data to check
+     * @return True if the bytes are an AccumuloView, false otherwise
+     * @throws IOException
+     *             If an IOException occurs
+     */
+    protected boolean isAccumuloView(byte[] data)
+            throws IOException
+    {
+        // AccumuloView contains a 'data' node
+        return mapper.reader().readTree(new String(data)).has("data");
+    }
 
     /**
      * Converts the given byte array to an {@link AccumuloTable}.
@@ -135,6 +202,25 @@ public abstract class AccumuloMetadataManager
     }
 
     /**
+     * Converts the given byte array to an {@link AccumuloView}.
+     *
+     * @param data
+     *            byte array of a serialized AccumuloView
+     * @return AccumuloTable
+     * @throws JsonParseException
+     *            If a parsing exception occurs
+     * @throws JsonMappingException
+     *            If a mapping exception occurs
+     * @throws IOException
+     *            If an IOException occurs
+     */
+    protected AccumuloView toAccumuloView(byte[] data)
+            throws JsonParseException, JsonMappingException, IOException
+    {
+        return mapper.readValue(new String(data), AccumuloView.class);
+    }
+
+    /**
      * Converts the given {@link AccumuloTable} to a byte array.
      *
      * @param t
@@ -147,7 +233,7 @@ public abstract class AccumuloMetadataManager
      * @throws IOException
      *             If an IOException occurs
      */
-    protected byte[] toJsonBytes(AccumuloTable t)
+    protected byte[] toJsonBytes(Object t)
             throws JsonParseException, JsonMappingException, IOException
     {
         return mapper.writeValueAsBytes(t);

@@ -116,7 +116,7 @@ Of the available Presto DDL/DML statements and features, the Accumulo connector 
 
 - **Adding columns via ALTER TABLE**: While you cannot add columns via SQL, you can using a tool.
   See the below section on `Adding Columns <#adding-columns>`__ for more.
-- **Views** : CREATE/DROP VIEW is not yet implemented for the connector
+- **DELETE**: Deleting rows are not yet implemented for the connector, but you could always use the Accumulo API
 - **Transactions** : Transaction support has not yet been implemented for the connector
 
 Usage
