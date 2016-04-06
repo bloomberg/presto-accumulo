@@ -68,25 +68,16 @@ public class AccumuloSplit
     /**
      * JSON creator for an {@link AccumuloSplit}
      *
-     * @param connectorId
-     *            Presto connector ID
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table name
-     * @param rowId
-     *            Presto column mapping to the Accumulo row ID
-     * @param serializerClassName
-     *            Serializer class name for deserializing data stored in Accumulo
-     * @param ranges
-     *            List of Accumulo Ranges for this split
-     * @param constraints
-     *            List of constraints
-     * @param scanAuthorizations
-     *            Scan-time authorizations of the scanner, or null to use all user scan
-     *            authorizations
-     * @param hostPort
-     *            TabletServer host:port to give Presto a hint
+     * @param connectorId Presto connector ID
+     * @param schema Schema name
+     * @param table Table name
+     * @param rowId Presto column mapping to the Accumulo row ID
+     * @param serializerClassName Serializer class name for deserializing data stored in Accumulo
+     * @param ranges List of Accumulo Ranges for this split
+     * @param constraints List of constraints
+     * @param scanAuthorizations Scan-time authorizations of the scanner, or null to use all user scan
+     * authorizations
+     * @param hostPort TabletServer host:port to give Presto a hint
      */
     @JsonCreator
     public AccumuloSplit(@JsonProperty("connectorId") String connectorId,
@@ -208,8 +199,7 @@ public class AccumuloSplit
     /**
      * JSON setter function for the list of ranges
      *
-     * @param ranges
-     *            List of ranges
+     * @param ranges List of ranges
      */
     @JsonSetter
     public void setRanges(List<Range> ranges)
@@ -232,8 +222,7 @@ public class AccumuloSplit
      * Gets the Class object from the serializer class name
      *
      * @return Class object
-     * @throws PrestoException
-     *             If the class is not found on the classpath
+     * @throws PrestoException If the class is not found on the classpath
      */
     @SuppressWarnings("unchecked")
     @JsonIgnore

@@ -37,10 +37,8 @@ public class TabletSplitMetadata
     /**
      * JSON creator for a new instance of {@link TabletSplitMetadata}
      *
-     * @param hostPort
-     *            Host:port pair of the Accumulo tablet server
-     * @param ranges
-     *            List of Range objects for a single split
+     * @param hostPort Host:port pair of the Accumulo tablet server
+     * @param ranges List of Range objects for a single split
      */
     @JsonCreator
     public TabletSplitMetadata(@JsonProperty("hostPort") String hostPort,
@@ -75,8 +73,7 @@ public class TabletSplitMetadata
     /**
      * Sets the list of ra nge handles
      *
-     * @param ranges
-     *            List of range handles
+     * @param ranges List of range handles
      */
     @JsonSetter
     public void setRanges(List<Range> ranges)

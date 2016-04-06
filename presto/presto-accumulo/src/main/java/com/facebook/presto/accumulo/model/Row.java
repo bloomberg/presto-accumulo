@@ -40,7 +40,7 @@ import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 
 /**
  * Class to contain an entire Presto row, made up of {@link Field} objects.
- *
+ * <p>
  * Used by {@link AccumuloPageSink} for writing data as well as the
  * test cases.
  */
@@ -57,8 +57,7 @@ public class Row
     /**
      * Copy constructor from one Row to another
      *
-     * @param row
-     *            Row, copied
+     * @param row Row, copied
      */
     public Row(Row row)
     {
@@ -70,8 +69,7 @@ public class Row
     /**
      * Appends the given field to the end of the row
      *
-     * @param f
-     *            Field to append
+     * @param f Field to append
      * @return this, for fluent programming
      */
     public Row addField(Field f)
@@ -83,10 +81,8 @@ public class Row
     /**
      * Appends the a new {@link Field} of the given object and type to the end of the row
      *
-     * @param v
-     *            Value of the field
-     * @param t
-     *            Type of the field
+     * @param v Value of the field
+     * @param t Type of the field
      * @return this, for fluent programming
      */
     public Row addField(Object v, Type t)
@@ -98,11 +94,9 @@ public class Row
     /**
      * Gets the field at the given index
      *
-     * @param i
-     *            Index in the row to retrieve
+     * @param i Index in the row to retrieve
      * @return Field
-     * @throws IndexOutOfBoundsException
-     *             If the index is out of bounds
+     * @throws IndexOutOfBoundsException If the index is out of bounds
      */
     public Field getField(int i)
     {
@@ -172,17 +166,12 @@ public class Row
      * Creates a new {@link Row} from the given delimited string based on the given
      * {@link RowSchema}. Only supports plain Presto types
      *
-     * @param schema
-     *            Row's schema
-     * @param str
-     *            String to parse
-     * @param delimiter
-     *            Delimiter of the string
+     * @param schema Row's schema
+     * @param str String to parse
+     * @param delimiter Delimiter of the string
      * @return A new Row
-     * @throws PrestoException
-     *             If the length of the split string is not equal to the length of the
-     * @throws PrestoException
-     *             If the schema contains an unsupported type
+     * @throws PrestoException If the length of the split string is not equal to the length of the
+     * @throws PrestoException If the schema contains an unsupported type
      */
     public static Row fromString(RowSchema schema, String str, char delimiter)
     {

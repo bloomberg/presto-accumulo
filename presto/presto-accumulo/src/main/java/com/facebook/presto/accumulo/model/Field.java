@@ -46,7 +46,7 @@ import java.util.Objects;
 
 /**
  * Class to contain a single field within a Presto {@link Row}.
- *
+ * <p>
  * Used by {@link AccumuloPageSink} for writing data as well as the
  * test cases.
  */
@@ -60,12 +60,9 @@ public class Field
      * Constructs a new instance of {@link Field} with the given value and Presto type. Default is
      * not indexed.
      *
-     * @param v
-     *            Java object that matches the
-     * @param t
-     *            Presto type
-     * @throws PrestoException
-     *             If the given value is not or cannot be converted to the given Presto type
+     * @param v Java object that matches the
+     * @param t Presto type
+     * @throws PrestoException If the given value is not or cannot be converted to the given Presto type
      */
     public Field(Object v, Type t)
     {
@@ -75,14 +72,10 @@ public class Field
     /**
      * Constructs a new instance of {@link Field} with the given value and Presto type.
      *
-     * @param v
-     *            Java object that matches the
-     * @param t
-     *            Presto type
-     * @param indexed
-     *            True if this column is indexed, false otherwise
-     * @throws PrestoException
-     *             If the given value is not or cannot be converted to the given Presto type
+     * @param v Java object that matches the
+     * @param t Presto type
+     * @param indexed True if this column is indexed, false otherwise
+     * @throws PrestoException If the given value is not or cannot be converted to the given Presto type
      */
     public Field(Object v, Type t, boolean indexed)
     {
@@ -94,8 +87,7 @@ public class Field
     /**
      * Constructs a new {@link Field} from the given Field via shallow copy
      *
-     * @param f
-     *            Field to copy
+     * @param f Field to copy
      */
     public Field(Field f)
     {
@@ -150,8 +142,8 @@ public class Field
     /**
      * Gets the value of the field as a Block. For array types.
      *
-     * @see AccumuloRowSerializer#getArrayFromBlock
      * @return Value as Block
+     * @see AccumuloRowSerializer#getArrayFromBlock
      */
     public Block getArray()
     {
@@ -202,8 +194,7 @@ public class Field
      * Throws an exciting exception
      *
      * @return Maybe the interval date to second, someday
-     * @throws UnsupportedOperationException
-     *             Just because
+     * @throws UnsupportedOperationException Just because
      */
     public Object getIntervalDateToSecond()
     {
@@ -214,8 +205,7 @@ public class Field
      * Throws an exciting exception
      *
      * @return Maybe the interval year to month, someday
-     * @throws UnsupportedOperationException
-     *             Just because
+     * @throws UnsupportedOperationException Just because
      */
     public Object getIntervalYearToMonth()
     {
@@ -225,8 +215,8 @@ public class Field
     /**
      * Gets the value of the field as a Block. For map types.
      *
-     * @see AccumuloRowSerializer#getMapFromBlock
      * @return Value as Block
+     * @see AccumuloRowSerializer#getMapFromBlock
      */
     public Block getMap()
     {
@@ -257,8 +247,7 @@ public class Field
      * Throws an exciting exception
      *
      * @return Maybe the time stamp with time zone, someday
-     * @throws UnsupportedOperationException
-     *             Just because
+     * @throws UnsupportedOperationException Just because
      */
     public Object getTimestampWithTimeZone()
     {
@@ -279,8 +268,7 @@ public class Field
      * Throws an exciting exception
      *
      * @return Maybe the time with time zone, someday
-     * @throws UnsupportedOperationException
-     *             Just because
+     * @throws UnsupportedOperationException Just because
      */
     public Object getTimeWithTimeZone()
     {
@@ -465,7 +453,7 @@ public class Field
         else if (type instanceof TimestampType) {
             return "TIMESTAMP '" + ((Timestamp) value).toString() + "'";
         }
-        else if (type instanceof  VarbinaryType) {
+        else if (type instanceof VarbinaryType) {
             return "CAST('" + new String((byte[]) value) + "' AS VARBINARY)";
         }
         else if (type instanceof VarcharType) {
@@ -480,14 +468,11 @@ public class Field
     /**
      * Does it's damnedest job to convert the given object to the given type.
      *
-     * @param v
-     *            Object to convert
-     * @param t
-     *            Destination Presto type
+     * @param v Object to convert
+     * @param t Destination Presto type
      * @return Null if null, the converted type of it could convert it, or the same value if it is
-     *         fine just the way it is :D
-     * @throws PrestoException
-     *             If the given object is not any flavor of the given type
+     * fine just the way it is :D
+     * @throws PrestoException If the given object is not any flavor of the given type
      */
     private Object cleanObject(Object v, Type t)
     {

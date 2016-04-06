@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * An implementation of ConnectorTableLayoutHandle, containing constraints for an active query
- *
+ * <p>
  * Can't get this merged into AccumuloTable -.-
  */
 public class AccumuloTableLayoutHandle
@@ -39,10 +39,8 @@ public class AccumuloTableLayoutHandle
     /**
      * Creates a new instance of {@link AccumuloTableLayoutHandle}
      *
-     * @param table
-     *            {@link AccumuloTableHandle}
-     * @param constraint
-     *            Constraints against the table
+     * @param table {@link AccumuloTableHandle}
+     * @param constraint Constraints against the table
      */
     @JsonCreator
     public AccumuloTableLayoutHandle(@JsonProperty("table") AccumuloTableHandle table, @JsonProperty("constraint") TupleDomain<ColumnHandle> constraint)

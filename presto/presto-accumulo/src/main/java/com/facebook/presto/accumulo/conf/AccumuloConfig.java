@@ -68,8 +68,7 @@ public class AccumuloConfig
     /**
      * Sets the Accumulo instance name
      *
-     * @param instance
-     *            Accumulo instance name
+     * @param instance Accumulo instance name
      * @return this, for chaining
      */
     @Config(INSTANCE)
@@ -93,8 +92,7 @@ public class AccumuloConfig
     /**
      * Sets the ZooKeeper quorum connect string
      *
-     * @param zooKeepers
-     *            ZooKeeper connect string
+     * @param zooKeepers ZooKeeper connect string
      * @return this, for chaining
      */
     @Config(ZOOKEEPERS)
@@ -119,8 +117,7 @@ public class AccumuloConfig
      * Sets the user to use when interacting with Accumulo. This user will require administrative
      * permissions
      *
-     * @param username
-     *            Accumulo user name
+     * @param username Accumulo user name
      * @return this, for chaining
      */
     @Config(USERNAME)
@@ -144,8 +141,7 @@ public class AccumuloConfig
     /**
      * Sets the password for the configured user
      *
-     * @param password
-     *            Accumulo password
+     * @param password Accumulo password
      * @return this, for chaining
      */
     @Config(PASSWORD)
@@ -169,8 +165,7 @@ public class AccumuloConfig
     /**
      * Sets the root znode for metadata storage
      *
-     * @param zkMetadataRoot
-     *            Root znode
+     * @param zkMetadataRoot Root znode
      */
     @Config(ZOOKEEPER_METADATA_ROOT)
     public void setZkMetadataRoot(String zkMetadataRoot)
@@ -183,8 +178,7 @@ public class AccumuloConfig
      * {@link AccumuloMetadataManager#getDefault}
      *
      * @return Configured AccumuloMetadataManager
-     * @throws PrestoException
-     *             If an instance of the configured manager is unable to be created
+     * @throws PrestoException If an instance of the configured manager is unable to be created
      */
     public AccumuloMetadataManager getMetadataManager()
     {
@@ -192,7 +186,7 @@ public class AccumuloConfig
             return metaManClass == null || metaManClass.equals("default")
                     ? AccumuloMetadataManager.getDefault(this)
                     : (AccumuloMetadataManager) Class.forName(metaManClass)
-                            .getConstructor(AccumuloConfig.class).newInstance(this);
+                    .getConstructor(AccumuloConfig.class).newInstance(this);
         }
         catch (InstantiationException | IllegalAccessException | ClassNotFoundException
                 | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
@@ -219,8 +213,7 @@ public class AccumuloConfig
     /**
      * Sets the AccumulMetadataManager class
      *
-     * @param mmClass
-     *            Class name of metadata manager, or default
+     * @param mmClass Class name of metadata manager, or default
      */
     @Config(METADATA_MANAGER_CLASS)
     public void setMetadataManagerClass(String mmClass)
@@ -242,8 +235,7 @@ public class AccumuloConfig
     /**
      * Sets the cardinality cache size
      *
-     * @param cardinalityCacheSize
-     *            Size of the cache
+     * @param cardinalityCacheSize Size of the cache
      */
     @Config(CARDINALITY_CACHE_SIZE)
     public void setCardinalityCacheSize(int cardinalityCacheSize)
@@ -266,8 +258,7 @@ public class AccumuloConfig
     /**
      * Sets the cardinality cache expiration
      *
-     * @param cardinalityCacheExpireSeconds
-     *            Cache expiration value
+     * @param cardinalityCacheExpireSeconds Cache expiration value
      */
     @Config(CARDINALITY_CACHE_EXPIRE_SECONDS)
     public void setCardinalityCacheExpireSeconds(int cardinalityCacheExpireSeconds)

@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Bloomberg L.P.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -131,10 +131,10 @@ public class SingleColumnValueFilter
     {
 
         return new IteratorOptions("singlecolumnvaluefilter", "Filter accepts or rejects each Key/Value pair based on the lexicographic comparison of a value stored in a single column family/qualifier",
-        // @formatter:off
+                // @formatter:off
         ImmutableMap.<String, String>builder().put(CF, "column family to match on, required").put(CQ, "column qualifier to match on, required").put(COMPARE_OP, "CompareOp enum type for lexicographic comparison, required").put(VALUE, "Hex-encoded bytes of the value for comparison, required").build(),
         // @formatter:on
-        null);
+                null);
     }
 
     @Override

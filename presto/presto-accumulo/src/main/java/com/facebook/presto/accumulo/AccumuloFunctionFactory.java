@@ -36,8 +36,7 @@ public class AccumuloFunctionFactory
     /**
      * Creates a new instance of {@link AccumuloFunctionFactory}
      *
-     * @param typeManager
-     *            Type manager
+     * @param typeManager Type manager
      */
     public AccumuloFunctionFactory(TypeManager typeManager)
     {
@@ -47,8 +46,8 @@ public class AccumuloFunctionFactory
     /**
      * Lists all SqlFunctions provided by this connector
      *
-     * @see AccumuloStringFunctions
      * @return A list of SQL functions
+     * @see AccumuloStringFunctions
      */
     @Override
     public List<SqlFunction> listFunctions()

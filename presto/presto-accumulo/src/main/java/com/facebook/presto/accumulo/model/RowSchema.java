@@ -42,10 +42,8 @@ public class RowSchema
     /**
      * Adds the Row ID column to the schema
      *
-     * @param name
-     *            Name of the row ID column
-     * @param type
-     *            Presto type of the column
+     * @param name Name of the row ID column
+     * @param type Presto type of the column
      * @return this, for chaining
      */
     public RowSchema addRowId(String name, Type type)
@@ -58,14 +56,10 @@ public class RowSchema
     /**
      * Appends a new non-indexed column to the end of the schema.
      *
-     * @param prestoName
-     *            Presto column name
-     * @param family
-     *            Accumulo column family
-     * @param qualifier
-     *            Accumulo column qualifier
-     * @param type
-     *            Presto type of the column
+     * @param prestoName Presto column name
+     * @param family Accumulo column family
+     * @param qualifier Accumulo column qualifier
+     * @param type Presto type of the column
      * @return this, for schema
      */
     public RowSchema addColumn(String prestoName, String family, String qualifier, Type type)
@@ -76,16 +70,11 @@ public class RowSchema
     /**
      * Appends a new column to the end of the schema.
      *
-     * @param prestoName
-     *            Presto column name
-     * @param family
-     *            Accumulo column family
-     * @param qualifier
-     *            Accumulo column qualifier
-     * @param type
-     *            Presto type of the column
-     * @param indexed
-     *            True if indexed, false otherwise
+     * @param prestoName Presto column name
+     * @param family Accumulo column family
+     * @param qualifier Accumulo column qualifier
+     * @param type Presto type of the column
+     * @param indexed True if indexed, false otherwise
      * @return this, for schema
      */
     public RowSchema addColumn(String prestoName, String family, String qualifier, Type type,
@@ -101,11 +90,9 @@ public class RowSchema
     /**
      * Gets the column handle at the given zero-based indexed
      *
-     * @param i
-     *            Index to retrieve
+     * @param i Index to retrieve
      * @return The column handle
-     * @throws IndexOutOfBoundsException
-     *             If the index is larger than the length
+     * @throws IndexOutOfBoundsException If the index is larger than the length
      */
     public AccumuloColumnHandle getColumn(int i)
     {
@@ -115,11 +102,9 @@ public class RowSchema
     /**
      * Gets the column handle that matches the given Presto column name
      *
-     * @param name
-     *            Presto column name
+     * @param name Presto column name
      * @return The column handle
-     * @throws PrestoException
-     *             If the column is not found
+     * @throws PrestoException If the column is not found
      */
     public AccumuloColumnHandle getColumn(String name)
     {
@@ -156,8 +141,7 @@ public class RowSchema
      * Creates a new {@link RowSchema} from a list of {@link AccumuloColumnHandle} objects. Does not
      * validate the schema.
      *
-     * @param cols
-     *            Column handles
+     * @param cols Column handles
      * @return Row schema
      */
     public static RowSchema fromColumns(List<AccumuloColumnHandle> cols)

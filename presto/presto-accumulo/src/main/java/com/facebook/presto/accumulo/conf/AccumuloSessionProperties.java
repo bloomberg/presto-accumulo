@@ -100,7 +100,7 @@ public final class AccumuloSessionProperties
                 .01, false);
         PropertyMetadata<Boolean> s8 = booleanSessionProperty(INT_INDEX_METRICS_ENABLED,
                 "Set to true to enable usage of the metrics table to optimize usage of the index.  "
-                + "Default true", true, false);
+                        + "Default true", true, false);
         PropertyMetadata<String> s9 =
                 stringSessionProperty(INT_SCAN_USERNAME,
                         "User to impersonate when scanning the tables.  "
@@ -123,8 +123,7 @@ public final class AccumuloSessionProperties
     /**
      * Gets a Boolean value indicating whether or not the column filter optimization is enabled.
      *
-     * @param session
-     *            The current session
+     * @param session The current session
      * @return True if enabled, false otherwise
      */
     public static boolean isOptimizeColumnFiltersEnabled(ConnectorSession session)
@@ -135,8 +134,7 @@ public final class AccumuloSessionProperties
     /**
      * Gets a Boolean value indicating whether or not the locality optimization is enabled.
      *
-     * @param session
-     *            The current session
+     * @param session The current session
      * @return True if enabled, false otherwise
      */
     public static boolean isOptimizeLocalityEnabled(ConnectorSession session)
@@ -148,8 +146,7 @@ public final class AccumuloSessionProperties
      * Gets a Boolean value indicating whether or not ranges in non-indexed scans will
      * be split on tablets
      *
-     * @param session
-     *            The current session
+     * @param session The current session
      * @return True if enabled, false otherwise
      */
     public static boolean isOptimizeSplitRangesEnabled(ConnectorSession session)
@@ -160,8 +157,7 @@ public final class AccumuloSessionProperties
     /**
      * Gets a Boolean value indicating whether or not utilization of the index is enabled
      *
-     * @param session
-     *            The current session
+     * @param session The current session
      * @return True if enabled, false otherwise
      */
     public static boolean isOptimizeIndexEnabled(ConnectorSession session)
@@ -175,8 +171,7 @@ public final class AccumuloSessionProperties
      * Queries that would scan a percentage of the tablet greater than this value will
      * execute a full table scan instead.
      *
-     * @param session
-     *            The current session
+     * @param session The current session
      * @return The index threshold, 0 - 1
      */
     public static double getIndexThreshold(ConnectorSession session)
@@ -187,8 +182,7 @@ public final class AccumuloSessionProperties
     /**
      * Gets the number of rows IDs, retrieved from the index, to pack into a single Presto split
      *
-     * @param session
-     *            The current session
+     * @param session The current session
      * @return The number of rows to put in a single split
      */
     public static int getNumIndexRowsPerSplit(ConnectorSession session)
@@ -204,8 +198,7 @@ public final class AccumuloSessionProperties
      * but if the column with the lowest cardinality is significantly small, we can just use these
      * rows and let Presto filter out the rows that do not match the remaining predicates.
      *
-     * @param session
-     *            The current session
+     * @param session The current session
      * @return The index threshold, 0 - 1
      */
     public static double getIndexSmallCardThreshold(ConnectorSession session)
@@ -216,8 +209,7 @@ public final class AccumuloSessionProperties
     /**
      * Gets a Boolean value indicating whether or not utilization of the index metrics is enabled
      *
-     * @param session
-     *            The current session
+     * @param session The current session
      * @return True if enabled, false otherwise
      */
     public static boolean isIndexMetricsEnabled(ConnectorSession session)
@@ -228,8 +220,7 @@ public final class AccumuloSessionProperties
     /**
      * Gets the user to impersonate during the scan of a table
      *
-     * @param session
-     *            The current session
+     * @param session The current session
      * @return The set user, or null if not set
      */
     public static String getScanUsername(ConnectorSession session)

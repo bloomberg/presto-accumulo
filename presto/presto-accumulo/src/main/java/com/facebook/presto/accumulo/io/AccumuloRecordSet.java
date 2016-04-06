@@ -61,16 +61,11 @@ public class AccumuloRecordSet
     /**
      * Creates a new instance of {@link AccumuloRecordSet}
      *
-     * @param session
-     *            Current client session
-     * @param config
-     *            Connector configuration
-     * @param split
-     *            Split to process
-     * @param columnHandles
-     *            Columns of the table
-     * @param conn
-     *            Accumulo connector
+     * @param session Current client session
+     * @param config Connector configuration
+     * @param split Split to process
+     * @param columnHandles Columns of the table
+     * @param conn Accumulo connector
      */
     public AccumuloRecordSet(ConnectorSession session, AccumuloConfig config, AccumuloSplit split,
             List<AccumuloColumnHandle> columnHandles, Connector conn)
@@ -115,19 +110,13 @@ public class AccumuloRecordSet
      * In order of priority: session username authorizations, then table property, then the default
      * connector auths
      *
-     * @param session
-     *            Current session
-     * @param split
-     *            Accumulo split
-     * @param config
-     *            Connector config
-     * @param conn
-     *            Accumulo connector
+     * @param session Current session
+     * @param split Accumulo split
+     * @param config Connector config
+     * @param conn Accumulo connector
      * @return Scan authorizations
-     * @throws AccumuloException
-     *             If a generic Accumulo error occurs
-     * @throws AccumuloSecurityException
-     *             If a security exception occurs
+     * @throws AccumuloException If a generic Accumulo error occurs
+     * @throws AccumuloSecurityException If a security exception occurs
      */
     private Authorizations getScanAuthorizations(ConnectorSession session, AccumuloSplit split,
             AccumuloConfig config, Connector conn)

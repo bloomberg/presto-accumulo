@@ -76,10 +76,8 @@ public class AccumuloMetadata
      * Begins the process of creating a table with the given metadata. This process of
      * begin/commit/rollback is used for CTAS statements.
      *
-     * @param session
-     *            Current client session
-     * @param tableMetadata
-     *            Table metadata to create
+     * @param session Current client session
+     * @param tableMetadata Table metadata to create
      * @return Output table handle
      */
     @Override
@@ -96,12 +94,9 @@ public class AccumuloMetadata
     /**
      * Commit the table creation.
      *
-     * @param session
-     *            Current client session
-     * @param tableHandle
-     *            Output table handle
-     * @param fragments
-     *            Collection of fragment metadata
+     * @param session Current client session
+     * @param tableHandle Output table handle
+     * @param fragments Collection of fragment metadata
      */
     @Override
     public void commitCreateTable(ConnectorSession session, ConnectorOutputTableHandle tableHandle,
@@ -116,10 +111,8 @@ public class AccumuloMetadata
     /**
      * Rollback the table creation
      *
-     * @param session
-     *            Current client session
-     * @param tableHandle
-     *            Table handle to delete
+     * @param session Current client session
+     * @param tableHandle Table handle to delete
      */
     @Override
     public void rollbackCreateTable(ConnectorSession session,
@@ -134,10 +127,8 @@ public class AccumuloMetadata
     /**
      * Create the table metadata
      *
-     * @param session
-     *            Current client session
-     * @param tableMetadata
-     *            Table metadata to create
+     * @param session Current client session
+     * @param tableMetadata Table metadata to create
      */
     @Override
     public void createTable(ConnectorSession session, ConnectorTableMetadata tableMetadata)
@@ -148,10 +139,8 @@ public class AccumuloMetadata
     /**
      * Create the table metadata
      *
-     * @param session
-     *            Current client session
-     * @param tableHandle
-     *            Table metadata to drop
+     * @param session Current client session
+     * @param tableHandle Table metadata to drop
      */
     @Override
     public void dropTable(ConnectorSession session, ConnectorTableHandle tableHandle)
@@ -163,12 +152,9 @@ public class AccumuloMetadata
     /**
      * Renames the given table to the new table name
      *
-     * @param session
-     *            Current client session
-     * @param tableHandle
-     *            Table metadata to rename
-     * @param newTableName
-     *            New table name!
+     * @param session Current client session
+     * @param tableHandle Table metadata to rename
+     * @param newTableName New table name!
      */
     @Override
     public void renameTable(ConnectorSession session, ConnectorTableHandle tableHandle,
@@ -186,14 +172,10 @@ public class AccumuloMetadata
     /**
      * Create the view metadata
      *
-     * @param session
-     *            Current client session
-     * @param viewName
-     *            Name of the view to create
-     * @param viewData
-     *            Data of the view
-     * @param replace
-     *            True to replace any existing view, false otherwise
+     * @param session Current client session
+     * @param viewName Name of the view to create
+     * @param viewData Data of the view
+     * @param replace True to replace any existing view, false otherwise
      */
     @Override
     public void createView(ConnectorSession session, SchemaTableName viewName, String viewData, boolean replace)
@@ -205,10 +187,8 @@ public class AccumuloMetadata
     /**
      * Drop the view metadata
      *
-     * @param session
-     *            Current client session
-     * @param viewName
-     *            Name of the view to create
+     * @param session Current client session
+     * @param viewName Name of the view to create
      */
     @Override
     public void dropView(ConnectorSession session, SchemaTableName viewName)
@@ -220,10 +200,8 @@ public class AccumuloMetadata
     /**
      * Gets all views that match the given prefix
      *
-     * @param session
-     *            Current client session
-     * @param prefix
-     *            View prefix
+     * @param session Current client session
+     * @param prefix View prefix
      * @return Map of view names to the definition
      */
     @Override
@@ -241,10 +219,8 @@ public class AccumuloMetadata
     /**
      * Gets all views in the given schema, or all schemas if null
      *
-     * @param session
-     *            Current client session
-     * @param schemaNameOrNull
-     *            Schema to list for the views, or null to list all schemas
+     * @param session Current client session
+     * @param schemaNameOrNull Schema to list for the views, or null to list all schemas
      * @return List of views
      */
     @Override
@@ -256,8 +232,7 @@ public class AccumuloMetadata
     /**
      * Gets all views in the given schema, or all schemas if null
      *
-     * @param schemaNameOrNull
-     *            Schema to list for the views, or null to list all schemas
+     * @param schemaNameOrNull Schema to list for the views, or null to list all schemas
      * @return List of views
      */
     private List<SchemaTableName> listViews(String schemaNameOrNull)
@@ -284,10 +259,8 @@ public class AccumuloMetadata
     /**
      * Begin an insert of data into an Accumulo table. This is for new inserts, not for a CTAS.
      *
-     * @param session
-     *            Current client session
-     * @param tableHandle
-     *            Table handle for the insert
+     * @param session Current client session
+     * @param tableHandle Table handle for the insert
      * @return Insert handle for the table
      */
     @Override
@@ -303,12 +276,9 @@ public class AccumuloMetadata
     /**
      * Commit the insert
      *
-     * @param session
-     *            Current client session
-     * @param insertHandle
-     *            Table handle
-     * @param fragments
-     *            Collection of fragment metadata
+     * @param session Current client session
+     * @param insertHandle Table handle
+     * @param fragments Collection of fragment metadata
      */
     @Override
     public void commitInsert(ConnectorSession session, ConnectorInsertTableHandle insertHandle,
@@ -323,10 +293,8 @@ public class AccumuloMetadata
     /**
      * Rollback the insert, which is not supported by this connector
      *
-     * @param session
-     *            Current client session
-     * @param insertHandle
-     *            Table handle
+     * @param session Current client session
+     * @param insertHandle Table handle
      */
     @Override
     public void rollbackInsert(ConnectorSession session, ConnectorInsertTableHandle insertHandle)
@@ -341,10 +309,8 @@ public class AccumuloMetadata
     /**
      * Gets an instance of a TableHandle based on the given name
      *
-     * @param session
-     *            Current client session
-     * @param stName
-     *            Table name
+     * @param session Current client session
+     * @param stName Table name
      * @return Table handle or null if the table does not exist
      */
     @Override
@@ -373,14 +339,10 @@ public class AccumuloMetadata
     /**
      * Gets all table layouts of the given table with the given constraints
      *
-     * @param session
-     *            Current client session
-     * @param table
-     *            Table handle
-     * @param constraint
-     *            Column constraints of the query
-     * @param desiredColumns
-     *            Column handles requested in the query
+     * @param session Current client session
+     * @param table Table handle
+     * @param constraint Column constraints of the query
+     * @param desiredColumns Column handles requested in the query
      * @return List of table layouts
      */
     @Override
@@ -397,10 +359,8 @@ public class AccumuloMetadata
     /**
      * Gets a table layout from the given handle
      *
-     * @param session
-     *            Current client session
-     * @param handle
-     *            Table handle
+     * @param session Current client session
+     * @param handle Table handle
      * @return Table layout
      */
     @Override
@@ -414,10 +374,8 @@ public class AccumuloMetadata
     /**
      * Gets table metadata for the given handle
      *
-     * @param session
-     *            Current client session
-     * @param table
-     *            Table handle
+     * @param session Current client session
+     * @param table Table handle
      * @return Metadata for the given table handle
      */
     @Override
@@ -433,10 +391,8 @@ public class AccumuloMetadata
     /**
      * Gets all available column handles for the requested table
      *
-     * @param session
-     *            client session
-     * @param tableHandle
-     *            Table handle
+     * @param session client session
+     * @param tableHandle Table handle
      * @return Mapping of Presto column name to column handle
      */
     @Override
@@ -471,19 +427,15 @@ public class AccumuloMetadata
 
     /**
      * Renames the given column of the given table to a new column name.
-     *
+     * <p>
      * Note that this operation is an alias-only change. The Presto column mapping is unchanged,
      * i.e. the Accumulo column family and qualifier are not updated, so the queried data will
      * remain the same.
      *
-     * @param session
-     *            client session
-     * @param tableHandle
-     *            Table handle
-     * @param source
-     *            Column handle to rename
-     * @param target
-     *            New column name
+     * @param session client session
+     * @param tableHandle Table handle
+     * @param source Column handle to rename
+     * @param target New column name
      */
     @Override
     public void renameColumn(ConnectorSession session, ConnectorTableHandle tableHandle,
@@ -500,9 +452,8 @@ public class AccumuloMetadata
     /**
      * List all existing schemas
      *
+     * @param session Current client session
      * @see AccumuloClient#getSchemaNames
-     * @param session
-     *            Current client session
      */
     @Override
     public List<String> listSchemaNames(ConnectorSession session)
@@ -513,10 +464,8 @@ public class AccumuloMetadata
     /**
      * List all tables for a given schema, or null for all schemas
      *
-     * @param session
-     *            Current client session
-     * @param schemaNameOrNull
-     *            Schema name to list tables for, or null if all tables
+     * @param session Current client session
+     * @param schemaNameOrNull Schema name to list tables for, or null if all tables
      */
     @Override
     public List<SchemaTableName> listTables(ConnectorSession session, String schemaNameOrNull)
@@ -541,10 +490,8 @@ public class AccumuloMetadata
     /**
      * Lists all of the columns for each provided schema table
      *
-     * @param session
-     *            Current client session
-     * @param prefix
-     *            Table prefix
+     * @param session Current client session
+     * @param prefix Table prefix
      * @return Mapping of table names with the given prefix to columns
      */
     @Override
@@ -567,8 +514,7 @@ public class AccumuloMetadata
     /**
      * Gets metadata for the given table
      *
-     * @param stn
-     *            Schema and table name
+     * @param stn Schema and table name
      * @return Table metadata, or null if schema/table does not exist
      */
     private ConnectorTableMetadata getTableMetadata(SchemaTableName stn)
@@ -594,10 +540,8 @@ public class AccumuloMetadata
     /**
      * List all tables with the given prefix
      *
-     * @param session
-     *            Current client session
-     * @param prefix
-     *            Table prefix
+     * @param session Current client session
+     * @param prefix Table prefix
      * @return List of table names with the given schema and/or table name, which could be one table
      */
     private List<SchemaTableName> listTables(ConnectorSession session, SchemaTablePrefix prefix)

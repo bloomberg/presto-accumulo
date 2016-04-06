@@ -97,9 +97,9 @@ public final class AccumuloTableProperties
                         x -> x.equals("default")
                                 ? AccumuloRowSerializer.getDefault().getClass().getName()
                                 : (x.equals("string") ? StringRowSerializer.class.getName()
-                                        : (x.equals("lexicoder")
-                                                ? LexicoderRowSerializer.class.getName()
-                                                : (String) x)));
+                                : (x.equals("lexicoder")
+                                ? LexicoderRowSerializer.class.getName()
+                                : (String) x)));
 
         PropertyMetadata<String> s7 = stringSessionProperty(SCAN_AUTHS,
                 "Scan-time authorizations set on the batch scanner.  Default is all scan authorizations for the user",
@@ -122,8 +122,7 @@ public final class AccumuloTableProperties
      * Gets the value of the column_mapping property and parses it into a map of Presto column name
      * to a pair of strings, the Accumulo column family and qualifier.
      *
-     * @param tableProperties
-     *            The map of table properties
+     * @param tableProperties The map of table properties
      * @return The column mapping, presto name to (accumulo column family, qualifier)
      */
     public static Map<String, Pair<String, String>> getColumnMapping(
@@ -158,8 +157,7 @@ public final class AccumuloTableProperties
     /**
      * Gets the list of all indexed columns set in the table properties
      *
-     * @param tableProperties
-     *            The map of table properties
+     * @param tableProperties The map of table properties
      * @return The list of indexed columns, or an empty list if there are none
      */
     public static List<String> getIndexColumns(Map<String, Object> tableProperties)
@@ -170,8 +168,7 @@ public final class AccumuloTableProperties
     /**
      * Gets the configured locality groups for the table.
      *
-     * @param tableProperties
-     *            The map of table properties
+     * @param tableProperties The map of table properties
      * @return The map of locality groups, or null if not set
      */
     public static Map<String, Set<Text>> getLocalityGroups(Map<String, Object> tableProperties)
@@ -209,8 +206,7 @@ public final class AccumuloTableProperties
     /**
      * Gets the configured row ID for the table
      *
-     * @param tableProperties
-     *            The map of table properties
+     * @param tableProperties The map of table properties
      * @return The row ID, or null if none was specifically set (use the first column)
      */
     public static String getRowId(Map<String, Object> tableProperties)
@@ -221,8 +217,7 @@ public final class AccumuloTableProperties
     /**
      * Gets the scan authorizations, or null if all of the user's scan authorizations should be used
      *
-     * @param tableProperties
-     *            The map of table properties
+     * @param tableProperties The map of table properties
      * @return The scan authorizations
      */
     public static String getScanAuthorizations(Map<String, Object> tableProperties)
@@ -233,8 +228,7 @@ public final class AccumuloTableProperties
     /**
      * Gets the {@link AccumuloRowSerializer} class name to use for this table
      *
-     * @param tableProperties
-     *            The map of table properties
+     * @param tableProperties The map of table properties
      * @return The name of the AccumuloRowSerializer class
      */
     public static String getSerializerClass(Map<String, Object> tableProperties)
@@ -246,8 +240,7 @@ public final class AccumuloTableProperties
      * Gets a Boolean value indicating whether or not the given table properties have locality
      * groups set.
      *
-     * @param tableProperties
-     *            The map of table properties
+     * @param tableProperties The map of table properties
      * @return True if locality groups is set, false otherwise
      */
     public static boolean hasLocalityGroups(Map<String, Object> tableProperties)
@@ -259,8 +252,7 @@ public final class AccumuloTableProperties
      * Gets a Boolean value indicating whether or not this table is external and Presto should only
      * manage metadata
      *
-     * @param tableProperties
-     *            The map of table properties
+     * @param tableProperties The map of table properties
      * @return True if the table is external, false otherwise
      */
     public static boolean isExternal(Map<String, Object> tableProperties)

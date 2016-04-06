@@ -87,16 +87,11 @@ public class AccumuloRecordCursor
     /**
      * Creates a new instance of {@link AccumuloRecordCursor}
      *
-     * @param serializer
-     *            Serializer to decode the data stored in Accumulo
-     * @param scan
-     *            BatchScanner for retrieving rows of data
-     * @param rowIdName
-     *            Presto column that is the Accumulo row ID
-     * @param cHandles
-     *            List of column handles in each row
-     * @param constraints
-     *            List of all column constraints
+     * @param serializer Serializer to decode the data stored in Accumulo
+     * @param scan BatchScanner for retrieving rows of data
+     * @param rowIdName Presto column that is the Accumulo row ID
+     * @param cHandles List of column handles in each row
+     * @param constraints List of all column constraints
      */
     public AccumuloRecordCursor(AccumuloRowSerializer serializer, BatchScanner scan,
             String rowIdName, List<AccumuloColumnHandle> cHandles,
@@ -193,8 +188,7 @@ public class AccumuloRecordCursor
     /**
      * Gets the Presto type for the given field ordinal
      *
-     * @param field
-     *            Ordinal of the field aka column
+     * @param field Ordinal of the field aka column
      * @return Presto type for this field
      */
     @Override
@@ -291,8 +285,7 @@ public class AccumuloRecordCursor
     /**
      * Gets a Boolean value indicating if the field is null
      *
-     * @param field
-     *            Ordinal of the field
+     * @param field Ordinal of the field
      * @return True if null, false otherwise
      */
     @Override
@@ -305,8 +298,7 @@ public class AccumuloRecordCursor
     /**
      * Gets a Boolean value from the given field ordinal
      *
-     * @param field
-     *            Ordinal of the field
+     * @param field Ordinal of the field
      * @return The value of the field
      */
     @Override
@@ -319,8 +311,7 @@ public class AccumuloRecordCursor
     /**
      * Gets a Double value from the given field ordinal
      *
-     * @param field
-     *            Ordinal of the field
+     * @param field Ordinal of the field
      * @return The value of the field
      */
     @Override
@@ -333,8 +324,7 @@ public class AccumuloRecordCursor
     /**
      * Gets a Long value from the given field ordinal
      *
-     * @param field
-     *            Ordinal of the field
+     * @param field Ordinal of the field
      * @return The value of the field
      */
     @Override
@@ -359,8 +349,7 @@ public class AccumuloRecordCursor
     /**
      * Gets an Object value from the given field ordinal. This is called for array and map types.
      *
-     * @param field
-     *            Ordinal of the field
+     * @param field Ordinal of the field
      * @return The value of the field
      */
     @Override
@@ -381,8 +370,7 @@ public class AccumuloRecordCursor
     /**
      * Gets a Slice value from the given field ordinal, which is a VARCHAR or VARBINARY type.
      *
-     * @param field
-     *            Ordinal of the field
+     * @param field Ordinal of the field
      * @return The value of the field
      */
     @Override
@@ -397,8 +385,8 @@ public class AccumuloRecordCursor
             return Slices.utf8Slice(serializer.getVarchar(fieldToColumnName[field]));
         }
         else {
-                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
-                        "Unsupported type " + type);
+            throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                    "Unsupported type " + type);
         }
     }
 
@@ -415,12 +403,9 @@ public class AccumuloRecordCursor
     /**
      * Checks that the given field is one of the provided types
      *
-     * @param field
-     *            Ordinal of the field
-     * @param expected
-     *            An array of expected types
-     * @throws IllegalArgumentException
-     *             If the given field does not match one of the types
+     * @param field Ordinal of the field
+     * @param expected An array of expected types
+     * @throws IllegalArgumentException If the given field does not match one of the types
      */
     private void checkFieldType(int field, Type... expected)
     {
@@ -439,8 +424,7 @@ public class AccumuloRecordCursor
      * Configures the custom column iterators to the batch scanner based on the predicate pushdown
      * constraints.
      *
-     * @param constraints
-     *            A list of all column constraints to configure the iterators
+     * @param constraints A list of all column constraints to configure the iterators
      */
     private void addColumnIterators(List<AccumuloColumnConstraint> constraints)
     {
@@ -509,11 +493,9 @@ public class AccumuloRecordCursor
     /**
      * Gets settings for a NullRowFilter based on the column constraint
      *
-     * @param col
-     *            Column constraint
-     * @param priority
-     *            Priority of this setting, which is arbitrary in the long run since only one
-     *            iterator is set.
+     * @param col Column constraint
+     * @param priority Priority of this setting, which is arbitrary in the long run since only one
+     * iterator is set.
      * @return Iterator settings
      */
     private IteratorSetting getNullFilterSetting(AccumuloColumnConstraint col,
@@ -527,13 +509,10 @@ public class AccumuloRecordCursor
     /**
      * Gets settings for a SingleColumnValueFilter based on the given column constraint and range.
      *
-     * @param col
-     *            Column constraint
-     * @param r
-     *            Presto range to retrieve values for the column filter
-     * @param priority
-     *            Priority of this setting, which is arbitrary in the long run since only one
-     *            iterator is set.
+     * @param col Column constraint
+     * @param r Presto range to retrieve values for the column filter
+     * @param priority Priority of this setting, which is arbitrary in the long run since only one
+     * iterator is set.
      * @return Iterator setting, or null if the Range is all values
      */
     private IteratorSetting getFilterSettingFromRange(AccumuloColumnConstraint col, Range r,
@@ -583,16 +562,11 @@ public class AccumuloRecordCursor
     /**
      * Helper function to limit some code from getFilterSettingFromRange
      *
-     * @param priority
-     *            Priority of the iterator
-     * @param col
-     *            Column constraint
-     * @param op
-     *            Comparison operator for the SingleColumnValueFilter
-     * @param type
-     *            Presto type
-     * @param value
-     *            Value for the iterator
+     * @param priority Priority of the iterator
+     * @param col Column constraint
+     * @param op Comparison operator for the SingleColumnValueFilter
+     * @param type Presto type
+     * @param value Value for the iterator
      * @return Fresh iterator settings
      */
     private IteratorSetting getIteratorSetting(AtomicInteger priority, AccumuloColumnConstraint col,

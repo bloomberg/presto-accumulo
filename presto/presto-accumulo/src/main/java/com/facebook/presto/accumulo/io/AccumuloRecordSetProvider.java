@@ -73,12 +73,9 @@ public class AccumuloRecordSetProvider
     /**
      * Gets a record set to read data from the given split and columns.
      *
-     * @param session
-     *            Current client session
-     * @param split
-     *            Split to read
-     * @param columns
-     *            Column handles of the table
+     * @param session Current client session
+     * @param split Split to read
+     * @param columns Column handles of the table
      */
     @Override
     public RecordSet getRecordSet(ConnectorSession session, ConnectorSplit split,

@@ -70,12 +70,9 @@ public class IndexLookup
     /**
      * Creates a new instance of {@link IndexLookup}
      *
-     * @param conn
-     *            Accumulo connector
-     * @param config
-     *            Presto config for Accumulo connector
-     * @param auths
-     *            Authorizations for the scanners
+     * @param conn Accumulo connector
+     * @param config Presto config for Accumulo connector
+     * @param auths Authorizations for the scanners
      */
     public IndexLookup(Connector conn, AccumuloConfig config, Authorizations auths)
     {
@@ -97,24 +94,16 @@ public class IndexLookup
      * used by the secondary index is greater than the configured threshold (again retrieved from
      * the session).
      *
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table name
-     * @param session
-     *            Current client session
-     * @param constraints
-     *            All column constraints (this method will filter for if the column is indexed)
-     * @param rowIdRanges
-     *            Collection of Accumulo ranges based on any predicate against a record key
-     * @param tabletSplits
-     *            Output parameter containing the bundles of row IDs determined by the use of the
-     *            index.
-     * @param serializer
-     *            Instance of a row serializer
+     * @param schema Schema name
+     * @param table Table name
+     * @param session Current client session
+     * @param constraints All column constraints (this method will filter for if the column is indexed)
+     * @param rowIdRanges Collection of Accumulo ranges based on any predicate against a record key
+     * @param tabletSplits Output parameter containing the bundles of row IDs determined by the use of the
+     * index.
+     * @param serializer Instance of a row serializer
      * @return True if the tablet splits are valid and should be used, false otherwise
-     * @throws Exception
-     *             If something bad happens. What are the odds?
+     * @throws Exception If something bad happens. What are the odds?
      */
     public boolean applyIndex(String schema, String table, ConnectorSession session,
             Collection<AccumuloColumnConstraint> constraints, Collection<Range> rowIdRanges,
@@ -259,12 +248,9 @@ public class IndexLookup
     /**
      * Gets a Boolean value indicating if the smallest cardinality is above the small card threshold
      *
-     * @param session
-     *            Current client session
-     * @param numRows
-     *            Number of rows in the table
-     * @param cardinalities
-     *            Sorted list of cardinalities
+     * @param session Current client session
+     * @param numRows Number of rows in the table
+     * @param cardinalities Sorted list of cardinalities
      * @return True if the ratio is greater than the configured threshold, false otherwise
      */
     private boolean smallestCardAboveThreshold(ConnectorSession session, long numRows,
@@ -281,11 +267,9 @@ public class IndexLookup
     /**
      * Gets the number of rows from the given metrics table
      *
-     * @param metricsTable
-     *            Metrics table to scan for number of rows
+     * @param metricsTable Metrics table to scan for number of rows
      * @return Estimated number of rows in the table
-     * @throws TableNotFoundException
-     *             If the metrics table does not exist
+     * @throws TableNotFoundException If the metrics table does not exist
      */
     private long getNumRowsInTable(String metricsTable)
             throws TableNotFoundException
@@ -313,13 +297,10 @@ public class IndexLookup
     /**
      * Gets all index ranges based on the given column constraint/range pairs.
      *
-     * @param indexTable
-     *            Fully-qualified index table name
-     * @param constraintRangePairs
-     *            Mapping of column constraint to Accumulo Ranges for that constraint
-     * @param rowIDRanges
-     *            Collection of Ranges based on any predicate from the row ID. Used to drop and row
-     *            IDs that are not in one of these Ranges
+     * @param indexTable Fully-qualified index table name
+     * @param constraintRangePairs Mapping of column constraint to Accumulo Ranges for that constraint
+     * @param rowIDRanges Collection of Ranges based on any predicate from the row ID. Used to drop and row
+     * IDs that are not in one of these Ranges
      * @return A collection of Ranges containing row IDs in the main table to scan
      * @throws TableNotFoundException
      */
@@ -377,12 +358,9 @@ public class IndexLookup
     /**
      * Bins the given collection of ranges into metadata for the Presto splits
      *
-     * @param numRangesPerBin
-     *            Number of ranges to put in a single metadata object
-     * @param splitRanges
-     *            The ranges to add
-     * @param prestoSplits
-     *            The output collection for the tablet metadata
+     * @param numRangesPerBin Number of ranges to put in a single metadata object
+     * @param splitRanges The ranges to add
+     * @param prestoSplits The output collection for the tablet metadata
      */
     private void binRanges(int numRangesPerBin, List<Range> splitRanges,
             List<TabletSplitMetadata> prestoSplits)
@@ -410,10 +388,8 @@ public class IndexLookup
      * Gets a Boolean value indicating if the given value is in one of the Ranges in the given
      * collection
      *
-     * @param t
-     *            Text object to check against the Range collection
-     * @param ranges
-     *            Ranges to look into
+     * @param t Text object to check against the Range collection
+     * @param ranges Ranges to look into
      * @return True if the text object is in one of the ranges, false otherwise
      */
     private boolean inRange(Text t, Collection<Range> ranges)

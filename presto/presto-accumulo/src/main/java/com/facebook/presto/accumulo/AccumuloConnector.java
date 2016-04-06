@@ -55,23 +55,15 @@ public class AccumuloConnector
     /**
      * Creates a new instance of AccumuloConnector, brought to you by Guice.
      *
-     * @param lifeCycleManager
-     *            Manages the life cycle
-     * @param metadata
-     *            Provides metadata operations for creating tables, dropping tables, returing table
-     *            metadata, etc
-     * @param splitManager
-     *            Splits tables into parallel operations for scans
-     * @param recordSetProvider
-     *            Converts splits into rows of data
-     * @param handleResolver
-     *            Defines various handles for Presto to instantiate
-     * @param pageSinkProvider
-     *            Provides a means to write data to Accumulo via INSERTs
-     * @param sessionProperties
-     *            Defines all Accumulo session properties
-     * @param tableProperties
-     *            Defines all Accumulo table properties
+     * @param lifeCycleManager Manages the life cycle
+     * @param metadata Provides metadata operations for creating tables, dropping tables, returing table
+     * metadata, etc
+     * @param splitManager Splits tables into parallel operations for scans
+     * @param recordSetProvider Converts splits into rows of data
+     * @param handleResolver Defines various handles for Presto to instantiate
+     * @param pageSinkProvider Provides a means to write data to Accumulo via INSERTs
+     * @param sessionProperties Defines all Accumulo session properties
+     * @param tableProperties Defines all Accumulo table properties
      */
     @Inject
     public AccumuloConnector(LifeCycleManager lifeCycleManager, AccumuloMetadata metadata,
@@ -136,8 +128,8 @@ public class AccumuloConnector
     /**
      * Gets the valid table properties
      *
-     * @see AccumuloTableProperties
      * @return List of table properties
+     * @see AccumuloTableProperties
      */
     @Override
     public List<PropertyMetadata<?>> getTableProperties()
@@ -148,8 +140,8 @@ public class AccumuloConnector
     /**
      * Gets the valid session properties
      *
-     * @see AccumuloSessionProperties
      * @return List of session properties
+     * @see AccumuloSessionProperties
      */
     @Override
     public List<PropertyMetadata<?>> getSessionProperties()

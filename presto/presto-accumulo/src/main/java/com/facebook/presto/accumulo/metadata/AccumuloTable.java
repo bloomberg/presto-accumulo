@@ -54,21 +54,14 @@ public class AccumuloTable
     /***
      * Creates a new instance of AccumuloTable
      *
-     * @param schema
-     *            Presto schema (Accumulo namespace)
-     * @param table
-     *            Presto table (Accumulo table)
-     * @param columns
-     *            A list of {@link AccumuloColumnHandle} objects for the table
-     * @param rowId
-     *            The Presto column name that is the Accumulo row ID
-     * @param external
-     *            Whether or not this table is external, i.e. Presto only manages metadata
-     * @param serializerClassName
-     *            The qualified Java class name to (de)serialize data from Accumulo
-     * @param scanAuthorizations
-     *            Scan-time authorizations of the scanner, or null to use all user scan
-     *            authorizations
+     * @param schema Presto schema (Accumulo namespace)
+     * @param table Presto table (Accumulo table)
+     * @param columns A list of {@link AccumuloColumnHandle} objects for the table
+     * @param rowId The Presto column name that is the Accumulo row ID
+     * @param external Whether or not this table is external, i.e. Presto only manages metadata
+     * @param serializerClassName The qualified Java class name to (de)serialize data from Accumulo
+     * @param scanAuthorizations Scan-time authorizations of the scanner, or null to use all user scan
+     * authorizations
      */
     @JsonCreator
     public AccumuloTable(@JsonProperty("schema") String schema, @JsonProperty("table") String table,
@@ -126,6 +119,7 @@ public class AccumuloTable
     {
         this.rowId = rowId;
     }
+
     /**
      * Gets the schema name.
      *
@@ -151,8 +145,8 @@ public class AccumuloTable
     /**
      * Gets the full name of the index table.
      *
-     * @see Indexer#getIndexTableName
      * @return Index table name
+     * @see Indexer#getIndexTableName
      */
     @JsonIgnore
     public String getIndexTableName()
@@ -163,8 +157,8 @@ public class AccumuloTable
     /**
      * Gets the full name of the metrics table.
      *
-     * @see Indexer#getMetricsTableName
      * @return Metrics table name
+     * @see Indexer#getMetricsTableName
      */
     @JsonIgnore
     public String getMetricsTableName()
@@ -175,8 +169,8 @@ public class AccumuloTable
     /**
      * Gets the full table name of the Accumulo table, i.e. schemaName.tableName.
      *
-     * @see AccumuloTable#getFullTableName
      * @return Full table name
+     * @see AccumuloTable#getFullTableName
      */
     @JsonIgnore
     public String getFullTableName()
@@ -200,10 +194,8 @@ public class AccumuloTable
      * necessary. Will set the 'indexed' flag if this column is indexed but the table was not
      * previously indexed.
      *
-     * @param newColumn
-     *            New column to add
-     * @throws IndexOutOfBoundsException
-     *             If the ordinal negative or greater than or equal to the number of columns
+     * @param newColumn New column to add
+     * @throws IndexOutOfBoundsException If the ordinal negative or greater than or equal to the number of columns
      */
     @JsonIgnore
     public void addColumn(AccumuloColumnHandle newColumn)
@@ -328,8 +320,7 @@ public class AccumuloTable
      * Gets a new instance of the configured {@link AccumuloRowSerializer}
      *
      * @return Class object
-     * @throws PrestoException
-     *             If the class is not found on the classpath
+     * @throws PrestoException If the class is not found on the classpath
      */
     @JsonIgnore
     public AccumuloRowSerializer getSerializerInstance()
@@ -347,10 +338,8 @@ public class AccumuloTable
      * Gets the full table name of the Accumulo table, i.e. schemaName.tableName. If the schemaName
      * is 'default', then there is no Accumulo namespace and the table name is all that is returned.
      *
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table name
+     * @param schema Schema name
+     * @param table Table name
      * @return Full table name
      */
     @JsonIgnore
@@ -363,8 +352,7 @@ public class AccumuloTable
      * Gets the full table name of the Accumulo table, i.e. schemaName.tableName. If the schemaName
      * is 'default', then there is no Accumulo namespace and the table name is all that is returned.
      *
-     * @param stn
-     *            SchemaTableName
+     * @param stn SchemaTableName
      * @return Full table name
      */
     @JsonIgnore

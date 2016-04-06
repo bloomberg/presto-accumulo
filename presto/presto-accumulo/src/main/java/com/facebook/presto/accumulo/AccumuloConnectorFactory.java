@@ -60,10 +60,8 @@ public class AccumuloConnectorFactory
     /**
      * Creates an instance of the connector with the given ID and required configuration values
      *
-     * @param connectorId
-     *            Connector ID
-     * @param requiredConfig
-     *            Required configuration parameters
+     * @param connectorId Connector ID
+     * @param requiredConfig Required configuration parameters
      */
     @Override
     public Connector create(final String connectorId, Map<String, String> requiredConfig)

@@ -59,10 +59,8 @@ public class AccumuloSplitManager
     /**
      * Creates a new instance of an {@link AccumuloSplitManager}, injected by the Google.
      *
-     * @param connectorId
-     *            Connector ID
-     * @param client
-     *            Client object for retrieving table metadata and splits
+     * @param connectorId Connector ID
+     * @param client Client object for retrieving table metadata and splits
      */
     @Inject
     public AccumuloSplitManager(AccumuloConnectorId connectorId, AccumuloClient client)
@@ -74,10 +72,8 @@ public class AccumuloSplitManager
     /**
      * Gets the source of splits from the given Presto table layout
      *
-     * @param session
-     *            Current client session
-     * @param layout
-     *            Table layout
+     * @param session Current client session
+     * @param layout Table layout
      * @return Split source to pass splits to Presto for scan
      */
     @Override
@@ -132,10 +128,8 @@ public class AccumuloSplitManager
     /**
      * Gets the Domain for the range, or null if there is no constraint on the row ID
      *
-     * @param rowIdName
-     *            Presto column of the row ID
-     * @param constraint
-     *            Query constraints
+     * @param rowIdName Presto column of the row ID
+     * @param constraint Query constraints
      * @return Domain on the row ID, or null if there is none
      */
     private Domain getRangeDomain(String rowIdName, TupleDomain<ColumnHandle> constraint)
@@ -155,10 +149,8 @@ public class AccumuloSplitManager
      * Gets a list of {@link AccumuloColumnConstraint} based on the given constraint ID, excluding
      * the row ID column
      *
-     * @param rowIdName
-     *            Presto column name mapping to the Accumulo row ID
-     * @param constraint
-     *            Set of query constraints
+     * @param rowIdName Presto column name mapping to the Accumulo row ID
+     * @param constraint Set of query constraints
      * @return List of all column constraints
      */
     private List<AccumuloColumnConstraint> getColumnConstraints(String rowIdName,

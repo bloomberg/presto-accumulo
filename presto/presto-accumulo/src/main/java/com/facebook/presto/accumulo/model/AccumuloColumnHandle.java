@@ -47,22 +47,14 @@ public final class AccumuloColumnHandle
     /**
      * JSON Creator for a new {@link AccumuloColumnHandle} object
      *
-     * @param connectorId
-     *            Connector ID
-     * @param name
-     *            Presto column name
-     * @param family
-     *            Accumulo column family
-     * @param qualifier
-     *            Accumulo column qualifier
-     * @param type
-     *            Presto type
-     * @param ordinal
-     *            Ordinal of the column within the row
-     * @param comment
-     *            Comment for the column
-     * @param indexed
-     *            True if the column has entries in the index table, false otherwise
+     * @param connectorId Connector ID
+     * @param name Presto column name
+     * @param family Accumulo column family
+     * @param qualifier Accumulo column qualifier
+     * @param type Presto type
+     * @param ordinal Ordinal of the column within the row
+     * @param comment Comment for the column
+     * @param indexed True if the column has entries in the index table, false otherwise
      */
     @JsonCreator
     public AccumuloColumnHandle(@JsonProperty("connectorId") String connectorId,
@@ -105,11 +97,10 @@ public final class AccumuloColumnHandle
 
     /**
      * Setter function for the column name
-     *
+     * <p>
      * Added to this class for column rename support
      *
-     * @param name
-     *            New column name
+     * @param name New column name
      */
     @JsonSetter
     public void setName(String name)
@@ -164,8 +155,7 @@ public final class AccumuloColumnHandle
     /**
      * Setter method for the ordinal (for support of adding new columns)
      *
-     * @param ordinal
-     *            New ordinal
+     * @param ordinal New ordinal
      */
     @JsonSetter
     public void setOrdinal(int ordinal)

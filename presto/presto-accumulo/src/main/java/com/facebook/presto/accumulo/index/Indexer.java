@@ -80,7 +80,7 @@ import static java.nio.ByteBuffer.wrap;
  * table to improve index lookup times.
  * <br>
  * Sample usage of an indexer:
- *
+ * <p>
  * <pre>
  * <code>
  * Indexer indexer = new Indexer(conn, userAuths, table, writerConf);
@@ -179,16 +179,11 @@ public class Indexer
     /**
      * Creates a new instance of an {@link Indexer}
      *
-     * @param conn
-     *            Connector for interacting with Accumulo
-     * @param auths
-     *            Authorizations for the particular user
-     * @param table
-     *            Table metadata, see AccumuloClient#getTable
-     * @param bwc
-     *            Config for the BatchWriter that will be writing index mutations
-     * @throws TableNotFoundException
-     *             If the index and/or metric table do not exist
+     * @param conn Connector for interacting with Accumulo
+     * @param auths Authorizations for the particular user
+     * @param table Table metadata, see AccumuloClient#getTable
+     * @param bwc Config for the BatchWriter that will be writing index mutations
+     * @throws TableNotFoundException If the index and/or metric table do not exist
      */
     public Indexer(Connector conn, Authorizations auths, AccumuloTable table, BatchWriterConfig bwc)
             throws TableNotFoundException
@@ -252,8 +247,7 @@ public class Indexer
      * index table. For higher throughput, the modifications to the metrics table are tracked in
      * memory and added to the metrics table when the indexer is flushed or closed.
      *
-     * @param m
-     *            Mutation to index
+     * @param m Mutation to index
      */
     public void index(final Mutation m)
     {
@@ -310,8 +304,7 @@ public class Indexer
     /**
      * Index each mutation in the given collection.
      *
-     * @param mutations
-     *            Iterable of mutations to index
+     * @param mutations Iterable of mutations to index
      */
     public void index(Iterable<Mutation> mutations)
     {
@@ -323,12 +316,9 @@ public class Indexer
     /**
      * Adds a Mutation to the index writer
      *
-     * @param row
-     *            Row ID of the index mutation
-     * @param family
-     *            Family for the index mutation
-     * @param qualifier
-     *            Qualifier for the index mutation
+     * @param row Row ID of the index mutation
+     * @param family Family for the index mutation
+     * @param qualifier Qualifier for the index mutation
      */
     private void addIndexMutation(ByteBuffer row, ByteBuffer family, byte[] qualifier)
     {
@@ -449,8 +439,7 @@ public class Indexer
      * Gets a collection of iterator settings that should be added to the metric table for the given
      * Accumulo table. Don't forget! Please!
      *
-     * @param table
-     *            Table for retrieving metrics iterators, see AccumuloClient#getTable
+     * @param table Table for retrieving metrics iterators, see AccumuloClient#getTable
      * @return Collection of iterator settings
      */
     public static Collection<IteratorSetting> getMetricIterators(AccumuloTable table)
@@ -486,10 +475,8 @@ public class Indexer
     /**
      * Gets the column family of the index table based on the given column family and qualifier
      *
-     * @param columnFamily
-     *            Presto column family
-     * @param columnQualifier
-     *            Presto column qualifier
+     * @param columnFamily Presto column family
+     * @param columnQualifier Presto column qualifier
      * @return ByteBuffer of the given index column family
      */
     public static ByteBuffer getIndexColumnFamily(byte[] columnFamily, byte[] columnQualifier)
@@ -500,10 +487,9 @@ public class Indexer
     /**
      * Gets a set of locality groups that should be added to the index table (not the metrics table)
      *
-     * @param table
-     *            Table for the locality groups, see AccumuloClient#getTable
+     * @param table Table for the locality groups, see AccumuloClient#getTable
      * @return Mapping of locality group to column families in the locality group, 1:1 mapping in
-     *         this case
+     * this case
      */
     public static Map<String, Set<Text>> getLocalityGroups(AccumuloTable table)
     {
@@ -526,10 +512,8 @@ public class Indexer
     /**
      * Gets the fully-qualified index table name for the given table
      *
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table name
+     * @param schema Schema name
+     * @param table Table name
      * @return Qualified index table name
      */
     public static String getIndexTableName(String schema, String table)
@@ -540,8 +524,7 @@ public class Indexer
     /**
      * Gets the fully-qualified index table name for the given table
      *
-     * @param stn
-     *            Schema table name
+     * @param stn Schema table name
      * @return Qualified index table name
      */
     public static String getIndexTableName(SchemaTableName stn)
@@ -552,10 +535,8 @@ public class Indexer
     /**
      * Gets the fully-qualified index metrics table name for the given table
      *
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table name
+     * @param schema Schema name
+     * @param table Table name
      * @return Qualified index metrics table name
      */
     public static String getMetricsTableName(String schema, String table)
@@ -567,8 +548,7 @@ public class Indexer
     /**
      * Gets the fully-qualified index metrics table name for the given table
      *
-     * @param stn
-     *            Schema table name
+     * @param stn Schema table name
      * @return Qualified index metrics table name
      */
     public static String getMetricsTableName(SchemaTableName stn)
@@ -579,19 +559,15 @@ public class Indexer
     /**
      * Gets the minimum and maximum row IDs from the given metrics table
      *
-     * @param conn
-     *            Accumulo connector
-     * @param table
-     *            Table metadata, see AccumuloClient#getTable
-     * @param auths
-     *            Authorizations for creating the scanner
+     * @param conn Accumulo connector
+     * @param table Table metadata, see AccumuloClient#getTable
+     * @param auths Authorizations for creating the scanner
      * @return A pair of the min row ID and max row ID
-     * @throws TableNotFoundException
-     *             If the metrics table does not exist
+     * @throws TableNotFoundException If the metrics table does not exist
      */
     public static Pair<byte[], byte[]> getMinMaxRowIds(Connector conn, AccumuloTable table,
             Authorizations auths)
-                    throws TableNotFoundException
+            throws TableNotFoundException
     {
         Scanner scan = conn.createScanner(table.getMetricsTableName(), auths);
         scan.setRange(new Range(new Text(Indexer.METRICS_TABLE_ROW_ID.array())));

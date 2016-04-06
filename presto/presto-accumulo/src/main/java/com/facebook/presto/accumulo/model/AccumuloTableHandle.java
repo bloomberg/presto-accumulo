@@ -49,21 +49,14 @@ public final class AccumuloTableHandle
     /**
      * Creates a new instance of {@link AccumuloTableHandle}.
      *
-     * @param connectorId
-     *            Presto connector ID
-     * @param schema
-     *            Presto schema (Accumulo namespace)
-     * @param table
-     *            Presto table (Accumulo table)
-     * @param rowId
-     *            The Presto column name that is the Accumulo row ID
-     * @param external
-     *            Whether or not this table is internal, i.e. managed by Presto
-     * @param serializerClassName
-     *            The qualified Java class name to (de)serialize data from Accumulo
-     * @param scanAuthorizations
-     *            Scan-time authorizations of the scanner, or null to use all user scan
-     *            authorizations
+     * @param connectorId Presto connector ID
+     * @param schema Presto schema (Accumulo namespace)
+     * @param table Presto table (Accumulo table)
+     * @param rowId The Presto column name that is the Accumulo row ID
+     * @param external Whether or not this table is internal, i.e. managed by Presto
+     * @param serializerClassName The qualified Java class name to (de)serialize data from Accumulo
+     * @param scanAuthorizations Scan-time authorizations of the scanner, or null to use all user scan
+     * authorizations
      */
     @JsonCreator
     public AccumuloTableHandle(@JsonProperty("connectorId") String connectorId,
@@ -141,8 +134,7 @@ public final class AccumuloTableHandle
      * Gets a new instance of the configured {@link AccumuloRowSerializer}
      *
      * @return Class object
-     * @throws PrestoException
-     *             If the class is not found on the classpath
+     * @throws PrestoException If the class is not found on the classpath
      */
     @JsonIgnore
     public AccumuloRowSerializer getSerializerInstance()

@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Bloomberg L.P.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,7 +40,8 @@ public class Driver
 {
 
     private static final Logger LOG = Logger.getLogger(Driver.class);
-    private static List<String> BLACKLIST = ImmutableList.copyOf(new String[] {"2.sql", "4.sql", "9.sql", "11.sql", "13.sql", "15.sql", "17.sql", "19.sql", "20.sql", "21.sql", "22.sql"});
+    private static List<String> BLACKLIST = ImmutableList.copyOf(new String[] {"2.sql", "4.sql", "9.sql", "11.sql", "13.sql", "15.sql", "17.sql", "19.sql", "20.sql", "21.sql",
+                                                                               "22.sql"});
     private int numQueries = 0;
     private int ranQueries = 0;
     private List<QueryMetrics> metrics = new ArrayList<>();
@@ -104,7 +105,7 @@ public class Driver
 
         numQueries = 4 * numSplits.size() * schemaScalePairs.size() * queryFiles.size();
         ranQueries = 0;
-        
+
         // for each schema
         for (Pair<String, Float> s : schemaScalePairs) {
             String schema = s.getLeft();

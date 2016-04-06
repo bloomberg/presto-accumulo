@@ -91,14 +91,10 @@ public class AccumuloClient
      * Creates a new instance of an AccumuloClient, injected by that Guice. Creates a connection to
      * Accumulo.
      *
-     * @param connectorId
-     *            Connector ID
-     * @param config
-     *            Connector configuration for Accumulo
-     * @throws AccumuloException
-     *             If an Accumulo error occurs
-     * @throws AccumuloSecurityException
-     *             If Accumulo credentials are not valid
+     * @param connectorId Connector ID
+     * @param config Connector configuration for Accumulo
+     * @throws AccumuloException If an Accumulo error occurs
+     * @throws AccumuloSecurityException If Accumulo credentials are not valid
      */
     @Inject
     public AccumuloClient(AccumuloConnectorId connectorId, AccumuloConfig config)
@@ -115,8 +111,7 @@ public class AccumuloClient
     /**
      * Creates a new AccumuloTable based on the given metadata.
      *
-     * @param meta
-     *            Metadata for the table
+     * @param meta Metadata for the table
      * @return {@link AccumuloTable} for the newly created table
      */
     public AccumuloTable createTable(ConnectorTableMetadata meta)
@@ -278,8 +273,7 @@ public class AccumuloClient
      * Creates the index tables from the given Accumulo table. No op if
      * {@link AccumuloTable#isIndexed()} is false.
      *
-     * @param table
-     *            Table to create index tables
+     * @param table Table to create index tables
      */
     private void createIndexTables(AccumuloTable table)
     {
@@ -311,8 +305,7 @@ public class AccumuloClient
      * Drops the table metadata from Presto. If this table is internal, the Accumulo
      * tables are also deleted.
      *
-     * @param table
-     *            The Accumulo table
+     * @param table The Accumulo table
      */
     public void dropTable(AccumuloTable table)
     {
@@ -346,10 +339,8 @@ public class AccumuloClient
     /**
      * Renames the metadata associated Accumulo table
      *
-     * @param oldName
-     *            Old table name
-     * @param newName
-     *            New table name
+     * @param oldName Old table name
+     * @param newName New table name
      */
     public void renameTable(SchemaTableName oldName, SchemaTableName newName)
     {
@@ -483,12 +474,9 @@ public class AccumuloClient
     /**
      * Creates a new view with the given name and data.  Replaces a view if 'replace' is true.
      *
-     * @param viewName
-     *            Name of the view
-     * @param viewData
-     *            Data for the view
-     * @param replace
-     *            True to replace, false otherwise
+     * @param viewName Name of the view
+     * @param viewData Data for the view
+     * @param replace True to replace, false otherwise
      */
     public void createView(SchemaTableName viewName, String viewData, boolean replace)
     {
@@ -512,8 +500,7 @@ public class AccumuloClient
     /**
      * Drops the given view
      *
-     * @param viewName
-     *            View to drop
+     * @param viewName View to drop
      */
     public void dropView(SchemaTableName viewName)
     {
@@ -523,12 +510,9 @@ public class AccumuloClient
     /**
      * Adds a new column to an existing table
      *
-     * @param table
-     *            Accumulo table to act on
-     * @param column
-     *            New column to add
-     * @throws IndexOutOfBoundsException
-     *             If the ordinal is greater than or equal to the number of columns
+     * @param table Accumulo table to act on
+     * @param column New column to add
+     * @throws IndexOutOfBoundsException If the ordinal is greater than or equal to the number of columns
      */
     public void addColumn(AccumuloTable table, AccumuloColumnHandle column)
             throws IndexOutOfBoundsException
@@ -552,12 +536,9 @@ public class AccumuloClient
     /**
      * Rename the column of an existing table
      *
-     * @param table
-     *            Accumulo table to act on
-     * @param source
-     *            Existing column name
-     * @param target
-     *            New column name
+     * @param table Accumulo table to act on
+     * @param source Existing column name
+     * @param target New column name
      */
     public void renameColumn(AccumuloTable table, String source, String target)
     {
@@ -601,8 +582,7 @@ public class AccumuloClient
     /**
      * Gets all table names from the given schema
      *
-     * @param schema
-     *            The schema to get table names from
+     * @param schema The schema to get table names from
      * @return The set of table names
      */
     public Set<String> getTableNames(String schema)
@@ -614,8 +594,7 @@ public class AccumuloClient
     /**
      * Gets the {@link AccumuloTable} for the given name via the {@link AccumuloMetadataManager}
      *
-     * @param table
-     *            The table to fetch
+     * @param table The table to fetch
      * @return The AccumuloTable or null if it does not exist
      */
     public AccumuloTable getTable(SchemaTableName table)
@@ -627,8 +606,7 @@ public class AccumuloClient
     /**
      * Gets all view names from the given schema
      *
-     * @param schema
-     *            The schema to get table names from
+     * @param schema The schema to get table names from
      * @return The set of table names
      */
     public Set<String> getViewNames(String schema)
@@ -640,8 +618,7 @@ public class AccumuloClient
     /**
      * Gets the {@link AccumuloView} for the given name via the {@link AccumuloMetadataManager}
      *
-     * @param viewName
-     *            The view to fetch
+     * @param viewName The view to fetch
      * @return The AccumuloView or null if it does not exist
      */
     public AccumuloView getView(SchemaTableName viewName)
@@ -655,18 +632,12 @@ public class AccumuloClient
      * fun stuff! Such as splitting on row ID ranges, applying secondary indexes, column pruning,
      * all sorts of sweet optimizations. What you have here is an important method.
      *
-     * @param session
-     *            Current session
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table Name
-     * @param rowIdDom
-     *            Domain for the row ID
-     * @param constraints
-     *            Column constraints for the query
-     * @param serializer
-     *            Instance of a row serializer
+     * @param session Current session
+     * @param schema Schema name
+     * @param table Table Name
+     * @param rowIdDom Domain for the row ID
+     * @param constraints Column constraints for the query
+     * @param serializer Instance of a row serializer
      * @return List of TabletSplitMetadata objects for Presto
      */
     public List<TabletSplitMetadata> getTabletSplits(ConnectorSession session, String schema,
@@ -743,17 +714,12 @@ public class AccumuloClient
      * In order of priority: session username authorizations, then table property, then the default
      * connector auths
      *
-     * @param session
-     *            Current session
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table Name
+     * @param session Current session
+     * @param schema Schema name
+     * @param table Table Name
      * @return Scan authorizations
-     * @throws AccumuloException
-     *             If a generic Accumulo error occurs
-     * @throws AccumuloSecurityException
-     *             If a security exception occurs
+     * @throws AccumuloException If a generic Accumulo error occurs
+     * @throws AccumuloSecurityException If a security exception occurs
      */
     private Authorizations getScanAuthorizations(ConnectorSession session, String schema,
             String table)
@@ -782,10 +748,8 @@ public class AccumuloClient
      * Splits the given collection of ranges based on tablet boundaries, returning a new collection
      * of ranges
      *
-     * @param tableName
-     *            Fully-qualified table name
-     * @param ranges
-     *            The collection of Ranges to split
+     * @param tableName Fully-qualified table name
+     * @param ranges The collection of Ranges to split
      * @return A new collection of Ranges split on tablet boundaries
      * @throws TableNotFoundException
      * @throws AccumuloException
@@ -813,10 +777,8 @@ public class AccumuloClient
     /**
      * Gets the TabletServer hostname for where the given key is located in the given table
      *
-     * @param table
-     *            Fully-qualified table name
-     * @param key
-     *            Key to locate
+     * @param table Fully-qualified table name
+     * @param key Key to locate
      * @return The tablet location, or DUMMY_LOCATION if an error occurs
      */
     private String getTabletLocation(String table, Key key)
@@ -890,8 +852,7 @@ public class AccumuloClient
     /**
      * Gets the location of the default tablet for the given table
      *
-     * @param fulltable
-     *            Fully-qualified table name
+     * @param fulltable Fully-qualified table name
      * @return TabletServer location of the default tablet
      */
     private String getDefaultTabletLocation(String fulltable)
@@ -932,17 +893,12 @@ public class AccumuloClient
      * Gets a collection of Accumulo Range objects from the given Presto domain. This maps the
      * column constraints of the given Domain to an Accumulo Range scan.
      *
-     * @param dom
-     *            Domain, can be null (returns (-inf, +inf) Range)
-     * @param serializer
-     *            Instance of an {@link AccumuloRowSerializer}
+     * @param dom Domain, can be null (returns (-inf, +inf) Range)
+     * @param serializer Instance of an {@link AccumuloRowSerializer}
      * @return A collection of Accumulo Range objects
-     * @throws AccumuloException
-     *             If an Accumulo error occurs
-     * @throws AccumuloSecurityException
-     *             If Accumulo credentials are not valid
-     * @throws TableNotFoundException
-     *             If the Accumulo table is not found
+     * @throws AccumuloException If an Accumulo error occurs
+     * @throws AccumuloSecurityException If Accumulo credentials are not valid
+     * @throws TableNotFoundException If the Accumulo table is not found
      */
     public static Collection<Range> getRangesFromDomain(Domain dom, AccumuloRowSerializer serializer)
             throws AccumuloException, AccumuloSecurityException, TableNotFoundException
@@ -990,10 +946,8 @@ public class AccumuloClient
     /**
      * Convert the given Presto range to an Accumulo range
      *
-     * @param pRange
-     *            Presto range
-     * @param serializer
-     *            Instance of an {@link AccumuloRowSerializer}
+     * @param pRange Presto range
+     * @param serializer Instance of an {@link AccumuloRowSerializer}
      * @return Accumulo range
      * @throws AccumuloException
      * @throws AccumuloSecurityException
@@ -1001,7 +955,7 @@ public class AccumuloClient
      */
     private static Range getRangeFromPrestoRange(com.facebook.presto.spi.predicate.Range pRange,
             AccumuloRowSerializer serializer)
-                    throws AccumuloException, AccumuloSecurityException, TableNotFoundException
+            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
         final Range aRange;
         if (pRange.isAll()) {

@@ -77,12 +77,9 @@ public class AccumuloPageSink
     /**
      * Creates a new instance of {@link AccumuloPageSink}
      *
-     * @param conn
-     *            Connector for Accumulo
-     * @param accConfig
-     *            Configuration for Accumulo
-     * @param table
-     *            Table metadata for an Accumulo table
+     * @param conn Connector for Accumulo
+     * @param accConfig Configuration for Accumulo
+     * @param table Table metadata for an Accumulo table
      */
     public AccumuloPageSink(Connector conn, AccumuloConfig accConfig, AccumuloTable table)
     {
@@ -130,17 +127,13 @@ public class AccumuloPageSink
     /**
      * Converts a {@link Row} to an Accumulo mutation.
      *
-     * @param row
-     *            Row object
-     * @param rowIdOrdinal
-     *            Ordinal in the list of columns that is the row ID. This isn't checked at all, so I
-     *            hope you're right. Also, it is expected that the list of column handles is sorted
-     *            in ordinal order. This is a very demanding function.
-     * @param columns
-     *            All column handles for the Row, sorted by ordinal.
-     * @param serializer
-     *            Instance of {@link AccumuloRowSerializer} used to encode the values of the row to
-     *            the Mutation
+     * @param row Row object
+     * @param rowIdOrdinal Ordinal in the list of columns that is the row ID. This isn't checked at all, so I
+     * hope you're right. Also, it is expected that the list of column handles is sorted
+     * in ordinal order. This is a very demanding function.
+     * @param columns All column handles for the Row, sorted by ordinal.
+     * @param serializer Instance of {@link AccumuloRowSerializer} used to encode the values of the row to
+     * the Mutation
      * @return Mutation
      */
     public static Mutation toMutation(Row row, int rowIdOrdinal, List<AccumuloColumnHandle> columns,
@@ -179,12 +172,9 @@ public class AccumuloPageSink
     /**
      * Sets the value of the given Text object to the encoded value of the given field.
      *
-     * @param field
-     *            Value of the field to encode
-     * @param value
-     *            Text object to set
-     * @param serializer
-     *            Serializer to use to encode the value
+     * @param field Value of the field to encode
+     * @param value Text object to set
+     * @param serializer Serializer to use to encode the value
      */
     private static void setText(Field field, Text value, AccumuloRowSerializer serializer)
     {

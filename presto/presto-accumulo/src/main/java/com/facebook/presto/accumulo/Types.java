@@ -32,21 +32,14 @@ public final class Types
     /**
      * Validates the given value is an instance of the target class.
      *
-     * @param <A>
-     *            Generic type for value
-     * @param <B>
-     *            Generic type for the target, which extends A
-     * @param value
-     *            Instance of an object
-     * @param target
-     *            Expected class type of the value
-     * @param name
-     *            Helpful name for the object which is used for error reporting
+     * @param <A> Generic type for value
+     * @param <B> Generic type for the target, which extends A
+     * @param value Instance of an object
+     * @param target Expected class type of the value
+     * @param name Helpful name for the object which is used for error reporting
      * @return The given value cast to the target
-     * @throws NullPointerException
-     *             If value is null
-     * @throws IllegalArgumentException
-     *             If the value is not an instance of target
+     * @throws NullPointerException If value is null
+     * @throws IllegalArgumentException If the value is not an instance of target
      */
     public static <A, B extends A> B checkType(A value, Class<B> target, String name)
     {
@@ -61,8 +54,7 @@ public final class Types
     /**
      * Gets a Boolean value indicating whether or not the given type is an array.
      *
-     * @param type
-     *            The type to check
+     * @param type The type to check
      * @return True if the type is an array, else false.
      */
     public static boolean isArrayType(Type type)
@@ -73,8 +65,7 @@ public final class Types
     /**
      * Gets a Boolean value indicating whether or not the given type is a map.
      *
-     * @param type
-     *            The type to check
+     * @param type The type to check
      * @return True if the type is a map, else false.
      */
     public static boolean isMapType(Type type)
@@ -86,12 +77,10 @@ public final class Types
      * Gets the element type of the given array type. Does not validate that the given type is an
      * array.
      *
-     * @see Types#isArrayType
-     * @param type
-     *            An array type
+     * @param type An array type
      * @return Element type of the array
-     * @throws IndexOutOfBoundsException
-     *             If type is not an array
+     * @throws IndexOutOfBoundsException If type is not an array
+     * @see Types#isArrayType
      */
     public static Type getElementType(Type type)
     {
@@ -101,12 +90,10 @@ public final class Types
     /**
      * Gets the key type of the given map type. Does not validate that the given type is a map.
      *
-     * @see Types#isMapType
-     * @param type
-     *            A map type
+     * @param type A map type
      * @return Key type of the map
-     * @throws IndexOutOfBoundsException
-     *             If type is not a map
+     * @throws IndexOutOfBoundsException If type is not a map
+     * @see Types#isMapType
      */
     public static Type getKeyType(Type type)
     {
@@ -116,12 +103,10 @@ public final class Types
     /**
      * Gets the value type of the given map type. Does not validate that the given type is a map.
      *
-     * @see Types#isMapType
-     * @param type
-     *            A map type
+     * @param type A map type
      * @return Value type of the map
-     * @throws IndexOutOfBoundsException
-     *             If type is not a map
+     * @throws IndexOutOfBoundsException If type is not a map
+     * @see Types#isMapType
      */
     public static Type getValueType(Type type)
     {

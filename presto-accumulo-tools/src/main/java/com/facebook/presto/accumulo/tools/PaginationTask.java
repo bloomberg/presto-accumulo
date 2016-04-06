@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Bloomberg L.P.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -299,8 +299,7 @@ public class PaginationTask
      * Queries the temporary table, retrieving the previous page of results
      *
      * @return Previous page's ResultSet
-     * @throws SQLException
-     *             If an error occurs issuing the query
+     * @throws SQLException If an error occurs issuing the query
      */
     public ResultSet previous()
             throws SQLException
@@ -315,13 +314,10 @@ public class PaginationTask
     /**
      * Queries the temporary table for the rows of data from [min, max)
      *
-     * @param min
-     *            Minimum value of the offset to be retrieved, inclusive
-     * @param max
-     *            Maximum value of the offset to be retrieved, exclusive
+     * @param min Minimum value of the offset to be retrieved, inclusive
+     * @param max Maximum value of the offset to be retrieved, exclusive
      * @return ResultSet of the rows between the given offset
-     * @throws SQLException
-     *             If an error occurs issuing the query
+     * @throws SQLException If an error occurs issuing the query
      */
     public ResultSet getRows(long min, long max)
             throws SQLException
@@ -380,8 +376,7 @@ public class PaginationTask
     /**
      * Sets the {@link AccumuloConfig} to use for the task
      *
-     * @param config
-     *            Accumulo config
+     * @param config Accumulo config
      */
     public void setConfig(AccumuloConfig config)
     {
@@ -391,8 +386,7 @@ public class PaginationTask
     /**
      * Sets the Presto host
      *
-     * @param host
-     *            Presto host
+     * @param host Presto host
      */
     public void setHost(String host)
     {
@@ -402,8 +396,7 @@ public class PaginationTask
     /**
      * Sets the Presto port
      *
-     * @param host
-     *            Presto port
+     * @param host Presto port
      */
     public void setPort(Integer port)
     {
@@ -413,8 +406,7 @@ public class PaginationTask
     /**
      * Sets the user query to be executed and paginated
      *
-     * @param query
-     *            Query string
+     * @param query Query string
      */
     public void setQuery(String query)
     {
@@ -428,8 +420,7 @@ public class PaginationTask
     /**
      * Sets the column names, in order, to be retrieved from the user query
      *
-     * @param columns
-     *            Columns to be returned from the select query
+     * @param columns Columns to be returned from the select query
      */
     public void setQueryColumnNames(String[] columns)
     {
@@ -439,11 +430,9 @@ public class PaginationTask
     /**
      * Sets the page size. Default is 20 rows per page.
      *
-     * @param size
-     *            New page size
-     * @throws InvalidActivityException
-     *             If an attempt to set the page size mid-query occurs. Call cleanup, then set the
-     *             page size
+     * @param size New page size
+     * @throws InvalidActivityException If an attempt to set the page size mid-query occurs. Call cleanup, then set the
+     * page size
      */
     public void setPageSize(int size)
             throws InvalidActivityException
@@ -468,8 +457,7 @@ public class PaginationTask
     /**
      * Sets the session parameter for enabling the index
      *
-     * @param indexEnabled
-     *            True to enable, false otherwise
+     * @param indexEnabled True to enable, false otherwise
      */
     public void setIndexEnabled(Boolean indexEnabled)
     {
@@ -479,8 +467,7 @@ public class PaginationTask
     /**
      * Sets the session parameter for enabling the use of the index metrics table
      *
-     * @param indexMetricsEnabled
-     *            True to enable, false otherwise
+     * @param indexMetricsEnabled True to enable, false otherwise
      */
     public void setIndexMetricsEnabled(Boolean indexMetricsEnabled)
     {
@@ -490,8 +477,7 @@ public class PaginationTask
     /**
      * Sets the session parameter for the index threhsold
      *
-     * @param indexThreshold
-     *            Threshold for using the index
+     * @param indexThreshold Threshold for using the index
      */
     public void setIndexThreshold(Double indexThreshold)
     {
@@ -501,8 +487,7 @@ public class PaginationTask
     /**
      * Sets the session parameter for enabling tablet locality lookups
      *
-     * @param localityEnabled
-     *            True to enable, false otherwise
+     * @param localityEnabled True to enable, false otherwise
      */
     public void setLocalityEnabled(Boolean localityEnabled)
     {
@@ -512,8 +497,7 @@ public class PaginationTask
     /**
      * Sets the session parameter for enabling range splits
      *
-     * @param lowestCardinalityThreshold
-     *            True to enable, false otherwise
+     * @param lowestCardinalityThreshold True to enable, false otherwise
      */
     public void setLowestCardinalityThreshold(Double lowestCardinalityThreshold)
     {
@@ -523,8 +507,7 @@ public class PaginationTask
     /**
      * Sets the session parameter for enabling range splits
      *
-     * @param rangeSplitsEnabled
-     *            True to enable, false otherwise
+     * @param rangeSplitsEnabled True to enable, false otherwise
      */
     public void setRangeSplitsEnabled(Boolean rangeSplitsEnabled)
     {
@@ -534,8 +517,7 @@ public class PaginationTask
     /**
      * Sets the session parameter for the number of rows to be packed in a Presto split
      *
-     * @param rowsPerSplit
-     *            Number of rows per split
+     * @param rowsPerSplit Number of rows per split
      */
     public void setRowsPerSplit(Integer rowsPerSplit)
     {

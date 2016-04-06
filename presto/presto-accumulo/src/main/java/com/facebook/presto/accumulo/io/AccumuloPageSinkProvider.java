@@ -52,10 +52,8 @@ public class AccumuloPageSinkProvider
     /**
      * Creates a new instance of {@link AccumuloPageSinkProvider}
      *
-     * @param config
-     *            Connector configuration
-     * @param client
-     *            Client to pass along to the created page sinks
+     * @param config Connector configuration
+     * @param client Client to pass along to the created page sinks
      */
     @Inject
     public AccumuloPageSinkProvider(AccumuloConfig config, AccumuloClient client)
@@ -77,10 +75,8 @@ public class AccumuloPageSinkProvider
     /**
      * Creates a page sink for the given output table handle
      *
-     * @param session
-     *            Current client session
-     * @param outputTableHandle
-     *            Output table handle
+     * @param session Current client session
+     * @param outputTableHandle Output table handle
      * @return A new page sink
      */
     @Override
@@ -95,10 +91,8 @@ public class AccumuloPageSinkProvider
     /**
      * Creates a page sink for the given insert table handle
      *
-     * @param session
-     *            Current client session
-     * @param insertTableHandle
-     *            Insert table handle
+     * @param session Current client session
+     * @param insertTableHandle Insert table handle
      * @return A new page sink
      */
     @Override

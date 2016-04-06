@@ -39,16 +39,11 @@ public class AccumuloColumnConstraint
     /**
      * JSON creator for an {@link AccumuloColumnConstraint}
      *
-     * @param name
-     *            Presto column name
-     * @param family
-     *            Accumulo column family
-     * @param qualifier
-     *            Accumulo column qualifier
-     * @param domain
-     *            Presto Domain for the column constraint
-     * @param indexed
-     *            True if the column is indexed, false otherwise
+     * @param name Presto column name
+     * @param family Accumulo column family
+     * @param qualifier Accumulo column qualifier
+     * @param domain Presto Domain for the column constraint
+     * @param indexed True if the column is indexed, false otherwise
      */
     @JsonCreator
     public AccumuloColumnConstraint(@JsonProperty("name") String name,
@@ -124,8 +119,7 @@ public class AccumuloColumnConstraint
     /**
      * Sets the Presto predicate Domain for this column.
      *
-     * @param domain
-     *            Column domain
+     * @param domain Column domain
      */
     @JsonSetter
     public void setDomain(Domain domain)

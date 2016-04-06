@@ -66,12 +66,9 @@ public class ColumnCardinalityCache
     /**
      * Creates a new instance of {@link ColumnCardinalityCache}
      *
-     * @param conn
-     *            Accumulo connector
-     * @param config
-     *            Connector configuration for presto
-     * @param auths
-     *            Authorizations to access Accumulo
+     * @param conn Accumulo connector
+     * @param config Connector configuration for presto
+     * @param auths Authorizations to access Accumulo
      */
     public ColumnCardinalityCache(Connector conn, AccumuloConfig config, Authorizations auths)
     {
@@ -84,10 +81,8 @@ public class ColumnCardinalityCache
     /**
      * Deletes any cache for the given table, no-op of table does not exist in the cache
      *
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table name
+     * @param schema Schema name
+     * @param table Table name
      */
     public void deleteCache(String schema, String table)
     {
@@ -103,26 +98,19 @@ public class ColumnCardinalityCache
      * Gets the cardinality for each {@link AccumuloColumnConstraint}. Given constraints are
      * expected to be indexed! Who knows what would happen if they weren't!
      *
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table name
-     * @param idxConstraintRangePairs
-     *            Mapping of all ranges for a given constraint
+     * @param schema Schema name
+     * @param table Table name
+     * @param idxConstraintRangePairs Mapping of all ranges for a given constraint
      * @return A list of
-     * @throws AccumuloException
-     *             If an error occurs retrieving the cardinalities from Accumulo
-     * @throws AccumuloSecurityException
-     *             If a security exception is raised
-     * @throws TableNotFoundException
-     *             If the metrics table does not exist
-     * @throws ExecutionException
-     *             If another error occurs; I really don't even know anymore.
+     * @throws AccumuloException If an error occurs retrieving the cardinalities from Accumulo
+     * @throws AccumuloSecurityException If a security exception is raised
+     * @throws TableNotFoundException If the metrics table does not exist
+     * @throws ExecutionException If another error occurs; I really don't even know anymore.
      */
     public List<Pair<AccumuloColumnConstraint, Long>> getCardinalities(String schema, String table,
             Map<AccumuloColumnConstraint, Collection<Range>> idxConstraintRangePairs)
-                    throws AccumuloException, AccumuloSecurityException, TableNotFoundException,
-                    ExecutionException
+            throws AccumuloException, AccumuloSecurityException, TableNotFoundException,
+            ExecutionException
     {
         List<Pair<AccumuloColumnConstraint, Long>> retval = new ArrayList<>();
         for (Entry<AccumuloColumnConstraint, Collection<Range>> e : idxConstraintRangePairs
@@ -138,28 +126,20 @@ public class ColumnCardinalityCache
      * Gets the cardinality for the given column constraint with the given Ranges. Ranges can be
      * exact values or a range of values
      *
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table name
-     * @param acc
-     *            Mapping of all ranges for a given constraint
-     * @param indexRanges
-     *            Ranges for each exact or ranged value of the column constraint
+     * @param schema Schema name
+     * @param table Table name
+     * @param acc Mapping of all ranges for a given constraint
+     * @param indexRanges Ranges for each exact or ranged value of the column constraint
      * @return A list of
-     * @throws AccumuloException
-     *             If an error occurs retrieving the cardinalities from Accumulo
-     * @throws AccumuloSecurityException
-     *             If a security exception is raised
-     * @throws TableNotFoundException
-     *             If the metrics table does not exist
-     * @throws ExecutionException
-     *             If another error occurs; I really don't even know anymore.
+     * @throws AccumuloException If an error occurs retrieving the cardinalities from Accumulo
+     * @throws AccumuloSecurityException If a security exception is raised
+     * @throws TableNotFoundException If the metrics table does not exist
+     * @throws ExecutionException If another error occurs; I really don't even know anymore.
      */
     private long getColumnCardinality(String schema, String table, AccumuloColumnConstraint acc,
             Collection<Range> indexRanges)
-                    throws AccumuloException, AccumuloSecurityException, TableNotFoundException,
-                    ExecutionException
+            throws AccumuloException, AccumuloSecurityException, TableNotFoundException,
+            ExecutionException
     {
         return getTableCache(schema, table).getColumnCardinality(acc.getName(), acc.getFamily(),
                 acc.getQualifier(), indexRanges);
@@ -168,10 +148,8 @@ public class ColumnCardinalityCache
     /**
      * Gets the {@link TableColumnCache} for the given table, creating a new one if necessary.
      *
-     * @param schema
-     *            Schema name
-     * @param table
-     *            Table name
+     * @param schema Schema name
+     * @param table Table name
      * @return An existing or new TableColumnCache
      */
     private TableColumnCache getTableCache(String schema, String table)
@@ -198,10 +176,8 @@ public class ColumnCardinalityCache
         /**
          * Creates a new instance of {@link TableColumnCache}
          *
-         * @param schema
-         *            Schema name
-         * @param table
-         *            Table name
+         * @param schema Schema name
+         * @param table Table name
          */
         public TableColumnCache(String schema, String table)
         {
@@ -224,21 +200,17 @@ public class ColumnCardinalityCache
          * Gets the column cardinality for all of the given range values. May reach out to the
          * metrics table in Accumulo to retrieve new cache elements.
          *
-         * @param column
-         *            Presto column name
-         * @param family
-         *            Accumulo column family
-         * @param qualifier
-         *            Accumulo column qualifier
-         * @param colValues
-         *            All range values to summarize for the cardinality
+         * @param column Presto column name
+         * @param family Accumulo column family
+         * @param qualifier Accumulo column qualifier
+         * @param colValues All range values to summarize for the cardinality
          * @return The cardinality of the column
          * @throws ExecutionException
          * @throws TableNotFoundException
          */
         public long getColumnCardinality(String column, String family, String qualifier,
                 Collection<Range> colValues)
-                        throws ExecutionException, TableNotFoundException
+                throws ExecutionException, TableNotFoundException
         {
             // Get the column cache for this column, creating a new one if necessary
             LoadingCache<Range, Long> cache = columnToCache.get(column);
@@ -285,8 +257,7 @@ public class ColumnCardinalityCache
         /**
          * Gets a Boolean value indicating if the given Range is an exact value
          *
-         * @param r
-         *            Range to check
+         * @param r Range to check
          * @return True if exact, false otherwise
          */
         private boolean isExact(Range r)
@@ -298,14 +269,10 @@ public class ColumnCardinalityCache
         /**
          * Creates a new cache for the given column
          *
-         * @param schema
-         *            Schema name
-         * @param table
-         *            Table name
-         * @param family
-         *            Accumulo column family for the column
-         * @param qualifier
-         *            Accumulo qualifier for the column
+         * @param schema Schema name
+         * @param table Table name
+         * @param family Accumulo column family for the column
+         * @param qualifier Accumulo qualifier for the column
          * @return A fresh LoadingCache
          */
         private LoadingCache<Range, Long> newCache(String schema, String table, String family,
@@ -331,14 +298,10 @@ public class ColumnCardinalityCache
         /**
          * Creates a new instance of {@link CardinalityCacheLoader}
          *
-         * @param schema
-         *            Schema name
-         * @param table
-         *            Table name
-         * @param family
-         *            Accumulo family for the Presto column
-         * @param qualifier
-         *            Accumulo qualifier for the Presto column
+         * @param schema Schema name
+         * @param table Table name
+         * @param family Accumulo family for the Presto column
+         * @param qualifier Accumulo qualifier for the Presto column
          */
         public CardinalityCacheLoader(String schema, String table, String family, String qualifier)
         {
@@ -353,8 +316,7 @@ public class ColumnCardinalityCache
          * Loads the cardinality for the given Range. Uses a Scanner and sums the cardinality for
          * all values that encapsulate the Range.
          *
-         * @param key
-         *            Range to get the cardinality for
+         * @param key Range to get the cardinality for
          * @return The cardinality of the column, which would be zero if the value does not exist
          */
         @Override
@@ -381,8 +343,7 @@ public class ColumnCardinalityCache
         /**
          * Loads the cardinality for a collection of Range objects
          *
-         * @param keys
-         *            All keys to load
+         * @param keys All keys to load
          * @return A mapping of Range to cardinality
          */
         @SuppressWarnings("unchecked")
