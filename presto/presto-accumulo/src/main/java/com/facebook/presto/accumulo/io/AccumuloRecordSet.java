@@ -126,19 +126,19 @@ public class AccumuloRecordSet
         if (sessionScanUser != null) {
             Authorizations scanAuths =
                     conn.securityOperations().getUserAuthorizations(sessionScanUser);
-            LOG.info("Using session scan auths for user %s: %s", sessionScanUser, scanAuths);
+            LOG.debug("Using session scan auths for user %s: %s", sessionScanUser, scanAuths);
             return scanAuths;
         }
 
         if (split.hasScanAuthorizations()) {
             Authorizations auths = new Authorizations(split.getScanAuthorizations().split(","));
-            LOG.info("scan_auths table property set: %s", auths);
+            LOG.debug("scan_auths table property set: %s", auths);
             return auths;
         }
         else {
             Authorizations auths =
                     conn.securityOperations().getUserAuthorizations(config.getUsername());
-            LOG.info("scan_auths table property not set, using user auths: %s", auths);
+            LOG.debug("scan_auths table property not set, using user auths: %s", auths);
             return auths;
         }
     }

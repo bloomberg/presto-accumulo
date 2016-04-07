@@ -38,7 +38,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public final class AccumuloQueryRunner
 {
-    private static final Logger log = Logger.get(AccumuloQueryRunner.class);
+    private static final Logger LOG = Logger.get(AccumuloQueryRunner.class);
 
     private AccumuloQueryRunner()
     {}
@@ -80,7 +80,7 @@ public final class AccumuloQueryRunner
             Iterable<TpchTable<?>> tables)
             throws Exception
     {
-        log.info("Loading data from %s.%s...", sourceCatalog, sourceSchema);
+        LOG.info("Loading data from %s.%s...", sourceCatalog, sourceSchema);
         long startTime = System.nanoTime();
         for (TpchTable<?> table : tables) {
             StringBuilder bldr = new StringBuilder("column_mapping = '");
@@ -93,7 +93,7 @@ public final class AccumuloQueryRunner
 
             copyTable(queryRunner, sourceCatalog, session, sourceSchema, table, bldr.toString());
         }
-        log.info("Loading from %s.%s complete in %s", sourceCatalog, sourceSchema, nanosSince(startTime).toString(SECONDS));
+        LOG.info("Loading from %s.%s complete in %s", sourceCatalog, sourceSchema, nanosSince(startTime).toString(SECONDS));
     }
 
     public static void dropTpchTables(QueryRunner queryRunner, Session session)
@@ -101,7 +101,7 @@ public final class AccumuloQueryRunner
         for (TpchTable<?> table : TpchTable.getTables()) {
             @Language("SQL")
             String sql = format("DROP TABLE IF EXISTS %s", table.getTableName());
-            log.info("%s", sql);
+            LOG.info("%s", sql);
             queryRunner.execute(session, sql);
         }
     }
@@ -125,11 +125,11 @@ public final class AccumuloQueryRunner
                 break;
         }
 
-        log.info("Running import for %s", target, sql);
-        log.info("%s", sql);
+        LOG.info("Running import for %s", target, sql);
+        LOG.info("%s", sql);
         long start = System.nanoTime();
         long rows = queryRunner.execute(session, sql).getUpdateCount().getAsLong();
-        log.info("Imported %s rows for %s in %s", rows, target, nanosSince(start));
+        LOG.info("Imported %s rows for %s in %s", rows, target, nanosSince(start));
     }
 
     public static Session createSession()

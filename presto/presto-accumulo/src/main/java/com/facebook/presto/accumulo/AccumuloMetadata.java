@@ -40,7 +40,6 @@ import com.facebook.presto.spi.TableNotFoundException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import io.airlift.log.Logger;
 import io.airlift.slice.Slice;
 
 import javax.inject.Inject;
@@ -180,7 +179,6 @@ public class AccumuloMetadata
     @Override
     public void createView(ConnectorSession session, SchemaTableName viewName, String viewData, boolean replace)
     {
-        Logger.get(getClass()).info("createView %s %s %s %s", session, viewName, viewData, replace);
         client.createView(viewName, viewData, replace);
     }
 
@@ -193,7 +191,6 @@ public class AccumuloMetadata
     @Override
     public void dropView(ConnectorSession session, SchemaTableName viewName)
     {
-        Logger.get(getClass()).info("dropView %s %s", session, viewName);
         client.dropView(viewName);
     }
 
@@ -207,12 +204,10 @@ public class AccumuloMetadata
     @Override
     public Map<SchemaTableName, ConnectorViewDefinition> getViews(ConnectorSession session, SchemaTablePrefix prefix)
     {
-        Logger.get(getClass()).info("getViews %s %s", session, prefix);
         ImmutableMap.Builder<SchemaTableName, ConnectorViewDefinition> bldr = ImmutableMap.builder();
         for (SchemaTableName stName : listViews(session, prefix.getSchemaName())) {
             bldr.put(stName, new ConnectorViewDefinition(stName, Optional.empty(), client.getView(stName).getData()));
         }
-        Logger.get(getClass()).info("views are %s", bldr.build());
         return bldr.build();
     }
 
@@ -237,7 +232,6 @@ public class AccumuloMetadata
      */
     private List<SchemaTableName> listViews(String schemaNameOrNull)
     {
-        Logger.get(getClass()).info("listViews %s", schemaNameOrNull);
         ImmutableList.Builder<SchemaTableName> bldr = ImmutableList.builder();
 
         if (schemaNameOrNull == null) {

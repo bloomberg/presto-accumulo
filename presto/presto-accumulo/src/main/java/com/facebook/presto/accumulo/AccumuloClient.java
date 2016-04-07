@@ -837,7 +837,6 @@ public class AccumuloClient
                 scan.close();
             }
 
-            LOG.info("Key %s location %s", key != null ? key.getRow() : null, location);
             // If we were unable to find the location for some reason, return the default tablet
             // location
             return location != null ? location : getDefaultTabletLocation(table);
