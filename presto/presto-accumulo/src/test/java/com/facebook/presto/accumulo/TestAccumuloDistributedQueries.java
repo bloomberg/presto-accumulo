@@ -28,8 +28,6 @@ import java.util.List;
 
 import static com.facebook.presto.accumulo.AccumuloQueryRunner.createAccumuloQueryRunner;
 import static com.facebook.presto.accumulo.AccumuloQueryRunner.dropTpchTables;
-import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
-import static com.facebook.presto.testing.MaterializedResult.resultBuilder;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static org.testng.Assert.assertEquals;
@@ -69,14 +67,14 @@ public class TestAccumuloDistributedQueries
             throws Exception
     {
         // Override because base class error: Must have at least one non-row ID column
-        assertUpdate("CREATE TABLE test_table_1 WITH (column_mapping = 'b:b:b') AS SELECT 'abcdefg' a, 1 b", 1);
+        assertUpdate("CREATE TABLE test_table_1 AS SELECT 'abcdefg' a, 1 b", 1);
         assertUpdate("CREATE VIEW test_view_1 AS SELECT a FROM test_table_1");
 
         assertQuery("SELECT * FROM test_view_1", "VALUES 'abcdefg'");
 
         // replace table with a version that's implicitly coercible to the previous one
         assertUpdate("DROP TABLE test_table_1");
-        assertUpdate("CREATE TABLE test_table_1 WITH (column_mapping = 'b:b:b') AS SELECT 'abc' a, 1 b", 1);
+        assertUpdate("CREATE TABLE test_table_1 AS SELECT 'abc' a, 1 b", 1);
 
         assertQuery("SELECT * FROM test_view_1", "VALUES 'abc'");
 
@@ -85,38 +83,14 @@ public class TestAccumuloDistributedQueries
     }
 
     @Override
-    public void testCreateTable()
-            throws Exception
-    {
-        // Override because base class error: Must specify column mapping property
-        assertUpdate("CREATE TABLE test_create (a bigint, b double, c varchar) WITH (column_mapping = 'b:b:b,c:c:c')");
-        assertTrue(queryRunner.tableExists(getSession(), "test_create"));
-        assertTableColumnNames("test_create", "a", "b", "c");
-
-        assertUpdate("DROP TABLE test_create");
-        assertFalse(queryRunner.tableExists(getSession(), "test_create"));
-
-        assertUpdate("CREATE TABLE test_create_table_if_not_exists (a bigint, b varchar, c double) WITH (column_mapping = 'b:b:b,c:c:c')");
-        assertTrue(queryRunner.tableExists(getSession(), "test_create_table_if_not_exists"));
-        assertTableColumnNames("test_create_table_if_not_exists", "a", "b", "c");
-
-        assertUpdate("CREATE TABLE IF NOT EXISTS test_create_table_if_not_exists (d bigint, e varchar) WITH (column_mapping = 'e:e:e')");
-        assertTrue(queryRunner.tableExists(getSession(), "test_create_table_if_not_exists"));
-        assertTableColumnNames("test_create_table_if_not_exists", "a", "b", "c");
-
-        assertUpdate("DROP TABLE test_create_table_if_not_exists");
-        assertFalse(queryRunner.tableExists(getSession(), "test_create_table_if_not_exists"));
-    }
-
-    @Override
     public void testCreateTableAsSelect()
             throws Exception
     {
-        assertUpdate("CREATE TABLE test_create_table_as_if_not_exists (a bigint, b double) WITH (column_mapping = 'b:b:b')");
+        assertUpdate("CREATE TABLE test_create_table_as_if_not_exists (a bigint, b double)");
         assertTrue(queryRunner.tableExists(getSession(), "test_create_table_as_if_not_exists"));
         assertTableColumnNames("test_create_table_as_if_not_exists", "a", "b");
 
-        MaterializedResult materializedRows = computeActual("CREATE TABLE IF NOT EXISTS test_create_table_as_if_not_exists WITH (column_mapping = 'orderkey:a:a, discount:a:b') AS SELECT UUID() AS uuid, orderkey, discount FROM lineitem");
+        MaterializedResult materializedRows = computeActual("CREATE TABLE IF NOT EXISTS test_create_table_as_if_not_exists AS SELECT UUID() AS uuid, orderkey, discount FROM lineitem");
         assertEquals(materializedRows.getRowCount(), 0);
         assertTrue(queryRunner.tableExists(getSession(), "test_create_table_as_if_not_exists"));
         assertTableColumnNames("test_create_table_as_if_not_exists", "a", "b");
@@ -127,47 +101,40 @@ public class TestAccumuloDistributedQueries
 //        Function "UUID" not found
 //        this.assertCreateTableAsSelect(
 //                "test_select",
-//                "orderdate:cf:orderdate,orderkey:cf:orderkey,totalprice:cf:totalprice",
 //                "SELECT UUID() AS uuid, orderdate, orderkey, totalprice FROM orders",
 //                "SELECT count(*) FROM orders");
 
         this.assertCreateTableAsSelect(
                 "test_group",
-                "orderstatus:cf:orderstatus,x:cf:x",
                 "SELECT orderstatus, sum(totalprice) x FROM orders GROUP BY orderstatus",
                 "SELECT count(DISTINCT orderstatus) FROM orders");
 
 //        Function "UUID" not found
 //        this.assertCreateTableAsSelect(
 //                "test_join",
-//                "x:x:x",
 //                "SELECT UUID() AS uuid, count(*) x FROM lineitem JOIN orders ON lineitem.orderkey = orders.orderkey",
 //                "SELECT 1");
 
 //        Function "UUID" not found
 //        this.assertCreateTableAsSelect(
 //                "test_limit",
-//                "orderkey:cf:orderkey",
 //                "SELECT UUID() AS uuid, orderkey FROM orders ORDER BY orderkey LIMIT 10",
 //                "SELECT 10");
 
 //        Function "UUID" not found
 //        this.assertCreateTableAsSelect(
 //                "test_unicode",
-//                "unicode:cf:unicode",
 //                "SELECT UUID() AS uuid, '\u2603' unicode",
 //                "SELECT 1");
 
         this.assertCreateTableAsSelect(
                 "test_with_data",
-                "custkey:md:custkey,orderstatus:md:orderstatus,totalprice:md:totalprice,orderdate:md:orderdate,orderpriority:md:orderpriority,clerk:md:clerk,shippriority:md:shippriority,comment:md:comment",
                 "SELECT * FROM orders WITH DATA",
                 "SELECT * FROM orders",
                 "SELECT count(*) FROM orders");
 
         this.assertCreateTableAsSelect(
                 "test_with_no_data",
-                "custkey:md:custkey,orderstatus:md:orderstatus,totalprice:md:totalprice,orderdate:md:orderdate,orderpriority:md:orderpriority,clerk:md:clerk,shippriority:md:shippriority,comment:md:comment",
                 "SELECT * FROM orders WITH NO DATA",
                 "SELECT * FROM orders LIMIT 0",
                 "SELECT 0");
@@ -175,7 +142,6 @@ public class TestAccumuloDistributedQueries
 //        No sample tables
 //        this.assertCreateTableAsSelect(
 //                "test_sampled",
-//                "custkey:md:custkey,orderstatus:md:orderstatus,totalprice:md:totalprice,orderdate:md:orderdate,orderpriority:md:orderpriority,clerk:md:clerk,shippriority:md:shippriority,comment:md:comment",
 //                "SELECT orderkey FROM tpch_sampled.tiny.orders ORDER BY orderkey LIMIT 10",
 //                "SELECT orderkey FROM orders ORDER BY orderkey LIMIT 10",
 //                "SELECT 10");
@@ -185,7 +151,6 @@ public class TestAccumuloDistributedQueries
 //        Function "UUID" not found
 //        this.assertCreateTableAsSelect(
 //                "test_union_all",
-//                "orderdate:md:orderdate,orderkey:md:orderkey,totalprice:md:totalprice",
 //                "SELECT UUID() AS uuid, orderdate, orderkey, totalprice FROM orders WHERE orderkey % 2 = 0 UNION ALL " +
 //                        "SELECT UUID() AS uuid, orderdate, orderkey, totalprice FROM orders WHERE orderkey % 2 = 1",
 //                "SELECT UUID() AS uuid, orderdate, orderkey, totalprice FROM orders",
@@ -195,7 +160,6 @@ public class TestAccumuloDistributedQueries
 //        this.assertCreateTableAsSelect(
 //                getSession().withSystemProperty("redistribute_writes", "true"),
 //                "test_union_all",
-//                "orderdate:md:orderdate,orderkey:md:orderkey,totalprice:md:totalprice",
 //                "SELECT UUID() AS uuid, orderdate, orderkey, totalprice FROM orders UNION ALL " +
 //                        "SELECT UUID() AS uuid, DATE '2000-01-01', 1234567890, 1.23",
 //                "SELECT UUID() AS uuid, orderdate, orderkey, totalprice FROM orders UNION ALL " +
@@ -206,7 +170,6 @@ public class TestAccumuloDistributedQueries
 //        this.assertCreateTableAsSelect(
 //                getSession().withSystemProperty("redistribute_writes", "false"),
 //                "test_union_all",
-//                "orderdate:md:orderdate,orderkey:md:orderkey,totalprice:md:totalprice",
 //                "SELECT UUID() AS uuid, orderdate, orderkey, totalprice FROM orders UNION ALL " +
 //                        "SELECT UUID() AS uuid, DATE '2000-01-01', 1234567890, 1.23",
 //                "SELECT UUID() AS uuid, orderdate, orderkey, totalprice FROM orders UNION ALL " +
@@ -218,13 +181,13 @@ public class TestAccumuloDistributedQueries
     public void testDelete()
             throws Exception
     {
-        // Override because base class error: Must specify column mapping property
         try {
             // TODO Deletes are not supported by the connector
             super.testDelete();
         }
         catch (Exception e) {
-            assertEquals("Must specify column mapping property", e.getMessage());
+            assertUpdate("DROP TABLE test_delete");
+            assertEquals("This connector does not support updates or deletes", e.getMessage());
         }
     }
 
@@ -232,10 +195,9 @@ public class TestAccumuloDistributedQueries
     public void testInsert()
             throws Exception
     {
-        // Override because base class error: Must specify column mapping property
         @Language("SQL") String query = "SELECT UUID() AS uuid, orderdate, orderkey FROM orders";
 
-        assertUpdate("CREATE TABLE test_insert WITH (column_mapping = 'orderdate:cf:orderdate,orderkey:cf:orderkey') AS " + query + " WITH NO DATA", 0);
+        assertUpdate("CREATE TABLE test_insert AS " + query + " WITH NO DATA", 0);
         assertQuery("SELECT count(*) FROM test_insert", "SELECT 0");
 
         assertUpdate("INSERT INTO test_insert " + query, "SELECT count(*) FROM orders");
@@ -262,6 +224,8 @@ public class TestAccumuloDistributedQueries
                         "UNION ALL " +
                         "SELECT UUID() AS uuid, orderkey, orderdate FROM orders",
                 "SELECT 2 * count(*) FROM orders");
+
+        assertUpdate("DROP TABLE test_insert");
     }
 
     @Override
@@ -269,7 +233,7 @@ public class TestAccumuloDistributedQueries
             throws Exception
     {
         // Override because base class error: Must have at least one non-row ID column
-        assertUpdate("CREATE TABLE test_rename_column WITH (column_mapping = 'a:a:a') AS SELECT 123 x, 456 a", 1);
+        assertUpdate("CREATE TABLE test_rename_column AS SELECT 123 x, 456 a", 1);
 
         assertUpdate("ALTER TABLE test_rename_column RENAME COLUMN x TO y");
         MaterializedResult materializedRows = computeActual("SELECT y FROM test_rename_column");
@@ -288,7 +252,7 @@ public class TestAccumuloDistributedQueries
             throws Exception
     {
         // Override because base class error: Must have at least one non-row ID column
-        assertUpdate("CREATE TABLE test_rename WITH (column_mapping = 'a:a:a') AS SELECT 123 x, 456 a", 1);
+        assertUpdate("CREATE TABLE test_rename AS SELECT 123 x, 456 a", 1);
 
         assertUpdate("ALTER TABLE test_rename RENAME TO test_rename_new");
         MaterializedResult materializedRows = computeActual("SELECT x FROM test_rename_new");
@@ -310,7 +274,7 @@ public class TestAccumuloDistributedQueries
             throws Exception
     {
         // Override because base class error: Must specify column mapping property
-        assertUpdate("CREATE TABLE test_symbol_aliasing WITH (column_mapping = 'foo_2_4:a:a') AS SELECT 1 foo_1, 2 foo_2_4", 1);
+        assertUpdate("CREATE TABLE test_symbol_aliasing AS SELECT 1 foo_1, 2 foo_2_4", 1);
         assertQuery("SELECT foo_1, foo_2_4 FROM test_symbol_aliasing", "SELECT 1, 2");
         assertUpdate("DROP TABLE test_symbol_aliasing");
     }
@@ -466,19 +430,24 @@ public class TestAccumuloDistributedQueries
         // Override base class because table descriptions for Accumulo connector include comments
         MaterializedResult actual = computeActual("SHOW COLUMNS FROM orders");
 
-        MaterializedResult expected = resultBuilder(getSession(), VARCHAR, VARCHAR, VARCHAR)
-                .row("orderkey", "bigint", "Accumulo row ID")
-                .row("custkey", "bigint", "Accumulo column cf:custkey. Indexed: false")
-                .row("orderstatus", "varchar", "Accumulo column cf:orderstatus. Indexed: false")
-                .row("totalprice", "double", "Accumulo column cf:totalprice. Indexed: false")
-                .row("orderdate", "date", "Accumulo column cf:orderdate. Indexed: false")
-                .row("orderpriority", "varchar", "Accumulo column cf:orderpriority. Indexed: false")
-                .row("clerk", "varchar", "Accumulo column cf:clerk. Indexed: false")
-                .row("shippriority", "bigint", "Accumulo column cf:shippriority. Indexed: false")
-                .row("comment", "varchar", "Accumulo column cf:comment. Indexed: false")
-                .build();
-
-        assertEquals(actual, expected);
+        assertEquals("orderkey", actual.getMaterializedRows().get(0).getField(0));
+        assertEquals("bigint", actual.getMaterializedRows().get(0).getField(1));
+        assertEquals("custkey", actual.getMaterializedRows().get(1).getField(0));
+        assertEquals("bigint", actual.getMaterializedRows().get(1).getField(1));
+        assertEquals("orderstatus", actual.getMaterializedRows().get(2).getField(0));
+        assertEquals("varchar", actual.getMaterializedRows().get(2).getField(1));
+        assertEquals("totalprice", actual.getMaterializedRows().get(3).getField(0));
+        assertEquals("double", actual.getMaterializedRows().get(3).getField(1));
+        assertEquals("orderdate", actual.getMaterializedRows().get(4).getField(0));
+        assertEquals("date", actual.getMaterializedRows().get(4).getField(1));
+        assertEquals("orderpriority", actual.getMaterializedRows().get(5).getField(0));
+        assertEquals("varchar", actual.getMaterializedRows().get(5).getField(1));
+        assertEquals("clerk", actual.getMaterializedRows().get(6).getField(0));
+        assertEquals("varchar", actual.getMaterializedRows().get(6).getField(1));
+        assertEquals("shippriority", actual.getMaterializedRows().get(7).getField(0));
+        assertEquals("bigint", actual.getMaterializedRows().get(7).getField(1));
+        assertEquals("comment", actual.getMaterializedRows().get(8).getField(0));
+        assertEquals("varchar", actual.getMaterializedRows().get(8).getField(1));
     }
 
     // Copied from abstract base class
@@ -493,24 +462,24 @@ public class TestAccumuloDistributedQueries
     }
 
     // Copied from abstract base class
-    private void assertCreateTableAsSelect(String table, String columnMapping, @Language("SQL") String query, @Language("SQL") String rowCountQuery)
+    private void assertCreateTableAsSelect(String table, @Language("SQL") String query, @Language("SQL") String rowCountQuery)
             throws Exception
     {
-        assertCreateTableAsSelect(getSession(), table, columnMapping, query, query, rowCountQuery);
+        assertCreateTableAsSelect(getSession(), table, query, query, rowCountQuery);
     }
 
     // Copied from abstract base class
-    private void assertCreateTableAsSelect(String table, String columnMapping, @Language("SQL") String query, @Language("SQL") String expectedQuery, @Language("SQL") String rowCountQuery)
+    private void assertCreateTableAsSelect(String table, @Language("SQL") String query, @Language("SQL") String expectedQuery, @Language("SQL") String rowCountQuery)
             throws Exception
     {
-        assertCreateTableAsSelect(getSession(), table, columnMapping, query, expectedQuery, rowCountQuery);
+        assertCreateTableAsSelect(getSession(), table, query, expectedQuery, rowCountQuery);
     }
 
     // Copied from abstract base class
-    private void assertCreateTableAsSelect(Session session, String table, String columnMapping, @Language("SQL") String query, @Language("SQL") String expectedQuery, @Language("SQL") String rowCountQuery)
+    private void assertCreateTableAsSelect(Session session, String table, @Language("SQL") String query, @Language("SQL") String expectedQuery, @Language("SQL") String rowCountQuery)
             throws Exception
     {
-        assertUpdate(session, "CREATE TABLE " + table + " WITH (column_mapping='" + columnMapping + "') AS " + query, rowCountQuery);
+        assertUpdate(session, "CREATE TABLE " + table + " AS " + query, rowCountQuery);
         assertQuery(session, "SELECT * FROM " + table, expectedQuery);
         assertUpdate(session, "DROP TABLE " + table);
 

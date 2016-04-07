@@ -20,7 +20,6 @@ import com.facebook.presto.tests.AbstractTestIntegrationSmokeTest;
 import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.AfterClass;
 
-import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static org.testng.Assert.assertEquals;
 
 public class TestAccumuloIntegrationSmokeTest
@@ -43,35 +42,24 @@ public class TestAccumuloIntegrationSmokeTest
             throws Exception
     {
         // Override base class because table descriptions for Accumulo connector include comments
-        MaterializedResult actualColumns = computeActual("DESC ORDERS").toJdbcTypes();
-        assertEquals(actualColumns, getExpectedTableDescription());
-    }
-
-    @Override
-    public void testViewAccessControl()
-            throws Exception
-    {
-        try {
-            // Views are not yet supported
-            super.testViewAccessControl();
-        }
-        catch (Exception e) {
-            assertEquals("This connector does not support creating views", e.getMessage());
-        }
-    }
-
-    private MaterializedResult getExpectedTableDescription()
-    {
-        return MaterializedResult.resultBuilder(queryRunner.getDefaultSession(), VARCHAR, VARCHAR, VARCHAR)
-                .row("orderkey", "bigint", "Accumulo row ID")
-                .row("custkey", "bigint", "Accumulo column cf:custkey. Indexed: false")
-                .row("orderstatus", "varchar", "Accumulo column cf:orderstatus. Indexed: false")
-                .row("totalprice", "double", "Accumulo column cf:totalprice. Indexed: false")
-                .row("orderdate", "date", "Accumulo column cf:orderdate. Indexed: false")
-                .row("orderpriority", "varchar", "Accumulo column cf:orderpriority. Indexed: false")
-                .row("clerk", "varchar", "Accumulo column cf:clerk. Indexed: false")
-                .row("shippriority", "bigint", "Accumulo column cf:shippriority. Indexed: false")
-                .row("comment", "varchar", "Accumulo column cf:comment. Indexed: false")
-                .build();
+        MaterializedResult actual = computeActual("DESC ORDERS").toJdbcTypes();
+        assertEquals("orderkey", actual.getMaterializedRows().get(0).getField(0));
+        assertEquals("bigint", actual.getMaterializedRows().get(0).getField(1));
+        assertEquals("custkey", actual.getMaterializedRows().get(1).getField(0));
+        assertEquals("bigint", actual.getMaterializedRows().get(1).getField(1));
+        assertEquals("orderstatus", actual.getMaterializedRows().get(2).getField(0));
+        assertEquals("varchar", actual.getMaterializedRows().get(2).getField(1));
+        assertEquals("totalprice", actual.getMaterializedRows().get(3).getField(0));
+        assertEquals("double", actual.getMaterializedRows().get(3).getField(1));
+        assertEquals("orderdate", actual.getMaterializedRows().get(4).getField(0));
+        assertEquals("date", actual.getMaterializedRows().get(4).getField(1));
+        assertEquals("orderpriority", actual.getMaterializedRows().get(5).getField(0));
+        assertEquals("varchar", actual.getMaterializedRows().get(5).getField(1));
+        assertEquals("clerk", actual.getMaterializedRows().get(6).getField(0));
+        assertEquals("varchar", actual.getMaterializedRows().get(6).getField(1));
+        assertEquals("shippriority", actual.getMaterializedRows().get(7).getField(0));
+        assertEquals("bigint", actual.getMaterializedRows().get(7).getField(1));
+        assertEquals("comment", actual.getMaterializedRows().get(8).getField(0));
+        assertEquals("varchar", actual.getMaterializedRows().get(8).getField(1));
     }
 }

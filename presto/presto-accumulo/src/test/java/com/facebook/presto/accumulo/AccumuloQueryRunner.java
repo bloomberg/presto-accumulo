@@ -24,7 +24,6 @@ import com.facebook.presto.tpch.TpchPlugin;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.log.Logger;
 import io.airlift.log.Logging;
-import io.airlift.tpch.TpchColumn;
 import io.airlift.tpch.TpchTable;
 import org.intellij.lang.annotations.Language;
 
@@ -83,15 +82,7 @@ public final class AccumuloQueryRunner
         LOG.info("Loading data from %s.%s...", sourceCatalog, sourceSchema);
         long startTime = System.nanoTime();
         for (TpchTable<?> table : tables) {
-            StringBuilder bldr = new StringBuilder("column_mapping = '");
-
-            for (TpchColumn tch : table.getColumns()) {
-                bldr.append(tch.getColumnName()).append(':').append("cf").append(':').append(tch.getColumnName()).append(',');
-            }
-            bldr.deleteCharAt(bldr.length() - 1);
-            bldr.append("'");
-
-            copyTable(queryRunner, sourceCatalog, session, sourceSchema, table, bldr.toString());
+            copyTable(queryRunner, sourceCatalog, session, sourceSchema, table);
         }
         LOG.info("Loading from %s.%s complete in %s", sourceCatalog, sourceSchema, nanosSince(startTime).toString(SECONDS));
     }
@@ -107,21 +98,20 @@ public final class AccumuloQueryRunner
     }
 
     private static void copyTable(QueryRunner queryRunner, String catalog, Session session,
-            String schema, TpchTable<?> table, String properties)
+            String schema, TpchTable<?> table)
     {
         QualifiedObjectName source = new QualifiedObjectName(catalog, schema, table.getTableName());
         String target = table.getTableName();
-        String with = properties.isEmpty() ? "" : format(" WITH (%s)", properties);
 
         @Language("SQL")
         String sql;
         switch (target) {
             case "lineitem":
             case "partsupp":
-                sql = format("CREATE TABLE %s%s AS SELECT UUID() AS uuid, * FROM %s", target, with, source);
+                sql = format("CREATE TABLE %s AS SELECT UUID() AS uuid, * FROM %s", target, source);
                 break;
             default:
-                sql = format("CREATE TABLE %s%s AS SELECT * FROM %s", target, with, source);
+                sql = format("CREATE TABLE %s AS SELECT * FROM %s", target, source);
                 break;
         }
 

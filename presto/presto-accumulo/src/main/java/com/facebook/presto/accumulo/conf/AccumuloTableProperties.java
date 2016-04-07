@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.io.Text;
 
 import java.security.InvalidParameterException;
 import java.util.Arrays;
@@ -62,13 +61,15 @@ public final class AccumuloTableProperties
     public AccumuloTableProperties(AccumuloConfig config)
     {
         PropertyMetadata<String> s1 = stringSessionProperty(COLUMN_MAPPING,
-                "Comma-delimited list of column metadata: col_name:col_family:col_qualifier,[...]",
+                "Comma-delimited list of column metadata: col_name:col_family:col_qualifier,[...]. "
+                        + "Required for external tables. "
+                        + "Not setting this property results in auto-generated column names.",
                 null, false);
 
         PropertyMetadata<String> s2 =
                 stringSessionProperty(INDEX_COLUMNS,
                         "A comma-delimited list of Presto columns that are indexed in this table's "
-                                + "corresponding index table.  Default is no indexed columns.",
+                                + "corresponding index table. Default is no indexed columns.",
                         "", false);
 
         PropertyMetadata<Boolean> s3 = booleanSessionProperty(EXTERNAL,
@@ -77,14 +78,14 @@ public final class AccumuloTableProperties
                 false, false);
 
         PropertyMetadata<String> s4 = stringSessionProperty(LOCALITY_GROUPS,
-                "List of locality groups to set on the Accumulo table.  Only valid on internal tables.  "
-                        + "String format is locality group name, colon, comma delimited list of column "
-                        + "families in the group.  Groups are delimited by pipes.  Example: "
-                        + "group1:famA,famB,famC|group2:famD,famE,famF|etc....  Default is no locality groups.",
+                "List of locality groups to set on the Accumulo table. Only valid on internal tables. "
+                        + "String format is locality group name, colon, comma delimited list of Presto "
+                        + "column names in the group. Groups are delimited by pipes. Example: "
+                        + "group1:colA,colB,colC|group2:colD,colE,colF|etc.... Default is no locality groups.",
                 null, false);
 
         PropertyMetadata<String> s5 = stringSessionProperty(ROW_ID,
-                "Presto column name that maps to the Accumulo row ID.  Default is the first column.",
+                "Presto column name that maps to the Accumulo row ID. Default is the first column.",
                 null, false);
 
         PropertyMetadata<String> s6 =
@@ -102,7 +103,7 @@ public final class AccumuloTableProperties
                                 : (String) x)));
 
         PropertyMetadata<String> s7 = stringSessionProperty(SCAN_AUTHS,
-                "Scan-time authorizations set on the batch scanner.  Default is all scan authorizations for the user",
+                "Scan-time authorizations set on the batch scanner. Default is all scan authorizations for the user",
                 null, false);
 
         tableProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7);
@@ -129,8 +130,8 @@ public final class AccumuloTableProperties
             Map<String, Object> tableProperties)
     {
         String strMapping = (String) tableProperties.get(COLUMN_MAPPING);
-        if (strMapping == null || strMapping.isEmpty()) {
-            throw new InvalidParameterException("Must specify column mapping property");
+        if (strMapping == null) {
+            return null;
         }
 
         // Parse out the column mapping
@@ -171,14 +172,14 @@ public final class AccumuloTableProperties
      * @param tableProperties The map of table properties
      * @return The map of locality groups, or null if not set
      */
-    public static Map<String, Set<Text>> getLocalityGroups(Map<String, Object> tableProperties)
+    public static Map<String, Set<String>> getLocalityGroups(Map<String, Object> tableProperties)
     {
         String groupStr = (String) tableProperties.get(LOCALITY_GROUPS);
         if (groupStr == null) {
             return null;
         }
 
-        Map<String, Set<Text>> groups = new HashMap<>();
+        Map<String, Set<String>> groups = new HashMap<>();
 
         // Split all configured locality groups
         for (String group : groupStr.split("\\|")) {
@@ -190,13 +191,11 @@ public final class AccumuloTableProperties
             }
 
             String grpName = locGroups[0];
-            String[] fams = locGroups[1].split(",");
+            Set<String> colSet = new HashSet<>();
+            groups.put(grpName, colSet);
 
-            Set<Text> famTexts = new HashSet<>();
-            groups.put(grpName, famTexts);
-
-            for (String f : fams) {
-                famTexts.add(new Text(f));
+            for (String f : locGroups[1].split(",")) {
+                colSet.add(f);
             }
         }
 

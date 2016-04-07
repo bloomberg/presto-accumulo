@@ -79,33 +79,33 @@ public final class AccumuloSessionProperties
         PropertyMetadata<Boolean> s3 = booleanSessionProperty(INT_OPTIMIZE_SPLIT_RANGES_ENABLED,
                 "Set to true to split non-indexed queries by tablet splits. Should generally be true.",
                 true, false);
+        PropertyMetadata<String> s4 =
+                stringSessionProperty(INT_SCAN_USERNAME,
+                        "User to impersonate when scanning the tables. "
+                                + "This property trumps the scan_auths table property. "
+                                + "Default is the user in the configuration file.", null, false);
 
         // Properties for secondary index
-        PropertyMetadata<Boolean> s4 = booleanSessionProperty(INT_OPTIMIZE_INDEX_ENABLED,
+        PropertyMetadata<Boolean> s5 = booleanSessionProperty(INT_OPTIMIZE_INDEX_ENABLED,
                 "Set to true to enable usage of the secondary index on query. Default true.", true,
                 false);
-        PropertyMetadata<Integer> s5 = integerSessionProperty(INT_INDEX_ROWS_PER_SPLIT,
+        PropertyMetadata<Integer> s6 = integerSessionProperty(INT_INDEX_ROWS_PER_SPLIT,
                 "The number of Accumulo row IDs that are packed into a single Presto split. "
                         + "Default 10000",
                 10000, false);
-        PropertyMetadata<Double> s6 = doubleSessionProperty(INT_INDEX_THRESHOLD,
+        PropertyMetadata<Double> s7 = doubleSessionProperty(INT_INDEX_THRESHOLD,
                 "The ratio between number of rows to be scanned based on the index over "
-                        + "the total number of rows.  If the ratio is below this threshold, "
-                        + "the index will be used.  Default .2",
+                        + "the total number of rows. If the ratio is below this threshold, "
+                        + "the index will be used. Default .2",
                 0.2, false);
-        PropertyMetadata<Double> s7 = doubleSessionProperty(INT_INDEX_LOWEST_CARDINALITY_THRESHOLD,
+        PropertyMetadata<Double> s8 = doubleSessionProperty(INT_INDEX_LOWEST_CARDINALITY_THRESHOLD,
                 "The threshold where the column with the lowest cardinality will be used instead "
                         + "of computing an intersection of ranges in the secondary index. "
-                        + "Secondary index must be enabled.  Default .01",
+                        + "Secondary index must be enabled. Default .01",
                 .01, false);
-        PropertyMetadata<Boolean> s8 = booleanSessionProperty(INT_INDEX_METRICS_ENABLED,
-                "Set to true to enable usage of the metrics table to optimize usage of the index.  "
+        PropertyMetadata<Boolean> s9 = booleanSessionProperty(INT_INDEX_METRICS_ENABLED,
+                "Set to true to enable usage of the metrics table to optimize usage of the index. "
                         + "Default true", true, false);
-        PropertyMetadata<String> s9 =
-                stringSessionProperty(INT_SCAN_USERNAME,
-                        "User to impersonate when scanning the tables.  "
-                                + "This property trumps the scan_auths table property.  "
-                                + "Default is the user in the configuration file.", null, false);
 
         sessionProperties = ImmutableList.of(s1, s2, s3, s4, s5, s6, s7, s8, s9);
     }

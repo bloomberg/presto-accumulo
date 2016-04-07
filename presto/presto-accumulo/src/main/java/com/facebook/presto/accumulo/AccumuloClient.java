@@ -62,11 +62,14 @@ import javax.inject.Inject;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -138,6 +141,7 @@ public class AccumuloClient
 
         // Check all the column types, and throw an exception if the types of a map are complex
         // While it is a rare case, this is not supported by the Accumulo connector
+        Set<String> columnNames = new HashSet<>();
         for (ColumnMetadata column : meta.getColumns()) {
             if (Types.isMapType(column.getType())) {
                 if (Types.isMapType(Types.getKeyType(column.getType()))
@@ -148,14 +152,47 @@ public class AccumuloClient
                             "Key/value types of a map pairs must be plain types");
                 }
             }
+
+            columnNames.add(column.getName().toLowerCase());
+        }
+
+        // Validate the columns are distinct
+        if (columnNames.size() != meta.getColumns().size()) {
+            throw new PrestoException(StandardErrorCode.USER_ERROR, "Duplicate column names are not supported");
+        }
+
+        // Validate any configured locality groups
+        Map<String, Set<String>> groups =
+                AccumuloTableProperties.getLocalityGroups(meta.getProperties());
+
+        if (groups != null) {
+            // For each locality group
+            for (Entry<String, Set<String>> g : groups.entrySet()) {
+                // For each column in the group
+                for (String col : g.getValue()) {
+                    // If the column was not found, throw exception
+                    List<ColumnMetadata> matched = meta.getColumns().stream().filter(x -> x.getName().equals(col)).collect(Collectors.toList());
+
+                    if (matched.size() != 1) {
+                        throw new PrestoException(StandardErrorCode.USER_ERROR, "Unknown column in locality group: " + col);
+                    }
+
+                    if (matched.get(0).getName().toLowerCase().equals(rowIdColumn)) {
+                        throw new PrestoException(StandardErrorCode.USER_ERROR, "Row ID column cannot be in a locality group");
+                    }
+                }
+            }
         }
 
         // Get the column mappings
-        // TODO This kind of sucks from a user perspective, can we use comments instead?
-        // COMMENT syntax is not merged into master, see PR 4296
-        // https://github.com/facebook/presto/pull/4296
-        Map<String, Pair<String, String>> mapping =
-                AccumuloTableProperties.getColumnMapping(meta.getProperties());
+        Map<String, Pair<String, String>> mapping = AccumuloTableProperties.getColumnMapping(meta.getProperties());
+        if (mapping == null) {
+            if (AccumuloTableProperties.isExternal(tableProperties)) {
+                throw new PrestoException(StandardErrorCode.USER_ERROR, "Column generation for external tables is not supported, must specify " + AccumuloTableProperties.COLUMN_MAPPING);
+            }
+
+            mapping = autoGenerateMapping(meta.getColumns(), groups);
+        }
 
         // The list of indexed columns
         List<String> indexedColumns = AccumuloTableProperties.getIndexColumns(tableProperties);
@@ -246,11 +283,21 @@ public class AccumuloClient
             // Create the table!
             conn.tableOperations().create(table.getFullTableName());
 
-            Map<String, Set<Text>> groups =
-                    AccumuloTableProperties.getLocalityGroups(tableProperties);
             // Set locality groups, if any
             if (groups != null && groups.size() > 0) {
-                conn.tableOperations().setLocalityGroups(table.getFullTableName(), groups);
+                Map<String, Set<Text>> localityGroups = new HashMap<>();
+                for (Entry<String, Set<String>> g : groups.entrySet()) {
+                    Set<Text> families = new HashSet<>();
+
+                    for (String col : g.getValue()) {
+                        // Locate the column family from the list of columns
+                        // We already validated this earlier, so it'll exist. Promise.
+                        families.add(new Text(table.getColumns().stream().filter(x -> x.getName().equals(col)).collect(Collectors.toList()).get(0).getFamily()));
+                    }
+                    localityGroups.put(g.getKey(), families);
+                }
+
+                conn.tableOperations().setLocalityGroups(table.getFullTableName(), localityGroups);
                 LOG.info("Set locality groups to %s", groups);
             }
             else {
@@ -267,6 +314,53 @@ public class AccumuloClient
                     "Accumulo error when creating table, check coordinator logs for more detail",
                     e);
         }
+    }
+
+    /**
+     * Auto-generates the mapping of Presto column name to Accumulo family/qualifier, respecting the locality groups (if any).
+     *
+     * @param columns Presto columns for the table
+     * @param groups Mapping of locality groups to a set of Presto columns, or null if none
+     * @return Column mappings
+     */
+    private Map<String, Pair<String, String>> autoGenerateMapping(List<ColumnMetadata> columns, Map<String, Set<String>> groups)
+    {
+        Map<String, Pair<String, String>> mapping = new HashMap<>();
+        for (ColumnMetadata column : columns) {
+            boolean tryAgain = false;
+            do {
+                String fam = null;
+                String qual = UUID.randomUUID().toString().substring(0, 4);
+
+                // search through locality groups to find if this column has a locality group
+                if (groups != null) {
+                    for (Entry<String, Set<String>> g : groups.entrySet()) {
+                        if (g.getValue().contains(column.getName())) {
+                            fam = g.getKey();
+                        }
+                    }
+                }
+
+                // randomly generate column family if not found
+                if (fam == null) {
+                    fam = UUID.randomUUID().toString().substring(0, 4);
+                }
+
+                // sanity check for qualifier uniqueness... but, I mean, what are the odds?
+                for (Entry<String, Pair<String, String>> m : mapping.entrySet()) {
+                    if (m.getValue().getRight().equals(qual)) {
+                        tryAgain = true;
+                        break;
+                    }
+                }
+
+                if (!tryAgain) {
+                    mapping.put(column.getName(), Pair.of(fam, qual));
+                }
+            }
+            while (tryAgain);
+        }
+        return mapping;
     }
 
     /**

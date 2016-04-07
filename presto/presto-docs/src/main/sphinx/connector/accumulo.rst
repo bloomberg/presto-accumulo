@@ -129,15 +129,38 @@ table, and keep in mind that any ``INSERT statements`` containing the same
 row ID is effectively an UPDATE as far as Accumulo is concerned, as any
 previous data in the cell will be overwritten. The row ID can be
 any valid Presto datatype. If the first column is not your primary key, you
-can set the row ID using the ``row_id`` table property within the ``WITH``
-clause of your table definition. Simply set this property to the name of the presto column.
+can set the row ID column using the ``row_id`` table property within the ``WITH``
+clause of your table definition.
 
-When creating a table using SQL, you **must** specify a
+Simply issue a ``CREATE TABLE`` statement to create a new Presto/Accumulo table.
+
+.. code:: sql
+
+    CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE);
+
+    DESCRIBE myschema.scientists;
+      Column   |  Type   |                  Comment
+    -----------+---------+-------------------------------------------
+     recordkey | varchar | Accumulo row ID
+     name      | varchar | Accumulo column f9eb:0905. Indexed: false
+     age       | bigint  | Accumulo column 297d:b43b. Indexed: false
+     birthday  | date    | Accumulo column 0bc4:bb7c. Indexed: false
+
+This command will create a new Accumulo table with the ``recordkey`` column
+as the Accumulo row ID. The name, age, and birthday columns are mapped to
+auto-generated column family and qualifier values.
+
+When creating a table using SQL, you can optionally specify a
 ``column_mapping`` table property. The value of this property is a
 comma-delimited list of triples, presto column **:** accumulo column
 family **:** accumulo column qualifier, with one triple for every
 non-row ID column. This sets the mapping of the Presto column name to
 the corresponding Accumulo column family and column qualifier.
+
+If you don't specify the ``column_mapping`` table property, then the
+connector will auto-generate column names (respecting any configured locality groups).
+Auto-generation of column names is only available for internal tables, so if your
+table is external you must specify the column_mapping property.
 
 For a full list of table properties, see `Table Properties <#table-properties>`__.
 
@@ -145,9 +168,17 @@ For example:
 
 .. code:: sql
 
-    CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE) 
+    CREATE TABLE myschema.scientists (recordkey VARCHAR, name VARCHAR, age BIGINT, birthday DATE)
     WITH (
       column_mapping = 'name:metadata:name,age:metadata:age,birthday:metadata:date');
+
+    DESCRIBE myschema.scientists;
+      Column   |  Type   |                    Comment
+    -----------+---------+-----------------------------------------------
+     recordkey | varchar | Accumulo row ID
+     name      | varchar | Accumulo column metadata:name. Indexed: false
+     age       | bigint  | Accumulo column metadata:age. Indexed: false
+     birthday  | date    | Accumulo column metadata:date. Indexed: false
 
 You can then issue INSERT statements to put data into Accumulo.
 
@@ -384,29 +415,29 @@ Table property usage example:
       index_columns = 'name,age'
     );
 
-+-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Property Name   | Required | Default Value  | Description                                                                                                                                                                                                                                                                        |
-+=================+==========+================+====================================================================================================================================================================================================================================================================================+
-| column_mapping  | Yes      | (none)         | Comma-delimited list of column metadata: col_name:col_family:col_qualifier,[...]                                                                                                                                                                                                   |
-+-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| index_columns   | No       | (none)         | A comma-delimited list of Presto columns that are indexed in this table's corresponding index table                                                                                                                                                                                |
-+-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| external        | No       | false          | If true, Presto will only do metadata operations for the table. Else, Presto will create and drop Accumulo tables where appropriate.                                                                                                                                               |
-+-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| locality_groups | No       | (none)         | List of locality groups to set on the Accumulo table. Only valid on internal tables. String format is locality group name, colon, comma delimited list of column families in the group. Groups are delimited by pipes. Example: group1:famA,famB,famC|group2:famD,famE,famF|etc... |
-+-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| row_id          | No       | (first column) | Presto column name that maps to the Accumulo row ID.                                                                                                                                                                                                                               |
-+-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| serializer      | No       | default        | Serializer for Accumulo data encodings. Can either be 'default', 'string', 'lexicoder', or a Java class name. Default is 'default', i.e. the value from AccumuloRowSerializer.getDefault(), i.e. 'lexicoder'.                                                                      |
-+-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| scan_auths      | No       | (user auths)   | Scan-time authorizations set on the batch scanner.                                                                                                                                                                                                                                 |
-+-----------------+----------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
++-----------------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Property Name   | Default Value  | Description                                                                                                                                                                                                                                                                        |
++=================+================+====================================================================================================================================================================================================================================================================================+
+| column_mapping  | (generated     | Comma-delimited list of column metadata: col_name:col_family:col_qualifier,[...]. Required for external tables.  Not setting this property results in auto-generated column names.                                                                                                 |
++-----------------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| index_columns   | (none)         | A comma-delimited list of Presto columns that are indexed in this table's corresponding index table                                                                                                                                                                                |
++-----------------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| external        | false          | If true, Presto will only do metadata operations for the table. Else, Presto will create and drop Accumulo tables where appropriate.                                                                                                                                               |
++-----------------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| locality_groups | (none)         | List of locality groups to set on the Accumulo table. Only valid on internal tables. String format is locality group name, colon, comma delimited list of column families in the group. Groups are delimited by pipes. Example: group1:famA,famB,famC|group2:famD,famE,famF|etc... |
++-----------------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| row_id          | (first column) | Presto column name that maps to the Accumulo row ID.                                                                                                                                                                                                                               |
++-----------------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| serializer      | default        | Serializer for Accumulo data encodings. Can either be 'default', 'string', 'lexicoder', or a Java class name. Default is 'default', i.e. the value from AccumuloRowSerializer.getDefault(), i.e. 'lexicoder'.                                                                      |
++-----------------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| scan_auths      | (user auths)   | Scan-time authorizations set on the batch scanner.                                                                                                                                                                                                                                 |
++-----------------+----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 Session Properties
 ~~~~~~~~~~~~~~~~~~
 
 You can change the default value of a session property by using the SET
-SESSION clause at the top of your Presto script:
+SESSION clause in the Presto CLI or at the top of your Presto script:
 
 .. code:: sql
 
@@ -425,7 +456,7 @@ SESSION clause at the top of your Presto script:
 +---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | accumulo.index_rows_per_split               | 10000         | The number of Accumulo row IDs that are packed into a single Presto split                                                                                             |
 +---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| accumulo.index_threshold                    | 0.2           | The ratio between number of rows to be scanned based on the index over the total number of rows.  If the ratio is below this threshold, the index will be used.       |
+| accumulo.index_threshold                    | 0.2           | The ratio between number of rows to be scanned based on the index over the total number of rows. If the ratio is below this threshold, the index will be used.        |
 +---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | accumulo.index_lowest_cardinality_threshold | 0.01          | The threshold where the column with the lowest cardinality will be used instead of computing an intersection of ranges in the index. Secondary index must be enabled. |
 +---------------------------------------------+---------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
