@@ -18,7 +18,15 @@ package com.facebook.presto.accumulo.model;
 import com.facebook.presto.accumulo.io.AccumuloPageSink;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.StandardErrorCode;
+import com.facebook.presto.spi.type.BigintType;
+import com.facebook.presto.spi.type.BooleanType;
+import com.facebook.presto.spi.type.DateType;
+import com.facebook.presto.spi.type.DoubleType;
+import com.facebook.presto.spi.type.TimeType;
+import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spi.type.VarbinaryType;
+import com.facebook.presto.spi.type.VarcharType;
 import org.apache.commons.lang.StringUtils;
 
 import java.sql.Date;
@@ -191,30 +199,30 @@ public class Row
         for (int i = 0; i < fields.length; ++i) {
             Type type = schema.getColumn(i).getType();
 
-            if (type == BIGINT) {
+            if (type instanceof BigintType) {
                 r.addField(Long.parseLong(fields[i]), BIGINT);
             }
-            else if (type == BOOLEAN) {
+            else if (type instanceof BooleanType) {
                 r.addField(Boolean.parseBoolean(fields[i]), BOOLEAN);
             }
-            else if (type == DATE) {
+            else if (type instanceof DateType) {
                 r.addField(
                         new Date(TimeUnit.MILLISECONDS.toDays(Date.valueOf(fields[i]).getTime())),
                         DATE);
             }
-            else if (type == DOUBLE) {
+            else if (type instanceof DoubleType) {
                 r.addField(Double.parseDouble(fields[i]), DOUBLE);
             }
-            else if (type == TIME) {
+            else if (type instanceof TimeType) {
                 r.addField(Time.valueOf(fields[i]), TIME);
             }
-            else if (type == TIMESTAMP) {
+            else if (type instanceof TimestampType) {
                 r.addField(Timestamp.valueOf(fields[i]), TIMESTAMP);
             }
-            else if (type == VARBINARY) {
+            else if (type instanceof VarbinaryType) {
                 r.addField(fields[i].getBytes(), VARBINARY);
             }
-            else if (type == VARCHAR) {
+            else if (type instanceof VarcharType) {
                 r.addField(fields[i], VARCHAR);
             }
             else {
