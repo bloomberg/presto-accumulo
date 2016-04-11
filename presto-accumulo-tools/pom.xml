@@ -67,6 +67,15 @@
                         <exclude>**/*.xml</exclude>
                     </excludes>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
