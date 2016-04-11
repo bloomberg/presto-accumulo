@@ -40,12 +40,17 @@ import org.apache.accumulo.core.security.Authorizations;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.lang.String.format;
@@ -69,14 +74,14 @@ public class PrestoBatchWriter
     // Options
     private static final char SCHEMA_OPT = 's';
     private static final char TABLE_OPT = 't';
-    private static final char FILE_OPT = 'f';
+    private static final char PATH_OPT = 'f';
     private static final char DELIMITER_OPT = 'd';
 
     // User-configured values
     private AccumuloConfig config;
     private String schema;
     private String tableName;
-    private File file;
+    private Path path;
     private BatchWriterConfig bwc;
     private char delimiter = ',';
 
@@ -91,12 +96,9 @@ public class PrestoBatchWriter
      * for the corresponding Presto table, as well leveraging the {@link Indexer} utility to index
      * the data. Call this method after the various set methods are called.
      *
-     * @throws AccumuloException
-     *             If a generic Accumulo error occurs
-     * @throws AccumuloSecurityException
-     *             If a security exception occurs
-     * @throws TableNotFoundException
-     *             If a table is not found in Accumulo
+     * @throws AccumuloException If a generic Accumulo error occurs
+     * @throws AccumuloSecurityException If a security exception occurs
+     * @throws TableNotFoundException If a table is not found in Accumulo
      */
     public void init()
             throws AccumuloException, AccumuloSecurityException, TableNotFoundException
@@ -109,6 +111,10 @@ public class PrestoBatchWriter
         // Fetch the table metadata
         AccumuloMetadataManager manager = config.getMetadataManager();
         this.table = manager.getTable(new SchemaTableName(schema, tableName));
+
+        if (this.table == null) {
+            throw new InvalidParameterException(format("No metadata for %s.%s", schema, tableName));
+        }
 
         // Get the scan authorizations based on the class's configuration or the user name
         final Authorizations auths;
@@ -150,10 +156,8 @@ public class PrestoBatchWriter
     /**
      * Add a mutation to the data and index tables (if appropriate)
      *
-     * @param m
-     *            Mutation to add
-     * @throws MutationsRejectedException
-     *             If the mutation is rejected
+     * @param m Mutation to add
+     * @throws MutationsRejectedException If the mutation is rejected
      */
     public void addMutation(Mutation m)
             throws MutationsRejectedException
@@ -168,10 +172,8 @@ public class PrestoBatchWriter
     /**
      * Add the collection of Mutations to the data and index tables (if appropriate)
      *
-     * @param m
-     *            Iterable object of mutations
-     * @throws MutationsRejectedException
-     *             If the mutation is rejected
+     * @param m Iterable object of mutations
+     * @throws MutationsRejectedException If the mutation is rejected
      */
     public void addMutations(Iterable<Mutation> m)
             throws MutationsRejectedException
@@ -185,8 +187,7 @@ public class PrestoBatchWriter
     /**
      * Flushes the data to the main table and the {@link Indexer}.
      *
-     * @throws MutationsRejectedException
-     *             If a mutation is rejected
+     * @throws MutationsRejectedException If a mutation is rejected
      */
     public void flush()
             throws MutationsRejectedException
@@ -200,8 +201,7 @@ public class PrestoBatchWriter
     /**
      * Flushes and closes the BatchWriter and the {@link Indexer}
      *
-     * @throws MutationsRejectedException
-     *             If a mutation is rejected
+     * @throws MutationsRejectedException If a mutation is rejected
      */
     public void close()
             throws MutationsRejectedException
@@ -227,7 +227,7 @@ public class PrestoBatchWriter
         int numErrors = checkParam(config, "config");
         numErrors += checkParam(schema, "schemaName");
         numErrors += checkParam(tableName, "tableName");
-        numErrors += checkParam(file, "file");
+        numErrors += checkParam(path, "path");
         if (numErrors > 0) {
             return 1;
         }
@@ -244,17 +244,41 @@ public class PrestoBatchWriter
         List<AccumuloColumnHandle> columns = table.getColumns();
         AccumuloRowSerializer serializer = table.getSerializerInstance();
 
-        BufferedReader rdr = new BufferedReader(new FileReader(file));
-        String line;
-        while ((line = rdr.readLine()) != null) {
-            this.addMutation(AccumuloPageSink.toMutation(Row.fromString(schema, line, delimiter),
-                    rowIdOrdinal, columns, serializer));
+        FileSystem fs = FileSystem.get(new Configuration());
+
+        if (!fs.exists(path)) {
+            throw new FileNotFoundException(format("Path does not exist: %s", fs.makeQualified(path)));
         }
 
-        // Flush and close the writer, and close the reader!
+        List<Path> paths = new ArrayList<>();
+        if (fs.isDirectory(path)) {
+            for (FileStatus status : fs.listStatus(path)) {
+                if (!status.isDirectory()) {
+                    paths.add(status.getPath());
+                }
+            }
+
+            if (paths.size() == 0) {
+                throw new FileNotFoundException(format("Directory does not contain any files: %s", fs.makeQualified(path)));
+            }
+        }
+        else {
+            paths.add(path);
+        }
+
+        for (Path p : paths) {
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(fs.open(p)))) {
+                String line;
+                while ((line = rdr.readLine()) != null) {
+                    this.addMutation(AccumuloPageSink.toMutation(Row.fromString(schema, line, delimiter),
+                            rowIdOrdinal, columns, serializer));
+                }
+            }
+        }
+
+        // Flush and close the writer
         this.flush();
         this.close();
-        rdr.close();
         return 0;
     }
 
@@ -265,7 +289,7 @@ public class PrestoBatchWriter
         this.setConfig(config);
         this.setSchema(cmd.getOptionValue(SCHEMA_OPT));
         this.setTableName(cmd.getOptionValue(TABLE_OPT));
-        this.setFile(new File(cmd.getOptionValue(FILE_OPT)));
+        this.setPath(new Path(cmd.getOptionValue(PATH_OPT)));
         if (cmd.hasOption(DELIMITER_OPT)) {
             String del = cmd.getOptionValue(DELIMITER_OPT);
             if (del.length() != 1) {
@@ -280,8 +304,7 @@ public class PrestoBatchWriter
     /**
      * Sets the {@link AccumuloConfig} to use for the task
      *
-     * @param config
-     *            Accumulo config
+     * @param config Accumulo config
      */
     public void setConfig(AccumuloConfig config)
     {
@@ -291,8 +314,7 @@ public class PrestoBatchWriter
     /**
      * Sets the Presto schema of the table
      *
-     * @param schema
-     *            Presto schema
+     * @param schema Presto schema
      */
     public void setSchema(String schema)
     {
@@ -302,8 +324,7 @@ public class PrestoBatchWriter
     /**
      * Sets the Presto table name (no schema)
      *
-     * @param tableName
-     *            Presto table name
+     * @param tableName Presto table name
      */
     public void setTableName(String tableName)
     {
@@ -311,21 +332,20 @@ public class PrestoBatchWriter
     }
 
     /**
-     * Sets the delimited file to be ingested. Not required if using this programatically.
+     * Sets the Hadoop Path for the file or directory to be ingested. Not required if using this programatically.
      *
-     * @param file
+     * @param path
      */
-    public void setFile(File file)
+    public void setPath(Path path)
     {
-        this.file = file;
+        this.path = path;
     }
 
     /**
      * Sets the delimiter to split the line of delimited data in the file. Default is a comma. Not
      * required if using this programatically.
      *
-     * @param delimiter
-     *            Delimiter of the data file
+     * @param delimiter Delimiter of the data file
      */
     public void setDelimiter(char delimiter)
     {
@@ -336,8 +356,7 @@ public class PrestoBatchWriter
      * Sets the BatchWriterConfig to use for the writer and indexer. Default is the default
      * BatchWriterConfig.
      *
-     * @param bwc
-     *            BatchWriterConfig to use
+     * @param bwc BatchWriterConfig to use
      */
     public void setBatchWriterConfig(BatchWriterConfig bwc)
     {
@@ -367,8 +386,8 @@ public class PrestoBatchWriter
         opts.addOption(OptionBuilder.withLongOpt("table").withDescription("Table name").hasArg()
                 .isRequired().create(TABLE_OPT));
         opts.addOption(OptionBuilder.withLongOpt("file")
-                .withDescription("File of data to write to Accumulo").hasArg().isRequired()
-                .create(FILE_OPT));
+                .withDescription("Hadoop Path to a file or directory of files to write to Accumulo").hasArg().isRequired()
+                .create(PATH_OPT));
         opts.addOption(OptionBuilder.withLongOpt("delimiter")
                 .withDescription("Delimiter of the file.  Default is a comma").hasArg()
                 .create(DELIMITER_OPT));

@@ -41,7 +41,7 @@ import static java.lang.String.format;
 
 /**
  * Main class for invoking tasks via the command line. Auto-detects implementations of {@link Task}
- * within the bloomberg.presto.accumulo.tools package and includes them in the list of available
+ * within the com.facebook.presto.accumulo.tools package and includes them in the list of available
  * tasks.
  */
 @SuppressWarnings("static-access")
@@ -59,7 +59,7 @@ public class Main
 
     static {
         // Search the classpath for implementations of Task in the tools package
-        Reflections reflections = new Reflections("bloomberg.presto.accumulo.tools");
+        Reflections reflections = new Reflections("com.facebook.presto.accumulo.tools");
         for (Class<? extends Task> task : reflections.getSubTypesOf(Task.class)) {
             try {
                 tasks.add(task.newInstance());
