@@ -30,19 +30,15 @@ import org.apache.accumulo.core.security.Authorizations;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.io.Text;
 
 import java.security.InvalidParameterException;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.facebook.presto.accumulo.examples.Constants.CLERK;
 import static com.facebook.presto.accumulo.examples.Constants.CLERK_STR;
 import static com.facebook.presto.accumulo.examples.Constants.COMMENT_STR;
 import static com.facebook.presto.accumulo.examples.Constants.CUSTKEY_STR;
@@ -54,7 +50,6 @@ import static com.facebook.presto.accumulo.examples.Constants.ORDERSTATUS_STR;
 import static com.facebook.presto.accumulo.examples.Constants.SHIPPRIORITY_STR;
 import static com.facebook.presto.accumulo.examples.Constants.TOTALPRICE_STR;
 import static com.facebook.presto.accumulo.examples.Constants.decode;
-import static com.facebook.presto.accumulo.examples.Constants.sdformat;
 import static java.lang.String.format;
 
 @SuppressWarnings("static-access")
