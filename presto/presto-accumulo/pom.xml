@@ -31,11 +31,13 @@
                     <execution>
                         <configuration>
                             <!-- ZooKeeper is incorrectly flagged as unused -->
-                            <!-- And we need to include the hadoop sub-dependency to exclude jersey-core -->
+                            <!-- And we need to include the hadoop sub-dependency to exclude transitive dependencies -->
                             <ignoredUnusedDeclaredDependencies>
-                                <ignoredUnusedDeclaredDependency>org.apache.zookeeper:zookeeper</ignoredUnusedDeclaredDependency>
-                                <ignoredUnusedDeclaredDependency>org.apache.hadoop:hadoop-client</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.apache.hadoop:hadoop-auth</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.apache.hadoop:hadoop-client</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.apache.hadoop:hadoop-hdfs</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.apache.hadoop:hadoop-minicluster</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.apache.zookeeper:zookeeper</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>
@@ -76,6 +78,12 @@
                             <expectedVersion>1.2.17</expectedVersion>
                             <resolvedVersion>1.2.16</resolvedVersion>
                         </exception>
+                        <exception>
+                            <groupId>org.eclipse.jetty</groupId>
+                            <artifactId>jetty-continuation</artifactId>
+                            <expectedVersion>9.3.7.RC0</expectedVersion>
+                            <resolvedVersion>8.1.15.v20140411</resolvedVersion>
+                        </exception>
                     </exceptions>
                 </configuration>
             </plugin>
@@ -93,44 +101,6 @@
                     <!-- Must disable failed build due to conflicts, results 
                         in NullPointerException -->
                     <failBuildInCaseOfConflict>false</failBuildInCaseOfConflict>
-                    <!--<exceptions> <exception> <conflictingDependencies> 
-                        <dependency> <groupId>asm</groupId> <artifactId>asm</artifactId> </dependency> 
-                        <dependency> <groupId>org.ow2.asm</groupId> <artifactId>asm-all</artifactId> 
-                        </dependency> </conflictingDependencies> <packages> <package>org.objectweb.asm</package> 
-                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
-                        <groupId>com.sun.jersey</groupId> <artifactId>jersey-core</artifactId> </dependency> 
-                        <dependency> <groupId>javax.ws.rs</groupId> <artifactId>javax.ws.rs-api</artifactId> 
-                        </dependency> </conflictingDependencies> <packages> <package>javax.ws.rs</package> 
-                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
-                        <groupId>org.slf4j</groupId> <artifactId>slf4j-jdk14</artifactId> </dependency> 
-                        <dependency> <groupId>org.slf4j</groupId> <artifactId>slf4j-log4j12</artifactId> 
-                        </dependency> </conflictingDependencies> <packages> <package>org.slf4j.impl</package> 
-                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
-                        <groupId>com.sun.jersey</groupId> <artifactId>jersey-server</artifactId> 
-                        </dependency> <dependency> <groupId>org.glassfish.jersey.core</groupId> <artifactId>jersey-server</artifactId> 
-                        </dependency> </conflictingDependencies> <packages> <package>com.sun.research.ws.wadl</package> 
-                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
-                        <groupId>commons-beanutils</groupId> <artifactId>commons-beanutils</artifactId> 
-                        </dependency> <dependency> <groupId>commons-beanutils</groupId> <artifactId>commons-beanutils-core</artifactId> 
-                        </dependency> <dependency> <groupId>commons-collections</groupId> <artifactId>commons-collections</artifactId> 
-                        </dependency> </conflictingDependencies> <packages> <package>org.apache.commons</package> 
-                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
-                        <groupId>commons-logging</groupId> <artifactId>commons-logging</artifactId> 
-                        </dependency> <dependency> <groupId>org.slf4j</groupId> <artifactId>jcl-over-slf4j</artifactId> 
-                        </dependency> </conflictingDependencies> <packages> <package>org.apache.commons.logging</package> 
-                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
-                        <groupId>javax.servlet</groupId> <artifactId>javax.servlet-api</artifactId> 
-                        </dependency> <dependency> <groupId>org.glassfish</groupId> <artifactId>javax.servlet</artifactId> 
-                        </dependency> </conflictingDependencies> <packages> <package>javax.servlet</package> 
-                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
-                        <groupId>log4j</groupId> <artifactId>log4j</artifactId> </dependency> <dependency> 
-                        <groupId>org.slf4j</groupId> <artifactId>log4j-over-slf4j</artifactId> </dependency> 
-                        </conflictingDependencies> <packages> <package>org.apache.log4j</package> 
-                        </packages> </exception> <exception> <conflictingDependencies> <dependency> 
-                        <groupId>org.apache.hadoop</groupId> <artifactId>hadoop-yarn-api</artifactId> 
-                        </dependency> <dependency> <groupId>org.apache.hadoop</groupId> <artifactId>hadoop-yarn-common</artifactId> 
-                        </dependency> </conflictingDependencies> <packages> <package>org.apache.hadoop.yarn</package> 
-                        </packages> </exception> </exceptions> -->
                 </configuration>
             </plugin>
         </plugins>
@@ -149,6 +119,29 @@
         <dependency>
             <groupId>org.apache.accumulo</groupId>
             <artifactId>accumulo-core</artifactId>
+            <version>${accumulo.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.beust</groupId>
+                    <artifactId>jcommander</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-beanutils</groupId>
+                    <artifactId>commons-beanutils-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-utils</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-utils</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.accumulo</groupId>
+            <artifactId>accumulo-minicluster</artifactId>
             <version>${accumulo.version}</version>
             <exclusions>
                 <exclusion>
@@ -204,6 +197,28 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-auth</artifactId>
+            <version>2.2.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minicluster</artifactId>
+            <version>2.2.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs</artifactId>
             <version>2.2.0</version>
             <exclusions>
                 <exclusion>
@@ -282,6 +297,11 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.1</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.1</version>
         </dependency>
 
         <!-- Presto SPI -->

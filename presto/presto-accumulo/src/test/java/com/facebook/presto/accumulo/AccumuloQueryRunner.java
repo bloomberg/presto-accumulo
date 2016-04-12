@@ -60,6 +60,7 @@ public final class AccumuloQueryRunner
                         .put(AccumuloConfig.USERNAME, "root")
                         .put(AccumuloConfig.PASSWORD, "secret")
                         .put(AccumuloConfig.ZOOKEEPER_METADATA_ROOT, "/presto-accumulo-test")
+                        .put(AccumuloConfig.MINI_ACCUMULO_CLUSTER, "true")
                         .build();
 
         queryRunner.createCatalog("accumulo", "accumulo", accumuloProperties);

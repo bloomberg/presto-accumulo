@@ -15,6 +15,7 @@
  */
 package com.facebook.presto.accumulo.io;
 
+import com.facebook.presto.accumulo.AccumuloClient;
 import com.facebook.presto.accumulo.Types;
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.index.Indexer;
@@ -77,14 +78,12 @@ public class AccumuloPageSink
     /**
      * Creates a new instance of {@link AccumuloPageSink}
      *
-     * @param conn Connector for Accumulo
-     * @param accConfig Configuration for Accumulo
+     * @param config Configuration for Accumulo
      * @param table Table metadata for an Accumulo table
      */
-    public AccumuloPageSink(Connector conn, AccumuloConfig accConfig, AccumuloTable table)
+    public AccumuloPageSink(AccumuloConfig config, AccumuloTable table)
     {
-        requireNonNull(conn, "conn is null");
-        requireNonNull(accConfig, "accConfig is null");
+        requireNonNull(config, "config is null");
         requireNonNull(table, "table is null");
 
         this.columns = table.getColumns();
@@ -104,6 +103,7 @@ public class AccumuloPageSink
         this.serializer = table.getSerializerInstance();
 
         try {
+            Connector conn = AccumuloClient.getAccumuloConnector(config);
             // Create a BatchWriter to the Accumulo table
             BatchWriterConfig conf = new BatchWriterConfig();
             wrtr = conn.createBatchWriter(table.getFullTableName(), conf);
@@ -111,7 +111,7 @@ public class AccumuloPageSink
             // If the table is indexed, create an instance of an Indexer, else null
             if (table.isIndexed()) {
                 indexer = new Indexer(conn,
-                        conn.securityOperations().getUserAuthorizations(accConfig.getUsername()),
+                        conn.securityOperations().getUserAuthorizations(config.getUsername()),
                         table, conf);
             }
             else {

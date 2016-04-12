@@ -23,13 +23,6 @@ import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorPageSink;
 import com.facebook.presto.spi.ConnectorPageSinkProvider;
 import com.facebook.presto.spi.ConnectorSession;
-import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.StandardErrorCode;
-import org.apache.accumulo.core.client.AccumuloException;
-import org.apache.accumulo.core.client.AccumuloSecurityException;
-import org.apache.accumulo.core.client.Connector;
-import org.apache.accumulo.core.client.ZooKeeperInstance;
-import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 
 import javax.inject.Inject;
 
@@ -47,7 +40,6 @@ public class AccumuloPageSinkProvider
 {
     private final AccumuloClient client;
     private final AccumuloConfig config;
-    private final Connector conn;
 
     /**
      * Creates a new instance of {@link AccumuloPageSinkProvider}
@@ -60,16 +52,6 @@ public class AccumuloPageSinkProvider
     {
         this.client = requireNonNull(client, "client is null");
         this.config = requireNonNull(config, "config is null");
-
-        ZooKeeperInstance inst =
-                new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
-        try {
-            conn = inst.getConnector(config.getUsername(),
-                    new PasswordToken(config.getPassword().getBytes()));
-        }
-        catch (AccumuloException | AccumuloSecurityException e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
-        }
     }
 
     /**
@@ -85,7 +67,7 @@ public class AccumuloPageSinkProvider
     {
         AccumuloTableHandle tHandle =
                 checkType(outputTableHandle, AccumuloTableHandle.class, "tHandle");
-        return new AccumuloPageSink(conn, config, client.getTable(tHandle.toSchemaTableName()));
+        return new AccumuloPageSink(config, client.getTable(tHandle.toSchemaTableName()));
     }
 
     /**
@@ -101,6 +83,6 @@ public class AccumuloPageSinkProvider
     {
         AccumuloTableHandle tHandle =
                 checkType(insertTableHandle, AccumuloTableHandle.class, "tHandle");
-        return new AccumuloPageSink(conn, config, client.getTable(tHandle.toSchemaTableName()));
+        return new AccumuloPageSink(config, client.getTable(tHandle.toSchemaTableName()));
     }
 }

@@ -87,7 +87,7 @@ public class AddColumnTask
         }
 
         // Fetch the metadata from the client
-        AccumuloClient client = new AccumuloClient(new AccumuloConnectorId("accumulo"), config);
+        AccumuloClient client = new AccumuloClient(config);
         AccumuloTable table = client.getTable(new SchemaTableName(schema, tableName));
         if (table == null) {
             System.err.println(format("Metadata for table %s.%s not found.  Does it exist?", schema,

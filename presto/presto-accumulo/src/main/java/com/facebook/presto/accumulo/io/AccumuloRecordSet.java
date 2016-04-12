@@ -15,6 +15,7 @@
  */
 package com.facebook.presto.accumulo.io;
 
+import com.facebook.presto.accumulo.AccumuloClient;
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.conf.AccumuloSessionProperties;
 import com.facebook.presto.accumulo.model.AccumuloColumnConstraint;
@@ -65,10 +66,9 @@ public class AccumuloRecordSet
      * @param config Connector configuration
      * @param split Split to process
      * @param columnHandles Columns of the table
-     * @param conn Accumulo connector
      */
     public AccumuloRecordSet(ConnectorSession session, AccumuloConfig config, AccumuloSplit split,
-            List<AccumuloColumnHandle> columnHandles, Connector conn)
+            List<AccumuloColumnHandle> columnHandles)
     {
         requireNonNull(config, "config is null");
         requireNonNull(split, "split is null");
@@ -95,6 +95,7 @@ public class AccumuloRecordSet
 
         try {
             // Create the BatchScanner and set the ranges from the split
+            Connector conn = AccumuloClient.getAccumuloConnector(config);
             scan = conn.createBatchScanner(split.getFullTableName(),
                     getScanAuthorizations(session, split, config, conn), 10);
             scan.setRanges(split.getRanges());

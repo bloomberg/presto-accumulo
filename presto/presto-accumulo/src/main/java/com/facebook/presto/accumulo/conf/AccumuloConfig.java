@@ -44,6 +44,8 @@ public class AccumuloConfig
     public static final String CARDINALITY_CACHE_SIZE = "cardinality.cache.size";
     public static final String CARDINALITY_CACHE_EXPIRE_SECONDS =
             "cardinality.cache.expire.seconds";
+    public static final String MINI_ACCUMULO_CLUSTER =
+            "mini.accumulo.cluster";
 
     private String instance;
     private String zooKeepers;
@@ -53,6 +55,7 @@ public class AccumuloConfig
     private String metaManClass;
     private Integer cardinalityCacheSize;
     private Integer cardinalityCacheExpireSeconds;
+    private Boolean isMiniAccumuloCluster;
 
     /**
      * Gets the Accumulo instance name
@@ -266,6 +269,28 @@ public class AccumuloConfig
         this.cardinalityCacheExpireSeconds = cardinalityCacheExpireSeconds;
     }
 
+    /**
+     * Gets a Boolean value indiciating whether or not the connector should use MiniAccumuloCluster.  This is for testing only.
+     *
+     * @return True if MAC should be used, false otherwise
+     */
+    @NotNull
+    public boolean isMiniAccumuloCluster()
+    {
+        return isMiniAccumuloCluster == null ? false : isMiniAccumuloCluster;
+    }
+
+    /**
+     * Sets whether or not to use MiniAccumuloCluster.  This is for testing only.
+     *
+     * @param isMiniAccumuloCluster True to MAC, false otherwise
+     */
+    @Config(MINI_ACCUMULO_CLUSTER)
+    public void setMiniAccumuloCluster(boolean isMiniAccumuloCluster)
+    {
+        this.isMiniAccumuloCluster = isMiniAccumuloCluster;
+    }
+
     public static AccumuloConfig fromFile(File f)
             throws ConfigurationException
     {
@@ -285,6 +310,7 @@ public class AccumuloConfig
         config.setUsername(props.getString(USERNAME));
         config.setZkMetadataRoot(props.getString(ZOOKEEPER_METADATA_ROOT, "/presto-accumulo"));
         config.setZooKeepers(props.getString(ZOOKEEPERS));
+        config.setMiniAccumuloCluster(props.getBoolean(MINI_ACCUMULO_CLUSTER, false));
         return config;
     }
 
@@ -304,6 +330,7 @@ public class AccumuloConfig
         config.setUsername(props.getString(USERNAME));
         config.setZkMetadataRoot(props.getString(ZOOKEEPER_METADATA_ROOT, "/presto-accumulo"));
         config.setZooKeepers(props.getString(ZOOKEEPERS));
+        config.setMiniAccumuloCluster(props.getBoolean(MINI_ACCUMULO_CLUSTER, false));
         return config;
     }
 }

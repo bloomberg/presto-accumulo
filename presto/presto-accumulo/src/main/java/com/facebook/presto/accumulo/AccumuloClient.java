@@ -43,6 +43,7 @@ import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.TableExistsException;
@@ -54,11 +55,16 @@ import org.apache.accumulo.core.data.PartialKey;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
+import org.apache.accumulo.minicluster.MiniAccumuloCluster;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.io.Text;
 
 import javax.inject.Inject;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -78,37 +84,95 @@ import static java.util.Objects.requireNonNull;
  * This class is the main access point for the Presto connector to interact with Accumulo. It is
  * responsible for creating tables, dropping tables, retrieving table metadata, and getting the
  * ConnectorSplits from a table.
+ * <p>
+ * Classes that requires an Accumulo Connector object should use the static method to retrieve it.
+ * This function will create a MiniAccumuloCluster connection for testing, or a 'real' one for production use.
  */
 public class AccumuloClient
 {
     private static final Logger LOG = Logger.get(AccumuloClient.class);
     private static final String DUMMY_LOCATION = "localhost:9997";
+    private static final String MAC_PASSWORD = "secret";
+    private static final String MAC_USER = "root";
+
+    private static Connector conn = null;
+
+    /**
+     * Gets an Accumulo Connector based on the given configuration.
+     * Will start/stop MiniAccumuloCluster should that be true in the config.
+     *
+     * @param config Accumulo configuration
+     * @return Accumulo connector
+     */
+    public static synchronized Connector getAccumuloConnector(AccumuloConfig config)
+    {
+        if (conn != null) {
+            return conn;
+        }
+
+        try {
+            if (config.isMiniAccumuloCluster()) {
+                // Create MAC directory
+                final File macDir = Files.createTempDirectory("mac-").toFile();
+                LOG.info("MAC is enabled, starting MiniAccumuloCluster at %s", macDir);
+
+                // Start MAC and connect to it
+                MiniAccumuloCluster accumulo = new MiniAccumuloCluster(macDir, MAC_PASSWORD);
+                accumulo.start();
+                LOG.info("Connecting to: %s %s %s %s", accumulo.getInstanceName(),
+                        accumulo.getZooKeepers(), MAC_USER, MAC_PASSWORD);
+                Instance inst = new ZooKeeperInstance(accumulo.getInstanceName(), accumulo.getZooKeepers());
+                conn = inst.getConnector(MAC_USER, new PasswordToken(MAC_PASSWORD));
+                LOG.info("Connection established: %s %s %s %s", accumulo.getInstanceName(),
+                        accumulo.getZooKeepers(), MAC_USER, MAC_PASSWORD);
+
+                // Add shutdown hook to stop MAC and cleanup temporary files
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    try {
+                        LOG.info("Shutting down MAC");
+                        accumulo.stop();
+                        LOG.info("Cleaning up MAC directory");
+                        FileUtils.forceDelete(macDir);
+                    }
+                    catch (IOException | InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }));
+            }
+            else {
+                Instance inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
+                conn = inst.getConnector(config.getUsername(),
+                        new PasswordToken(config.getPassword().getBytes()));
+            }
+        }
+        catch (AccumuloException | AccumuloSecurityException | InterruptedException | IOException e) {
+            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Failed to get conn to Accumulo", e);
+        }
+
+        return conn;
+    }
 
     private final AccumuloConfig conf;
     private final AccumuloMetadataManager metaManager;
     private final Authorizations auths;
-    private final Connector conn;
-    private final ZooKeeperInstance inst;
 
     /**
      * Creates a new instance of an AccumuloClient, injected by that Guice. Creates a connection to
      * Accumulo.
      *
-     * @param connectorId Connector ID
      * @param config Connector configuration for Accumulo
      * @throws AccumuloException If an Accumulo error occurs
      * @throws AccumuloSecurityException If Accumulo credentials are not valid
      */
     @Inject
-    public AccumuloClient(AccumuloConnectorId connectorId, AccumuloConfig config)
-            throws AccumuloException, AccumuloSecurityException
+    public AccumuloClient(AccumuloConfig config)
+            throws AccumuloException, AccumuloSecurityException, IOException, InterruptedException
     {
         this.conf = requireNonNull(config, "config is null");
-        this.inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
-        this.conn = inst.getConnector(config.getUsername(),
-                new PasswordToken(config.getPassword().getBytes()));
         this.metaManager = config.getMetadataManager();
-        this.auths = conn.securityOperations().getUserAuthorizations(conf.getUsername());
+
+        // Creates and sets CONNECTOR in the event it has not yet been created
+        this.auths = getAccumuloConnector(this.conf).securityOperations().getUserAuthorizations(conf.getUsername());
     }
 
     /**

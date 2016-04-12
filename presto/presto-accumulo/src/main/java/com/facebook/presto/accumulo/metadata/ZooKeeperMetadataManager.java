@@ -15,6 +15,7 @@
  */
 package com.facebook.presto.accumulo.metadata;
 
+import com.facebook.presto.accumulo.AccumuloClient;
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
@@ -41,7 +42,6 @@ public class ZooKeeperMetadataManager
 
     private final CuratorFramework curator;
     private final String zkMetadataRoot;
-    private final String zookeepers;
 
     /**
      * Creates a new instance of {@link ZooKeeperMetadataManager}
@@ -52,7 +52,9 @@ public class ZooKeeperMetadataManager
     {
         super(config);
         zkMetadataRoot = config.getZkMetadataRoot();
-        zookeepers = config.getZooKeepers();
+
+        // Need to get ZooKeepers from AccumuloClient in the event MAC is enabled
+        String zookeepers = AccumuloClient.getAccumuloConnector(config).getInstance().getZooKeepers();
 
         // Create the connection to ZooKeeper to check if the metadata root exists
         CuratorFramework checkRoot =
