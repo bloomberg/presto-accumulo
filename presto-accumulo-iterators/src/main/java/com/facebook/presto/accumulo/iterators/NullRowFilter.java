@@ -32,7 +32,6 @@ public class NullRowFilter
         extends RowFilter
         implements OptionDescriber
 {
-
     protected static final String CF = "family";
     protected static final String CQ = "qualifier";
 
@@ -43,7 +42,6 @@ public class NullRowFilter
     public boolean acceptRow(SortedKeyValueIterator<Key, Value> rowIterator)
             throws IOException
     {
-
         while (rowIterator.hasTop()) {
             Key k = rowIterator.getTopKey();
             if (k.compareColumnFamily(columnFamily) == 0 && k.compareColumnQualifier(columnQualifier) == 0) {
@@ -66,7 +64,6 @@ public class NullRowFilter
     @Override
     public SortedKeyValueIterator<Key, Value> deepCopy(IteratorEnvironment env)
     {
-
         // Create a new SingleColumnValueFilter object based on the parent's
         // deepCopy
         NullRowFilter copy = new NullRowFilter();
@@ -82,7 +79,6 @@ public class NullRowFilter
     @Override
     public IteratorOptions describeOptions()
     {
-
         return new IteratorOptions("singlecolumnvaluefilter", "Filter accepts or rejects each Key/Value pair based on the lexicographic comparison of a value stored in a single column family/qualifier",
                 // @formatter:off
         ImmutableMap.<String, String>builder().put(CF, "column family to match on, required").put(CQ, "column qualifier to match on, required").build(),
@@ -108,7 +104,6 @@ public class NullRowFilter
 
     public static Map<String, String> getProperties(String family, String qualifier)
     {
-
         Map<String, String> opts = new HashMap<>();
 
         opts.put(CF, family);

@@ -39,7 +39,6 @@ import static java.lang.String.format;
 
 public class TpchQueryExecutor
 {
-
     private static final Logger LOG = Logger.getLogger(TpchQueryExecutor.class);
     private static final String JDBC_DRIVER = "com.facebook.presto.jdbc.PrestoDriver";
     private static final String SCHEME = "jdbc:presto://";
@@ -54,11 +53,12 @@ public class TpchQueryExecutor
         }
     }
 
+    private TpchQueryExecutor() {}
+
     public static QueryMetrics run(AccumuloConfig accConfig, File qf, String host, int port,
             String schema, boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled, int timeout)
             throws Exception
     {
-
         String dbUrl = String.format("%s%s:%d/%s/%s", SCHEME, host, port, CATALOG, schema);
 
         Properties props = new Properties();
@@ -81,7 +81,6 @@ public class TpchQueryExecutor
         ExecutorService ex = Executors.newSingleThreadExecutor();
         Future<?> future = ex.submit(new Runnable()
         {
-
             @Override
             public void run()
             {

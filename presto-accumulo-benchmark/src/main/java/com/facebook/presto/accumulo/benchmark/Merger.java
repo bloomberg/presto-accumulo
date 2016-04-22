@@ -22,11 +22,11 @@ import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 
 public class Merger
 {
+    private Merger() {}
 
     public static void run(AccumuloConfig conf, String tableName)
             throws Exception
     {
-
         ZooKeeperInstance inst = new ZooKeeperInstance(conf.getInstance(), conf.getZooKeepers());
         Connector conn = inst.getConnector(conf.getUsername(), new PasswordToken(conf.getPassword()));
 

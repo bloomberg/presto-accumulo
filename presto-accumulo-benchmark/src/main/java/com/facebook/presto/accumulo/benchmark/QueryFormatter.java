@@ -19,6 +19,7 @@ import java.io.File;
 
 public class QueryFormatter
 {
+    private QueryFormatter() {}
 
     public static void run(String schema, File benchmarkDir)
             throws Exception

@@ -38,10 +38,10 @@ public class Driver
         extends Configured
         implements Tool
 {
-
     private static final Logger LOG = Logger.getLogger(Driver.class);
-    private static List<String> BLACKLIST = ImmutableList.copyOf(new String[] {"2.sql", "4.sql", "9.sql", "11.sql", "13.sql", "15.sql", "17.sql", "19.sql", "20.sql", "21.sql",
-                                                                               "22.sql"});
+    private static final List<String> BLACKLIST = ImmutableList.copyOf(new String[] {
+            "2.sql", "4.sql", "9.sql", "11.sql", "13.sql", "15.sql", "17.sql", "19.sql", "20.sql", "21.sql", "22.sql"});
+
     private int numQueries = 0;
     private int ranQueries = 0;
     private List<QueryMetrics> metrics = new ArrayList<>();
@@ -57,7 +57,6 @@ public class Driver
     public int run(String[] args)
             throws Exception
     {
-
         if (args.length != 12) {
             System.err.println("Usage: [instance] [zookeepers] [user] [passwd] [dbgen.dir] [presto.host] [presto.port] [benchmark.dir] [csv.schemas] [num.splits] [timeout] [skip.ingest]");
             return 1;
@@ -88,11 +87,14 @@ public class Driver
 
         queryFiles = Arrays.asList(scriptsDir.listFiles()).stream().filter(x -> !BLACKLIST.contains(x.getName()) && x.getName().matches("[0-9]+.sql")).collect(Collectors.toList());
 
+        for (File f : queryFiles) {
+            LOG.info(format("Query file is %s", f));
+        }
+
         String[] splittableTables = {"customer", "lineitem", "orders", "part", "partsupp", "supplier"};
 
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable()
         {
-
             @Override
             public void run()
             {
@@ -146,7 +148,7 @@ public class Driver
     private void runQueries(AccumuloConfig accConf, String host, int port, String schema, float scale, int numSplits, boolean optimizeRangeSplitsEnabled, boolean secondaryIndexEnabled, int timeout)
             throws Exception
     {
-
+        LOG.info(format("Running queries for schema %s, num splits %d", schema, numSplits));
         for (File qf : queryFiles) {
             QueryMetrics qm = TpchQueryExecutor.run(accConf, qf, host, port, schema, optimizeRangeSplitsEnabled, secondaryIndexEnabled, timeout);
 

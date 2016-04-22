@@ -179,8 +179,12 @@ public class TpcHClerkSearch
             // Write the screen name and text to stdout
             System.out.println(format("%d|%d|%s|%f|%s|%s|%s|%d|%s", orderkey, custkey, orderstatus, totalprice, orderdate, orderpriority, clerk, shippriority, comment));
 
-            custkey = shippriority = null;
-            orderstatus = orderpriority = clerk = comment = null;
+            custkey = null;
+            shippriority = null;
+            orderstatus = null;
+            orderpriority = null;
+            clerk = null;
+            comment = null;
             totalprice = null;
             orderdate = null;
         }

@@ -34,7 +34,6 @@ public class SingleColumnValueFilter
         extends RowFilter
         implements OptionDescriber
 {
-
     public enum CompareOp
     {
         LESS, LESS_OR_EQUAL, EQUAL, NOT_EQUAL, GREATER_OR_EQUAL, GREATER
@@ -111,7 +110,6 @@ public class SingleColumnValueFilter
     @Override
     public SortedKeyValueIterator<Key, Value> deepCopy(IteratorEnvironment env)
     {
-
         // Create a new SingleColumnValueFilter object based on the parent's
         // deepCopy
         SingleColumnValueFilter copy = new SingleColumnValueFilter();
@@ -129,7 +127,6 @@ public class SingleColumnValueFilter
     @Override
     public IteratorOptions describeOptions()
     {
-
         return new IteratorOptions("singlecolumnvaluefilter", "Filter accepts or rejects each Key/Value pair based on the lexicographic comparison of a value stored in a single column family/qualifier",
                 // @formatter:off
         ImmutableMap.<String, String>builder().put(CF, "column family to match on, required").put(CQ, "column qualifier to match on, required").put(COMPARE_OP, "CompareOp enum type for lexicographic comparison, required").put(VALUE, "Hex-encoded bytes of the value for comparison, required").build(),
@@ -172,7 +169,6 @@ public class SingleColumnValueFilter
 
     public static Map<String, String> getProperties(String family, String qualifier, CompareOp op, byte[] value)
     {
-
         Map<String, String> opts = new HashMap<>();
 
         opts.put(CF, family);

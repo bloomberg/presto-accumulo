@@ -55,6 +55,8 @@ public class Constants
     public static final StringLexicoder strLexicoder = new StringLexicoder();
     public static final DoubleLexicoder dblLexicoder = new DoubleLexicoder();
 
+    private Constants() {}
+
     public static byte[] encode(Object v)
     {
         if (v instanceof Long) {

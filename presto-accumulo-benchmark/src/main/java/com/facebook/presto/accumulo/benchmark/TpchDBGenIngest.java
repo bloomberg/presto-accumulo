@@ -139,10 +139,11 @@ public class TpchDBGenIngest
             .addColumn("acctbal", "md", "acctbal", DOUBLE)
             .addColumn("comment", "md", "comment", VARCHAR);
 
+    private TpchDBGenIngest() {}
+
     public static void run(AccumuloConfig accConfig, String schema, File dbgenDir)
             throws Exception
     {
-
         if (!dbgenDir.exists()) {
             throw new FileNotFoundException("Given datagen directory does not exist");
         }
@@ -232,10 +233,10 @@ public class TpchDBGenIngest
             System.out.println(String.format("Reading rows from file %s, writing to table %s", df,
                     fullTableName));
             String line;
-            int numRows = 0, numIdxRows = 0;
+            int numRows = 0;
+            int numIdxRows = 0;
             boolean hasUuid = hasUuid(tableName);
             while ((line = rdr.readLine()) != null) {
-
                 // append a UUID to the line if this table has one
                 if (hasUuid) {
                     line = UUID.randomUUID().toString() + DELIMITER + line;

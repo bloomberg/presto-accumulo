@@ -43,6 +43,8 @@ public class Splitter
 {
     private static LexicoderRowSerializer serializer = new LexicoderRowSerializer();
 
+    private Splitter() {}
+
     public static void run(AccumuloConfig conf, String schemaName, String tableName, int numSplits)
             throws Exception
     {
@@ -79,6 +81,7 @@ public class Splitter
             tableSplits.add(new Text(s));
         }
 
+        System.out.println("Splitting table " + fullTableName + " with " + tableSplits.size() + " splits");
         conn.tableOperations().addSplits(fullTableName, tableSplits);
 
         System.out.println("Splits added, compacting");

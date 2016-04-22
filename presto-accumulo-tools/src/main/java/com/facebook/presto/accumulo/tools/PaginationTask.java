@@ -107,10 +107,10 @@ public class PaginationTask
         ") t"
     }, '\n');
 
-    private final String selectQueryTemplate = 
+    private final String selectQueryTemplate =
             "SELECT ${" + SUBQUERY_COLUMNS + "} " +
             "FROM ${" + TMP_TABLE + "} " +
-            "WHERE offset > ${" + MIN + "} AND offset <= ${" + MAX + "}";    
+            "WHERE offset > ${" + MIN + "} AND offset <= ${" + MAX + "}";
     // @formatter:on
 
     // User-specified configuration items

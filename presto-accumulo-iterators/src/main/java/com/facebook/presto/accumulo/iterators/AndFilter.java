@@ -30,7 +30,6 @@ import java.util.List;
 public class AndFilter
         extends AbstractBooleanFilter
 {
-
     private static final Range SEEK_RANGE = new Range();
     private static final HashSet<ByteSequence> SEEK_HASH_SET = new HashSet<>();
 

@@ -16,7 +16,6 @@
 package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.AccumuloClient;
-import com.facebook.presto.accumulo.AccumuloConnectorId;
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
 import com.facebook.presto.accumulo.model.AccumuloColumnHandle;

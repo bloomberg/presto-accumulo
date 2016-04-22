@@ -38,7 +38,6 @@ import java.util.UUID;
 public abstract class AbstractBooleanFilter
         extends RowFilter
 {
-
     private static final String FILTER_JAVA_CLASS_NAME = "abstract.boolean.filter.java.class.name";
     private static final Logger LOG = Logger.getLogger(AbstractBooleanFilter.class);
 

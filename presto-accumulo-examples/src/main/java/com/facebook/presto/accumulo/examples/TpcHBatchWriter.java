@@ -86,7 +86,8 @@ public class TpcHBatchWriter
         BatchWriter mainWrtr = mtbw.getBatchWriter(DATA_TABLE);
         BatchWriter indexWrtr = mtbw.getBatchWriter(INDEX_TABLE);
 
-        long numTweets = 0, numIndex = 0;
+        long numTweets = 0;
+        long numIndex = 0;
 
         System.out.println(format("Reading from file: %s", orders));
         BufferedReader rdr = new BufferedReader(new InputStreamReader(fs.open(orders)));
