@@ -1,4 +1,0 @@
--- delimiter: |; ignoreOrder: true; types: LONGNVARCHAR
-information_schema|
-metadata|
-runtime|
