@@ -17,7 +17,6 @@ package com.facebook.presto.accumulo.model;
 
 import com.facebook.presto.accumulo.io.AccumuloPageSink;
 import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.DateType;
@@ -37,6 +36,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.NOT_SUPPORTED;
+import static com.facebook.presto.accumulo.AccumuloErrorCode.VALIDATION;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.DateType.DATE;
@@ -151,9 +152,8 @@ public class Row
 
             return true;
         }
-        else {
-            return false;
-        }
+
+        return false;
     }
 
     @Override
@@ -188,7 +188,7 @@ public class Row
         String[] fields = StringUtils.split(str, delimiter);
 
         if (fields.length != schema.getLength()) {
-            throw new PrestoException(StandardErrorCode.INVALID_FUNCTION_ARGUMENT,
+            throw new PrestoException(VALIDATION,
                     String.format(
                             "Number of split tokens is not equal to schema length.  "
                                     + "Expected %s received %s. Schema: %s, fields {%s}, delimiter %s",
@@ -226,7 +226,7 @@ public class Row
                 r.addField(fields[i], VARCHAR);
             }
             else {
-                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                throw new PrestoException(NOT_SUPPORTED,
                         "Unsupported type " + type);
             }
         }

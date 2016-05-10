@@ -112,14 +112,14 @@ public class ColumnCardinalityCache
             throws AccumuloException, AccumuloSecurityException, TableNotFoundException,
             ExecutionException
     {
-        List<Pair<AccumuloColumnConstraint, Long>> retval = new ArrayList<>();
+        List<Pair<AccumuloColumnConstraint, Long>> cardBuilder = new ArrayList<>();
         for (Entry<AccumuloColumnConstraint, Collection<Range>> e : idxConstraintRangePairs
                 .entrySet()) {
             long card = getColumnCardinality(schema, table, e.getKey(), e.getValue());
             LOG.debug("Cardinality for column %s is %d", e.getKey().getName(), card);
-            retval.add(Pair.of(e.getKey(), card));
+            cardBuilder.add(Pair.of(e.getKey(), card));
         }
-        return retval;
+        return cardBuilder;
     }
 
     /**

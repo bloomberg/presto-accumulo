@@ -31,7 +31,6 @@ import org.apache.accumulo.core.data.Value;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -42,6 +41,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 
+import static java.nio.ByteBuffer.wrap;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -606,7 +606,7 @@ public class TestSingleColumnValueFilter
             throws Exception
     {
         testVarbinary(CompareOp.LESS,
-                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) < 0);
+                (x, y) -> wrap(x).compareTo(wrap(y)) < 0);
     }
 
     @Test
@@ -614,7 +614,7 @@ public class TestSingleColumnValueFilter
             throws Exception
     {
         testVarbinary(CompareOp.LESS_OR_EQUAL,
-                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) <= 0);
+                (x, y) -> wrap(x).compareTo(wrap(y)) <= 0);
     }
 
     @Test
@@ -622,7 +622,7 @@ public class TestSingleColumnValueFilter
             throws Exception
     {
         testVarbinary(CompareOp.EQUAL,
-                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) == 0);
+                (x, y) -> wrap(x).compareTo(wrap(y)) == 0);
     }
 
     @Test
@@ -630,7 +630,7 @@ public class TestSingleColumnValueFilter
             throws Exception
     {
         testVarbinary(CompareOp.NOT_EQUAL,
-                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) != 0);
+                (x, y) -> wrap(x).compareTo(wrap(y)) != 0);
     }
 
     @Test
@@ -638,7 +638,7 @@ public class TestSingleColumnValueFilter
             throws Exception
     {
         testVarbinary(CompareOp.GREATER,
-                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) > 0);
+                (x, y) -> wrap(x).compareTo(wrap(y)) > 0);
     }
 
     @Test
@@ -646,7 +646,7 @@ public class TestSingleColumnValueFilter
             throws Exception
     {
         testVarbinary(CompareOp.GREATER_OR_EQUAL,
-                (x, y) -> ByteBuffer.wrap(x).compareTo(ByteBuffer.wrap(y)) >= 0);
+                (x, y) -> wrap(x).compareTo(wrap(y)) >= 0);
     }
 
     public void testVarchar(CompareOp op, BiFunction<String, String, Boolean> func)

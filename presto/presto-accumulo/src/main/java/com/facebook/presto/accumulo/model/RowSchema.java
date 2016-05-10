@@ -16,11 +16,13 @@
 package com.facebook.presto.accumulo.model;
 
 import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.Type;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.facebook.presto.accumulo.AccumuloErrorCode.COLUMN_NOT_FOUND;
+import static java.lang.String.format;
 
 /**
  * Class to define the schema of a Row, stored as a list of {@link AccumuloColumnHandle}.
@@ -48,7 +50,7 @@ public class RowSchema
      */
     public RowSchema addRowId(String name, Type type)
     {
-        columns.add(new AccumuloColumnHandle("accumulo", name, null, null, type, columns.size(),
+        columns.add(new AccumuloColumnHandle(name, null, null, type, columns.size(),
                 "Accumulo row ID", false));
         return this;
     }
@@ -80,9 +82,9 @@ public class RowSchema
     public RowSchema addColumn(String prestoName, String family, String qualifier, Type type,
             boolean indexed)
     {
-        columns.add(new AccumuloColumnHandle("accumulo", prestoName, family, qualifier, type,
+        columns.add(new AccumuloColumnHandle(prestoName, family, qualifier, type,
                 columns.size(),
-                String.format("Accumulo column %s:%s. Indexed: %b", family, qualifier, indexed),
+                format("Accumulo column %s:%s. Indexed: %b", family, qualifier, indexed),
                 indexed));
         return this;
     }
@@ -114,7 +116,7 @@ public class RowSchema
             }
         }
 
-        throw new PrestoException(StandardErrorCode.USER_ERROR, "No column with name " + name);
+        throw new PrestoException(COLUMN_NOT_FOUND, format("No column with name %s", name));
     }
 
     /**

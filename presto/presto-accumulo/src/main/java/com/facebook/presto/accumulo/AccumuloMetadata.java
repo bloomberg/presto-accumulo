@@ -35,7 +35,6 @@ import com.facebook.presto.spi.Constraint;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SchemaTablePrefix;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.TableNotFoundException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -50,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.ACCUMULO_TABLE_EXISTS;
 import static com.facebook.presto.accumulo.Types.checkType;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
@@ -160,7 +160,7 @@ public class AccumuloMetadata
             SchemaTableName newTableName)
     {
         if (client.getTable(newTableName) != null) {
-            throw new PrestoException(StandardErrorCode.USER_ERROR,
+            throw new PrestoException(ACCUMULO_TABLE_EXISTS,
                     "Table " + newTableName + " already exists");
         }
 
@@ -179,7 +179,12 @@ public class AccumuloMetadata
     @Override
     public void createView(ConnectorSession session, SchemaTableName viewName, String viewData, boolean replace)
     {
-        client.createView(viewName, viewData, replace);
+        if (replace) {
+            client.createOrReplaceView(viewName, viewData);
+        }
+        else {
+            client.createView(viewName, viewData);
+        }
     }
 
     /**
@@ -285,22 +290,6 @@ public class AccumuloMetadata
     }
 
     /**
-     * Rollback the insert, which is not supported by this connector
-     *
-     * @param session Current client session
-     * @param insertHandle Table handle
-     */
-    @Override
-    public void rollbackInsert(ConnectorSession session, ConnectorInsertTableHandle insertHandle)
-    {
-        // This super func is a no-op (may change in future versions)
-        // Not much we can really do here since all the inserts are elsewhere.
-        // Accumulo ain't no ACID
-        // TODO Can we do insert rollbacks somehow?
-        ConnectorMetadata.super.rollbackInsert(session, insertHandle);
-    }
-
-    /**
      * Gets an instance of a TableHandle based on the given name
      *
      * @param session Current client session
@@ -310,7 +299,7 @@ public class AccumuloMetadata
     @Override
     public ConnectorTableHandle getTableHandle(ConnectorSession session, SchemaTableName stName)
     {
-        if (!listSchemaNames(session).contains(stName.getSchemaName())) {
+        if (!listSchemaNames(session).contains(stName.getSchemaName().toLowerCase())) {
             return null;
         }
 
@@ -325,9 +314,8 @@ public class AccumuloMetadata
                     table.getRowId(), table.isExternal(), table.getSerializerClassName(),
                     table.getScanAuthorizations());
         }
-        else {
-            return null;
-        }
+
+        return null;
     }
 
     /**
@@ -526,9 +514,8 @@ public class AccumuloMetadata
 
             return new ConnectorTableMetadata(stn, table.getColumnsMetadata());
         }
-        else {
-            return null;
-        }
+
+        return null;
     }
 
     /**
@@ -540,9 +527,18 @@ public class AccumuloMetadata
      */
     private List<SchemaTableName> listTables(ConnectorSession session, SchemaTablePrefix prefix)
     {
+        // List all tables if schema is null
         if (prefix.getSchemaName() == null) {
             return listTables(session, prefix.getSchemaName());
         }
-        return ImmutableList.of(new SchemaTableName(prefix.getSchemaName(), prefix.getTableName()));
+
+        // Make sure requested table exists, returning the single table of it does
+        SchemaTableName table = new SchemaTableName(prefix.getSchemaName(), prefix.getTableName());
+        if (getTableHandle(session, table) != null) {
+            return ImmutableList.of(table);
+        }
+
+        // Else, return empty list
+        return ImmutableList.of();
     }
 }

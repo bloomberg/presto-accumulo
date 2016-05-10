@@ -19,13 +19,13 @@ import com.facebook.presto.accumulo.Types;
 import com.facebook.presto.accumulo.io.AccumuloPageSink;
 import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.ArrayBlock;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.DateType;
 import com.facebook.presto.spi.type.DoubleType;
+import com.facebook.presto.spi.type.IntegerType;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.TimeType;
 import com.facebook.presto.spi.type.TimestampType;
@@ -43,6 +43,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+
+import static com.facebook.presto.accumulo.AccumuloErrorCode.INTERNAL_ERROR;
+import static com.facebook.presto.accumulo.AccumuloErrorCode.NOT_SUPPORTED;
 
 /**
  * Class to contain a single field within a Presto {@link Row}.
@@ -124,7 +127,7 @@ public class Field
                 this.value = new String(f.getVarchar());
                 break;
             default:
-                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                throw new PrestoException(NOT_SUPPORTED,
                         "Unsupported type " + type);
         }
     }
@@ -188,6 +191,16 @@ public class Field
     public Double getDouble()
     {
         return (Double) value;
+    }
+
+    /**
+     * Gets the value of the field as a Double. For INTEGER types
+     *
+     * @return Value as Integer
+     */
+    public Integer getInt()
+    {
+        return (Integer) value;
     }
 
     /**
@@ -460,7 +473,7 @@ public class Field
             return "'" + value.toString().replaceAll("'", "''") + "'";
         }
         else {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+            throw new PrestoException(NOT_SUPPORTED,
                     "Unsupported PrestoType " + type);
         }
     }
@@ -483,7 +496,7 @@ public class Field
         // Array? Better be a block!
         if (Types.isArrayType(t)) {
             if (!(v instanceof Block)) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                throw new PrestoException(INTERNAL_ERROR,
                         "Object is not a Block, but " + v.getClass());
             }
             return v;
@@ -492,7 +505,7 @@ public class Field
         // Map? Better be a block!
         if (Types.isMapType(t)) {
             if (!(v instanceof Block)) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                throw new PrestoException(INTERNAL_ERROR,
                         "Object is not a Block, but " + v.getClass());
             }
             return v;
@@ -500,18 +513,24 @@ public class Field
 
         // And now for the plain types
         if (t instanceof BigintType) {
-            // Auto-convert integers to Longs
-            if (v instanceof Integer) {
-                return Long.valueOf((Integer) v);
-            }
             if (!(v instanceof Long)) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                throw new PrestoException(INTERNAL_ERROR,
                         "Object is not a Long, but " + v.getClass());
+            }
+        }
+        else if (t instanceof IntegerType) {
+            if (v instanceof Long) {
+                return ((Long) v).intValue();
+            }
+
+            if (!(v instanceof Integer)) {
+                throw new PrestoException(INTERNAL_ERROR,
+                        "Object is not a Long or Integer, but " + v.getClass());
             }
         }
         else if (t instanceof BooleanType) {
             if (!(v instanceof Boolean)) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                throw new PrestoException(INTERNAL_ERROR,
                         "Object is not a Boolean, but " + v.getClass());
             }
             return new Boolean((boolean) v);
@@ -526,13 +545,13 @@ public class Field
             }
 
             if (!(v instanceof Date)) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                throw new PrestoException(INTERNAL_ERROR,
                         "Object is not a Calendar, Date, or Long, but " + v.getClass());
             }
         }
         else if (t instanceof DoubleType) {
             if (!(v instanceof Double)) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                throw new PrestoException(INTERNAL_ERROR,
                         "Object is not a Double, but " + v.getClass());
             }
         }
@@ -542,8 +561,8 @@ public class Field
             }
 
             if (!(v instanceof Time)) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                        "Object is not a Time, but " + v.getClass());
+                throw new PrestoException(INTERNAL_ERROR,
+                        "Object is not a Long or Time, but " + v.getClass());
             }
         }
         else if (t instanceof TimestampType) {
@@ -552,8 +571,8 @@ public class Field
             }
 
             if (!(v instanceof Timestamp)) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                        "Object is not a Timestamp, but " + v.getClass());
+                throw new PrestoException(INTERNAL_ERROR,
+                        "Object is not a Long or Timestamp, but " + v.getClass());
             }
         }
         else if (t instanceof VarbinaryType) {
@@ -562,8 +581,8 @@ public class Field
             }
 
             if (!(v instanceof byte[])) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                        "Object is not a byte[], but " + v.getClass());
+                throw new PrestoException(INTERNAL_ERROR,
+                        "Object is not a Slice byte[], but " + v.getClass());
             }
         }
         else if (t instanceof VarcharType) {
@@ -572,12 +591,12 @@ public class Field
             }
 
             if (!(v instanceof String)) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                        "Object is not a String, but " + v.getClass());
+                throw new PrestoException(INTERNAL_ERROR,
+                        "Object is not a Slice or String, but " + v.getClass());
             }
         }
         else {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+            throw new PrestoException(INTERNAL_ERROR,
                     "Unsupported PrestoType " + t);
         }
 

@@ -21,13 +21,13 @@ import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorTableHandle;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.VALIDATION;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
@@ -143,7 +143,7 @@ public final class AccumuloTableHandle
             return (AccumuloRowSerializer) Class.forName(serializerClassName).newInstance();
         }
         catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            throw new PrestoException(StandardErrorCode.USER_ERROR,
+            throw new PrestoException(VALIDATION,
                     "Configured serializer class not found", e);
         }
     }

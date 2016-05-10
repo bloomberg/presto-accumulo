@@ -26,9 +26,10 @@ import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.RecordSet;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.Type;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
@@ -38,6 +39,9 @@ import org.apache.accumulo.core.security.Authorizations;
 
 import java.util.List;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.UNEXPECTED_ACCUMULO_ERROR;
+import static com.facebook.presto.accumulo.AccumuloErrorCode.VALIDATION;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -51,6 +55,7 @@ public class AccumuloRecordSet
         implements RecordSet
 {
     private static final Logger LOG = Logger.get(AccumuloRecordSet.class);
+    private static final Splitter COMMA_SPLITTER = Splitter.on(',').omitEmptyStrings().trimResults();
 
     private final List<AccumuloColumnHandle> columnHandles;
     private final List<AccumuloColumnConstraint> constraints;
@@ -81,7 +86,7 @@ public class AccumuloRecordSet
             this.serializer = split.getSerializerClass().newInstance();
         }
         catch (Exception e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+            throw new PrestoException(VALIDATION,
                     "Failed to factory serializer class.  Is it on the classpath?", e);
         }
 
@@ -101,7 +106,8 @@ public class AccumuloRecordSet
             scan.setRanges(split.getRanges());
         }
         catch (Exception e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
+            throw new PrestoException(UNEXPECTED_ACCUMULO_ERROR,
+                    format("Failed to create batch scanner for table %s", split.getFullTableName()), e);
         }
     }
 
@@ -132,7 +138,7 @@ public class AccumuloRecordSet
         }
 
         if (split.hasScanAuthorizations()) {
-            Authorizations auths = new Authorizations(split.getScanAuthorizations().split(","));
+            Authorizations auths = new Authorizations(Iterables.toArray(COMMA_SPLITTER.split(split.getScanAuthorizations()), String.class));
             LOG.debug("scan_auths table property set: %s", auths);
             return auths;
         }

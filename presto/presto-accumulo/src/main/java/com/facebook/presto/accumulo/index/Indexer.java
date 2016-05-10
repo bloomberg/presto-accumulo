@@ -23,7 +23,6 @@ import com.facebook.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -53,7 +52,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -65,6 +63,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.INTERNAL_ERROR;
+import static com.facebook.presto.accumulo.AccumuloErrorCode.VALIDATION;
 import static java.nio.ByteBuffer.wrap;
 
 /**
@@ -200,8 +200,8 @@ public class Indexer
         table.getColumns().stream().forEach(col -> {
             if (col.isIndexed()) {
                 // Wrap the column family and qualifier for this column
-                ByteBuffer cf = ByteBuffer.wrap(col.getFamily().getBytes());
-                ByteBuffer cq = ByteBuffer.wrap(col.getQualifier().getBytes());
+                ByteBuffer cf = wrap(col.getFamily().getBytes());
+                ByteBuffer cq = wrap(col.getQualifier().getBytes());
 
                 // Get all qualifiers for this given column family, creating a new one if necessary
                 Set<ByteBuffer> qualifiers = indexColumns.get(cf);
@@ -224,7 +224,7 @@ public class Indexer
 
         // If there are no indexed columns, throw an exception
         if (indexColumns.size() == 0) {
-            throw new PrestoException(StandardErrorCode.USER_ERROR,
+            throw new PrestoException(VALIDATION,
                     "No indexed columns in table metadata. Have you declared this table as indexed?");
         }
 
@@ -329,7 +329,7 @@ public class Indexer
             indexWrtr.addMutation(mIdx);
         }
         catch (MutationsRejectedException e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+            throw new PrestoException(INTERNAL_ERROR,
                     "Invalid mutation added to index", e);
         }
 
@@ -373,7 +373,7 @@ public class Indexer
             metrics.put(METRICS_TABLE_ROW_ID, cfMap);
         }
         catch (MutationsRejectedException | TableNotFoundException e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+            throw new PrestoException(INTERNAL_ERROR,
                     "Invalid mutation added to index metrics", e);
         }
     }
@@ -389,7 +389,7 @@ public class Indexer
             indexWrtr.close();
         }
         catch (MutationsRejectedException e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
+            throw new PrestoException(INTERNAL_ERROR, e);
         }
     }
 
@@ -400,7 +400,7 @@ public class Indexer
      */
     private Collection<Mutation> getMetricsMutations()
     {
-        List<Mutation> muts = new ArrayList<>();
+        ImmutableList.Builder<Mutation> mutationBuilder = ImmutableList.builder();
         // Mapping of column value to column to number of row IDs that contain that value
         for (Entry<ByteBuffer, Map<ByteBuffer, AtomicLong>> m : metrics.entrySet()) {
             // Create new mutation for this row value
@@ -417,7 +417,7 @@ public class Indexer
             }
 
             // Add to our list of mutations
-            muts.add(mut);
+            mutationBuilder.add(mut);
         }
 
         // If the first row and last row are both not null, which would really be for a brand new
@@ -429,10 +429,10 @@ public class Indexer
             Mutation flm = new Mutation(METRICS_TABLE_ROW_ID.array());
             flm.put(METRICS_TABLE_ROWS_CF.array(), METRICS_TABLE_FIRST_ROW_CQ.array(), firstRow);
             flm.put(METRICS_TABLE_ROWS_CF.array(), METRICS_TABLE_LAST_ROW_CQ.array(), lastRow);
-            muts.add(flm);
+            mutationBuilder.add(flm);
         }
 
-        return muts;
+        return mutationBuilder.build();
     }
 
     /**

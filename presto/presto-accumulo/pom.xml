@@ -16,6 +16,7 @@
     <properties>
         <accumulo.version>1.6.2</accumulo.version>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+        <air.test.fork-mode>always</air.test.fork-mode>
         <curator.version>2.9.1</curator.version>
         <jackson.version>2.4.4</jackson.version>
         <junit.version>4.12</junit.version>
@@ -83,6 +84,12 @@
                             <artifactId>jetty-continuation</artifactId>
                             <expectedVersion>9.3.7.RC0</expectedVersion>
                             <resolvedVersion>8.1.15.v20140411</resolvedVersion>
+                        </exception>
+                        <exception>
+                            <groupId>com.beust</groupId>
+                            <artifactId>jcommander</artifactId>
+                            <expectedVersion>1.32</expectedVersion>
+                            <resolvedVersion>1.27</resolvedVersion>
                         </exception>
                     </exceptions>
                 </configuration>

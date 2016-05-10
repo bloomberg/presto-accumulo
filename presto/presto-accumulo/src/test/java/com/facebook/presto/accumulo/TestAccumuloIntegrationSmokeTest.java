@@ -58,7 +58,7 @@ public class TestAccumuloIntegrationSmokeTest
         assertEquals("clerk", actual.getMaterializedRows().get(6).getField(0));
         assertEquals("varchar", actual.getMaterializedRows().get(6).getField(1));
         assertEquals("shippriority", actual.getMaterializedRows().get(7).getField(0));
-        assertEquals("bigint", actual.getMaterializedRows().get(7).getField(1));
+        assertEquals("integer", actual.getMaterializedRows().get(7).getField(1));
         assertEquals("comment", actual.getMaterializedRows().get(8).getField(0));
         assertEquals("varchar", actual.getMaterializedRows().get(8).getField(1));
     }

@@ -23,7 +23,6 @@ import com.facebook.presto.accumulo.model.TabletSplitMetadata;
 import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.BatchScanner;
@@ -47,6 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import static com.facebook.presto.accumulo.AccumuloErrorCode.INTERNAL_ERROR;
 
 /**
  * Class to assist the Presto connector, and maybe external applications, leverage the secondary
@@ -222,6 +223,11 @@ public class IndexLookup
                             rowIdRanges);
         }
 
+        if (idxRanges.size() == 0) {
+            LOG.info("Query would return no results, returning empty list of splits");
+            return true;
+        }
+
         // Okay, we now check how many rows we would scan by using the index vs. the overall number
         // of rows
         long numEntries = idxRanges.size();
@@ -283,8 +289,8 @@ public class IndexLookup
         long numRows = -1;
         for (Entry<Key, Value> entry : scan) {
             if (numRows > 0) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
-                        "Should have received only one entry");
+                throw new PrestoException(INTERNAL_ERROR,
+                        "Should have received only one entry when scanning for number of rows in metrics table");
             }
             numRows = Long.parseLong(entry.getValue().toString());
         }
@@ -352,7 +358,7 @@ public class IndexLookup
         }
 
         // Return the final ranges for all constraint pairs
-        return new ArrayList<Range>(finalRanges);
+        return new ArrayList<>(finalRanges);
     }
 
     /**

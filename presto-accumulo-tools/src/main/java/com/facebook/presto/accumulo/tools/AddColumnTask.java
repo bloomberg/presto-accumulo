@@ -17,15 +17,29 @@ package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.AccumuloClient;
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
+import com.facebook.presto.accumulo.index.Indexer;
+import com.facebook.presto.accumulo.metadata.AccumuloMetadataManager;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
 import com.facebook.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeSignature;
 import com.facebook.presto.type.TypeRegistry;
+import org.apache.accumulo.core.client.AccumuloException;
+import org.apache.accumulo.core.client.AccumuloSecurityException;
+import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.IteratorSetting;
+import org.apache.accumulo.core.client.TableExistsException;
+import org.apache.accumulo.core.client.TableNotFoundException;
+import org.apache.accumulo.core.client.ZooKeeperInstance;
+import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
+import org.apache.hadoop.io.Text;
+
+import java.util.Map;
+import java.util.Set;
 
 import static java.lang.String.format;
 
@@ -64,8 +78,7 @@ public class AddColumnTask
      * Executes the task to add a new column, validating all arguments are set.
      *
      * @return 0 if the task is successful, false otherwise
-     * @throws Exception
-     *             If something bad happens
+     * @throws Exception If something bad happens
      */
     public int exec()
             throws Exception
@@ -104,21 +117,62 @@ public class AddColumnTask
                 String.format("Accumulo column %s:%s. Indexed: %b", family, qualifier, indexed);
 
         // Create our column and add it via the client
-        AccumuloColumnHandle column = new AccumuloColumnHandle("accumulo", prestoName, family,
+        AccumuloColumnHandle column = new AccumuloColumnHandle(prestoName, family,
                 qualifier, type, ordinal, comment, indexed);
-        client.addColumn(table, column);
+        addColumn(table, column);
         System.out.println(format("Created column %s", column));
 
         return 0;
     }
 
+    private void addColumn(AccumuloTable table, AccumuloColumnHandle column)
+            throws IndexOutOfBoundsException, AccumuloSecurityException, AccumuloException, TableExistsException, TableNotFoundException
+    {
+        // Add the column
+        table.addColumn(column);
+
+        AccumuloMetadataManager metaManager = config.getMetadataManager();
+
+        Connector conn = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers())
+                .getConnector(config.getUsername(), new PasswordToken(config.getPassword()));
+
+        // Recreate the table metadata with the new name and exit
+        metaManager.deleteTableMetadata(new SchemaTableName(table.getSchema(), table.getTable()));
+        metaManager.createTableMetadata(table);
+
+        // Validate index tables exist -- User may have added an index column to a previously
+        // un-indexed table
+        if (table.isIndexed() && !table.isExternal()) {
+            if (!conn.tableOperations().exists(table.getIndexTableName())) {
+                createIndexTables(table, conn);
+            }
+        }
+    }
+
+    private void createIndexTables(AccumuloTable table, Connector conn)
+            throws TableExistsException, AccumuloSecurityException, AccumuloException, TableNotFoundException
+    {
+        // If our table is indexed, create the index as well
+        if (table.isIndexed()) {
+            // Create index table and set the locality groups
+            Map<String, Set<Text>> indexGroups = Indexer.getLocalityGroups(table);
+            conn.tableOperations().create(table.getIndexTableName());
+            conn.tableOperations().setLocalityGroups(table.getIndexTableName(), indexGroups);
+
+            // Create index metrics table, attach iterators, and set locality groups
+            conn.tableOperations().create(table.getMetricsTableName());
+            conn.tableOperations().setLocalityGroups(table.getMetricsTableName(), indexGroups);
+            for (IteratorSetting s : Indexer.getMetricIterators(table)) {
+                conn.tableOperations().attachIterator(table.getMetricsTableName(), s);
+            }
+        }
+    }
+
     /**
      * Runs the task using the given config and parsed command line options
      *
-     * @param config
-     *            Accumulo configuration
-     * @param cmd
-     *            Parsed command line
+     * @param config Accumulo configuration
+     * @param cmd Parsed command line
      * @return 0 if the task was successful, false otherwise
      * @throws Exception
      */
@@ -144,8 +198,7 @@ public class AddColumnTask
     /**
      * Sets the {@link AccumuloConfig} to use for the task
      *
-     * @param config
-     *            Accumulo config
+     * @param config Accumulo config
      */
     public void setConfig(AccumuloConfig config)
     {
@@ -155,8 +208,7 @@ public class AddColumnTask
     /**
      * Sets the Presto schema of the table
      *
-     * @param schema
-     *            Presto schema
+     * @param schema Presto schema
      */
     public void setSchema(String schema)
     {
@@ -166,8 +218,7 @@ public class AddColumnTask
     /**
      * Sets the Presto table name (no schema)
      *
-     * @param tableName
-     *            Presto table name
+     * @param tableName Presto table name
      */
     public void setTableName(String tableName)
     {
@@ -177,8 +228,7 @@ public class AddColumnTask
     /**
      * Sets the Presto column name to be added
      *
-     * @param prestoName
-     *            New column name
+     * @param prestoName New column name
      */
     public void setPrestoName(String prestoName)
     {
@@ -188,8 +238,7 @@ public class AddColumnTask
     /**
      * Sets the Accumulo column family for the mapping
      *
-     * @param family
-     *            Column family
+     * @param family Column family
      */
     public void setFamily(String family)
     {
@@ -199,8 +248,7 @@ public class AddColumnTask
     /**
      * Sets the Accumulo column qualifier for the mapping
      *
-     * @param qualifier
-     *            Column family
+     * @param qualifier Column family
      */
     public void setQualifier(String qualifier)
     {
@@ -210,8 +258,7 @@ public class AddColumnTask
     /**
      * Sets the Presto data type
      *
-     * @param type
-     *            Presto type
+     * @param type Presto type
      */
     public void setType(Type type)
     {
@@ -221,8 +268,7 @@ public class AddColumnTask
     /**
      * Sets a Boolean value indicating whether or not this column is indexed
      *
-     * @param indexed
-     *            True if indexed, fase otherwise
+     * @param indexed True if indexed, fase otherwise
      */
     public void setIndexed(boolean indexed)
     {
@@ -233,8 +279,7 @@ public class AddColumnTask
      * Sets the ordinal of the column to be inserted into the row definition. Default is at the end
      * of the row if this is not set.
      *
-     * @param ordinal
-     *            Ordinal of the row
+     * @param ordinal Ordinal of the row
      */
     public void setOrdinal(int ordinal)
     {

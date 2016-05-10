@@ -156,17 +156,17 @@ public class AccumuloSplitManager
     private List<AccumuloColumnConstraint> getColumnConstraints(String rowIdName,
             TupleDomain<ColumnHandle> constraint)
     {
-        List<AccumuloColumnConstraint> acc = new ArrayList<>();
+        ImmutableList.Builder<AccumuloColumnConstraint> constraintBuilder = ImmutableList.builder();
         for (ColumnDomain<ColumnHandle> cd : constraint.getColumnDomains().get()) {
             AccumuloColumnHandle col =
                     checkType(cd.getColumn(), AccumuloColumnHandle.class, "column handle");
 
             if (!col.getName().equals(rowIdName)) {
-                acc.add(new AccumuloColumnConstraint(col.getName(), col.getFamily(),
+                constraintBuilder.add(new AccumuloColumnConstraint(col.getName(), col.getFamily(),
                         col.getQualifier(), cd.getDomain(), col.isIndexed()));
             }
         }
 
-        return acc;
+        return constraintBuilder.build();
     }
 }

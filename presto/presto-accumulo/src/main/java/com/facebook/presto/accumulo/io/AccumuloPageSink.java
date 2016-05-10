@@ -27,12 +27,12 @@ import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.ConnectorPageSink;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.BooleanType;
 import com.facebook.presto.spi.type.DateType;
 import com.facebook.presto.spi.type.DoubleType;
+import com.facebook.presto.spi.type.IntegerType;
 import com.facebook.presto.spi.type.TimeType;
 import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.Type;
@@ -56,6 +56,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.INTERNAL_ERROR;
+import static com.facebook.presto.accumulo.AccumuloErrorCode.UNEXPECTED_ACCUMULO_ERROR;
+import static com.facebook.presto.accumulo.AccumuloErrorCode.VALIDATION;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -97,7 +100,7 @@ public class AccumuloPageSink
         }
 
         if (rowIdOrdinal == null) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, "Row ID ordinal not found");
+            throw new PrestoException(INTERNAL_ERROR, "Row ID ordinal not found");
         }
 
         this.serializer = table.getSerializerInstance();
@@ -119,7 +122,7 @@ public class AccumuloPageSink
             }
         }
         catch (TableNotFoundException | AccumuloException | AccumuloSecurityException e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+            throw new PrestoException(UNEXPECTED_ACCUMULO_ERROR,
                     "Accumulo error when creating BatchWriter and/or Indexer", e);
         }
     }
@@ -143,7 +146,7 @@ public class AccumuloPageSink
         Text value = new Text();
         Field rField = row.getField(rowIdOrdinal);
         if (rField.isNull()) {
-            throw new PrestoException(StandardErrorCode.USER_ERROR, "Column mapped as the Accumulo row ID cannot be null");
+            throw new PrestoException(VALIDATION, "Column mapped as the Accumulo row ID cannot be null");
         }
 
         setText(rField, value, serializer);
@@ -198,6 +201,9 @@ public class AccumuloPageSink
             else if (type instanceof DoubleType) {
                 serializer.setDouble(value, field.getDouble());
             }
+            else if (type instanceof IntegerType) {
+                serializer.setInt(value, field.getInt());
+            }
             else if (type instanceof TimeType) {
                 serializer.setTime(value, field.getTime());
             }
@@ -245,13 +251,13 @@ public class AccumuloPageSink
                     }
                 }
                 catch (MutationsRejectedException e) {
-                    throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
+                    throw new PrestoException(INTERNAL_ERROR, e);
                 }
             }
             else {
                 // Else, this Mutation contains only a row ID and will throw an exception if
                 // added so, we throw one here with a more descriptive message!
-                throw new PrestoException(StandardErrorCode.NOT_SUPPORTED,
+                throw new PrestoException(VALIDATION,
                         "At least one non-recordkey column must contain a non-null value");
             }
         }
@@ -271,7 +277,7 @@ public class AccumuloPageSink
             }
         }
         catch (MutationsRejectedException e) {
-            throw new PrestoException(StandardErrorCode.INTERNAL_ERROR, e);
+            throw new PrestoException(INTERNAL_ERROR, e);
         }
 
         // TODO Look into any use of the metadata for writing out the rows

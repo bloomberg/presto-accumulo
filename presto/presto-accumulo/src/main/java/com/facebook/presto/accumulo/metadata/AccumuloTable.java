@@ -21,17 +21,17 @@ import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.google.common.collect.ImmutableList;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.VALIDATION;
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -45,11 +45,12 @@ public class AccumuloTable
     private String rowId;
     private final Integer rowIdOrdinal;
     private final String schema;
-    private final String table;
+    private String table;
     private List<AccumuloColumnHandle> columns;
     private final List<ColumnMetadata> columnsMetadata;
     private final String serializerClassName;
     private final String scanAuthorizations;
+    private SchemaTableName schemaTableName;
 
     /***
      * Creates a new instance of AccumuloTable
@@ -96,6 +97,7 @@ public class AccumuloTable
                 "rowIdOrdinal is null, enable to locate rowId in given column list");
         this.indexed = indexed;
         this.columnsMetadata = cmb.build();
+        this.schemaTableName = new SchemaTableName(this.schema, this.table);
     }
 
     /**
@@ -140,6 +142,17 @@ public class AccumuloTable
     public String getTable()
     {
         return table;
+    }
+
+    /**
+     * Sets the table name.
+     *
+     * @param table
+     */
+    public void setTable(String table)
+    {
+        this.table = table;
+        this.schemaTableName = new SchemaTableName(getSchema(), getTable());
     }
 
     /**
@@ -200,32 +213,33 @@ public class AccumuloTable
     @JsonIgnore
     public void addColumn(AccumuloColumnHandle newColumn)
     {
-        final List<AccumuloColumnHandle> newColumns;
+        ImmutableList.Builder<AccumuloColumnHandle> newColumns;
 
         // If this column is going to be appended instead of inserted
         if (newColumn.getOrdinal() == columns.size()) {
             // Validate this column does not already exist
             for (AccumuloColumnHandle col : columns) {
                 if (col.getName().equals(newColumn.getName())) {
-                    throw new PrestoException(StandardErrorCode.ALREADY_EXISTS,
-                            "Column " + newColumn.getName() + " already exists in table");
+                    throw new PrestoException(VALIDATION,
+                            format("Column %s already exists in table", col.getName()));
                 }
             }
 
             // Copy the list and add the new column at the end
-            newColumns = new ArrayList<>(columns);
+            newColumns = ImmutableList.builder();
+            newColumns.addAll(columns);
             newColumns.add(newColumn);
         }
         else {
             // Else, iterate through all existing columns, updating the ordinals and inserting the
             // column at the appropriate place
-            newColumns = new ArrayList<>();
+            newColumns = ImmutableList.builder();
             int ordinal = 0;
             for (AccumuloColumnHandle col : columns) {
                 // Validate this column does not already exist
                 if (col.getName().equals(newColumn.getName())) {
-                    throw new PrestoException(StandardErrorCode.ALREADY_EXISTS,
-                            "Column " + newColumn.getName() + " already exists in table");
+                    throw new PrestoException(VALIDATION,
+                            format("Column %s already exists in table", col.getName()));
                 }
 
                 // Add the new column here
@@ -243,7 +257,7 @@ public class AccumuloTable
         }
 
         // Set the new column list
-        columns = ImmutableList.copyOf(newColumns);
+        columns = newColumns.build();
 
         // Update the index status of the table
         indexed |= newColumn.isIndexed();
@@ -329,7 +343,7 @@ public class AccumuloTable
             return (AccumuloRowSerializer) Class.forName(serializerClassName).newInstance();
         }
         catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            throw new PrestoException(StandardErrorCode.USER_ERROR,
+            throw new PrestoException(VALIDATION,
                     "Configured serializer class not found", e);
         }
     }
@@ -359,6 +373,28 @@ public class AccumuloTable
     public static String getFullTableName(SchemaTableName stn)
     {
         return getFullTableName(stn.getSchemaName(), stn.getTableName());
+    }
+
+    /**
+     * Clones this AccumuloTable into a new AccumuloTable
+     *
+     * @return A new AccumuloTable
+     */
+    @JsonIgnore
+    public AccumuloTable clone()
+    {
+        return new AccumuloTable(getSchema(), getTable(), getColumns(), getRowId(), isExternal(), getSerializerClassName(), getScanAuthorizations());
+    }
+
+    /**
+     * Gets the table name as a {@link SchemaTableName}
+     *
+     * @return Schema table name
+     */
+    @JsonIgnore
+    public SchemaTableName getSchemaTableName()
+    {
+        return schemaTableName;
     }
 
     @Override

@@ -17,12 +17,12 @@ package com.facebook.presto.accumulo.serializers;
 
 import com.facebook.presto.accumulo.Types;
 import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.StandardErrorCode;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.Type;
 import io.airlift.slice.Slice;
 import org.apache.accumulo.core.client.lexicoder.BytesLexicoder;
 import org.apache.accumulo.core.client.lexicoder.DoubleLexicoder;
+import org.apache.accumulo.core.client.lexicoder.IntegerLexicoder;
 import org.apache.accumulo.core.client.lexicoder.Lexicoder;
 import org.apache.accumulo.core.client.lexicoder.ListLexicoder;
 import org.apache.accumulo.core.client.lexicoder.LongLexicoder;
@@ -41,10 +41,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.INTERNAL_ERROR;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.DateType.DATE;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
+import static com.facebook.presto.spi.type.IntegerType.INTEGER;
 import static com.facebook.presto.spi.type.TimeType.TIME;
 import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
@@ -81,6 +83,7 @@ public class LexicoderRowSerializer
             lexicoderMap.put(BOOLEAN, new BytesLexicoder());
             lexicoderMap.put(DATE, new LongLexicoder());
             lexicoderMap.put(DOUBLE, new DoubleLexicoder());
+            lexicoderMap.put(INTEGER, new IntegerLexicoder());
             lexicoderMap.put(TIME, new LongLexicoder());
             lexicoderMap.put(TIMESTAMP, new LongLexicoder());
             lexicoderMap.put(VARBINARY, new BytesLexicoder());
@@ -195,6 +198,18 @@ public class LexicoderRowSerializer
     }
 
     @Override
+    public int getInt(String name)
+    {
+        return decode(INTEGER, getFieldValue(name));
+    }
+
+    @Override
+    public void setInt(Text text, Integer value)
+    {
+        text.set(encode(INTEGER, value));
+    }
+
+    @Override
     public long getLong(String name)
     {
         return decode(BIGINT, getFieldValue(name));
@@ -289,6 +304,9 @@ public class LexicoderRowSerializer
         else if (type.equals(DATE) && v instanceof Date) {
             toEncode = ((Date) v).getTime();
         }
+        else if (type.equals(INTEGER) && v instanceof Long) {
+            toEncode = ((Long) v).intValue();
+        }
         else if (type.equals(TIME) && v instanceof Time) {
             toEncode = ((Time) v).getTime();
         }
@@ -328,7 +346,7 @@ public class LexicoderRowSerializer
         else {
             Lexicoder l = lexicoderMap.get(type);
             if (l == null) {
-                throw new PrestoException(StandardErrorCode.INTERNAL_ERROR,
+                throw new PrestoException(INTERNAL_ERROR,
                         "No lexicoder for type " + type);
             }
             return l;
