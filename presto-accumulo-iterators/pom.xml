@@ -5,7 +5,7 @@
 
     <groupId>com.facebook.presto</groupId>
     <artifactId>presto-accumulo-iterators</artifactId>
-    <version>0.142-ANY</version>
+    <version>0.147-ANY</version>
     <description>Iterators for the Presto - Accumulo Connector</description>
     <packaging>jar</packaging>
 
@@ -16,7 +16,7 @@
         <javax.inject.version>1</javax.inject.version>
         <guava.version>18.0</guava.version>
         <mavenPluginPluginVersion>3.2</mavenPluginPluginVersion>
-        <presto.version>0.142-ANY</presto.version>
+        <presto.version>0.147-ANY</presto.version>
         <project.build.targetJdk>1.7</project.build.targetJdk>
         <zookeeper.version>3.4.6</zookeeper.version>
     </properties>

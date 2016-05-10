@@ -5,14 +5,14 @@
 
     <groupId>com.facebook.presto</groupId>
     <artifactId>presto-accumulo-benchmark</artifactId>
-    <version>0.142-ANY</version>
+    <version>0.147-ANY</version>
     <description>Presto - Accumulo Connector</description>
     <packaging>jar</packaging>
 
     <properties>
         <accumulo.version>1.6.2</accumulo.version>
         <app.main.class>com.facebook.presto.accumulo.benchmark.Driver</app.main.class>
-        <presto.version>0.142-ANY</presto.version>
+        <presto.version>0.147-ANY</presto.version>
         <project.build.targetJdk>1.8</project.build.targetJdk>
     </properties>
 
