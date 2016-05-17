@@ -101,17 +101,13 @@ public class AccumuloRecordCursor
     {
         this.cHandles = requireNonNull(cHandles, "cHandles is null");
         this.scan = requireNonNull(scan, "scan is null");
-
         this.serializer = requireNonNull(serializer, "serializer is null");
-        this.serializer.setRowIdName(rowIdName);
+        this.serializer.setRowIdName(requireNonNull(rowIdName, "rowIdName is null"));
 
-        // If there are no columns, or the only column is the row ID, then
-        // configure a scan iterator to only return the row IDs
-        if (cHandles.size() == 0
-                || (cHandles.size() == 1 && cHandles.get(0).getName().equals(rowIdName))) {
-            // This can occur in cases such as SELECT COUNT(*) -- Presto doesn't need the entire
-            // contents of the row to count them, so we can configure Accumulo to only give us the
-            // first key/value pair in the row
+        requireNonNull(cHandles, "cHandles is null");
+        requireNonNull(constraints, "constraints is null");
+
+        if (retrieveOnlyRowIds(rowIdName)) {
             this.scan.addScanIterator(
                     new IteratorSetting(1, "firstentryiter", FirstEntryInRowIterator.class));
 
@@ -137,20 +133,21 @@ public class AccumuloRecordCursor
                 // Make sure to skip the row ID!
                 if (!cHandle.getName().equals(rowIdName)) {
                     // Set the mapping of presto column name to the family/qualifier
-                    this.serializer.setMapping(cHandle.getName(), cHandle.getFamily(),
-                            cHandle.getQualifier());
+                    this.serializer.setMapping(cHandle.getName(), cHandle.getFamily().get(),
+                            cHandle.getQualifier().get());
 
                     // Set our scanner to fetch this family/qualifier column
                     // This will help us prune which data we receive from Accumulo
-                    fam.set(cHandle.getFamily());
-                    qual.set(cHandle.getQualifier());
+                    fam.set(cHandle.getFamily().get());
+                    qual.set(cHandle.getQualifier().get());
                     this.scan.fetchColumn(fam, qual);
                 }
             }
         }
 
         // Add column iterators and retrieve the iterator
-        addColumnIterators(constraints);
+        // TODO Predicate pushdown via iterators needs work
+        // addColumnIterators(constraints);
         iterator = this.scan.iterator();
     }
 
@@ -244,9 +241,9 @@ public class AccumuloRecordCursor
                 serializer.deserialize(prevKV);
             }
 
-            // While there are key/value pairs to read and we don't break out of the loop
-            boolean braek = false;
-            while (iterator.hasNext() && !braek) {
+            // While there are key/value pairs to read and we have not advanced to a new row
+            boolean advancedToNewRow = false;
+            while (iterator.hasNext() && !advancedToNewRow) {
                 // Scan the key value pair and get the row ID
                 Entry<Key, Value> kv = iterator.next();
 
@@ -261,7 +258,7 @@ public class AccumuloRecordCursor
                 else {
                     // If they are different, then we have advanced to a new row and we need to
                     // break out of the loop
-                    braek = true;
+                    advancedToNewRow = true;
                 }
 
                 // Set our 'previous' member variables to track the previously scanned entry
@@ -272,7 +269,7 @@ public class AccumuloRecordCursor
             // If we didn't break out of the loop, we have reached the last entry in our
             // BatchScanner, so we set this to null as the entire row has been processed
             // This tracks the edge case where it is one entry per row ID
-            if (!braek) {
+            if (!advancedToNewRow) {
                 prevKV = null;
             }
 
@@ -404,6 +401,21 @@ public class AccumuloRecordCursor
     }
 
     /**
+     * Gets a Boolean value indicating whether or not the scanner should only return row IDs
+     * <p>
+     * This can occur in cases such as SELECT COUNT(*) or the table only has one column.
+     * Presto doesn't need the entire contents of the row to count them,
+     * so we can configure Accumulo to only give us the first key/value pair in the row
+     *
+     * @param rowIdName Row ID column name
+     * @return True if scanner should retriev eonly row IDs, false otherwise
+     */
+    private boolean retrieveOnlyRowIds(String rowIdName)
+    {
+        return cHandles.size() == 0 || (cHandles.size() == 1 && cHandles.get(0).getName().equals(rowIdName));
+    }
+
+    /**
      * Checks that the given field is one of the provided types
      *
      * @param field Ordinal of the field
@@ -413,13 +425,13 @@ public class AccumuloRecordCursor
     private void checkFieldType(int field, Type... expected)
     {
         Type actual = getType(field);
-
-        boolean equivalent = false;
         for (Type t : expected) {
-            equivalent |= actual.equals(t);
+            if (actual.equals(t)) {
+                return;
+            }
         }
 
-        checkArgument(equivalent, "Expected field %s to be a type of %s but is %s", field,
+        checkArgument(false, "Expected field %s to be a type of %s but is %s", field,
                 StringUtils.join(expected, ","), actual);
     }
 
@@ -443,7 +455,11 @@ public class AccumuloRecordCursor
         for (AccumuloColumnConstraint col : constraints) {
             // If this column's predicate domain allows null values, then add a NullRowFilter
             // setting
-            Domain dom = col.getDomain();
+            if (!col.getDomain().isPresent()) {
+                continue;
+            }
+
+            Domain dom = col.getDomain().get();
             List<IteratorSetting> colSettings = new ArrayList<>();
             if (dom.isNullAllowed()) {
                 colSettings.add(getNullFilterSetting(col, priority));

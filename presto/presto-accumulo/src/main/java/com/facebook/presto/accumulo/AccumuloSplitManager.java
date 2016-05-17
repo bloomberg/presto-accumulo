@@ -15,7 +15,6 @@
  */
 package com.facebook.presto.accumulo;
 
-import com.facebook.presto.accumulo.conf.AccumuloSessionProperties;
 import com.facebook.presto.accumulo.model.AccumuloColumnConstraint;
 import com.facebook.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.accumulo.model.AccumuloSplit;
@@ -25,10 +24,11 @@ import com.facebook.presto.accumulo.model.TabletSplitMetadata;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorSplit;
-import com.facebook.presto.spi.ConnectorSplitManager;
 import com.facebook.presto.spi.ConnectorSplitSource;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.FixedSplitSource;
+import com.facebook.presto.spi.connector.ConnectorSplitManager;
+import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.predicate.TupleDomain.ColumnDomain;
@@ -37,9 +37,8 @@ import io.airlift.log.Logger;
 
 import javax.inject.Inject;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static com.facebook.presto.accumulo.Types.checkType;
 import static java.util.Objects.requireNonNull;
@@ -72,13 +71,14 @@ public class AccumuloSplitManager
     /**
      * Gets the source of splits from the given Presto table layout
      *
+     * @param transactionHandle Transaction handle
      * @param session Current client session
      * @param layout Table layout
      * @return Split source to pass splits to Presto for scan
      */
     @Override
-    public ConnectorSplitSource getSplits(ConnectorSession session,
-            ConnectorTableLayoutHandle layout)
+    public ConnectorSplitSource getSplits(ConnectorTransactionHandle transactionHandle,
+            ConnectorSession session, ConnectorTableLayoutHandle layout)
     {
         AccumuloTableLayoutHandle layoutHandle =
                 checkType(layout, AccumuloTableLayoutHandle.class, "layout");
@@ -88,41 +88,29 @@ public class AccumuloSplitManager
         String tableName = tableHandle.getTable();
         String rowIdName = tableHandle.getRowId();
 
-        // If the column filter optimization is enabled, then get the list of column constraints to
-        // pack into a split
-        // These constraints are later converted to an Accumulo iterator and run on the tablet
-        // server
-        List<AccumuloColumnConstraint> iteratorConstraints;
-        if (AccumuloSessionProperties.isOptimizeColumnFiltersEnabled(session)) {
-            iteratorConstraints = getColumnConstraints(rowIdName, layoutHandle.getConstraint());
-        }
-        else {
-            iteratorConstraints = ImmutableList.of();
-        }
+        // Get non-row ID column constraints
+        List<AccumuloColumnConstraint> constraints = getColumnConstraints(rowIdName, layoutHandle.getConstraint());
 
         // Get the row domain column range
-        Domain rDom = getRangeDomain(rowIdName, layoutHandle.getConstraint());
+        Optional<Domain> rDom = getRangeDomain(rowIdName, layoutHandle.getConstraint());
 
         // Call out to our client to retrieve all tablet split metadata using the row ID domain
-        // and the secondary index, if enabled and proper to do so
+        // and the secondary index, if enabled
         List<TabletSplitMetadata> tSplits = client.getTabletSplits(session, schemaName, tableName,
-                rDom, getColumnConstraints(rowIdName, layoutHandle.getConstraint()),
-                tableHandle.getSerializerInstance());
+                rDom, constraints, tableHandle.getSerializerInstance());
 
         // Pack the tablet split metadata into a connector split
-        List<ConnectorSplit> cSplits = new ArrayList<>();
+        ImmutableList.Builder<ConnectorSplit> cSplits = ImmutableList.builder();
         for (TabletSplitMetadata smd : tSplits) {
             AccumuloSplit split = new AccumuloSplit(connectorId, schemaName, tableName, rowIdName,
-                    tableHandle.getSerializerClassName(), smd.getRanges(), iteratorConstraints,
+                    tableHandle.getSerializerClassName(), smd.getRanges(), constraints,
                     tableHandle.getScanAuthorizations(), smd.getHostPort());
             LOG.debug("Added split %s", split);
             cSplits.add(split);
         }
 
-        Collections.shuffle(cSplits);
-
         // TODO Would this be more beneficial to return splits in batches?
-        return new FixedSplitSource(connectorId, cSplits);
+        return new FixedSplitSource(connectorId, cSplits.build());
     }
 
     /**
@@ -132,17 +120,17 @@ public class AccumuloSplitManager
      * @param constraint Query constraints
      * @return Domain on the row ID, or null if there is none
      */
-    private Domain getRangeDomain(String rowIdName, TupleDomain<ColumnHandle> constraint)
+    private static Optional<Domain> getRangeDomain(String rowIdName, TupleDomain<ColumnHandle> constraint)
     {
         for (ColumnDomain<ColumnHandle> cd : constraint.getColumnDomains().get()) {
             AccumuloColumnHandle col =
                     checkType(cd.getColumn(), AccumuloColumnHandle.class, "column handle");
             if (col.getName().equals(rowIdName)) {
-                return cd.getDomain();
+                return Optional.of(cd.getDomain());
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     /**
@@ -153,7 +141,7 @@ public class AccumuloSplitManager
      * @param constraint Set of query constraints
      * @return List of all column constraints
      */
-    private List<AccumuloColumnConstraint> getColumnConstraints(String rowIdName,
+    private static List<AccumuloColumnConstraint> getColumnConstraints(String rowIdName,
             TupleDomain<ColumnHandle> constraint)
     {
         ImmutableList.Builder<AccumuloColumnConstraint> constraintBuilder = ImmutableList.builder();
@@ -162,8 +150,9 @@ public class AccumuloSplitManager
                     checkType(cd.getColumn(), AccumuloColumnHandle.class, "column handle");
 
             if (!col.getName().equals(rowIdName)) {
-                constraintBuilder.add(new AccumuloColumnConstraint(col.getName(), col.getFamily(),
-                        col.getQualifier(), cd.getDomain(), col.isIndexed()));
+                // Family and qualifier will exist for non-row ID columns
+                constraintBuilder.add(new AccumuloColumnConstraint(col.getName(), col.getFamily().get(),
+                        col.getQualifier().get(), Optional.of(cd.getDomain()), col.isIndexed()));
             }
         }
 

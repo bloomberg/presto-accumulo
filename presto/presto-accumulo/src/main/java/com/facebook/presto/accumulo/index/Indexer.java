@@ -26,7 +26,9 @@ import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 import com.google.common.primitives.UnsignedBytes;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
@@ -55,7 +57,6 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -63,9 +64,11 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.ACCUMULO_TABLE_DNE;
 import static com.facebook.presto.accumulo.AccumuloErrorCode.INTERNAL_ERROR;
 import static com.facebook.presto.accumulo.AccumuloErrorCode.VALIDATION;
 import static java.nio.ByteBuffer.wrap;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This utility class assists the Presto connector, and external applications, in populating the
@@ -159,13 +162,13 @@ public class Indexer
     /**
      * Mapping of column family to set of column qualifiers for all indexed Presto columns
      */
-    private final Map<ByteBuffer, Set<ByteBuffer>> indexColumns = new HashMap<>();
+    private final Multimap<ByteBuffer, ByteBuffer> indexColumns;
 
     /**
      * Mapping of column family to column qualifier to Presto column type for all indexed Presto
      * columns
      */
-    private final Map<ByteBuffer, Map<ByteBuffer, Type>> indexColumnTypes = new HashMap<>();
+    private final Map<ByteBuffer, Map<ByteBuffer, Type>> indexColumnTypes;
 
     /**
      * Serializer class for the table
@@ -188,39 +191,41 @@ public class Indexer
     public Indexer(Connector conn, Authorizations auths, AccumuloTable table, BatchWriterConfig bwc)
             throws TableNotFoundException
     {
-        this.conn = conn;
-        this.table = table;
-        this.bwc = bwc;
+        this.conn = requireNonNull(conn, "conn is null");
+        this.table = requireNonNull(table, "table is null");
+        this.bwc = requireNonNull(bwc, "bwc is null");
+        requireNonNull(auths, "auths is null");
+
         this.serializer = table.getSerializerInstance();
 
         // Create our batch writer
         indexWrtr = conn.createBatchWriter(table.getIndexTableName(), bwc);
 
+        ImmutableMultimap.Builder<ByteBuffer, ByteBuffer> indexColumnsBuilder = ImmutableMultimap.builder();
+        Map<ByteBuffer, Map<ByteBuffer, Type>> indexColumnTypesBuilder = new HashMap<>();
+
         // Initialize metadata
         table.getColumns().stream().forEach(col -> {
             if (col.isIndexed()) {
-                // Wrap the column family and qualifier for this column
-                ByteBuffer cf = wrap(col.getFamily().getBytes());
-                ByteBuffer cq = wrap(col.getQualifier().getBytes());
-
-                // Get all qualifiers for this given column family, creating a new one if necessary
-                Set<ByteBuffer> qualifiers = indexColumns.get(cf);
-                if (qualifiers == null) {
-                    qualifiers = new HashSet<>();
-                    indexColumns.put(cf, qualifiers);
-                }
-                qualifiers.add(cq);
+                // Wrap the column family and qualifier for this column and add it to
+                // collection of indexed columns
+                ByteBuffer cf = wrap(col.getFamily().get().getBytes());
+                ByteBuffer cq = wrap(col.getQualifier().get().getBytes());
+                indexColumnsBuilder.put(cf, cq);
 
                 // Create a mapping for this column's Presto type, again creating a new one for the
                 // family if necessary
-                Map<ByteBuffer, Type> types = indexColumnTypes.get(cf);
+                Map<ByteBuffer, Type> types = indexColumnTypesBuilder.get(cf);
                 if (types == null) {
                     types = new HashMap<>();
-                    indexColumnTypes.put(cf, types);
+                    indexColumnTypesBuilder.put(cf, types);
                 }
                 types.put(cq, col.getType());
             }
         });
+
+        indexColumns = indexColumnsBuilder.build();
+        indexColumnTypes = ImmutableMap.copyOf(indexColumnTypesBuilder);
 
         // If there are no indexed columns, throw an exception
         if (indexColumns.size() == 0) {
@@ -249,7 +254,7 @@ public class Indexer
      *
      * @param m Mutation to index
      */
-    public void index(final Mutation m)
+    public void index(Mutation m)
     {
         // Increment the cardinality for the number of rows in the table
         metrics.get(METRICS_TABLE_ROW_ID).get(METRICS_TABLE_ROWS_CF).incrementAndGet();
@@ -267,7 +272,7 @@ public class Indexer
         for (ColumnUpdate cu : m.getUpdates()) {
             // Get the column qualifiers we want to index for this column family (if any)
             ByteBuffer cf = wrap(cu.getColumnFamily());
-            Set<ByteBuffer> indexCQs = indexColumns.get(cf);
+            Collection<ByteBuffer> indexCQs = indexColumns.get(cf);
 
             // If we have column qualifiers we want to index for this column family
             if (indexCQs != null) {
@@ -330,7 +335,7 @@ public class Indexer
         }
         catch (MutationsRejectedException e) {
             throw new PrestoException(INTERNAL_ERROR,
-                    "Invalid mutation added to index", e);
+                    "Index mutation rejected by server", e);
         }
 
         // Increment the cardinality metrics for this value of index
@@ -372,9 +377,13 @@ public class Indexer
             cfMap.put(METRICS_TABLE_ROWS_CF, new AtomicLong(0));
             metrics.put(METRICS_TABLE_ROW_ID, cfMap);
         }
-        catch (MutationsRejectedException | TableNotFoundException e) {
+        catch (MutationsRejectedException e) {
             throw new PrestoException(INTERNAL_ERROR,
-                    "Invalid mutation added to index metrics", e);
+                    "Index mutation was rejected by server on flush", e);
+        }
+        catch (TableNotFoundException e) {
+            throw new PrestoException(ACCUMULO_TABLE_DNE,
+                    "Accumulo table does not exist", e);
         }
     }
 
@@ -389,14 +398,14 @@ public class Indexer
             indexWrtr.close();
         }
         catch (MutationsRejectedException e) {
-            throw new PrestoException(INTERNAL_ERROR, e);
+            throw new PrestoException(INTERNAL_ERROR, "Mutation was rejected by server on close", e);
         }
     }
 
     /**
      * Gets a collection of mutations based on the current metric map
      *
-     * @return
+     * @return A collection of Mutations
      */
     private Collection<Mutation> getMetricsMutations()
     {
@@ -495,11 +504,11 @@ public class Indexer
     {
         Map<String, Set<Text>> groups = new HashMap<>();
         // For each indexed column
-        for (AccumuloColumnHandle acc : table.getColumns().stream().filter(x -> x.isIndexed())
+        for (AccumuloColumnHandle acc : table.getColumns().stream().filter(AccumuloColumnHandle::isIndexed)
                 .collect(Collectors.toList())) {
             // Create a Text version of the index column family
             Text indexColumnFamily = new Text(
-                    getIndexColumnFamily(acc.getFamily().getBytes(), acc.getQualifier().getBytes())
+                    getIndexColumnFamily(acc.getFamily().get().getBytes(), acc.getQualifier().get().getBytes())
                             .array());
 
             // Add this to the locality groups, it is a 1:1 mapping of locality group to column

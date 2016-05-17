@@ -30,7 +30,10 @@ import org.apache.hadoop.io.Text;
 import java.util.Map;
 import java.util.Set;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.ACCUMULO_TABLE_DNE;
+import static com.facebook.presto.accumulo.AccumuloErrorCode.ACCUMULO_TABLE_EXISTS;
 import static com.facebook.presto.accumulo.AccumuloErrorCode.UNEXPECTED_ACCUMULO_ERROR;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class is a light wrapper for Accumulo's Connector object.
@@ -45,7 +48,7 @@ public class AccumuloTableManager
 
     public AccumuloTableManager(AccumuloConfig config)
     {
-        this.conn = AccumuloClient.getAccumuloConnector(config);
+        this.conn = AccumuloClient.getAccumuloConnector(requireNonNull(config, "config is null"));
     }
 
     /**
@@ -88,8 +91,11 @@ public class AccumuloTableManager
         try {
             conn.tableOperations().create(table);
         }
-        catch (AccumuloException | AccumuloSecurityException | TableExistsException e) {
+        catch (AccumuloException | AccumuloSecurityException e) {
             throw new PrestoException(UNEXPECTED_ACCUMULO_ERROR, "Failed to create Accumulo table", e);
+        }
+        catch (TableExistsException e) {
+            throw new PrestoException(ACCUMULO_TABLE_EXISTS, "Accumulo table already exists", e);
         }
     }
 
@@ -109,8 +115,11 @@ public class AccumuloTableManager
             conn.tableOperations().setLocalityGroups(tableName, groups);
             LOG.info("Set locality groups for %s to %s", tableName, groups);
         }
-        catch (AccumuloException | AccumuloSecurityException | TableNotFoundException e) {
+        catch (AccumuloException | AccumuloSecurityException e) {
             throw new PrestoException(UNEXPECTED_ACCUMULO_ERROR, "Failed to set locality groups", e);
+        }
+        catch (TableNotFoundException e) {
+            throw new PrestoException(ACCUMULO_TABLE_DNE, "Failed to set locality groups, table does not exist", e);
         }
     }
 
@@ -125,8 +134,11 @@ public class AccumuloTableManager
         try {
             conn.tableOperations().attachIterator(table, setting);
         }
-        catch (AccumuloSecurityException | AccumuloException | TableNotFoundException e) {
+        catch (AccumuloSecurityException | AccumuloException e) {
             throw new PrestoException(UNEXPECTED_ACCUMULO_ERROR, "Failed to set iterator on table " + table, e);
+        }
+        catch (TableNotFoundException e) {
+            throw new PrestoException(ACCUMULO_TABLE_DNE, "Failed to set iterator, table does not exist", e);
         }
     }
 
@@ -140,8 +152,11 @@ public class AccumuloTableManager
         try {
             conn.tableOperations().delete(tableName);
         }
-        catch (AccumuloException | AccumuloSecurityException | TableNotFoundException e) {
+        catch (AccumuloException | AccumuloSecurityException e) {
             throw new PrestoException(UNEXPECTED_ACCUMULO_ERROR, "Failed to delete Accumulo table", e);
+        }
+        catch (TableNotFoundException e) {
+            throw new PrestoException(ACCUMULO_TABLE_DNE, "Failed to delete Accumulo table, does not exist", e);
         }
     }
 
@@ -156,9 +171,14 @@ public class AccumuloTableManager
         try {
             conn.tableOperations().rename(oldName, newName);
         }
-        catch (AccumuloSecurityException | TableNotFoundException | AccumuloException
-                | TableExistsException e) {
+        catch (AccumuloSecurityException | AccumuloException e) {
             throw new PrestoException(UNEXPECTED_ACCUMULO_ERROR, "Failed to rename table", e);
+        }
+        catch (TableNotFoundException e) {
+            throw new PrestoException(ACCUMULO_TABLE_DNE, "Failed to rename table, old table does not exist", e);
+        }
+        catch (TableExistsException e) {
+            throw new PrestoException(ACCUMULO_TABLE_EXISTS, "Failed to rename table, new table already exists", e);
         }
     }
 }

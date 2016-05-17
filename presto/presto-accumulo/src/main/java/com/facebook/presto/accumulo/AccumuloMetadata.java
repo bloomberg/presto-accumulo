@@ -22,7 +22,7 @@ import com.facebook.presto.accumulo.model.AccumuloTableLayoutHandle;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.ConnectorInsertTableHandle;
-import com.facebook.presto.spi.ConnectorMetadata;
+import com.facebook.presto.spi.ConnectorNewTableLayout;
 import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorTableHandle;
@@ -36,6 +36,7 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SchemaTablePrefix;
 import com.facebook.presto.spi.TableNotFoundException;
+import com.facebook.presto.spi.connector.ConnectorMetadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -48,10 +49,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.facebook.presto.accumulo.AccumuloErrorCode.ACCUMULO_TABLE_EXISTS;
 import static com.facebook.presto.accumulo.Types.checkType;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -63,6 +66,8 @@ public class AccumuloMetadata
 {
     private final String connectorId;
     private final AccumuloClient client;
+
+    private final AtomicReference<Runnable> rollbackAction = new AtomicReference<>();
 
     @Inject
     public AccumuloMetadata(AccumuloConnectorId connectorId, AccumuloClient client)
@@ -77,50 +82,38 @@ public class AccumuloMetadata
      *
      * @param session Current client session
      * @param tableMetadata Table metadata to create
+     * @param layout Table layout containing partition information
      * @return Output table handle
      */
     @Override
     public ConnectorOutputTableHandle beginCreateTable(ConnectorSession session,
-            ConnectorTableMetadata tableMetadata)
+            ConnectorTableMetadata tableMetadata, Optional<ConnectorNewTableLayout> layout)
     {
+        checkNoRollback();
+
         SchemaTableName stName = tableMetadata.getTable();
         AccumuloTable table = client.createTable(tableMetadata);
-        return new AccumuloTableHandle(connectorId, stName.getSchemaName(), stName.getTableName(),
+
+        AccumuloTableHandle handle = new AccumuloTableHandle(connectorId, stName.getSchemaName(), stName.getTableName(),
                 table.getRowId(), table.isExternal(), table.getSerializerClassName(),
                 table.getScanAuthorizations());
+
+        setRollback(() -> rollbackCreateTable(table));
+
+        return handle;
     }
 
-    /**
-     * Commit the table creation.
-     *
-     * @param session Current client session
-     * @param tableHandle Output table handle
-     * @param fragments Collection of fragment metadata
-     */
     @Override
-    public void commitCreateTable(ConnectorSession session, ConnectorOutputTableHandle tableHandle,
-            Collection<Slice> fragments)
+    public void finishCreateTable(ConnectorSession session,
+            ConnectorOutputTableHandle tableHandle, Collection<Slice> fragments)
     {
-        // TODO no-op?
-        // The table and metadata is actually created in beginCreateTable
-        // There may be some additional useful information regarding the fragments, but I don't
-        // think that really matters for this connector
+        checkType(tableHandle, AccumuloTableHandle.class, "tableHandle");
+        clearRollback();
     }
 
-    /**
-     * Rollback the table creation
-     *
-     * @param session Current client session
-     * @param tableHandle Table handle to delete
-     */
-    @Override
-    public void rollbackCreateTable(ConnectorSession session,
-            ConnectorOutputTableHandle tableHandle)
+    private void rollbackCreateTable(AccumuloTable table)
     {
-        // Here, we just call drop table to rollback our create
-        // Note that this will not delete the Accumulo tables if the table is external
-        AccumuloTableHandle th = checkType(tableHandle, AccumuloTableHandle.class, "table");
-        client.dropTable(client.getTable(th.toSchemaTableName()));
+        client.dropTable(table);
     }
 
     /**
@@ -266,27 +259,27 @@ public class AccumuloMetadata
     public ConnectorInsertTableHandle beginInsert(ConnectorSession session,
             ConnectorTableHandle tableHandle)
     {
-        // This is all metadata management for the insert op
-        // Not much to do here but validate the type and return the new table handle (which is the
-        // same)
-        return checkType(tableHandle, AccumuloTableHandle.class, "table");
+        checkNoRollback();
+        AccumuloTableHandle handle = checkType(tableHandle, AccumuloTableHandle.class, "table");
+        setRollback(() -> rollbackInsert(handle));
+        return handle;
     }
 
-    /**
-     * Commit the insert
-     *
-     * @param session Current client session
-     * @param insertHandle Table handle
-     * @param fragments Collection of fragment metadata
-     */
     @Override
-    public void commitInsert(ConnectorSession session, ConnectorInsertTableHandle insertHandle,
-            Collection<Slice> fragments)
+    public void finishInsert(ConnectorSession session, ConnectorInsertTableHandle insertHandle, Collection<Slice> fragments)
     {
-        // Seems like most connectors just return metadata about the fragments
-        // Unsure if we can use this for an optimization?
-        // Priority is on reading though, so we can investigate this later
-        checkType(insertHandle, AccumuloTableHandle.class, "table");
+        clearRollback();
+    }
+
+    private void rollbackInsert(ConnectorInsertTableHandle insertHandle)
+    {
+        // TODO Rollback insert
+        // Rollbacks for inserts are off the table when it comes to data in Accumulo.
+        // When a batch of Mutations fails to be inserted, the general strategy
+        // is to run the insert operation again until it is successful
+        // Any mutations that were successfully written will be overwritten
+        // with the same values, so that isn't a problem.
+        // How would we signal to the user that they need to insert their data again?
     }
 
     /**
@@ -491,6 +484,29 @@ public class AccumuloMetadata
             }
         }
         return columns.build();
+    }
+
+    private void checkNoRollback()
+    {
+        checkState(rollbackAction.get() == null, "Cannot begin a new write while in an existing one");
+    }
+
+    private void setRollback(Runnable action)
+    {
+        checkState(rollbackAction.compareAndSet(null, action), "Should not have to override existing rollback action");
+    }
+
+    private void clearRollback()
+    {
+        rollbackAction.set(null);
+    }
+
+    public void rollback()
+    {
+        Runnable rollbackAction = this.rollbackAction.getAndSet(null);
+        if (rollbackAction != null) {
+            rollbackAction.run();
+        }
     }
 
     /**

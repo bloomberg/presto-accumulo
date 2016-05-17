@@ -85,12 +85,6 @@
                             <expectedVersion>9.3.7.RC0</expectedVersion>
                             <resolvedVersion>8.1.15.v20140411</resolvedVersion>
                         </exception>
-                        <exception>
-                            <groupId>com.beust</groupId>
-                            <artifactId>jcommander</artifactId>
-                            <expectedVersion>1.32</expectedVersion>
-                            <resolvedVersion>1.27</resolvedVersion>
-                        </exception>
                     </exceptions>
                 </configuration>
             </plugin>
@@ -310,6 +304,15 @@
             <artifactId>commons-io</artifactId>
             <version>2.1</version>
         </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.9</version>
+        </dependency>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>units</artifactId>
+        </dependency>
 
         <!-- Presto SPI -->
         <dependency>
@@ -377,11 +380,6 @@
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>log-manager</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>units</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

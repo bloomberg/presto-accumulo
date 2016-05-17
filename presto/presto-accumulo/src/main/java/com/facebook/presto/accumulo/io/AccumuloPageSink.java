@@ -54,8 +54,10 @@ import org.apache.hadoop.io.Text;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static com.facebook.presto.accumulo.AccumuloErrorCode.ACCUMULO_TABLE_DNE;
 import static com.facebook.presto.accumulo.AccumuloErrorCode.INTERNAL_ERROR;
 import static com.facebook.presto.accumulo.AccumuloErrorCode.UNEXPECTED_ACCUMULO_ERROR;
 import static com.facebook.presto.accumulo.AccumuloErrorCode.VALIDATION;
@@ -74,7 +76,7 @@ public class AccumuloPageSink
 {
     private final AccumuloRowSerializer serializer;
     private final BatchWriter wrtr;
-    private final Indexer indexer;
+    private final Optional<Indexer> indexer;
     private final List<AccumuloColumnHandle> columns;
     private Integer rowIdOrdinal;
 
@@ -113,17 +115,21 @@ public class AccumuloPageSink
 
             // If the table is indexed, create an instance of an Indexer, else null
             if (table.isIndexed()) {
-                indexer = new Indexer(conn,
+                indexer = Optional.of(new Indexer(conn,
                         conn.securityOperations().getUserAuthorizations(config.getUsername()),
-                        table, conf);
+                        table, conf));
             }
             else {
-                indexer = null;
+                indexer = Optional.empty();
             }
         }
-        catch (TableNotFoundException | AccumuloException | AccumuloSecurityException e) {
+        catch (AccumuloException | AccumuloSecurityException e) {
             throw new PrestoException(UNEXPECTED_ACCUMULO_ERROR,
                     "Accumulo error when creating BatchWriter and/or Indexer", e);
+        }
+        catch (TableNotFoundException e) {
+            throw new PrestoException(ACCUMULO_TABLE_DNE,
+                    "Accumulo error when creating BatchWriter and/or Indexer, table does not exist", e);
         }
     }
 
@@ -165,7 +171,7 @@ public class AccumuloPageSink
                 setText(row.getField(ach.getOrdinal()), value, serializer);
 
                 // And add the bytes to the Mutation
-                m.put(ach.getFamily(), ach.getQualifier(), new Value(value.copyBytes()));
+                m.put(ach.getFamily().get(), ach.getQualifier().get(), new Value(value.copyBytes()));
             }
         }
 
@@ -227,7 +233,7 @@ public class AccumuloPageSink
     {
         // For each position within the page, i.e. row
         for (int position = 0; position < page.getPositionCount(); ++position) {
-            Row row = Row.newRow();
+            Row row = new Row();
             // For each channel within the page, i.e. column
             for (int channel = 0; channel < page.getChannelCount(); ++channel) {
                 // Get the type for this channel
@@ -246,12 +252,12 @@ public class AccumuloPageSink
                 try {
                     // Write the mutation and index it
                     wrtr.addMutation(m);
-                    if (indexer != null) {
-                        indexer.index(m);
+                    if (indexer.isPresent()) {
+                        indexer.get().index(m);
                     }
                 }
                 catch (MutationsRejectedException e) {
-                    throw new PrestoException(INTERNAL_ERROR, e);
+                    throw new PrestoException(INTERNAL_ERROR, "Mutation rejected by server", e);
                 }
             }
             else {
@@ -272,12 +278,12 @@ public class AccumuloPageSink
             // Done serializing rows, so flush and close the writer and indexer
             wrtr.flush();
             wrtr.close();
-            if (indexer != null) {
-                indexer.close();
+            if (indexer.isPresent()) {
+                indexer.get().close();
             }
         }
         catch (MutationsRejectedException e) {
-            throw new PrestoException(INTERNAL_ERROR, e);
+            throw new PrestoException(INTERNAL_ERROR, "Mutation rejected by server on flush", e);
         }
 
         // TODO Look into any use of the metadata for writing out the rows
@@ -287,6 +293,6 @@ public class AccumuloPageSink
     @Override
     public void abort()
     {
-        // TODO Auto-generated method stub
+        finish();
     }
 }

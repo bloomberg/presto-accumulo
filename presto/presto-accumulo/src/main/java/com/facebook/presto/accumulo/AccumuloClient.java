@@ -101,8 +101,9 @@ import static java.util.Objects.requireNonNull;
  */
 public class AccumuloClient
 {
+    public static final String DUMMY_LOCATION = "localhost:9997";
+
     private static final Logger LOG = Logger.get(AccumuloClient.class);
-    private static final String DUMMY_LOCATION = "localhost:9997";
     private static final String MAC_PASSWORD = "secret";
     private static final String MAC_USER = "root";
     private static final Splitter COMMA_SPLITTER = Splitter.on(',').omitEmptyStrings().trimResults();
@@ -114,6 +115,7 @@ public class AccumuloClient
     private final Authorizations auths;
     private final Random random = new Random();
     private final AccumuloTableManager tableManager;
+    private final IndexLookup sIndexLookup;
 
     /**
      * Gets an Accumulo Connector based on the given configuration.
@@ -127,6 +129,8 @@ public class AccumuloClient
         if (conn != null) {
             return conn;
         }
+
+        requireNonNull(config, "config is null");
 
         try {
             if (config.isMiniAccumuloCluster()) {
@@ -194,6 +198,9 @@ public class AccumuloClient
 
         // Creates and sets CONNECTOR in the event it has not yet been created
         this.auths = getAccumuloConnector(this.conf).securityOperations().getUserAuthorizations(conf.getUsername());
+
+        // Create the index lookup utility
+        this.sIndexLookup = new IndexLookup(conn, conf, this.auths);
     }
 
     /**
@@ -436,7 +443,7 @@ public class AccumuloClient
 
             // Special case if this column is the
             if (cm.getName().toLowerCase().equals(rowIdColumn)) {
-                cBuilder.add(new AccumuloColumnHandle(rowIdColumn, null, null,
+                cBuilder.add(new AccumuloColumnHandle(rowIdColumn, Optional.empty(), Optional.empty(),
                         cm.getType(), ordinal, "Accumulo row ID", false));
             }
             else {
@@ -452,8 +459,8 @@ public class AccumuloClient
                         famqual.getLeft(), famqual.getRight(), indexed);
 
                 // Create a new AccumuloColumnHandle object
-                cBuilder.add(new AccumuloColumnHandle(cm.getName(), famqual.getLeft(),
-                        famqual.getRight(), cm.getType(), ordinal, comment, indexed));
+                cBuilder.add(new AccumuloColumnHandle(cm.getName(), Optional.of(famqual.getLeft()),
+                        Optional.of(famqual.getRight()), cm.getType(), ordinal, comment, indexed));
             }
         }
 
@@ -483,7 +490,7 @@ public class AccumuloClient
                 // We already validated this earlier, so it'll exist
                 famBldr.add(new Text(table.getColumns().stream()
                         .filter(x -> x.getName().equals(col)).collect(Collectors.toList())
-                        .get(0).getFamily()));
+                        .get(0).getFamily().get()));
             }
             localityGroupsBldr.put(g.getKey(), famBldr.build());
         }
@@ -606,7 +613,8 @@ public class AccumuloClient
     }
 
     /**
-     * Drops the table metadata from Presto as well as the Accumulo tables
+     * Drops the table metadata from Presto and Accumulo tables if internal table
+     * Checks for metadata and table existence before deleting
      *
      * @param table The Accumulo table
      */
@@ -616,15 +624,26 @@ public class AccumuloClient
         String tableName = table.getFullTableName();
 
         // Remove the table metadata from Presto
-        metaManager.deleteTableMetadata(stName);
+        if (metaManager.getTable(stName) != null) {
+            metaManager.deleteTableMetadata(stName);
+        }
 
         if (!table.isExternal()) {
             // delete the table and index tables
-            tableManager.deleteAccumuloTable(tableName);
+            if (tableManager.exists(tableName)) {
+                tableManager.deleteAccumuloTable(tableName);
+            }
 
             if (table.isIndexed()) {
-                tableManager.deleteAccumuloTable(Indexer.getIndexTableName(stName));
-                tableManager.deleteAccumuloTable(Indexer.getMetricsTableName(stName));
+                String indexTableName = Indexer.getIndexTableName(stName);
+                if (tableManager.exists(indexTableName)) {
+                    tableManager.deleteAccumuloTable(indexTableName);
+                }
+
+                String metricsTableName = Indexer.getMetricsTableName(stName);
+                if (tableManager.exists(metricsTableName)) {
+                    tableManager.deleteAccumuloTable(metricsTableName);
+                }
             }
         }
     }
@@ -847,7 +866,7 @@ public class AccumuloClient
      * @return List of TabletSplitMetadata objects for Presto
      */
     public List<TabletSplitMetadata> getTabletSplits(ConnectorSession session, String schema,
-            String table, Domain rowIdDom, List<AccumuloColumnConstraint> constraints,
+            String table, Optional<Domain> rowIdDom, List<AccumuloColumnConstraint> constraints,
             AccumuloRowSerializer serializer)
     {
         try {
@@ -860,10 +879,8 @@ public class AccumuloClient
 
             // Use the secondary index, if enabled
             if (AccumuloSessionProperties.isOptimizeIndexEnabled(session)) {
-                // Get the scan authorizations to query the index and create the index lookup
-                // utility
-                Authorizations scanAuths = getScanAuthorizations(session, schema, table);
-                IndexLookup sIndexLookup = new IndexLookup(conn, conf, scanAuths);
+                // Get the scan authorizations to query the index and set them in our lookup utility
+                sIndexLookup.setAuths(getScanAuthorizations(session, schema, table));
 
                 // Check the secondary index based on the column constraints
                 // If this returns true, return the tablet splits to Presto
@@ -940,9 +957,9 @@ public class AccumuloClient
             return scanAuths;
         }
 
-        String strAuths = this.getTable(new SchemaTableName(schema, table)).getScanAuthorizations();
-        if (strAuths != null) {
-            Authorizations scanAuths = new Authorizations(Iterables.toArray(COMMA_SPLITTER.split(strAuths), String.class));
+        Optional<String> strAuths = this.getTable(new SchemaTableName(schema, table)).getScanAuthorizations();
+        if (strAuths.isPresent()) {
+            Authorizations scanAuths = new Authorizations(Iterables.toArray(COMMA_SPLITTER.split(strAuths.get()), String.class));
             LOG.info("scan_auths table property set, using: %s", scanAuths);
             return scanAuths;
         }
@@ -1119,23 +1136,23 @@ public class AccumuloClient
      * @throws AccumuloSecurityException If Accumulo credentials are not valid
      * @throws TableNotFoundException If the Accumulo table is not found
      */
-    public static Collection<Range> getRangesFromDomain(Domain dom, AccumuloRowSerializer serializer)
+    public static Collection<Range> getRangesFromDomain(Optional<Domain> dom, AccumuloRowSerializer serializer)
             throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
         // if we have no predicate pushdown, use the full range
-        if (dom == null) {
+        if (!dom.isPresent()) {
             return ImmutableSet.of(new Range());
         }
 
         ImmutableSet.Builder<Range> rangeBuilder = ImmutableSet.builder();
 
         // If this domain is from an ANY clause
-        if (dom.getValues().isAny()) {
+        if (dom.get().getValues().isAny()) {
             // Get the domain type
-            Type t = dom.getType();
+            Type t = dom.get().getType();
             if (Types.isArrayType(t)) {
                 // If it is an array type, then each value is in the domain is an array
-                for (Object arrayBlock : dom.getValues().getDiscreteValues().getValues()) {
+                for (Object arrayBlock : dom.get().getValues().getDiscreteValues().getValues()) {
                     // Get the elements of the array block and add them to the ranges
                     Type elementType = Types.getElementType(t);
                     for (Object o : AccumuloRowSerializer.getArrayFromBlock(elementType,
@@ -1147,14 +1164,14 @@ public class AccumuloClient
             }
             else {
                 // If it is not an array type, then this is just a list of values
-                for (Object o : dom.getValues().getDiscreteValues().getValues()) {
+                for (Object o : dom.get().getValues().getDiscreteValues().getValues()) {
                     rangeBuilder.add(new Range(new Text(serializer.encode(t, o))));
                 }
             }
         }
         else {
             // This isn't an ANY clause, so convert the Presto Range to an Accumulo Range
-            for (com.facebook.presto.spi.predicate.Range r : dom.getValues().getRanges()
+            for (com.facebook.presto.spi.predicate.Range r : dom.get().getValues().getRanges()
                     .getOrderedRanges()) {
                 rangeBuilder.add(getRangeFromPrestoRange(r, serializer));
             }

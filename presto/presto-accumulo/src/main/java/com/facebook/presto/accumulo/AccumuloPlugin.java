@@ -16,8 +16,8 @@
 package com.facebook.presto.accumulo;
 
 import com.facebook.presto.metadata.FunctionFactory;
-import com.facebook.presto.spi.ConnectorFactory;
 import com.facebook.presto.spi.Plugin;
+import com.facebook.presto.spi.connector.ConnectorFactory;
 import com.facebook.presto.spi.type.TypeManager;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -40,25 +40,25 @@ public class AccumuloPlugin
     private Map<String, String> optionalConfig = ImmutableMap.of();
 
     @Override
-    public synchronized void setOptionalConfig(Map<String, String> optionalConfig)
+    public void setOptionalConfig(Map<String, String> optionalConfig)
     {
         this.optionalConfig =
                 ImmutableMap.copyOf(requireNonNull(optionalConfig, "optionalConfig is null"));
     }
 
     @Inject
-    public synchronized void setTypeManager(TypeManager typeManager)
+    public void setTypeManager(TypeManager typeManager)
     {
-        this.typeManager = typeManager;
+        this.typeManager = requireNonNull(typeManager, "typeManager is null");
     }
 
-    public synchronized Map<String, String> getOptionalConfig()
+    public Map<String, String> getOptionalConfig()
     {
         return optionalConfig;
     }
 
     @Override
-    public synchronized <T> List<T> getServices(Class<T> type)
+    public <T> List<T> getServices(Class<T> type)
     {
         if (type == ConnectorFactory.class) {
             return ImmutableList
