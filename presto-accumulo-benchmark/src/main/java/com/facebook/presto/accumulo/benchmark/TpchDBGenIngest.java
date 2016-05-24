@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -66,78 +67,86 @@ public class TpchDBGenIngest
     private static final String SUPPLIER_ROW_ID = "suppkey";
 
     private static final RowSchema CUSTOMER_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("custkey", null, null, BIGINT).addColumn("name", "md", "name", VARCHAR)
-            .addColumn("address", "md", "address", VARCHAR)
-            .addColumn("nationkey", "md", "nationkey", BIGINT)
-            .addColumn("phone", "md", "phone", VARCHAR)
-            .addColumn("acctbal", "md", "acctbal", DOUBLE)
-            .addColumn("mktsegment", "md", "mktsegment", VARCHAR, true)
-            .addColumn("comment", "md", "comment", VARCHAR);
+            .addColumn("custkey", Optional.empty(), Optional.empty(), BIGINT)
+            .addColumn("name", Optional.of("md"), Optional.of("name"), VARCHAR)
+            .addColumn("address", Optional.of("md"), Optional.of("address"), VARCHAR)
+            .addColumn("nationkey", Optional.of("md"), Optional.of("nationkey"), BIGINT)
+            .addColumn("phone", Optional.of("md"), Optional.of("phone"), VARCHAR)
+            .addColumn("acctbal", Optional.of("md"), Optional.of("acctbal"), DOUBLE)
+            .addColumn("mktsegment", Optional.of("md"), Optional.of("mktsegment"), VARCHAR, true)
+            .addColumn("comment", Optional.of("md"), Optional.of("comment"), VARCHAR);
 
     private static final RowSchema LINEITEM_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("uuid", null, null, VARCHAR).addColumn("orderkey", "md", "orderkey", BIGINT)
-            .addColumn("partkey", "md", "partkey", BIGINT)
-            .addColumn("suppkey", "md", "suppkey", BIGINT)
-            .addColumn("linenumber", "md", "linenumber", BIGINT)
-            .addColumn("quantity", "md", "quantity", BIGINT, true)
-            .addColumn("extendedprice", "md", "extendedprice", DOUBLE)
-            .addColumn("discount", "md", "discount", DOUBLE, true)
-            .addColumn("tax", "md", "tax", DOUBLE)
-            .addColumn("returnflag", "md", "returnflag", VARCHAR, true)
-            .addColumn("linestatus", "md", "linestatus", VARCHAR)
-            .addColumn("shipdate", "md", "shipdate", DATE, true)
-            .addColumn("commitdate", "md", "commitdate", DATE)
-            .addColumn("receiptdate", "md", "receiptdate", DATE, true)
-            .addColumn("shipinstruct", "md", "shipinstruct", VARCHAR, true)
-            .addColumn("shipmode", "md", "shipmode", VARCHAR, true)
-            .addColumn("comment", "md", "comment", VARCHAR);
+            .addColumn("uuid", Optional.empty(), Optional.empty(), VARCHAR)
+            .addColumn("orderkey", Optional.of("md"), Optional.of("orderkey"), BIGINT)
+            .addColumn("partkey", Optional.of("md"), Optional.of("partkey"), BIGINT)
+            .addColumn("suppkey", Optional.of("md"), Optional.of("suppkey"), BIGINT)
+            .addColumn("linenumber", Optional.of("md"), Optional.of("linenumber"), BIGINT)
+            .addColumn("quantity", Optional.of("md"), Optional.of("quantity"), BIGINT, true)
+            .addColumn("extendedprice", Optional.of("md"), Optional.of("extendedprice"), DOUBLE)
+            .addColumn("discount", Optional.of("md"), Optional.of("discount"), DOUBLE, true)
+            .addColumn("tax", Optional.of("md"), Optional.of("tax"), DOUBLE)
+            .addColumn("returnflag", Optional.of("md"), Optional.of("returnflag"), VARCHAR, true)
+            .addColumn("linestatus", Optional.of("md"), Optional.of("linestatus"), VARCHAR)
+            .addColumn("shipdate", Optional.of("md"), Optional.of("shipdate"), DATE, true)
+            .addColumn("commitdate", Optional.of("md"), Optional.of("commitdate"), DATE)
+            .addColumn("receiptdate", Optional.of("md"), Optional.of("receiptdate"), DATE, true)
+            .addColumn("shipinstruct", Optional.of("md"), Optional.of("shipinstruct"), VARCHAR, true)
+            .addColumn("shipmode", Optional.of("md"), Optional.of("shipmode"), VARCHAR, true)
+            .addColumn("comment", Optional.of("md"), Optional.of("comment"), VARCHAR);
 
     private static final RowSchema NATION_SCHEMA =
-            RowSchema.newRowSchema().addColumn("nationkey", null, null, BIGINT)
-                    .addColumn("name", "md", "name", VARCHAR, true)
-                    .addColumn("regionkey", "md", "regionkey", BIGINT)
-                    .addColumn("comment", "md", "comment", VARCHAR);
+            RowSchema.newRowSchema()
+                    .addColumn("nationkey", Optional.empty(), Optional.empty(), BIGINT)
+                    .addColumn("name", Optional.of("md"), Optional.of("name"), VARCHAR, true)
+                    .addColumn("regionkey", Optional.of("md"), Optional.of("regionkey"), BIGINT)
+                    .addColumn("comment", Optional.of("md"), Optional.of("comment"), VARCHAR);
 
     private static final RowSchema ORDERS_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("orderkey", null, null, BIGINT).addColumn("custkey", "md", "custkey", BIGINT)
-            .addColumn("orderstatus", "md", "orderstatus", VARCHAR)
-            .addColumn("totalprice", "md", "totalprice", DOUBLE)
-            .addColumn("orderdate", "md", "orderdate", DATE, true)
-            .addColumn("orderpriority", "md", "orderpriority", VARCHAR)
-            .addColumn("clerk", "md", "clerk", VARCHAR)
-            .addColumn("shippriority", "md", "shippriority", BIGINT)
-            .addColumn("comment", "md", "comment", VARCHAR);
+            .addColumn("orderkey", Optional.empty(), Optional.empty(), BIGINT)
+            .addColumn("custkey", Optional.of("md"), Optional.of("custkey"), BIGINT)
+            .addColumn("orderstatus", Optional.of("md"), Optional.of("orderstatus"), VARCHAR)
+            .addColumn("totalprice", Optional.of("md"), Optional.of("totalprice"), DOUBLE)
+            .addColumn("orderdate", Optional.of("md"), Optional.of("orderdate"), DATE, true)
+            .addColumn("orderpriority", Optional.of("md"), Optional.of("orderpriority"), VARCHAR)
+            .addColumn("clerk", Optional.of("md"), Optional.of("clerk"), VARCHAR)
+            .addColumn("shippriority", Optional.of("md"), Optional.of("shippriority"), BIGINT)
+            .addColumn("comment", Optional.of("md"), Optional.of("comment"), VARCHAR);
 
     private static final RowSchema PART_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("partkey", null, null, BIGINT).addColumn("name", "md", "name", VARCHAR)
-            .addColumn("mfgr", "md", "mfgr", VARCHAR)
-            .addColumn("brand", "md", "brand", VARCHAR, true)
-            .addColumn("type", "md", "type", VARCHAR, true)
-            .addColumn("size", "md", "size", BIGINT, true)
-            .addColumn("container", "md", "container", VARCHAR, true)
-            .addColumn("retailprice", "md", "retailprice", DOUBLE)
-            .addColumn("comment", "md", "comment", VARCHAR);
+            .addColumn("partkey", Optional.empty(), Optional.empty(), BIGINT)
+            .addColumn("name", Optional.of("md"), Optional.of("name"), VARCHAR)
+            .addColumn("mfgr", Optional.of("md"), Optional.of("mfgr"), VARCHAR)
+            .addColumn("brand", Optional.of("md"), Optional.of("brand"), VARCHAR, true)
+            .addColumn("type", Optional.of("md"), Optional.of("type"), VARCHAR, true)
+            .addColumn("size", Optional.of("md"), Optional.of("size"), BIGINT, true)
+            .addColumn("container", Optional.of("md"), Optional.of("container"), VARCHAR, true)
+            .addColumn("retailprice", Optional.of("md"), Optional.of("retailprice"), DOUBLE)
+            .addColumn("comment", Optional.of("md"), Optional.of("comment"), VARCHAR);
 
     private static final RowSchema PARTSUPP_SCHEMA =
-            RowSchema.newRowSchema().addColumn("uuid", null, null, VARCHAR)
-                    .addColumn("partkey", "md", "partkey", BIGINT, true)
-                    .addColumn("suppkey", "md", "suppkey", BIGINT)
-                    .addColumn("availqty", "md", "availqty", BIGINT)
-                    .addColumn("supplycost", "md", "supplycost", DOUBLE)
-                    .addColumn("comment", "md", "comment", VARCHAR);
+            RowSchema.newRowSchema()
+                    .addColumn("uuid", Optional.empty(), Optional.empty(), VARCHAR)
+                    .addColumn("partkey", Optional.of("md"), Optional.of("partkey"), BIGINT, true)
+                    .addColumn("suppkey", Optional.of("md"), Optional.of("suppkey"), BIGINT)
+                    .addColumn("availqty", Optional.of("md"), Optional.of("availqty"), BIGINT)
+                    .addColumn("supplycost", Optional.of("md"), Optional.of("supplycost"), DOUBLE)
+                    .addColumn("comment", Optional.of("md"), Optional.of("comment"), VARCHAR);
 
     private static final RowSchema REGION_SCHEMA =
-            RowSchema.newRowSchema().addColumn("regionkey", null, null, BIGINT)
-                    .addColumn("name", "md", "name", VARCHAR, true)
-                    .addColumn("comment", "md", "comment", VARCHAR);
+            RowSchema.newRowSchema()
+                    .addColumn("regionkey", Optional.empty(), Optional.empty(), BIGINT)
+                    .addColumn("name", Optional.of("md"), Optional.of("name"), VARCHAR, true)
+                    .addColumn("comment", Optional.of("md"), Optional.of("comment"), VARCHAR);
 
     private static final RowSchema SUPPLIER_SCHEMA = RowSchema.newRowSchema()
-            .addColumn("suppkey", null, null, BIGINT).addColumn("name", "md", "name", VARCHAR, true)
-            .addColumn("address", "md", "address", VARCHAR)
-            .addColumn("nationkey", "md", "nationkey", BIGINT)
-            .addColumn("phone", "md", "phone", VARCHAR)
-            .addColumn("acctbal", "md", "acctbal", DOUBLE)
-            .addColumn("comment", "md", "comment", VARCHAR);
+            .addColumn("suppkey", Optional.empty(), Optional.empty(), BIGINT)
+            .addColumn("name", Optional.of("md"), Optional.of("name"), VARCHAR, true)
+            .addColumn("address", Optional.of("md"), Optional.of("address"), VARCHAR)
+            .addColumn("nationkey", Optional.of("md"), Optional.of("nationkey"), BIGINT)
+            .addColumn("phone", Optional.of("md"), Optional.of("phone"), VARCHAR)
+            .addColumn("acctbal", Optional.of("md"), Optional.of("acctbal"), DOUBLE)
+            .addColumn("comment", Optional.of("md"), Optional.of("comment"), VARCHAR);
 
     private TpchDBGenIngest() {}
 

@@ -421,11 +421,6 @@ public final class DomainTranslator
                 return process(coerceDoubleToLongComparison(normalized), complement);
             }
 
-            Optional<NullableValue> coercedValue = coerce(value, fieldType);
-            if (!coercedValue.isPresent()) {
-                return super.visitComparisonExpression(node, complement);
-            }
-
             if (node.getType().equals(ComparisonExpression.Type.ANY)) {
                 if (fieldType.getTypeSignature().getBase().equals(StandardTypes.ARRAY)) {
                     Type elementType = fieldType.getTypeParameters().get(0);
@@ -440,6 +435,11 @@ public final class DomainTranslator
                 else {
                     throw new IllegalStateException("INVARIANT: ANY comparison array element type must be the same as value");
                 }
+            }
+
+            Optional<NullableValue> coercedValue = coerce(value, fieldType);
+            if (!coercedValue.isPresent()) {
+                return super.visitComparisonExpression(node, complement);
             }
 
             return createComparisonExtractionResult(normalized.getComparisonType(), symbol, fieldType, coercedValue.get().getValue(), complement);

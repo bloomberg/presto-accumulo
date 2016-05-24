@@ -39,6 +39,7 @@ import org.apache.commons.cli.Options;
 import org.apache.hadoop.io.Text;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static java.lang.String.format;
@@ -117,8 +118,8 @@ public class AddColumnTask
                 String.format("Accumulo column %s:%s. Indexed: %b", family, qualifier, indexed);
 
         // Create our column and add it via the client
-        AccumuloColumnHandle column = new AccumuloColumnHandle(prestoName, family,
-                qualifier, type, ordinal, comment, indexed);
+        AccumuloColumnHandle column = new AccumuloColumnHandle(prestoName, Optional.of(family),
+                Optional.of(qualifier), type, ordinal, comment, indexed);
         addColumn(table, column);
         System.out.println(format("Created column %s", column));
 

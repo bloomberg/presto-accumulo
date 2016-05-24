@@ -118,8 +118,8 @@ public class PrestoBatchWriter
 
         // Get the scan authorizations based on the class's configuration or the user name
         final Authorizations auths;
-        if (table.getScanAuthorizations() != null) {
-            auths = new Authorizations(table.getScanAuthorizations().split(","));
+        if (table.getScanAuthorizations().isPresent()) {
+            auths = new Authorizations(table.getScanAuthorizations().get().split(","));
         }
         else {
             auths = conn.securityOperations().getUserAuthorizations(config.getUsername());
