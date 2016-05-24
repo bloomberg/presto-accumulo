@@ -20,7 +20,8 @@ A Presto connector for reading and writing data backed by Apache Accumulo.
 
 This repository contains four sub-projects:
 
-1. _presto_ - A patched version of Presto 0.142 containing support for the ANY clause.  This is similar to the __contains__ UDF that can be used to check if an element is in an array.  Users can use this clause instead of contains to enable predicate pushdown support -- and therefore the secondary index capability of the connector.  This folder also contains the `presto-accumulo` connector code.  See the [presto-docs page](https://github.com/bloomberg/presto-accumulo/blob/master/presto/presto-docs/src/main/sphinx/connector/accumulo.rst) for more information on the Accumulo connector.
-2. _presto-accumulo-iterators_ - A collection of Accumulo iterators to be installed on the TabletServers.  These iterators are required to user the connector.
-3. _presto-accumulo-benchmark_ - An implementation of the TPC-H benchmarking suite for testing the connector.
-4. _presto-accumulo-tools_ - A Java project with some tools to help out with metadata management tasks that could not otherwise be done using SQL.
+1. _presto-accumulo-iterators_ - A collection of Accumulo iterators to be installed on the TabletServers.  These iterators are required to user the connector.
+2. _presto-accumulo-benchmark_ - An implementation of the TPC-H benchmarking suite for testing the connector.
+3. _presto-accumulo-tools_ - A Java project with some tools to help out with metadata management tasks that could not otherwise be done using SQL.
+4. _presto-accumulo-examples_ - Usage examples of the tools
+
