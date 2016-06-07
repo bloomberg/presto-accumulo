@@ -25,3 +25,4 @@ This repository contains four sub-projects:
 3. _presto-accumulo-tools_ - A Java project with some tools to help out with metadata management tasks that could not otherwise be done using SQL.
 4. _presto-accumulo-examples_ - Usage examples of the tools
 
+The source code for the Presto Accumulo connector is located at [Bloomberg's fork of Presto](https://github.com/bloomberg/presto) and is currently [under review](https://github.com/prestodb/presto/pull/5030).
