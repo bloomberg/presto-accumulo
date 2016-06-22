@@ -5,7 +5,7 @@
 
     <groupId>com.facebook.presto</groupId>
     <artifactId>presto-accumulo-tools</artifactId>
-    <version>0.148-SNAPSHOT</version>
+    <version>0.149-SNAPSHOT</version>
     <description>Tools to assist with the Accumulo connector for presto</description>
     <packaging>jar</packaging>
 
