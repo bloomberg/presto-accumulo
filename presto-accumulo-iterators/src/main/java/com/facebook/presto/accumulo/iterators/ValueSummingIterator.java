@@ -75,6 +75,11 @@ public class ValueSummingIterator
     {
         super.seek(range, columnFamilies, inclusive);
 
+        if (!super.hasTop()) {
+            hasTop = false;
+            return;
+        }
+
         long sum = 0;
         do {
             topKey = super.getTopKey();
