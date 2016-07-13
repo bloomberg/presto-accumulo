@@ -5,7 +5,7 @@
 
     <groupId>com.facebook.presto</groupId>
     <artifactId>presto-accumulo-benchmark</artifactId>
-    <version>0.149-SNAPSHOT</version>
+    <version>0.151-SNAPSHOT</version>
     <description>Presto - Accumulo Connector</description>
     <packaging>jar</packaging>
 
