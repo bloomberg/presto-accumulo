@@ -16,7 +16,6 @@
 package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
-import com.facebook.presto.accumulo.conf.AccumuloSessionProperties;
 import com.facebook.presto.cli.AlignedTablePrinter;
 import com.facebook.presto.jdbc.PrestoConnection;
 import org.apache.commons.cli.CommandLine;
@@ -396,7 +395,7 @@ public class PaginationTask
     /**
      * Sets the Presto port
      *
-     * @param host Presto port
+     * @param port Presto port
      */
     public void setPort(Integer port)
     {
@@ -560,37 +559,37 @@ public class PaginationTask
     private void setSessionProperties(PrestoConnection conn)
     {
         if (rangeSplitsEnabled != null) {
-            conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_RANGE_SPLITS_ENABLED,
+            conn.setSessionProperty("optimize_range_splits_enabled",
                     Boolean.toString(rangeSplitsEnabled));
         }
 
         if (indexEnabled != null) {
-            conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_INDEX_ENABLED,
+            conn.setSessionProperty("optimize_index_enabled",
                     Boolean.toString(indexEnabled));
         }
 
         if (localityEnabled != null) {
-            conn.setSessionProperty(AccumuloSessionProperties.OPTIMIZE_LOCALITY_ENABLED,
+            conn.setSessionProperty("optimize_locality_enabled",
                     Boolean.toString(localityEnabled));
         }
 
         if (indexThreshold != null) {
-            conn.setSessionProperty(AccumuloSessionProperties.INDEX_THRESHOLD,
+            conn.setSessionProperty("index_threshold",
                     Double.toString(indexThreshold));
         }
 
         if (lowestCardinalityThreshold != null) {
-            conn.setSessionProperty(AccumuloSessionProperties.INDEX_LOWEST_CARDINALITY_THRESHOLD,
+            conn.setSessionProperty("index_lowest_cardinality_threshold",
                     Double.toString(lowestCardinalityThreshold));
         }
 
         if (rowsPerSplit != null) {
-            conn.setSessionProperty(AccumuloSessionProperties.INDEX_ROWS_PER_SPLIT,
+            conn.setSessionProperty("index_rows_per_split",
                     Integer.toString(rowsPerSplit));
         }
 
         if (indexMetricsEnabled != null) {
-            conn.setSessionProperty(AccumuloSessionProperties.INDEX_METRICS_ENABLED,
+            conn.setSessionProperty("index_metrics_enabled",
                     Boolean.toString(indexMetricsEnabled));
         }
     }

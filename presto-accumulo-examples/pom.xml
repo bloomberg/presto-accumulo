@@ -5,12 +5,12 @@
 
     <groupId>com.facebook.presto</groupId>
     <artifactId>presto-accumulo-examples</artifactId>
-    <version>0.151-SNAPSHOT</version>
+    <version>0.152-SNAPSHOT</version>
     <description>Examples of using the presto-accumulo-tools project</description>
     <packaging>jar</packaging>
 
     <properties>
-        <accumulo.version>1.6.2</accumulo.version>
+        <accumulo.version>1.7.0</accumulo.version>
         <app.main.class>com.facebook.presto.accumulo.examples.Main</app.main.class>
         <presto.version>${project.version}</presto.version>
         <project.build.targetJdk>1.8</project.build.targetJdk>

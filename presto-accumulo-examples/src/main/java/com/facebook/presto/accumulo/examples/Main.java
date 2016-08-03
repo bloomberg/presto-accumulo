@@ -123,7 +123,7 @@ public class Main
         }
 
         // Create an AccumuloConfig from the accumulo properties file
-        AccumuloConfig config = AccumuloConfig.fromFile(
+        AccumuloConfig config = com.facebook.presto.accumulo.tools.Main.fromFile(
                 new File(System.getenv("PRESTO_HOME"), "etc/catalog/accumulo.properties"));
 
         // Get the tool name from the first argument

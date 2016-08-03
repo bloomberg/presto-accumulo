@@ -25,6 +25,7 @@ import com.facebook.presto.accumulo.model.Row;
 import com.facebook.presto.accumulo.model.RowSchema;
 import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.SchemaTableName;
+import com.facebook.presto.type.TypeRegistry;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchWriter;
@@ -109,7 +110,7 @@ public class PrestoBatchWriter
                 inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword()));
 
         // Fetch the table metadata
-        AccumuloMetadataManager manager = config.getMetadataManager();
+        AccumuloMetadataManager manager = config.getMetadataManager(new TypeRegistry());
         this.table = manager.getTable(new SchemaTableName(schema, tableName));
 
         if (this.table == null) {

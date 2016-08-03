@@ -16,6 +16,7 @@
 package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
+import io.airlift.units.Duration;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -23,6 +24,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
@@ -34,9 +37,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
+import static com.facebook.presto.accumulo.conf.AccumuloConfig.CARDINALITY_CACHE_EXPIRE_DURATION;
+import static com.facebook.presto.accumulo.conf.AccumuloConfig.CARDINALITY_CACHE_SIZE;
+import static com.facebook.presto.accumulo.conf.AccumuloConfig.INSTANCE;
+import static com.facebook.presto.accumulo.conf.AccumuloConfig.METADATA_MANAGER_CLASS;
+import static com.facebook.presto.accumulo.conf.AccumuloConfig.MINI_ACCUMULO_CLUSTER;
+import static com.facebook.presto.accumulo.conf.AccumuloConfig.PASSWORD;
+import static com.facebook.presto.accumulo.conf.AccumuloConfig.USERNAME;
+import static com.facebook.presto.accumulo.conf.AccumuloConfig.ZOOKEEPERS;
+import static com.facebook.presto.accumulo.conf.AccumuloConfig.ZOOKEEPER_METADATA_ROOT;
 import static java.lang.String.format;
 
 /**
@@ -74,8 +85,7 @@ public class Main
     /**
      * Gets a {@link Task} that matches the given task name
      *
-     * @param name
-     *            Task name to find
+     * @param name Task name to find
      * @return The Task, or null if not found
      */
     public static Task getTask(String name)
@@ -97,15 +107,7 @@ public class Main
     public static List<Task> getTasks()
     {
         // Sort by name
-        Collections.sort(tasks, new Comparator<Task>()
-        {
-            @Override
-            public int compare(Task o1, Task o2)
-            {
-                return o1.getTaskName().compareTo(o2.getTaskName());
-            }
-        });
-
+        Collections.sort(tasks, (Task o1, Task o2) -> o1.getTaskName().compareTo(o2.getTaskName()));
         return tasks;
     }
 
@@ -129,7 +131,7 @@ public class Main
         }
 
         // Create an AccumuloConfig from the accumulo properties file
-        AccumuloConfig config = AccumuloConfig.fromFile(
+        AccumuloConfig config = fromFile(
                 new File(System.getenv("PRESTO_HOME"), "etc/catalog/accumulo.properties"));
 
         // Get the tool name from the first argument
@@ -189,8 +191,7 @@ public class Main
     /**
      * Prints the help for a given {@link Task}
      *
-     * @param t
-     *            Task to print help
+     * @param t Task to print help
      */
     @SuppressWarnings("unchecked")
     private void printHelp(Task t)
@@ -203,6 +204,28 @@ public class Main
 
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(format("usage: java -jar <jarfile> %s [args]", t.getTaskName()), opts);
+    }
+
+    public static AccumuloConfig fromFile(File f)
+            throws ConfigurationException
+    {
+        if (!f.exists() || f.isDirectory()) {
+            throw new ConfigurationException(format("File %s does not exist or is a directory", f));
+        }
+        PropertiesConfiguration props = new PropertiesConfiguration(f);
+        props.setThrowExceptionOnMissing(true);
+
+        AccumuloConfig config = new AccumuloConfig();
+        config.setCardinalityCacheExpiration(Duration.valueOf(props.getString(CARDINALITY_CACHE_EXPIRE_DURATION, "5m")));
+        config.setCardinalityCacheSize(props.getInt(CARDINALITY_CACHE_SIZE, 100_000));
+        config.setInstance(props.getString(INSTANCE));
+        config.setMetadataManagerClass(props.getString(METADATA_MANAGER_CLASS, "default"));
+        config.setPassword(props.getString(PASSWORD));
+        config.setUsername(props.getString(USERNAME));
+        config.setZkMetadataRoot(props.getString(ZOOKEEPER_METADATA_ROOT, "/presto-accumulo"));
+        config.setZooKeepers(props.getString(ZOOKEEPERS));
+        config.setMiniAccumuloCluster(props.getBoolean(MINI_ACCUMULO_CLUSTER, false));
+        return config;
     }
 
     public static void main(String[] args)
