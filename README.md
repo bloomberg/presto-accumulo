@@ -21,8 +21,7 @@ A Presto connector for reading and writing data backed by Apache Accumulo.
 This repository contains four sub-projects:
 
 1. _presto-accumulo-iterators_ - A collection of Accumulo iterators to be installed on the TabletServers.  These iterators are required to user the connector.
-2. _presto-accumulo-benchmark_ - An implementation of the TPC-H benchmarking suite for testing the connector.
-3. _presto-accumulo-tools_ - A Java project with some tools to help out with metadata management tasks that could not otherwise be done using SQL.
-4. _presto-accumulo-examples_ - Usage examples of the tools
+2. _presto-accumulo-tools_ - A Java project with some tools to help out with metadata management tasks that could not otherwise be done using SQL.
+3. _presto-accumulo-examples_ - Usage examples of the tools
 
 The source code for the Presto Accumulo connector is located at [Bloomberg's fork of Presto](https://github.com/bloomberg/presto) and is currently [under review](https://github.com/prestodb/presto/pull/5030).
