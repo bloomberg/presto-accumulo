@@ -65,8 +65,8 @@ public class Main
      */
     private static List<Task> tasks = new ArrayList<>();
 
-    private static final Option HELP =
-            OptionBuilder.withDescription("Print this help message").withLongOpt("help").create();
+    private static final Option HELP = OptionBuilder.withDescription("Print this help message").withLongOpt("help").create();
+    private static final Option CONFIG = OptionBuilder.withDescription("accumulo.properties file").withLongOpt("config").hasArg().create('c');
 
     static {
         // Search the classpath for implementations of Task in the tools package
@@ -122,18 +122,6 @@ public class Main
             return 1;
         }
 
-        // Validate PRESTO_HOME is set to pull accumulo properties from config path
-        String prestoHome = System.getenv("PRESTO_HOME");
-        if (prestoHome == null) {
-            System.err.println("PRESTO_HOME is not set.  This is required to locate the "
-                    + "etc/catalog/accumulo.properties file");
-            System.exit(1);
-        }
-
-        // Create an AccumuloConfig from the accumulo properties file
-        AccumuloConfig config = fromFile(
-                new File(System.getenv("PRESTO_HOME"), "etc/catalog/accumulo.properties"));
-
         // Get the tool name from the first argument
         String toolName = args[0];
         Task t = Main.getTask(toolName);
@@ -146,6 +134,7 @@ public class Main
         // Add the help option and all options for the tool
         Options opts = new Options();
         opts.addOption(HELP);
+        opts.addOption(CONFIG);
         for (Option o : (Collection<Option>) t.getOptions().getOptions()) {
             opts.addOption(o);
         }
@@ -166,6 +155,22 @@ public class Main
             return 0;
         }
         else {
+            AccumuloConfig config;
+            if (cmd.hasOption(CONFIG.getLongOpt())) {
+                config = fromFile(new File(cmd.getOptionValue(CONFIG.getLongOpt())));
+            }
+            else {
+                // Validate PRESTO_HOME is set to pull accumulo properties from config path
+                String prestoHome = System.getenv("PRESTO_HOME");
+                if (prestoHome == null) {
+                    System.err.println("PRESTO_HOME is not set.  This is required to locate the etc/catalog/accumulo.properties file, or use --config option");
+                    System.exit(1);
+                }
+
+                // Create an AccumuloConfig from the accumulo properties file
+                config = fromFile(new File(System.getenv("PRESTO_HOME"), "etc/catalog/accumulo.properties"));
+            }
+
             // Run the tool and print help if anything bad happens
             int code = t.run(config, cmd);
             if (code != 0) {
@@ -181,8 +186,7 @@ public class Main
     private void printTools()
     {
         System.out.println("Usage: java -jar <jarfile> <tool> [args]");
-        System.out.println(
-                "Execute java -jar <jarfile> <tool> --help to see help for a tool.\nAvailable tools:");
+        System.out.println("Execute java -jar <jarfile> <tool> --help to see help for a tool.\nAvailable tools:");
         for (Task t : getTasks()) {
             System.out.println("\t" + t.getTaskName() + "\t" + t.getDescription());
         }
@@ -198,6 +202,7 @@ public class Main
     {
         Options opts = new Options();
         opts.addOption(HELP);
+        opts.addOption(CONFIG);
         for (Option o : (Collection<Option>) t.getOptions().getOptions()) {
             opts.addOption(o);
         }
