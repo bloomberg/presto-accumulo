@@ -32,6 +32,7 @@ import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
+import org.apache.accumulo.core.client.MultiTableBatchWriter;
 import org.apache.accumulo.core.client.MutationsRejectedException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
@@ -89,6 +90,7 @@ public class PrestoBatchWriter
     // Created by task
     private int numMutations;
     private AccumuloTable table = null;
+    private MultiTableBatchWriter multiTableWriter = null;
     private BatchWriter writer = null;
     private Indexer indexer = null;
 
@@ -132,9 +134,11 @@ public class PrestoBatchWriter
         }
 
         // Create the batch writer and the index tool if this table is indexed.
-        writer = conn.createBatchWriter(table.getFullTableName(), bwc);
+
+        multiTableWriter = conn.createMultiTableBatchWriter(bwc);
+        writer = multiTableWriter.getBatchWriter(table.getFullTableName());
         if (table.isIndexed()) {
-            indexer = new Indexer(conn, auths, table, bwc);
+            indexer = new Indexer(auths, table, multiTableWriter.getBatchWriter(table.getIndexTableName()), multiTableWriter.getBatchWriter(table.getMetricsTableName()));
             LOG.info(format("Created writer and indexer for table %s", table.getFullTableName()));
         }
         else {
@@ -193,10 +197,10 @@ public class PrestoBatchWriter
     public void flush()
             throws MutationsRejectedException
     {
-        writer.flush();
         if (indexer != null) {
-            indexer.flush();
+            indexer.addMetricMutations();
         }
+        multiTableWriter.flush();
     }
 
     /**
@@ -207,10 +211,11 @@ public class PrestoBatchWriter
     public void close()
             throws MutationsRejectedException
     {
-        writer.close();
         if (indexer != null) {
-            indexer.close();
+            indexer.addMetricMutations();
         }
+
+        multiTableWriter.close();
 
         LOG.info(format("Wrote %s mutations to table", numMutations));
     }
@@ -335,7 +340,7 @@ public class PrestoBatchWriter
     /**
      * Sets the Hadoop Path for the file or directory to be ingested. Not required if using this programatically.
      *
-     * @param path
+     * @param path Hadoop path
      */
     public void setPath(Path path)
     {
