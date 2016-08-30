@@ -48,7 +48,9 @@ public class ValueSummingIterator
     private Encoder<Long> encoder = null;
     private Key topKey = null;
     private Value topValue = null;
-    private boolean hasTop = true;
+    private boolean hasTop = false;
+    private String type = null;
+    private long sum = 0;
 
     /**
      * A convenience method for setting the long encoding type.
@@ -67,6 +69,8 @@ public class ValueSummingIterator
     {
         super.init(source, options, env);
         validateOptions(options);
+        sum = 0;
+        hasTop = false;
     }
 
     @Override
@@ -76,11 +80,9 @@ public class ValueSummingIterator
         super.seek(range, columnFamilies, inclusive);
 
         if (!super.hasTop()) {
-            hasTop = false;
             return;
         }
 
-        long sum = 0;
         do {
             topKey = super.getTopKey();
             if (!topKey.isDeleted()) {
@@ -92,6 +94,7 @@ public class ValueSummingIterator
         while (super.hasTop());
 
         topValue = new Value(encoder.encode(sum));
+        hasTop = true;
     }
 
     @Override
@@ -117,6 +120,31 @@ public class ValueSummingIterator
             throws IOException
     {
         hasTop = false;
+        sum = 0;
+    }
+
+    @Override
+    public SortedKeyValueIterator<Key, Value> deepCopy(IteratorEnvironment env)
+    {
+        ValueSummingIterator iterator = new ValueSummingIterator();
+        iterator.encoder = encoder;
+        iterator.hasTop = true;
+        iterator.sum = sum;
+        iterator.type = type;
+
+        switch (Type.valueOf(type)) {
+            case VARLEN:
+                iterator.encoder = VAR_LEN_ENCODER;
+                break;
+            case FIXEDLEN:
+                iterator.encoder = FIXED_LEN_ENCODER;
+                break;
+            case STRING:
+                iterator.encoder = STRING_ENCODER;
+                break;
+        }
+
+        return iterator;
     }
 
     @Override
@@ -131,7 +159,7 @@ public class ValueSummingIterator
     public boolean validateOptions(Map<String, String> options)
     {
         try {
-            String type = options.get(TYPE);
+            this.type = options.get(TYPE);
             if (type == null) {
                 throw new IllegalArgumentException("no type specified");
             }
