@@ -43,7 +43,6 @@ import static com.facebook.presto.accumulo.conf.AccumuloConfig.CARDINALITY_CACHE
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.CARDINALITY_CACHE_SIZE;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.INSTANCE;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.METADATA_MANAGER_CLASS;
-import static com.facebook.presto.accumulo.conf.AccumuloConfig.MINI_ACCUMULO_CLUSTER;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.PASSWORD;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.USERNAME;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.ZOOKEEPERS;
@@ -229,7 +228,6 @@ public class Main
         config.setUsername(props.getString(USERNAME));
         config.setZkMetadataRoot(props.getString(ZOOKEEPER_METADATA_ROOT, "/presto-accumulo"));
         config.setZooKeepers(props.getString(ZOOKEEPERS));
-        config.setMiniAccumuloCluster(props.getBoolean(MINI_ACCUMULO_CLUSTER, false));
         return config;
     }
 
