@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Bloomberg L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Bytes;
 import com.google.common.util.concurrent.MoreExecutors;
-import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchScanner;
@@ -61,6 +60,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.io.Text;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -88,7 +88,7 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * This task scans the index table of an Accumulo table, re-writing the metrics
+ * This task scans the index table of a Presto table, re-writing the metrics
  */
 public class RewriteMetricsTask
         extends Task
@@ -96,7 +96,7 @@ public class RewriteMetricsTask
     public static final String TASK_NAME = "rewritemetrics";
     public static final String DESCRIPTION = "Re-writes the metrics table based on the index table";
 
-    private static final Logger LOG = Logger.get(RewriteMetricsTask.class);
+    private static final Logger LOG = Logger.getLogger(RewriteMetricsTask.class);
     private static final Text CARDINALITY_CQ_AS_TEXT = new Text("___card___".getBytes(UTF_8));
     private static final Text METRICS_TABLE_ROW_ID_AS_TEXT = new Text("___METRICS_TABLE___".getBytes(UTF_8));
     private static final Text METRICS_TABLE_ROWS_COLUMN_AS_TEXT = new Text("___rows___".getBytes(UTF_8));
@@ -111,6 +111,7 @@ public class RewriteMetricsTask
     private static final char SCHEMA_OPT = 's';
     private static final char TABLE_OPT = 't';
     private static final char AUTHORIZATIONS_OPT = 'a';
+    private static final String FORCE_OPT = "force";
 
     // User-configured values
     private AccumuloConfig config;
@@ -118,12 +119,15 @@ public class RewriteMetricsTask
     private BatchWriterConfig bwc;
     private String schema;
     private String tableName;
+    private boolean dryRun;
 
     public int exec()
             throws Exception
     {
-        // Validate the parameters have been set
+        // Validate the required parameters have been set
         int numErrors = checkParam(config, "config");
+        numErrors += checkParam(schema, "schema");
+        numErrors += checkParam(tableName, "tableName");
         if (numErrors > 0) {
             return 1;
         }
@@ -151,6 +155,14 @@ public class RewriteMetricsTask
 
         reconfigureIterators(connector, table);
 
+        if (!dryRun) {
+            LOG.info("Truncating metrics table " + table.getIndexTableName() + "_metrics");
+            connector.tableOperations().deleteRows(table.getIndexTableName() + "_metrics", null, null);
+        }
+        else {
+            LOG.info("Would have truncated metrics table " + table.getIndexTableName() + "_metrics");
+        }
+
         ExecutorService service = MoreExecutors.getExitingExecutorService(new ThreadPoolExecutor(2, 2, 0, TimeUnit.MILLISECONDS, new SynchronousQueue<>()));
 
         List<Future<Void>> tasks = service.invokeAll(
@@ -177,6 +189,9 @@ public class RewriteMetricsTask
         LOG.info("Reconfiguring iterators for " + tableName);
 
         IteratorSetting sumSetting = connector.tableOperations().getIteratorSetting(tableName, "SummingCombiner", IteratorScope.majc);
+        if (sumSetting == null) {
+            sumSetting = connector.tableOperations().getIteratorSetting(tableName, "sum", IteratorScope.majc);
+        }
         sumSetting.setPriority(21);
         connector.tableOperations().removeIterator(tableName, sumSetting.getName(), EnumSet.allOf(IteratorScope.class));
         connector.tableOperations().attachIterator(tableName, sumSetting);
@@ -195,16 +210,8 @@ public class RewriteMetricsTask
         BatchWriter writer = null;
         Scanner scanner = null;
         try {
-            if (!dryRun) {
-                LOG.info("Truncating metrics table " + table.getIndexTableName() + "_metrics");
-                connector.tableOperations().deleteRows(table.getIndexTableName() + "_metrics", null, null);
-            }
-            else {
-                LOG.info("Would have truncated metrics table " + table.getIndexTableName() + "_metrics");
-            }
-
             writer = connector.createBatchWriter(table.getIndexTableName() + "_metrics", bwc);
-            LOG.info("Created batch writer scanner against " + table.getIndexTableName() + "_metrics");
+            LOG.info("Created batch writer against " + table.getIndexTableName() + "_metrics");
 
             scanner = new IsolatedScanner(connector.createScanner(table.getIndexTableName(), auths));
             LOG.info(format("Created isolated scanner against %s with auths %s", table.getIndexTableName(), auths));
@@ -271,14 +278,23 @@ public class RewriteMetricsTask
                                 }
                             }
                         }
-                        writer.addMutation(metricMutation);
+
+                        if (!dryRun) {
+                            writer.addMutation(metricMutation);
+                        }
                     }
                     ++numMutations;
                 }
 
                 rowMap.clear();
             }
-            LOG.info("Finished rewriting metrics. Mutations written: " + numMutations);
+
+            if (dryRun) {
+                LOG.info(format("Would have written %s mutations", numMutations));
+            }
+            else {
+                LOG.info("Finished rewriting metrics. Mutations written: " + numMutations);
+            }
         }
         catch (TableNotFoundException e) {
             LOG.error("Table not found, must have been deleted during process", e);
@@ -288,9 +304,6 @@ public class RewriteMetricsTask
         }
         catch (MutationsRejectedException e) {
             LOG.error("Server rejected mutations", e);
-        }
-        catch (AccumuloException | AccumuloSecurityException e) {
-            LOG.error("Failed to truncate metrics table", e);
         }
         finally {
             if (writer != null) {
@@ -331,18 +344,23 @@ public class RewriteMetricsTask
                 ++sum;
             }
 
-            writer = connector.createBatchWriter(table.getIndexTableName() + "_metrics", bwc);
-
-            Mutation metricMutation = new Mutation(METRICS_TABLE_ROW_ID_AS_TEXT);
-            for (ColumnVisibility visibility : visibilities) {
-                metricMutation.putDelete(METRICS_TABLE_ROWS_COLUMN_AS_TEXT, CARDINALITY_CQ_AS_TEXT, visibility, start);
+            if (dryRun) {
+                LOG.info("Would have wrote number of rows: " + sum);
             }
+            else {
+                writer = connector.createBatchWriter(table.getIndexTableName() + "_metrics", bwc);
 
-            metricMutation.putDelete(METRICS_TABLE_ROWS_COLUMN_AS_TEXT, CARDINALITY_CQ_AS_TEXT, start);
-            metricMutation.put(METRICS_TABLE_ROWS_COLUMN_AS_TEXT, CARDINALITY_CQ_AS_TEXT, start + 1, new Value(encoder.encode(sum)));
+                Mutation metricMutation = new Mutation(METRICS_TABLE_ROW_ID_AS_TEXT);
+                for (ColumnVisibility visibility : visibilities) {
+                    metricMutation.putDelete(METRICS_TABLE_ROWS_COLUMN_AS_TEXT, CARDINALITY_CQ_AS_TEXT, visibility, start);
+                }
 
-            writer.addMutation(metricMutation);
-            LOG.info("Finished rewriting number of rows: " + sum);
+                metricMutation.putDelete(METRICS_TABLE_ROWS_COLUMN_AS_TEXT, CARDINALITY_CQ_AS_TEXT, start);
+                metricMutation.put(METRICS_TABLE_ROWS_COLUMN_AS_TEXT, CARDINALITY_CQ_AS_TEXT, start + 1, new Value(encoder.encode(sum)));
+
+                writer.addMutation(metricMutation);
+                LOG.info("Finished rewriting number of rows: " + sum);
+            }
         }
         catch (TableNotFoundException e) {
             LOG.error(format("Table %s not found, must have been deleted during process", table.getFullTableName()), e);
@@ -437,6 +455,7 @@ public class RewriteMetricsTask
 
         this.setSchema(cmd.getOptionValue(SCHEMA_OPT));
         this.setTableName(cmd.getOptionValue(TABLE_OPT));
+        this.setDryRun(!cmd.hasOption(FORCE_OPT));
 
         return this.exec();
     }
@@ -464,6 +483,11 @@ public class RewriteMetricsTask
     public void setTableName(String tableName)
     {
         this.tableName = tableName;
+    }
+
+    public void setDryRun(boolean dryRun)
+    {
+        this.dryRun = dryRun;
     }
 
     @Override
@@ -503,6 +527,11 @@ public class RewriteMetricsTask
                         .hasArg()
                         .isRequired()
                         .create(TABLE_OPT));
+        opts.addOption(
+                OptionBuilder
+                        .withLongOpt(FORCE_OPT)
+                        .withDescription("Force deleting of entries. Default is a dry run")
+                        .create());
         return opts;
     }
 }

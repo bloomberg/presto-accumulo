@@ -17,6 +17,7 @@ limitations under the License.
 
 A collection of tools to assist in tasks related to the Accumulo Connector for Presto
 
+* [Rewrite index](#rewriteindex)
 * [Rewrite metrics](#rewritemetrics)
 * [Timestamp check](#timestamp-check)
 
@@ -42,6 +43,35 @@ Available tools:
 ```
 
 ## Available Tools
+
+### rewriteindex
+Rewrites the index and metrics for a given Presto table.  Use this tool if:
+
+1. You change an existing column's index status
+
+While newly inserted rows, either using SQL or the `PrestoBatchWriter`, will contain new index and metric entries, existing rows of data will not be indexed and will not show up in the result set of a query that uses that column's index.  Run this tool to rebuild the index and correct your table.
+
+2. Regularly insert rows containing the same row ID
+
+Inserting a row with the same row ID, either using SQL or the `PrestoBatchWriter`, will cause the metric counts to be larger than the actual number.  You can run this tool, but if the index entries do not need to be rebuilt, you can simply run the [rewriteindex|.
+
+3. Manually delete data records without modifying the index or metrics
+
+Deleting rows from the data table is fine, but the entries in the index and metrics table would not accurately reflect the table.  Queries will still be correct, but the planning time will be inflated due to gathering extra index rows that are never used, and the optimizer could make a poor decision because of inaccurate metrics.
+
+__*Example Usage*__
+
+Running the below command without the `--force` flag will do a dry-run of the tool, making no changes to the underlying tables but printing metrics about what would have been changed.
+
+```bash
+java -jar target/presto-accumulo-tools-*.jar rewriteindex \
+-c /path/to/presto/etc/catalog/accumulo.properties -s default -t foo -a private
+```
+If you're happy with what you're seeing, run again with the `--force` flag to make the changes.
+```bash
+java -jar target/presto-accumulo-tools-*.jar rewriteindex \
+-c /path/to/presto/etc/catalog/accumulo.properties -s default -t foo -a private --force
+```
 
 ### rewritemetrics 
 Rewrites the metrics for a given Presto table.  Use this tool if you regularly insert rows containing the same row ID.  This will read the index table and update the metrics table with the correct values.

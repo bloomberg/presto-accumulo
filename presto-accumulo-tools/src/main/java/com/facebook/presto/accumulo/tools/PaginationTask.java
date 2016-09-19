@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Bloomberg L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,8 +56,7 @@ public class PaginationTask
         extends Task
 {
     public static final String TASK_NAME = "pagination";
-    public static final String DESCRIPTION =
-            "Queries a Presto table for rows of data, interactively displaying the results in pages";
+    public static final String DESCRIPTION = "Queries a Presto table for rows of data, interactively displaying the results in pages";
 
     private static final Logger LOG = Logger.getLogger(PaginationTask.class);
 

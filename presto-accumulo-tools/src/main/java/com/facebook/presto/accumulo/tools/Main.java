@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Bloomberg L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -144,6 +144,7 @@ public class Main
             cmd = new GnuParser().parse(opts, Arrays.copyOfRange(args, 1, args.length));
         }
         catch (ParseException e) {
+            System.err.println(e.getMessage());
             printHelp(t);
             return 1;
         }
