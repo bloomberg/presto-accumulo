@@ -17,74 +17,69 @@ limitations under the License.
 
 A collection of tools to assist in tasks related to the Accumulo Connector for Presto
 
-### Dependencies
+* [Rewrite metrics](#rewritemetrics)
+* [Timestamp check](#timestamp-check)
+
+## Dependencies
 * Java 1.7
 * Maven
 * Accumulo
 * _presto-accumulo_ (Built and installed from this repository)
 
-### Usage
+## Usage
 Build the `presto-accumulo-tools` jar file using Maven, then execute the jar file to see all available tools:
 
 ```bash
 $ cd presto-accumulo-tools/
 $ mvn clean package
-$ java -jar target/presto-accumulo-tools-0.131.jar 
+$ java -jar target/presto-accumulo-tools-*.jar 
 Usage: java -jar <jarfile> <tool> [args]
+Execute java -jar <jarfile> <tool> --help to see help for a tool.
 Available tools:
-	addcolumn <schema.name> <table.name> <presto.name> <presto.type> <column.family> <column.qualifier> <indexed> [zero.based.ordinal]
-
+    pagination  Queries a Presto table for rows of data, interactively displaying the results in pages
+    rewriteindex    Re-writes the index and metrics table based on the data table
+    rewritemetrics  Re-writes the metrics table based on the index table
 ```
 
-### Available Tools
-#### addcolumn
-Adds a new column to an existing table.  This cannot be done today via `ALTER TABLE [table] ADD COLUMN [name] [type]` because of the additional metadata required for the columns to work; the column family, qualifier, and if the column is indexed.
+## Available Tools
 
-The table must exist prior to using this tool, and the Presto column name must not exist (no duplicate column names).  The last argument is an optional zero-based ordinal of where to put the column.  Default is to put the new column at the end of the row, but you can insert the column at whatever ordinal you please.
+### rewritemetrics 
+Rewrites the metrics for a given Presto table.  Use this tool if you regularly insert rows containing the same row ID.  This will read the index table and update the metrics table with the correct values.
 
 __*Example Usage*__
 
-```SQL
-presto:default> CREATE TABLE foo (a BIGINT, b BIGINT) WITH (column_mapping = 'b:b:b');
-CREATE TABLE
+Running the below command without the `--force` flag will do a dry-run of the tool, making no changes to the underlying table but printing metrics about what would have been changed.
 
-presto:default> INSERT INTO foo VALUES (1,1), (2,2);
-INSERT: 2 rows
-
-presto:default> DESCRIBE foo;
- Column |  Type  | Null | Partition Key |               Comment               
---------+--------+------+---------------+-------------------------------------
- a      | bigint | true | false         | Accumulo row ID                     
- b      | bigint | true | false         | Accumulo column b:b. Indexed: false 
-(2 rows)
-
-presto:default> SELECT * FROM foo;
- a | b 
----+---
- 1 | 1 
- 2 | 2 
-(2 rows)
-```
-And now we invoke the program to insert a column `c`, type `VARCHAR`, mapped to the Accumulo column family `c` and qualifier `c`.  The column is indexed and inserted at ordinal one:
 ```bash
-$ java -jar target/presto-accumulo-tools-0.131.jar addcolumn default foo c varchar c c true 1
-# ... bunch of log statements
-
+java -jar target/presto-accumulo-tools-*.jar rewritemetrics \
+-c /path/to/presto/etc/catalog/accumulo.properties -s default -t foo -a private
 ```
-Now we describe the table and query it again:
-```SQL
-presto:default> DESCRIBE foo;
- Column |  Type   | Null | Partition Key |               Comment               
---------+---------+------+---------------+-------------------------------------
- a      | bigint  | true | false         | Accumulo row ID                     
- c      | varchar | true | false         | Accumulo column c:c. Indexed: true  
- b      | bigint  | true | false         | Accumulo column b:b. Indexed: false 
-(3 rows)
+If you're happy with what you're seeing, run again with the `--force` flag to make the changes.
+```bash
+java -jar target/presto-accumulo-tools-*.jar rewritemetrics \
+-c /path/to/presto/etc/catalog/accumulo.properties -s default -t foo -a private --force
+```
 
-presto:default> SELECT * FROM foo;
- a |  c   | b 
----+------+---
- 1 | NULL | 1 
- 2 | NULL | 2 
-(2 rows)
+### timestamp-check
+Scans the metrics, index, and data tables for the number of entries in a timespan.  Used to help diagnose issues regarding differences in the three tables for timestamp-based columns.
+
+__*Example Usage*__
+
+
+```bash
+java -jar target/presto-accumulo-tools-*.jar timestamp-check \
+-c /path/to/presto/etc/catalog/accumulo.properties -s default -t foo -a private \
+-col recordtime -st 2016-08-01T00:00:00.000+0000 -e 2016-09-01T00:00:00.000+0000
+
+2016-09-20 12:23:23,804 [pool-5-thread-1] INFO  tools.TimestampCheckTask: Getting data count
+2016-09-20 12:23:23,805 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Getting index count
+2016-09-20 12:23:23,806 [pool-5-thread-3] INFO  tools.TimestampCheckTask: Getting metric count
+2016-09-20 12:23:24,313 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of rows in index table is 25764
+2016-09-20 12:23:24,356 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of index ranges is 25764
+2016-09-20 12:23:24,369 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of distinct index ranges is 25764
+2016-09-20 12:23:24,570 [pool-5-thread-3] INFO  tools.TimestampCheckTask: Number of rows from metrics table is 25764
+2016-09-20 12:23:26,877 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of rows from data table via index is 25764
+2016-09-20 12:23:26,877 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of rows from data table outside the time range is 0
+2016-09-20 12:23:26,877 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of rows in the index not scanned from the table is 0
+2016-09-20 12:23:27,884 [pool-5-thread-1] INFO  tools.TimestampCheckTask: Number of rows from data table is 25764
 ```
