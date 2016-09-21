@@ -65,7 +65,6 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -151,8 +150,6 @@ public class RewriteMetricsTask
             return 1;
         }
 
-        long start = System.currentTimeMillis();
-
         reconfigureIterators(connector, table);
 
         if (!dryRun) {
@@ -162,6 +159,8 @@ public class RewriteMetricsTask
         else {
             LOG.info("Would have truncated metrics table " + table.getIndexTableName() + "_metrics");
         }
+
+        long start = System.currentTimeMillis();
 
         ExecutorService service = MoreExecutors.getExitingExecutorService(new ThreadPoolExecutor(2, 2, 0, TimeUnit.MILLISECONDS, new SynchronousQueue<>()));
 
@@ -193,7 +192,8 @@ public class RewriteMetricsTask
             sumSetting = connector.tableOperations().getIteratorSetting(tableName, "sum", IteratorScope.majc);
         }
         sumSetting.setPriority(21);
-        connector.tableOperations().removeIterator(tableName, sumSetting.getName(), EnumSet.allOf(IteratorScope.class));
+        connector.tableOperations().removeIterator(tableName, "sum", EnumSet.allOf(IteratorScope.class));
+        connector.tableOperations().removeIterator(tableName, "SummingCombiner", EnumSet.allOf(IteratorScope.class));
         connector.tableOperations().attachIterator(tableName, sumSetting);
 
         IteratorSetting versSetting = connector.tableOperations().getIteratorSetting(tableName, "vers", IteratorScope.majc);
@@ -262,18 +262,12 @@ public class RewriteMetricsTask
                         Mutation metricMutation = new Mutation(familyMap.getKey());
                         for (Entry<Text, Map<ColumnVisibility, AtomicLong>> familyEntry : familyMap.getValue().entrySet()) {
                             for (Entry<ColumnVisibility, AtomicLong> visibilityEntry : familyEntry.getValue().entrySet()) {
-                                metricMutation.putDelete(
-                                        familyEntry.getKey(),
-                                        CARDINALITY_CQ_AS_TEXT,
-                                        visibilityEntry.getKey(),
-                                        start + 1);
-
                                 if (visibilityEntry.getValue().get() > 0) {
                                     metricMutation.put(
                                             familyEntry.getKey(),
                                             CARDINALITY_CQ_AS_TEXT,
                                             visibilityEntry.getKey(),
-                                            start + 2,
+                                            start,
                                             new Value(encoder.encode(visibilityEntry.getValue().get())));
                                 }
                             }
@@ -337,10 +331,8 @@ public class RewriteMetricsTask
             scanner.addScanIterator(timestampFilter);
             scanner.setRanges(connector.tableOperations().splitRangeByTablets(table.getFullTableName(), new Range(), Integer.MAX_VALUE));
 
-            Set<ColumnVisibility> visibilities = new HashSet<>();
             long sum = 0L;
             for (Entry<Key, Value> entry : scanner) {
-                visibilities.add(entry.getKey().getColumnVisibilityParsed());
                 ++sum;
             }
 
@@ -351,12 +343,7 @@ public class RewriteMetricsTask
                 writer = connector.createBatchWriter(table.getIndexTableName() + "_metrics", bwc);
 
                 Mutation metricMutation = new Mutation(METRICS_TABLE_ROW_ID_AS_TEXT);
-                for (ColumnVisibility visibility : visibilities) {
-                    metricMutation.putDelete(METRICS_TABLE_ROWS_COLUMN_AS_TEXT, CARDINALITY_CQ_AS_TEXT, visibility, start);
-                }
-
-                metricMutation.putDelete(METRICS_TABLE_ROWS_COLUMN_AS_TEXT, CARDINALITY_CQ_AS_TEXT, start);
-                metricMutation.put(METRICS_TABLE_ROWS_COLUMN_AS_TEXT, CARDINALITY_CQ_AS_TEXT, start + 1, new Value(encoder.encode(sum)));
+                metricMutation.put(METRICS_TABLE_ROWS_COLUMN_AS_TEXT, CARDINALITY_CQ_AS_TEXT, start, new Value(encoder.encode(sum)));
 
                 writer.addMutation(metricMutation);
                 LOG.info("Finished rewriting number of rows: " + sum);
