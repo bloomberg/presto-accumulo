@@ -196,25 +196,30 @@ public class TimestampCheckTask
 
         Text text = new Text();
         ImmutableSet.Builder<Range> indexRanges = ImmutableSet.builder();
-        ImmutableSet.Builder<ByteBuffer> indexRowIDs = ImmutableSet.builder();
+        Set<ByteBuffer> indexRowIDs = new HashSet<>();
         long numRows = 0;
+        long printedRows = 0;
         for (Entry<Key, Value> entry : scanner) {
             indexRanges.add(new Range(entry.getKey().getColumnQualifier()));
-            indexRowIDs.add(ByteBuffer.wrap(entry.getKey().getColumnQualifier(text).copyBytes()));
+
+            ByteBuffer rowId = ByteBuffer.wrap(entry.getKey().getColumnQualifier(text).copyBytes());
+            if (indexRowIDs.contains(rowId) && printedRows++ < 10) {
+                LOG.info("Row ID for entry already found " + entry);
+            }
+            indexRowIDs.add(rowId);
             ++numRows;
         }
         scanner.close();
 
         LOG.info("Number of rows in index table is " + numRows);
 
-        getCountViaIndex(connector, table, column, timestamp, indexRanges.build(), indexRowIDs.build());
+        getCountViaIndex(connector, table, column, timestamp, indexRanges.build(), ImmutableSet.copyOf(indexRowIDs));
     }
 
     private void getCountViaIndex(Connector connector, AccumuloTable table, AccumuloColumnHandle column, long timestamp, Set<Range> indexRanges, Set<ByteBuffer> indexRowIDs)
             throws Exception
     {
         LOG.info("Number of index ranges is " + indexRanges.size());
-        LOG.info("Number of distinct index ranges is " + indexRanges.stream().distinct().count());
 
         // Scan table with these entries
         Comparator<byte[]> comparator = UnsignedBytes.lexicographicalComparator();
