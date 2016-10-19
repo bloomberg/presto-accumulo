@@ -17,8 +17,8 @@ package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.index.metrics.MetricsStorage.TimestampPrecision;
-import com.facebook.presto.accumulo.metadata.AccumuloMetadataManager;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
+import com.facebook.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import com.facebook.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.type.TimestampType;
@@ -52,7 +52,6 @@ import org.apache.accumulo.core.iterators.LongCombiner;
 import org.apache.accumulo.core.iterators.TypedValueCombiner;
 import org.apache.accumulo.core.iterators.user.TimestampFilter;
 import org.apache.accumulo.core.iterators.user.VersioningIterator;
-import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.commons.cli.CommandLine;
@@ -62,7 +61,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
-import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -96,15 +94,15 @@ public class RewriteMetricsTask
     public static final String DESCRIPTION = "Re-writes the metrics table based on the index table";
 
     private static final Logger LOG = Logger.getLogger(RewriteMetricsTask.class);
-    private static final Text CARDINALITY_CQ_AS_TEXT = new Text("___card___".getBytes(UTF_8));
-    private static final Text METRICS_TABLE_ROW_ID_AS_TEXT = new Text("___METRICS_TABLE___".getBytes(UTF_8));
-    private static final Text METRICS_TABLE_ROWS_COLUMN_AS_TEXT = new Text("___rows___".getBytes(UTF_8));
+    private static final Text CARDINALITY_CQ_AS_TEXT = new Text("___card___" .getBytes(UTF_8));
+    private static final Text METRICS_TABLE_ROW_ID_AS_TEXT = new Text("___METRICS_TABLE___" .getBytes(UTF_8));
+    private static final Text METRICS_TABLE_ROWS_COLUMN_AS_TEXT = new Text("___rows___" .getBytes(UTF_8));
 
     private static final Map<TimestampPrecision, byte[]> TIMESTAMP_CARDINALITY_FAMILIES = ImmutableMap.of(
-            SECOND, "_tss".getBytes(UTF_8),
-            MINUTE, "_tsm".getBytes(UTF_8),
-            HOUR, "_tsh".getBytes(UTF_8),
-            DAY, "_tsd".getBytes(UTF_8));
+            SECOND, "_tss" .getBytes(UTF_8),
+            MINUTE, "_tsm" .getBytes(UTF_8),
+            HOUR, "_tsh" .getBytes(UTF_8),
+            DAY, "_tsd" .getBytes(UTF_8));
 
     // Options
     private static final char SCHEMA_OPT = 's';
@@ -140,7 +138,7 @@ public class RewriteMetricsTask
         }
 
         // Fetch the table metadata
-        AccumuloMetadataManager manager = config.getMetadataManager(new TypeRegistry());
+        ZooKeeperMetadataManager manager = new ZooKeeperMetadataManager(config, new TypeRegistry());
 
         LOG.info("Scanning Presto metadata for tables...");
         AccumuloTable table = manager.getTable(new SchemaTableName(schema, tableName));
@@ -228,60 +226,45 @@ public class RewriteMetricsTask
             IteratorSetting timestampFilter = new IteratorSetting(21, "timestamp", TimestampFilter.class);
             TimestampFilter.setRange(timestampFilter, 0L, start);
             scanner.addScanIterator(timestampFilter);
-            scanner.addScanIterator(new IteratorSetting(22, "wholerow", WholeRowIterator.class));
+
             Map<Text, Map<Text, Map<ColumnVisibility, AtomicLong>>> rowMap = new HashMap<>();
             long numMutations = 0L;
             boolean warned = true;
+            Text prevRow = null;
             for (Entry<Key, Value> entry : scanner) {
-                Text key = null;
-                for (Entry<Key, Value> row : WholeRowIterator.decodeRow(entry.getKey(), entry.getValue()).entrySet()) {
-                    if (key == null) {
-                        key = row.getKey().getRow();
-                    }
+                Text row = entry.getKey().getRow();
+                Text cf = entry.getKey().getColumnFamily();
 
-                    Text family = row.getKey().getColumnFamily();
-                    ColumnVisibility visibility = row.getKey().getColumnVisibilityParsed();
-
-                    incrementMetric(rowMap, key, family, visibility);
-
-                    String[] famQual = family.toString().split("_");
-
-                    if (famQual.length == 2) {
-                        if (timestampColumns.contains(Pair.of(famQual[0], famQual[1]))) {
-                            incrementTimestampMetric(rowMap, family, visibility, row.getKey().getRow());
-                        }
-                    }
-                    else if (warned) {
-                        LOG.warn("Unable to re-write timestamp metric when either of a family/qualifier column mapping contains an underscore");
-                        warned = false;
-                    }
-                }
-
-                if (key != null) {
-                    for (Entry<Text, Map<Text, Map<ColumnVisibility, AtomicLong>>> familyMap : rowMap.entrySet()) {
-                        Mutation metricMutation = new Mutation(familyMap.getKey());
-                        for (Entry<Text, Map<ColumnVisibility, AtomicLong>> familyEntry : familyMap.getValue().entrySet()) {
-                            for (Entry<ColumnVisibility, AtomicLong> visibilityEntry : familyEntry.getValue().entrySet()) {
-                                if (visibilityEntry.getValue().get() > 0) {
-                                    metricMutation.put(
-                                            familyEntry.getKey(),
-                                            CARDINALITY_CQ_AS_TEXT,
-                                            visibilityEntry.getKey(),
-                                            start,
-                                            new Value(encoder.encode(visibilityEntry.getValue().get())));
-                                }
-                            }
-                        }
-
-                        if (!dryRun) {
-                            writer.addMutation(metricMutation);
-                        }
-                    }
+                if (prevRow != null && !prevRow.equals(row)) {
+                    writeMetrics(start, encoder, writer, rowMap);
                     ++numMutations;
                 }
 
-                rowMap.clear();
+                ColumnVisibility visibility = entry.getKey().getColumnVisibilityParsed();
+                incrementMetric(rowMap, row, cf, visibility);
+                String[] famQual = cf.toString().split("_");
+
+                if (famQual.length == 2) {
+                    if (timestampColumns.contains(Pair.of(famQual[0], famQual[1]))) {
+                        incrementTimestampMetric(rowMap, cf, visibility, row);
+                    }
+                }
+                else if (warned) {
+                    LOG.warn("Unable to re-write timestamp metric when either of a family/qualifier column mapping contains an underscore");
+                    warned = false;
+                }
+
+                if (prevRow == null) {
+                    prevRow = new Text(row);
+                }
+                else {
+                    prevRow.set(row);
+                }
             }
+
+            // Write final metric
+            writeMetrics(start, encoder, writer, rowMap);
+            ++numMutations;
 
             if (dryRun) {
                 LOG.info(format("Would have written %s mutations", numMutations));
@@ -292,9 +275,6 @@ public class RewriteMetricsTask
         }
         catch (TableNotFoundException e) {
             LOG.error("Table not found, must have been deleted during process", e);
-        }
-        catch (IOException e) {
-            LOG.error("Error decoding row", e);
         }
         catch (MutationsRejectedException e) {
             LOG.error("Server rejected mutations", e);
@@ -313,6 +293,31 @@ public class RewriteMetricsTask
                 scanner.close();
             }
         }
+    }
+
+    private void writeMetrics(long start, TypedValueCombiner.Encoder<Long> encoder, BatchWriter writer, Map<Text, Map<Text, Map<ColumnVisibility, AtomicLong>>> rowMap)
+            throws MutationsRejectedException
+    {
+        for (Entry<Text, Map<Text, Map<ColumnVisibility, AtomicLong>>> familyMap : rowMap.entrySet()) {
+            Mutation metricMutation = new Mutation(familyMap.getKey());
+            for (Entry<Text, Map<ColumnVisibility, AtomicLong>> familyEntry : familyMap.getValue().entrySet()) {
+                for (Entry<ColumnVisibility, AtomicLong> visibilityEntry : familyEntry.getValue().entrySet()) {
+                    if (visibilityEntry.getValue().get() > 0) {
+                        metricMutation.put(
+                                familyEntry.getKey(),
+                                CARDINALITY_CQ_AS_TEXT,
+                                visibilityEntry.getKey(),
+                                start,
+                                new Value(encoder.encode(visibilityEntry.getValue().get())));
+                    }
+                }
+            }
+
+            if (!dryRun) {
+                writer.addMutation(metricMutation);
+            }
+        }
+        rowMap.clear();
     }
 
     private void rewriteNumRows(Connector connector, AccumuloTable table, long start)

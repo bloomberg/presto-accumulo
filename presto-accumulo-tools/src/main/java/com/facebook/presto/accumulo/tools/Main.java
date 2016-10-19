@@ -42,7 +42,6 @@ import java.util.List;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.CARDINALITY_CACHE_EXPIRE_DURATION;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.CARDINALITY_CACHE_SIZE;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.INSTANCE;
-import static com.facebook.presto.accumulo.conf.AccumuloConfig.METADATA_MANAGER_CLASS;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.PASSWORD;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.USERNAME;
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.ZOOKEEPERS;
@@ -224,7 +223,6 @@ public class Main
         config.setCardinalityCacheExpiration(Duration.valueOf(props.getString(CARDINALITY_CACHE_EXPIRE_DURATION, "5m")));
         config.setCardinalityCacheSize(props.getInt(CARDINALITY_CACHE_SIZE, 100_000));
         config.setInstance(props.getString(INSTANCE));
-        config.setMetadataManagerClass(props.getString(METADATA_MANAGER_CLASS, "default"));
         config.setPassword(props.getString(PASSWORD));
         config.setUsername(props.getString(USERNAME));
         config.setZkMetadataRoot(props.getString(ZOOKEEPER_METADATA_ROOT, "/presto-accumulo"));

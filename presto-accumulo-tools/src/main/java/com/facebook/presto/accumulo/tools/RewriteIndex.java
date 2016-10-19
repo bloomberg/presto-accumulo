@@ -17,8 +17,8 @@ package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.index.Indexer;
-import com.facebook.presto.accumulo.metadata.AccumuloMetadataManager;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
+import com.facebook.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.type.TypeRegistry;
 import com.google.common.collect.ImmutableList;
@@ -43,7 +43,6 @@ import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
 import org.apache.accumulo.core.iterators.user.TimestampFilter;
-import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
@@ -115,7 +114,7 @@ public class RewriteIndex
         }
 
         // Fetch the table metadata
-        AccumuloMetadataManager manager = config.getMetadataManager(new TypeRegistry());
+        ZooKeeperMetadataManager manager = new ZooKeeperMetadataManager(config, new TypeRegistry());
 
         LOG.info("Scanning Presto metadata for tables...");
         AccumuloTable table = manager.getTable(new SchemaTableName(schema, tableName));
@@ -168,35 +167,58 @@ public class RewriteIndex
             IteratorSetting timestampFilter = new IteratorSetting(21, "timestamp", TimestampFilter.class);
             TimestampFilter.setRange(timestampFilter, 0L, start);
             scanner.addScanIterator(timestampFilter);
-            scanner.addScanIterator(new IteratorSetting(22, "wholerow", WholeRowIterator.class));
 
             scanner.setRanges(connector.tableOperations().splitRangeByTablets(table.getFullTableName(), new Range(), Integer.MAX_VALUE));
 
             long numRows = 0L;
             long numIndexEntries = 0L;
+            Text prevRow = null;
+            Text row = new Text();
+            Text cf = new Text();
+            Text cq = new Text();
+            Mutation mutation = null;
             for (Entry<Key, Value> entry : scanner) {
-                Mutation mutation = null;
-                for (Entry<Key, Value> row : WholeRowIterator.decodeRow(entry.getKey(), entry.getValue()).entrySet()) {
-                    if (mutation == null) {
-                        mutation = new Mutation(row.getKey().getRow());
-                    }
+                entry.getKey().getRow(row);
+                entry.getKey().getColumnFamily(cf);
+                entry.getKey().getColumnQualifier(cq);
 
-                    mutation.put(row.getKey().getColumnFamily(), row.getKey().getColumnQualifier(), row.getKey().getColumnVisibilityParsed(), row.getKey().getTimestamp(), row.getValue());
-                    if (table.getColumns().stream()
-                            .filter(column -> column.isIndexed()
-                                    && column.getFamily().isPresent()
-                                    && column.getQualifier().isPresent()
-                                    && column.getFamily().get().equals(new String(row.getKey().getColumnFamily().copyBytes(), UTF_8))
-                                    && column.getQualifier().get().equals(new String(row.getKey().getColumnQualifier().copyBytes(), UTF_8))
-                            ).count() > 0) {
-                        ++numIndexEntries;
+                // if the rows do not match, index the mutation
+                if (prevRow != null && !prevRow.equals(row)) {
+                    if (!dryRun) {
+                        indexer.index(mutation);
                     }
+                    ++numRows;
+                    mutation = null;
                 }
 
-                ++numRows;
+                if (mutation == null) {
+                    mutation = new Mutation(row);
+                }
+
+                mutation.put(cf, cq, entry.getKey().getColumnVisibilityParsed(), entry.getKey().getTimestamp(), entry.getValue());
+                if (table.getColumns().stream()
+                        .filter(column -> column.isIndexed()
+                                && column.getFamily().isPresent()
+                                && column.getQualifier().isPresent()
+                                && column.getFamily().get().equals(new String(cf.copyBytes(), UTF_8))
+                                && column.getQualifier().get().equals(new String(cq.copyBytes(), UTF_8))
+                        ).count() > 0) {
+                    ++numIndexEntries;
+                }
+
+                if (prevRow == null) {
+                    prevRow = new Text(row);
+                } else {
+                    prevRow.set(row);
+                }
+            }
+
+            // Index the final mutation
+            if (mutation != null) {
                 if (!dryRun) {
                     indexer.index(mutation);
                 }
+                ++numRows;
             }
 
             if (dryRun) {
@@ -208,9 +230,6 @@ public class RewriteIndex
         }
         catch (AccumuloException | AccumuloSecurityException e) {
             LOG.error("Accumulo exception", e);
-        }
-        catch (IOException e) {
-            LOG.error("Error decoding row", e);
         }
         catch (TableNotFoundException e) {
             LOG.error("Table not found, must have been deleted during process", e);

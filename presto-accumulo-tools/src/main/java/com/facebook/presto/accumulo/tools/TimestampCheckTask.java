@@ -17,8 +17,8 @@ package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.index.Indexer;
-import com.facebook.presto.accumulo.metadata.AccumuloMetadataManager;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
+import com.facebook.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import com.facebook.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.accumulo.serializers.LexicoderRowSerializer;
@@ -108,7 +108,7 @@ public class TimestampCheckTask
         }
 
         // Fetch the table metadata
-        AccumuloMetadataManager manager = config.getMetadataManager(new TypeRegistry());
+        ZooKeeperMetadataManager manager = new ZooKeeperMetadataManager(config, new TypeRegistry());
 
         LOG.info("Scanning Presto metadata for tables...");
         AccumuloTable table = manager.getTable(new SchemaTableName(schema, tableName));

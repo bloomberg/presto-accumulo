@@ -20,7 +20,6 @@ import com.facebook.presto.accumulo.index.Indexer;
 import com.facebook.presto.accumulo.index.metrics.MetricCacheKey;
 import com.facebook.presto.accumulo.index.metrics.MetricsStorage;
 import com.facebook.presto.accumulo.index.metrics.MetricsWriter;
-import com.facebook.presto.accumulo.metadata.AccumuloMetadataManager;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
 import com.facebook.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import com.facebook.presto.accumulo.model.AccumuloColumnHandle;
@@ -96,7 +95,7 @@ public class TestRewriteIndex
     private Mutation m2v = null;
     private Mutation m3v = null;
     private AccumuloConfig config;
-    private AccumuloMetadataManager metadataManager;
+    private ZooKeeperMetadataManager metadataManager;
     private AccumuloTable table;
     private Connector connector;
     private MetricsStorage metricsStorage;
