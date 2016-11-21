@@ -50,7 +50,6 @@ import org.apache.commons.cli.Options;
 import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -158,7 +157,7 @@ public class RewriteIndex
         try {
             // Create index writer and metrics writer, but we are never going to flush the metrics writer
             indexWriter = connector.createBatchWriter(table.getIndexTableName(), bwc);
-            Indexer indexer = new Indexer(connector, config, table, indexWriter, table.getMetricsStorageInstance(connector, config).newWriter(table));
+            Indexer indexer = new Indexer(connector, table, indexWriter, table.getMetricsStorageInstance(connector).newWriter(table));
             LOG.info("Created indexer against " + table.getIndexTableName());
 
             scanner = connector.createBatchScanner(table.getFullTableName(), auths, 10);
@@ -189,6 +188,15 @@ public class RewriteIndex
                     }
                     ++numRows;
                     mutation = null;
+
+                    if (numRows % 500000 == 0) {
+                        if (dryRun) {
+                            LOG.info(format("In progress, would have re-indexed %s rows containing %s index entries", numRows, numIndexEntries));
+                        }
+                        else {
+                            LOG.info(format("In progress, re-indexed %s rows containing %s index entries", numRows, numIndexEntries));
+                        }
+                    }
                 }
 
                 if (mutation == null) {
@@ -208,7 +216,8 @@ public class RewriteIndex
 
                 if (prevRow == null) {
                     prevRow = new Text(row);
-                } else {
+                }
+                else {
                     prevRow.set(row);
                 }
             }

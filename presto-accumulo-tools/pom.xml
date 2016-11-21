@@ -11,7 +11,7 @@
 
     <groupId>com.facebook.presto</groupId>
     <artifactId>presto-accumulo-tools</artifactId>
-    <version>0.153.4-ANY</version>
+    <version>0.156.3-ANY</version>
     <description>Tools to assist with the Accumulo connector for presto</description>
     <packaging>jar</packaging>
 
@@ -27,11 +27,11 @@
         <app.main.class>com.facebook.presto.accumulo.tools.Main</app.main.class>
         <project.build.targetJdk>1.8</project.build.targetJdk>
         <dep.accumulo.version>1.7.0</dep.accumulo.version>
-        <dep.airlift.version>0.137</dep.airlift.version>
+        <dep.airlift.version>0.139</dep.airlift.version>
         <dep.hadoop.version>2.2.0</dep.hadoop.version>
         <dep.presto.version>${project.version}</dep.presto.version>
         <dep.protobuf.version>2.6.1</dep.protobuf.version>
-        <dep.slice.version>0.24</dep.slice.version>
+        <dep.slice.version>0.27</dep.slice.version>
     </properties>
 
     <build>

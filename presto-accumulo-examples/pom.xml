@@ -5,7 +5,7 @@
 
     <groupId>com.facebook.presto</groupId>
     <artifactId>presto-accumulo-examples</artifactId>
-    <version>0.153.4-ANY</version>
+    <version>0.156.3-ANY</version>
     <description>Examples of using the presto-accumulo-tools project</description>
     <packaging>jar</packaging>
 

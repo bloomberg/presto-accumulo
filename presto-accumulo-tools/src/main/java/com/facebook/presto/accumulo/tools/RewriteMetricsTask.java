@@ -94,15 +94,15 @@ public class RewriteMetricsTask
     public static final String DESCRIPTION = "Re-writes the metrics table based on the index table";
 
     private static final Logger LOG = Logger.getLogger(RewriteMetricsTask.class);
-    private static final Text CARDINALITY_CQ_AS_TEXT = new Text("___card___" .getBytes(UTF_8));
-    private static final Text METRICS_TABLE_ROW_ID_AS_TEXT = new Text("___METRICS_TABLE___" .getBytes(UTF_8));
-    private static final Text METRICS_TABLE_ROWS_COLUMN_AS_TEXT = new Text("___rows___" .getBytes(UTF_8));
+    private static final Text CARDINALITY_CQ_AS_TEXT = new Text("___card___".getBytes(UTF_8));
+    private static final Text METRICS_TABLE_ROW_ID_AS_TEXT = new Text("___METRICS_TABLE___".getBytes(UTF_8));
+    private static final Text METRICS_TABLE_ROWS_COLUMN_AS_TEXT = new Text("___rows___".getBytes(UTF_8));
 
     private static final Map<TimestampPrecision, byte[]> TIMESTAMP_CARDINALITY_FAMILIES = ImmutableMap.of(
-            SECOND, "_tss" .getBytes(UTF_8),
-            MINUTE, "_tsm" .getBytes(UTF_8),
-            HOUR, "_tsh" .getBytes(UTF_8),
-            DAY, "_tsd" .getBytes(UTF_8));
+            SECOND, "_tss".getBytes(UTF_8),
+            MINUTE, "_tsm".getBytes(UTF_8),
+            HOUR, "_tsh".getBytes(UTF_8),
+            DAY, "_tsd".getBytes(UTF_8));
 
     // Options
     private static final char SCHEMA_OPT = 's';
@@ -238,6 +238,15 @@ public class RewriteMetricsTask
                 if (prevRow != null && !prevRow.equals(row)) {
                     writeMetrics(start, encoder, writer, rowMap);
                     ++numMutations;
+
+                    if (numMutations % 500000 == 0) {
+                        if (dryRun) {
+                            LOG.info(format("In progress, would have written %s metric mutations", numMutations));
+                        }
+                        else {
+                            LOG.info("In progress, metric mutations written: " + numMutations);
+                        }
+                    }
                 }
 
                 ColumnVisibility visibility = entry.getKey().getColumnVisibilityParsed();
@@ -339,6 +348,10 @@ public class RewriteMetricsTask
             long sum = 0L;
             for (Entry<Key, Value> entry : scanner) {
                 ++sum;
+
+                if (sum % 500000 == 0) {
+                    LOG.info(format("In progress, number of rows is %s", sum));
+                }
             }
 
             if (dryRun) {

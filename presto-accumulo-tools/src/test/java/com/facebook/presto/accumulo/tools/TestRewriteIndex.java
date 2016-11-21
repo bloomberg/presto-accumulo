@@ -109,7 +109,7 @@ public class TestRewriteIndex
         metadataManager = new ZooKeeperMetadataManager(config, new TypeRegistry());
 
         connector.securityOperations().changeUserAuthorizations("root", new Authorizations("private", "moreprivate", "foo", "bar", "xyzzy"));
-        metricsStorage = MetricsStorage.getDefault(connector, config);
+        metricsStorage = MetricsStorage.getDefault(connector);
 
         AccumuloColumnHandle c1 = new AccumuloColumnHandle("id", Optional.empty(), Optional.empty(), VARCHAR, 0, "", false);
         AccumuloColumnHandle c2 = new AccumuloColumnHandle("age", Optional.of("cf"), Optional.of("age"), BIGINT, 1, "", true);
@@ -415,7 +415,7 @@ public class TestRewriteIndex
             throws Exception
     {
         BatchWriter writer = connector.createBatchWriter(table.getIndexTableName(), new BatchWriterConfig());
-        Indexer indexer = new Indexer(connector, config, table, writer, table.getMetricsStorageInstance(connector, config).newWriter(table));
+        Indexer indexer = new Indexer(connector, table, writer, table.getMetricsStorageInstance(connector).newWriter(table));
         indexer.index(ImmutableList.of(m1, m2v, m3v));
         writer.close();
     }
@@ -442,8 +442,8 @@ public class TestRewriteIndex
         m6v.put(CF, BIRTHDAY, new ColumnVisibility("moreprivate"), BIRTHDAY_VALUE);
 
         BatchWriter writer = connector.createBatchWriter(table.getIndexTableName(), new BatchWriterConfig());
-        MetricsWriter metricsWriter = table.getMetricsStorageInstance(connector, config).newWriter(table);
-        Indexer indexer = new Indexer(connector, config, table, writer, metricsWriter);
+        MetricsWriter metricsWriter = table.getMetricsStorageInstance(connector).newWriter(table);
+        Indexer indexer = new Indexer(connector, table, writer, metricsWriter);
         indexer.index(ImmutableList.of(m4, m5v, m6v));
         metricsWriter.close();
         writer.close();
@@ -453,8 +453,8 @@ public class TestRewriteIndex
             throws Exception
     {
         BatchWriter writer = connector.createBatchWriter(table.getIndexTableName(), new BatchWriterConfig());
-        MetricsWriter metricsWriter = table.getMetricsStorageInstance(connector, config).newWriter(table);
-        Indexer indexer = new Indexer(connector, config, table, writer, metricsWriter);
+        MetricsWriter metricsWriter = table.getMetricsStorageInstance(connector).newWriter(table);
+        Indexer indexer = new Indexer(connector, table, writer, metricsWriter);
         indexer.index(ImmutableList.of(m1, m2v, m3v));
         metricsWriter.close();
 
