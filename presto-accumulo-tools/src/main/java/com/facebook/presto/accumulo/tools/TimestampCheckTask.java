@@ -188,7 +188,7 @@ public class TimestampCheckTask
         LOG.info("Getting index count");
         BatchScanner scanner = connector.createBatchScanner(table.getIndexTableName(), auths, 10);
         scanner.setRanges(connector.tableOperations().splitRangeByTablets(table.getIndexTableName(), range, Integer.MAX_VALUE));
-        scanner.fetchColumnFamily(new Text(Indexer.getIndexColumnFamily(column.getFamily().get().getBytes(UTF_8), column.getQualifier().get().getBytes(UTF_8)).array()));
+        scanner.fetchColumnFamily(new Text(Indexer.getIndexColumnFamily(column.getFamily().get().getBytes(UTF_8), column.getQualifier().get().getBytes(UTF_8))));
 
         IteratorSetting iteratorSetting = new IteratorSetting(Integer.MAX_VALUE, TimestampFilter.class);
         TimestampFilter.setEnd(iteratorSetting, timestamp, true);
@@ -265,7 +265,7 @@ public class TimestampCheckTask
         LOG.info("Getting metric count");
         BatchScanner scanner = connector.createBatchScanner(table.getIndexTableName() + "_metrics", auths, 10);
         scanner.setRanges(connector.tableOperations().splitRangeByTablets(table.getIndexTableName() + "_metrics", range, Integer.MAX_VALUE));
-        scanner.fetchColumnFamily(new Text(Indexer.getIndexColumnFamily(column.getFamily().get().getBytes(UTF_8), column.getQualifier().get().getBytes(UTF_8)).array()));
+        scanner.fetchColumnFamily(new Text(Indexer.getIndexColumnFamily(column.getFamily().get().getBytes(UTF_8), column.getQualifier().get().getBytes(UTF_8))));
 
         IteratorSetting iteratorSetting = new IteratorSetting(Integer.MAX_VALUE, TimestampFilter.class);
         TimestampFilter.setEnd(iteratorSetting, timestamp, true);

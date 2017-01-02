@@ -19,12 +19,11 @@ import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.index.metrics.MetricsStorage.TimestampPrecision;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
 import com.facebook.presto.accumulo.metadata.ZooKeeperMetadataManager;
+import com.facebook.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.accumulo.serializers.LexicoderRowSerializer;
 import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.type.TypeRegistry;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Bytes;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -57,10 +56,10 @@ import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -75,11 +74,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static com.facebook.presto.accumulo.index.metrics.MetricsStorage.TimestampPrecision.DAY;
-import static com.facebook.presto.accumulo.index.metrics.MetricsStorage.TimestampPrecision.HOUR;
-import static com.facebook.presto.accumulo.index.metrics.MetricsStorage.TimestampPrecision.MINUTE;
-import static com.facebook.presto.accumulo.index.metrics.MetricsStorage.TimestampPrecision.SECOND;
-import static com.facebook.presto.accumulo.index.metrics.MetricsStorage.getTruncatedTimestamps;
+import static com.facebook.presto.accumulo.index.Indexer.NULL_BYTE;
+import static com.facebook.presto.accumulo.index.Indexer.TIMESTAMP_CARDINALITY_FAMILIES;
+import static com.facebook.presto.accumulo.index.Indexer.getTruncatedTimestamps;
 import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -97,12 +94,6 @@ public class RewriteMetricsTask
     private static final Text CARDINALITY_CQ_AS_TEXT = new Text("___card___".getBytes(UTF_8));
     private static final Text METRICS_TABLE_ROW_ID_AS_TEXT = new Text("___METRICS_TABLE___".getBytes(UTF_8));
     private static final Text METRICS_TABLE_ROWS_COLUMN_AS_TEXT = new Text("___rows___".getBytes(UTF_8));
-
-    private static final Map<TimestampPrecision, byte[]> TIMESTAMP_CARDINALITY_FAMILIES = ImmutableMap.of(
-            SECOND, "_tss".getBytes(UTF_8),
-            MINUTE, "_tsm".getBytes(UTF_8),
-            HOUR, "_tsh".getBytes(UTF_8),
-            DAY, "_tsd".getBytes(UTF_8));
 
     // Options
     private static final char SCHEMA_OPT = 's';
@@ -214,11 +205,23 @@ public class RewriteMetricsTask
             scanner = new IsolatedScanner(connector.createScanner(table.getIndexTableName(), auths));
             LOG.info(format("Created isolated scanner against %s with auths %s", table.getIndexTableName(), auths));
 
-            Set<Pair<String, String>> timestampColumns = table.isTruncateTimestamps()
-                    ? table.getColumns().stream()
-                    .filter(x -> x.getType().equals(TimestampType.TIMESTAMP) && x.getFamily().isPresent())
-                    .map(x -> Pair.of(x.getFamily().get(), x.getQualifier().get()))
-                    .collect(Collectors.toSet())
+            Set<String> timestampColumns = table.isTruncateTimestamps() ?
+                    table.getParsedIndexColumns().stream()
+                            .filter(indexColumn -> indexColumn.getNumColumns() > 0 && table.getColumn(indexColumn.getColumns().get(indexColumn.getNumColumns() - 1)).getType().equals(TIMESTAMP))
+                            .map(indexColumn -> {
+                                StringBuilder builder = new StringBuilder();
+                                for (String column : indexColumn.getColumns()) {
+                                    AccumuloColumnHandle handle = table.getColumn(column);
+                                    if (builder.length() > 0) {
+                                        builder.append('-');
+                                    }
+                                    builder.append(handle.getFamily().get());
+                                    builder.append('_');
+                                    builder.append(handle.getQualifier().get());
+                                }
+                                return builder.toString();
+                            })
+                            .collect(Collectors.toSet())
                     : ImmutableSet.of();
 
             LOG.info("Timestamp columns are " + timestampColumns);
@@ -229,7 +232,6 @@ public class RewriteMetricsTask
 
             Map<Text, Map<Text, Map<ColumnVisibility, AtomicLong>>> rowMap = new HashMap<>();
             long numMutations = 0L;
-            boolean warned = true;
             Text prevRow = null;
             for (Entry<Key, Value> entry : scanner) {
                 Text row = entry.getKey().getRow();
@@ -251,16 +253,9 @@ public class RewriteMetricsTask
 
                 ColumnVisibility visibility = entry.getKey().getColumnVisibilityParsed();
                 incrementMetric(rowMap, row, cf, visibility);
-                String[] famQual = cf.toString().split("_");
 
-                if (famQual.length == 2) {
-                    if (timestampColumns.contains(Pair.of(famQual[0], famQual[1]))) {
-                        incrementTimestampMetric(rowMap, cf, visibility, row);
-                    }
-                }
-                else if (warned) {
-                    LOG.warn("Unable to re-write timestamp metric when either of a family/qualifier column mapping contains an underscore");
-                    warned = false;
+                if (timestampColumns.contains(cf.toString())) {
+                    incrementTimestampMetric(rowMap, cf, visibility, row);
                 }
 
                 if (prevRow == null) {
@@ -343,6 +338,7 @@ public class RewriteMetricsTask
             IteratorSetting timestampFilter = new IteratorSetting(22, "timestamp", TimestampFilter.class);
             TimestampFilter.setRange(timestampFilter, 0L, start);
             scanner.addScanIterator(timestampFilter);
+
             scanner.setRanges(connector.tableOperations().splitRangeByTablets(table.getFullTableName(), new Range(), Integer.MAX_VALUE));
 
             long sum = 0L;
@@ -397,19 +393,17 @@ public class RewriteMetricsTask
 
     private void incrementMetric(Map<Text, Map<Text, Map<ColumnVisibility, AtomicLong>>> rowMap, Text row, Text family, ColumnVisibility visibility)
     {
-        Map<Text, Map<ColumnVisibility, AtomicLong>> familyMap = rowMap.get(row);
-        if (familyMap == null) {
-            familyMap = new HashMap<>();
-            rowMap.put(row, familyMap);
-        }
+        Map<Text, Map<ColumnVisibility, AtomicLong>> familyMap = rowMap.computeIfAbsent(row, key -> new HashMap<>());
 
         // Increment column cardinality
-        Map<ColumnVisibility, AtomicLong> visibilityMap = familyMap.get(family);
-        if (visibilityMap == null) {
-            visibilityMap = new HashMap<>();
-            visibilityMap.put(new ColumnVisibility(), new AtomicLong(0));
-            familyMap.put(family, visibilityMap);
-        }
+        Map<ColumnVisibility, AtomicLong> visibilityMap = familyMap.computeIfAbsent(
+                family,
+                key -> {
+                    HashMap<ColumnVisibility, AtomicLong> map = new HashMap<>();
+                    map.put(new ColumnVisibility(), new AtomicLong(0));
+                    familyMap.put(family, map);
+                    return map;
+                });
 
         if (visibilityMap.containsKey(visibility)) {
             visibilityMap.get(visibility).incrementAndGet();
@@ -423,22 +417,27 @@ public class RewriteMetricsTask
 
     private void incrementTimestampMetric(Map<Text, Map<Text, Map<ColumnVisibility, AtomicLong>>> rowMap, Text family, ColumnVisibility visibility, Text timestampValue)
     {
-        for (Entry<TimestampPrecision, Long> entry : getTruncatedTimestamps(serializer.decode(TIMESTAMP, timestampValue.copyBytes())).entrySet()) {
+        byte[] valueBytes = timestampValue.copyBytes();
+        byte[] nonTimestampBytes = Arrays.copyOfRange(valueBytes, 0, valueBytes.length - 9);
+        byte[] timestampBytes = Arrays.copyOfRange(valueBytes, valueBytes.length - 9, valueBytes.length);
+        for (Entry<TimestampPrecision, Long> entry : getTruncatedTimestamps(serializer.decode(TIMESTAMP, timestampBytes)).entrySet()) {
             Text timestampFamily = new Text(Bytes.concat(family.copyBytes(), TIMESTAMP_CARDINALITY_FAMILIES.get(entry.getKey())));
 
-            Text row = new Text(serializer.encode(TIMESTAMP, entry.getValue()));
-            Map<Text, Map<ColumnVisibility, AtomicLong>> familyMap = rowMap.get(row);
-            if (familyMap == null) {
-                familyMap = new HashMap<>();
-                rowMap.put(row, familyMap);
-            }
+            Text row = new Text(
+                    nonTimestampBytes.length == 0
+                            ? serializer.encode(TIMESTAMP, entry.getValue())
+                            : Bytes.concat(nonTimestampBytes, serializer.encode(TIMESTAMP, entry.getValue())));
 
-            Map<ColumnVisibility, AtomicLong> visibilityMap = familyMap.get(timestampFamily);
-            if (visibilityMap == null) {
-                visibilityMap = new HashMap<>();
-                visibilityMap.put(new ColumnVisibility(), new AtomicLong(0));
-                familyMap.put(timestampFamily, visibilityMap);
-            }
+            Map<Text, Map<ColumnVisibility, AtomicLong>> familyMap = rowMap.computeIfAbsent(row, key -> new HashMap<>());
+
+            Map<ColumnVisibility, AtomicLong> visibilityMap = familyMap.computeIfAbsent(
+                    timestampFamily,
+                    key -> {
+                        HashMap<ColumnVisibility, AtomicLong> map = new HashMap<>();
+                        map.put(new ColumnVisibility(), new AtomicLong(0));
+                        familyMap.put(timestampFamily, map);
+                        return map;
+                    });
 
             if (visibilityMap.containsKey(visibility)) {
                 visibilityMap.get(visibility).incrementAndGet();

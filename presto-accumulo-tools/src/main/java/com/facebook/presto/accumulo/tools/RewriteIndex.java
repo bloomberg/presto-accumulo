@@ -170,7 +170,6 @@ public class RewriteIndex
             scanner.setRanges(connector.tableOperations().splitRangeByTablets(table.getFullTableName(), new Range(), Integer.MAX_VALUE));
 
             long numRows = 0L;
-            long numIndexEntries = 0L;
             Text prevRow = null;
             Text row = new Text();
             Text cf = new Text();
@@ -191,10 +190,10 @@ public class RewriteIndex
 
                     if (numRows % 500000 == 0) {
                         if (dryRun) {
-                            LOG.info(format("In progress, would have re-indexed %s rows containing %s index entries", numRows, numIndexEntries));
+                            LOG.info(format("In progress, would have re-indexed %s rows", numRows));
                         }
                         else {
-                            LOG.info(format("In progress, re-indexed %s rows containing %s index entries", numRows, numIndexEntries));
+                            LOG.info(format("In progress, re-indexed %s rows", numRows));
                         }
                     }
                 }
@@ -204,15 +203,6 @@ public class RewriteIndex
                 }
 
                 mutation.put(cf, cq, entry.getKey().getColumnVisibilityParsed(), entry.getKey().getTimestamp(), entry.getValue());
-                if (table.getColumns().stream()
-                        .filter(column -> column.isIndexed()
-                                && column.getFamily().isPresent()
-                                && column.getQualifier().isPresent()
-                                && column.getFamily().get().equals(new String(cf.copyBytes(), UTF_8))
-                                && column.getQualifier().get().equals(new String(cq.copyBytes(), UTF_8))
-                        ).count() > 0) {
-                    ++numIndexEntries;
-                }
 
                 if (prevRow == null) {
                     prevRow = new Text(row);
@@ -231,10 +221,10 @@ public class RewriteIndex
             }
 
             if (dryRun) {
-                LOG.info(format("Finished dry run of rewriting index entries. Would have re-indexed %s rows containing %s index entries", numRows, numIndexEntries));
+                LOG.info(format("Finished dry run of rewriting index entries. Would have re-indexed %s rows", numRows));
             }
             else {
-                LOG.info(format("Finished adding index entries. Re-indexed %s rows containing %s index entries", numRows, numIndexEntries));
+                LOG.info(format("Finished adding index entries. Re-indexed %s rows", numRows));
             }
         }
         catch (AccumuloException | AccumuloSecurityException e) {
