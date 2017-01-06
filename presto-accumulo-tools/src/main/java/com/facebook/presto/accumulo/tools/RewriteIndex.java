@@ -17,6 +17,7 @@ package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.index.Indexer;
+import com.facebook.presto.accumulo.index.metrics.MetricsWriter;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
 import com.facebook.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import com.facebook.presto.spi.SchemaTableName;
@@ -42,7 +43,9 @@ import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
+import org.apache.accumulo.core.iterators.IteratorUtil;
 import org.apache.accumulo.core.iterators.user.TimestampFilter;
+import org.apache.accumulo.core.iterators.user.VersioningIterator;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
@@ -51,6 +54,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -123,23 +127,22 @@ public class RewriteIndex
             return 1;
         }
 
+        reconfigureIterators(connector, table);
+
         long start = System.currentTimeMillis();
+
+        if (!dryRun) {
+            LOG.info("Truncating metrics table " + table.getIndexTableName() + "_metrics");
+            connector.tableOperations().deleteRows(table.getIndexTableName() + "_metrics", null, null);
+        }
+        else {
+            LOG.info("Would have truncated metrics table " + table.getIndexTableName() + "_metrics");
+        }
 
         addIndexEntries(connector, table, start);
 
         if (!addOnly) {
             deleteIndexEntries(connector, table, start);
-
-            LOG.info("Finished re-writing index, starting metrics re-write...");
-
-            RewriteMetricsTask task = new RewriteMetricsTask();
-            task.setConfig(config);
-            task.setBatchWriterConfig(bwc);
-            task.setSchema(schema);
-            task.setTableName(tableName);
-            task.setAuthorizations(auths);
-            task.setDryRun(dryRun);
-            task.exec();
         }
         else {
             LOG.info("Add only is true, only added index entries.  Did not delete index or rewrite metrics.");
@@ -149,15 +152,38 @@ public class RewriteIndex
         return 0;
     }
 
+    private void reconfigureIterators(Connector connector, AccumuloTable table)
+            throws Exception
+    {
+        String tableName = table.getIndexTableName() + "_metrics";
+        LOG.info("Reconfiguring iterators for " + tableName);
+
+        IteratorSetting sumSetting = connector.tableOperations().getIteratorSetting(tableName, "SummingCombiner", IteratorUtil.IteratorScope.majc);
+        if (sumSetting == null) {
+            sumSetting = connector.tableOperations().getIteratorSetting(tableName, "sum", IteratorUtil.IteratorScope.majc);
+        }
+
+        sumSetting.setPriority(21);
+        connector.tableOperations().removeIterator(tableName, "sum", EnumSet.allOf(IteratorUtil.IteratorScope.class));
+        connector.tableOperations().removeIterator(tableName, "SummingCombiner", EnumSet.allOf(IteratorUtil.IteratorScope.class));
+        connector.tableOperations().attachIterator(tableName, sumSetting);
+
+        IteratorSetting versSetting = connector.tableOperations().getIteratorSetting(tableName, "vers", IteratorUtil.IteratorScope.majc);
+        VersioningIterator.setMaxVersions(versSetting, Integer.MAX_VALUE);
+        connector.tableOperations().removeIterator(tableName, versSetting.getName(), EnumSet.allOf(IteratorUtil.IteratorScope.class));
+        connector.tableOperations().attachIterator(tableName, versSetting);
+    }
+
     private void addIndexEntries(Connector connector, AccumuloTable table, long start)
     {
         LOG.info(format("Scanning data table %s to add index entries", table.getFullTableName()));
         BatchScanner scanner = null;
         BatchWriter indexWriter = null;
+        MetricsWriter metricsWriter = table.getMetricsStorageInstance(connector).newWriter(table);
         try {
             // Create index writer and metrics writer, but we are never going to flush the metrics writer
             indexWriter = connector.createBatchWriter(table.getIndexTableName(), bwc);
-            Indexer indexer = new Indexer(connector, table, indexWriter, table.getMetricsStorageInstance(connector).newWriter(table));
+            Indexer indexer = new Indexer(connector, table, indexWriter, metricsWriter);
             LOG.info("Created indexer against " + table.getIndexTableName());
 
             scanner = connector.createBatchScanner(table.getFullTableName(), auths, 10);
@@ -194,6 +220,8 @@ public class RewriteIndex
                         }
                         else {
                             LOG.info(format("In progress, re-indexed %s rows", numRows));
+                            indexWriter.flush();
+                            metricsWriter.flush();
                         }
                     }
                 }
@@ -237,6 +265,7 @@ public class RewriteIndex
             if (indexWriter != null) {
                 try {
                     indexWriter.close();
+                    metricsWriter.close();
                 }
                 catch (MutationsRejectedException e) {
                     LOG.error("Server rejected mutations", e);
