@@ -35,6 +35,7 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.MutationsRejectedException;
+import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
@@ -177,7 +178,7 @@ public class RewriteIndex
     private void addIndexEntries(Connector connector, AccumuloTable table, long start)
     {
         LOG.info(format("Scanning data table %s to add index entries", table.getFullTableName()));
-        BatchScanner scanner = null;
+        Scanner scanner = null;
         BatchWriter indexWriter = null;
         MetricsWriter metricsWriter = table.getMetricsStorageInstance(connector).newWriter(table);
         try {
@@ -186,14 +187,12 @@ public class RewriteIndex
             Indexer indexer = new Indexer(connector, table, indexWriter, metricsWriter);
             LOG.info("Created indexer against " + table.getIndexTableName());
 
-            scanner = connector.createBatchScanner(table.getFullTableName(), auths, 10);
-            LOG.info(format("Created batch scanner against %s with auths %s", table.getFullTableName(), auths));
+            scanner = connector.createScanner(table.getFullTableName(), auths);
+            LOG.info(format("Created scanner against %s with auths %s", table.getFullTableName(), auths));
 
             IteratorSetting timestampFilter = new IteratorSetting(21, "timestamp", TimestampFilter.class);
             TimestampFilter.setRange(timestampFilter, 0L, start);
             scanner.addScanIterator(timestampFilter);
-
-            scanner.setRanges(connector.tableOperations().splitRangeByTablets(table.getFullTableName(), new Range(), Integer.MAX_VALUE));
 
             long numRows = 0L;
             Text prevRow = null;
@@ -255,7 +254,7 @@ public class RewriteIndex
                 LOG.info(format("Finished adding index entries. Re-indexed %s rows", numRows));
             }
         }
-        catch (AccumuloException | AccumuloSecurityException e) {
+        catch (AccumuloException e) {
             LOG.error("Accumulo exception", e);
         }
         catch (TableNotFoundException e) {
