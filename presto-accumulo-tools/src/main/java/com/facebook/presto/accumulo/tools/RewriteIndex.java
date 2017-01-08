@@ -44,9 +44,7 @@ import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
-import org.apache.accumulo.core.iterators.IteratorUtil;
 import org.apache.accumulo.core.iterators.user.TimestampFilter;
-import org.apache.accumulo.core.iterators.user.VersioningIterator;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
@@ -55,7 +53,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
 import java.nio.ByteBuffer;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -128,8 +125,6 @@ public class RewriteIndex
             return 1;
         }
 
-        reconfigureIterators(connector, table);
-
         long start = System.currentTimeMillis();
 
         if (!dryRun) {
@@ -151,28 +146,6 @@ public class RewriteIndex
 
         LOG.info("Finished re-writing index.");
         return 0;
-    }
-
-    private void reconfigureIterators(Connector connector, AccumuloTable table)
-            throws Exception
-    {
-        String tableName = table.getIndexTableName() + "_metrics";
-        LOG.info("Reconfiguring iterators for " + tableName);
-
-        IteratorSetting sumSetting = connector.tableOperations().getIteratorSetting(tableName, "SummingCombiner", IteratorUtil.IteratorScope.majc);
-        if (sumSetting == null) {
-            sumSetting = connector.tableOperations().getIteratorSetting(tableName, "sum", IteratorUtil.IteratorScope.majc);
-        }
-
-        sumSetting.setPriority(21);
-        connector.tableOperations().removeIterator(tableName, "sum", EnumSet.allOf(IteratorUtil.IteratorScope.class));
-        connector.tableOperations().removeIterator(tableName, "SummingCombiner", EnumSet.allOf(IteratorUtil.IteratorScope.class));
-        connector.tableOperations().attachIterator(tableName, sumSetting);
-
-        IteratorSetting versSetting = connector.tableOperations().getIteratorSetting(tableName, "vers", IteratorUtil.IteratorScope.majc);
-        VersioningIterator.setMaxVersions(versSetting, Integer.MAX_VALUE);
-        connector.tableOperations().removeIterator(tableName, versSetting.getName(), EnumSet.allOf(IteratorUtil.IteratorScope.class));
-        connector.tableOperations().attachIterator(tableName, versSetting);
     }
 
     private void addIndexEntries(Connector connector, AccumuloTable table, long start)
