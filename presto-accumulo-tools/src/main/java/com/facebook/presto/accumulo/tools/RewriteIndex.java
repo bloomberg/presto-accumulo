@@ -17,9 +17,13 @@ package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.index.Indexer;
+import com.facebook.presto.accumulo.index.metrics.MetricsStorage.TimestampPrecision;
 import com.facebook.presto.accumulo.index.metrics.MetricsWriter;
+import com.facebook.presto.accumulo.iterators.ColumnTimestampFilter;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
 import com.facebook.presto.accumulo.metadata.ZooKeeperMetadataManager;
+import com.facebook.presto.accumulo.model.AccumuloColumnHandle;
+import com.facebook.presto.accumulo.model.IndexColumn;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.type.TypeRegistry;
 import com.google.common.collect.ImmutableList;
@@ -38,12 +42,14 @@ import org.apache.accumulo.core.client.MutationsRejectedException;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
+import org.apache.accumulo.core.client.admin.CompactionConfig;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.FirstEntryInRowIterator;
+import org.apache.accumulo.core.iterators.IteratorUtil;
 import org.apache.accumulo.core.iterators.user.TimestampFilter;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.commons.cli.CommandLine;
@@ -53,15 +59,23 @@ import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
 import java.nio.ByteBuffer;
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static com.facebook.presto.accumulo.index.Indexer.HYPHEN_BYTE;
+import static com.facebook.presto.accumulo.index.Indexer.TIMESTAMP_CARDINALITY_FAMILIES;
+import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
+import static java.lang.Integer.MAX_VALUE;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -83,6 +97,7 @@ public class RewriteIndex
     private static final char AUTHORIZATIONS_OPT = 'a';
     private static final String FORCE_OPT = "force";
     private static final String ADD_ONLY_OPT = "add-only";
+    private static final String COLUMNS_OPT = "l";
 
     // User-configured values
     private AccumuloConfig config;
@@ -92,8 +107,10 @@ public class RewriteIndex
     private String tableName;
     private boolean dryRun;
     private boolean addOnly;
+    private Optional<List<String>> columns = Optional.empty();
 
     private long numDeletedIndexEntries = 0L;
+    private boolean incrementRowMetric = true;
 
     public int exec()
             throws Exception
@@ -127,13 +144,7 @@ public class RewriteIndex
 
         long start = System.currentTimeMillis();
 
-        if (!dryRun) {
-            LOG.info("Truncating metrics table " + table.getIndexTableName() + "_metrics");
-            connector.tableOperations().deleteRows(table.getIndexTableName() + "_metrics", null, null);
-        }
-        else {
-            LOG.info("Would have truncated metrics table " + table.getIndexTableName() + "_metrics");
-        }
+        truncateMetricsTable(connector, table, start);
 
         addIndexEntries(connector, table, start);
 
@@ -146,6 +157,83 @@ public class RewriteIndex
 
         LOG.info("Finished re-writing index.");
         return 0;
+    }
+
+    private void truncateMetricsTable(Connector connector, AccumuloTable table, long start)
+            throws AccumuloSecurityException, AccumuloException, TableNotFoundException
+    {
+        String metricsTable = table.getIndexTableName() + "_metrics";
+
+        if (!dryRun) {
+            if (columns.isPresent() && columns.get().size() > 0) {
+                LOG.info("Selecting columns: " + columns.get());
+                List<String> settingNames = new ArrayList<>();
+                int numIterators = 0;
+                NEXT_COLUMN:
+                for (IndexColumn indexColumn : table.getParsedIndexColumns()) {
+                    Text family = new Text();
+                    AccumuloColumnHandle handle = null;
+                    for (String column : indexColumn.getColumns()) {
+                        if (!columns.get().contains(column)) {
+                            continue NEXT_COLUMN;
+                        }
+
+                        if (family.getLength() != 0) {
+                            family.append(HYPHEN_BYTE, 0, HYPHEN_BYTE.length);
+                        }
+                        handle = table.getColumn(column);
+                        byte[] bytes = (handle.getFamily().get() + "_" + handle.getQualifier().get()).getBytes(UTF_8);
+                        family.append(bytes, 0, bytes.length);
+                    }
+
+                    settingNames.add(family.toString());
+
+                    IteratorSetting setting = new IteratorSetting(MAX_VALUE - numIterators++, family.toString(), ColumnTimestampFilter.class);
+                    ColumnTimestampFilter.addTimestamp(setting, new IteratorSetting.Column(family, null), start);
+
+                    LOG.info(format("Attaching iterator to drop %s from table %s ", family, metricsTable));
+                    connector.tableOperations().attachIterator(metricsTable, setting);
+
+                    if (handle != null && handle.getType().equals(TIMESTAMP) && table.isTruncateTimestamps()) {
+                        for (Entry<TimestampPrecision, byte[]> entry : TIMESTAMP_CARDINALITY_FAMILIES.entrySet()) {
+                            if (entry.getValue().length == 0) {
+                                continue;
+                            }
+
+                            Text timestampFamily = new Text(family);
+                            timestampFamily.append(entry.getValue(), 0, entry.getValue().length);
+
+                            String timestampName = family.toString() + new String(entry.getValue(), UTF_8);
+
+                            settingNames.add(timestampName);
+
+                            setting = new IteratorSetting(MAX_VALUE - numIterators++, timestampName, ColumnTimestampFilter.class);
+                            ColumnTimestampFilter.addTimestamp(setting, new IteratorSetting.Column(timestampFamily, null), start);
+
+                            LOG.info(format("Attaching iterator to drop %s from table %s ", timestampFamily, metricsTable));
+                            connector.tableOperations().attachIterator(metricsTable, setting);
+                        }
+                    }
+                }
+
+                LOG.info("Truncating select columns from table " + metricsTable + " via compaction");
+                connector.tableOperations().compact(metricsTable, new CompactionConfig());
+
+                for (String family : settingNames) {
+                    LOG.info(format("Detaching iterator to drop %s from table %s ", family, metricsTable));
+                    connector.tableOperations().removeIterator(metricsTable, family, EnumSet.allOf(IteratorUtil.IteratorScope.class));
+                }
+
+                incrementRowMetric = false;
+            }
+            else {
+                LOG.info("Truncating table " + metricsTable);
+                connector.tableOperations().deleteRows(metricsTable, null, null);
+            }
+        }
+        else {
+            LOG.info("Would have truncated metrics table " + metricsTable);
+        }
     }
 
     private void addIndexEntries(Connector connector, AccumuloTable table, long start)
@@ -162,6 +250,8 @@ public class RewriteIndex
 
             scanner = connector.createScanner(table.getFullTableName(), auths);
             LOG.info(format("Created scanner against %s with auths %s", table.getFullTableName(), auths));
+
+            setScannerColumns(table, scanner);
 
             IteratorSetting timestampFilter = new IteratorSetting(21, "timestamp", TimestampFilter.class);
             TimestampFilter.setRange(timestampFilter, 0L, start);
@@ -181,8 +271,9 @@ public class RewriteIndex
                 // if the rows do not match, index the mutation
                 if (prevRow != null && !prevRow.equals(row)) {
                     if (!dryRun) {
-                        indexer.index(mutation);
+                        indexer.index(mutation, incrementRowMetric);
                     }
+
                     ++numRows;
                     mutation = null;
 
@@ -215,7 +306,7 @@ public class RewriteIndex
             // Index the final mutation
             if (mutation != null) {
                 if (!dryRun) {
-                    indexer.index(mutation);
+                    indexer.index(mutation, incrementRowMetric);
                 }
                 ++numRows;
             }
@@ -250,13 +341,6 @@ public class RewriteIndex
         }
     }
 
-    private enum RowStatus
-    {
-        PRESENT,
-        ABSENT,
-        UNKNOWN
-    }
-
     private void deleteIndexEntries(Connector connector, AccumuloTable table, long start)
     {
         LOG.info(format("Scanning index table %s to delete index entries", table.getIndexTableName()));
@@ -272,7 +356,9 @@ public class RewriteIndex
             TimestampFilter.setRange(timestampFilter, 0L, start);
             scanner.addScanIterator(timestampFilter);
 
-            scanner.setRanges(connector.tableOperations().splitRangeByTablets(table.getIndexTableName(), new Range(), Integer.MAX_VALUE));
+            setScannerColumns(table, scanner);
+
+            scanner.setRanges(connector.tableOperations().splitRangeByTablets(table.getIndexTableName(), new Range(), MAX_VALUE));
 
             // Scan the index table, gathering row IDs into batches
             long numTotalMutations = 0L;
@@ -387,7 +473,7 @@ public class RewriteIndex
         BatchScanner scanner = connector.createBatchScanner(table.getFullTableName(), auths, 10);
         scanner.setRanges(queryRanges);
 
-        IteratorSetting iteratorSetting = new IteratorSetting(Integer.MAX_VALUE, TimestampFilter.class);
+        IteratorSetting iteratorSetting = new IteratorSetting(MAX_VALUE, TimestampFilter.class);
         TimestampFilter.setEnd(iteratorSetting, timestamp, true);
         scanner.addScanIterator(iteratorSetting);
 
@@ -423,6 +509,53 @@ public class RewriteIndex
         });
     }
 
+    private void setScannerColumns(AccumuloTable table, Scanner scanner)
+    {
+        if (columns.isPresent()) {
+            for (String column : columns.get()) {
+                Optional<AccumuloColumnHandle> handle = table.getColumns().stream().filter(x -> x.getName().equals(column)).findAny();
+                if (!handle.isPresent()) {
+                    throw new InvalidParameterException(format("No column named %s found in table %s", column, tableName));
+                }
+
+                if (handle.get().getFamily().isPresent() && handle.get().getQualifier().isPresent()) {
+                    LOG.info(format("Fetching column %s:%s for table %s", handle.get().getFamily(), handle.get().getQualifier(), tableName));
+                    scanner.fetchColumn(new Text(handle.get().getFamily().get()), new Text(handle.get().getQualifier().get()));
+                }
+                else {
+                    throw new InvalidParameterException(format("Column %s in table %s is the row ID column and is therefore not indexed", column, tableName));
+                }
+            }
+        }
+    }
+
+    private void setScannerColumns(AccumuloTable table, BatchScanner scanner)
+    {
+        if (columns.isPresent()) {
+            for (String column : columns.get()) {
+                Optional<AccumuloColumnHandle> handle = table.getColumns().stream().filter(x -> x.getName().equals(column)).findAny();
+                if (!handle.isPresent()) {
+                    throw new InvalidParameterException(format("No column named %s found in table %s", column, tableName));
+                }
+
+                if (handle.get().getFamily().isPresent() && handle.get().getQualifier().isPresent()) {
+                    LOG.info(format("Fetching column %s:%s for table %s", handle.get().getFamily(), handle.get().getQualifier(), tableName));
+                    scanner.fetchColumn(new Text(handle.get().getFamily().get()), new Text(handle.get().getQualifier().get()));
+                }
+                else {
+                    throw new InvalidParameterException(format("Column %s in table %s is the row ID column and is not indexed", column, tableName));
+                }
+            }
+        }
+    }
+
+    private enum RowStatus
+    {
+        PRESENT,
+        ABSENT,
+        UNKNOWN
+    }
+
     @Override
     public int run(AccumuloConfig config, CommandLine cmd)
             throws Exception
@@ -436,6 +569,10 @@ public class RewriteIndex
         this.setTableName(cmd.getOptionValue(TABLE_OPT));
         this.setDryRun(!cmd.hasOption(FORCE_OPT));
         this.setAddOnly(cmd.hasOption(ADD_ONLY_OPT));
+
+        if (cmd.hasOption(COLUMNS_OPT)) {
+            this.setColumns(Optional.of(ImmutableList.copyOf(cmd.getOptionValues(COLUMNS_OPT))));
+        }
 
         return this.exec();
     }
@@ -473,6 +610,11 @@ public class RewriteIndex
     public void setAddOnly(boolean addOnly)
     {
         this.addOnly = addOnly;
+    }
+
+    public void setColumns(Optional<List<String>> columns)
+    {
+        this.columns = columns;
     }
 
     @Override
@@ -522,6 +664,12 @@ public class RewriteIndex
                         .withLongOpt(ADD_ONLY_OPT)
                         .withDescription("Only add index entries, do not delete them or run the rewrite metrics tool.  Requires --force to do anything.  Default is to add and delete.")
                         .create());
+        opts.addOption(
+                OptionBuilder
+                        .withLongOpt("columns")
+                        .withDescription("Specific list of Presto columns ot index.  Default is to index all columns")
+                        .hasArgs()
+                        .create(COLUMNS_OPT));
         return opts;
     }
 }

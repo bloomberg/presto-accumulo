@@ -30,7 +30,6 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.TypeRegistry;
 import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Bytes;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
@@ -49,7 +48,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.security.InvalidParameterException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 
@@ -245,6 +246,171 @@ public class TestRewriteIndex
     }
 
     @Test
+    public void testColumnSelection()
+            throws Exception
+    {
+        writeData();
+
+        exec(false, false, Optional.of(ImmutableList.of("age", "birthday", "firstname")));
+
+        Scanner scan = connector.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
+        Iterator<Entry<Key, Value>> iter = scan.iterator();
+        assertTrue(iter.hasNext());
+        assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "row1", "");
+        assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "row2", "private", "");
+        assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "row3", "moreprivate", "");
+        assertKeyValuePair(iter.next(), BIRTHDAY_VALUE, "cf_birthday", "row1", "");
+        assertKeyValuePair(iter.next(), BIRTHDAY_VALUE, "cf_birthday", "row2", "private", "");
+        assertKeyValuePair(iter.next(), BIRTHDAY_VALUE, "cf_birthday", "row3", "moreprivate", "");
+        assertKeyValuePair(iter.next(), M1_FNAME_VALUE, "cf_firstname", "row1", "");
+        assertKeyValuePair(iter.next(), concat(M1_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE), "cf_firstname-cf_birthday", "row1", "");
+        assertKeyValuePair(iter.next(), M2_FNAME_VALUE, "cf_firstname", "row2", "private", "");
+        assertKeyValuePair(iter.next(), concat(M2_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE), "cf_firstname-cf_birthday", "row2", "private", "");
+        assertKeyValuePair(iter.next(), M3_FNAME_VALUE, "cf_firstname", "row3", "moreprivate", "");
+        assertKeyValuePair(iter.next(), concat(M3_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE), "cf_firstname-cf_birthday", "row3", "moreprivate", "");
+        assertFalse(iter.hasNext());
+
+        scan.close();
+
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_age", AGE_VALUE)), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_age", AGE_VALUE, "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_age", AGE_VALUE, "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday", BIRTHDAY_VALUE)), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday", BIRTHDAY_VALUE, "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday", BIRTHDAY_VALUE, "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsd", encode(TIMESTAMP_TYPE, DAY_TIMESTAMP))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsd", encode(TIMESTAMP_TYPE, DAY_TIMESTAMP), "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsd", encode(TIMESTAMP_TYPE, DAY_TIMESTAMP), "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsh", encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsh", encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP), "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsh", encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP), "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsm", encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsm", encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP), "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsm", encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP), "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tss", encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tss", encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP), "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tss", encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP), "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getNumRowsInTable(table.getSchema(), table.getTable()), 0);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "abc")), 0);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "abc", "private")), 0);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname", M1_FNAME_VALUE)), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname", M2_FNAME_VALUE, "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname", M3_FNAME_VALUE, "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday", concat(M1_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday", concat(M2_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE), "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday", concat(M3_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE), "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsd", concat(M1_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, DAY_TIMESTAMP)))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsd", concat(M2_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, DAY_TIMESTAMP)), "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsd", concat(M3_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, DAY_TIMESTAMP)), "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsh", concat(M1_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP)))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsh", concat(M2_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP)), "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsh", concat(M3_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP)), "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsm", concat(M1_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP)))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsm", concat(M2_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP)), "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsm", concat(M3_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP)), "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tss", concat(M1_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP)))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tss", concat(M2_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP)), "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tss", concat(M3_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP)), "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "def")), 0);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "def", "moreprivate")), 0);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "ghi")), 0);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "ghi", "private")), 0);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "ghi", "private", "moreprivate")), 0);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "jkl", "moreprivate")), 0);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "mno", "private")), 0);
+    }
+
+    @Test
+    public void testColumnSelectionWithSomeMetrics()
+            throws Exception
+    {
+        writeData();
+        writeMetrics(true);
+
+        exec(false, false, Optional.of(ImmutableList.of("age", "birthday", "firstname")));
+
+        Scanner scan = connector.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
+        Iterator<Entry<Key, Value>> iter = scan.iterator();
+        assertTrue(iter.hasNext());
+        assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "row1", "");
+        assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "row2", "private", "");
+        assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "row3", "moreprivate", "");
+        assertKeyValuePair(iter.next(), BIRTHDAY_VALUE, "cf_birthday", "row1", "");
+        assertKeyValuePair(iter.next(), BIRTHDAY_VALUE, "cf_birthday", "row2", "private", "");
+        assertKeyValuePair(iter.next(), BIRTHDAY_VALUE, "cf_birthday", "row3", "moreprivate", "");
+        assertKeyValuePair(iter.next(), M1_FNAME_VALUE, "cf_firstname", "row1", "");
+        assertKeyValuePair(iter.next(), concat(M1_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE), "cf_firstname-cf_birthday", "row1", "");
+        assertKeyValuePair(iter.next(), M2_FNAME_VALUE, "cf_firstname", "row2", "private", "");
+        assertKeyValuePair(iter.next(), concat(M2_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE), "cf_firstname-cf_birthday", "row2", "private", "");
+        assertKeyValuePair(iter.next(), M3_FNAME_VALUE, "cf_firstname", "row3", "moreprivate", "");
+        assertKeyValuePair(iter.next(), concat(M3_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE), "cf_firstname-cf_birthday", "row3", "moreprivate", "");
+        assertFalse(iter.hasNext());
+
+        scan.close();
+
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_age", AGE_VALUE)), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_age", AGE_VALUE, "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_age", AGE_VALUE, "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday", BIRTHDAY_VALUE)), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday", BIRTHDAY_VALUE, "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday", BIRTHDAY_VALUE, "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsd", encode(TIMESTAMP_TYPE, DAY_TIMESTAMP))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsd", encode(TIMESTAMP_TYPE, DAY_TIMESTAMP), "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsd", encode(TIMESTAMP_TYPE, DAY_TIMESTAMP), "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsh", encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsh", encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP), "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsh", encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP), "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsm", encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsm", encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP), "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tsm", encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP), "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tss", encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tss", encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP), "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_birthday_tss", encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP), "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getNumRowsInTable(table.getSchema(), table.getTable()), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "abc")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "abc", "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname", M1_FNAME_VALUE)), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname", M2_FNAME_VALUE, "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname", M3_FNAME_VALUE, "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday", concat(M1_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday", concat(M2_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE), "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday", concat(M3_FNAME_VALUE, NULL_BYTE, BIRTHDAY_VALUE), "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsd", concat(M1_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, DAY_TIMESTAMP)))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsd", concat(M2_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, DAY_TIMESTAMP)), "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsd", concat(M3_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, DAY_TIMESTAMP)), "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsh", concat(M1_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP)))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsh", concat(M2_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP)), "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsh", concat(M3_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, HOUR_TIMESTAMP)), "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsm", concat(M1_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP)))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsm", concat(M2_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP)), "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tsm", concat(M3_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, MINUTE_TIMESTAMP)), "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tss", concat(M1_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP)))), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tss", concat(M2_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP)), "private")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_firstname-cf_birthday_tss", concat(M3_FNAME_VALUE, NULL_BYTE, encode(TIMESTAMP_TYPE, SECOND_TIMESTAMP)), "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "def")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "def", "moreprivate")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "ghi")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "ghi", "private")), 2);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "ghi", "private", "moreprivate")), 3);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "jkl", "moreprivate")), 1);
+        assertEquals(metricsStorage.newReader().getCardinality(mck("cf_arr", "mno", "private")), 1);
+    }
+
+    @Test(expectedExceptions = InvalidParameterException.class)
+    public void testColumnDoesNotExist()
+            throws Exception
+    {
+        exec(false, false, Optional.of(ImmutableList.of("doesnotexist")));
+    }
+
+    @Test(expectedExceptions = InvalidParameterException.class)
+    public void testColumnIsRowID()
+            throws Exception
+    {
+        exec(false, false, Optional.of(ImmutableList.of("id")));
+    }
+
+    @Test
     public void testDryRun()
             throws Exception
     {
@@ -333,7 +499,7 @@ public class TestRewriteIndex
     {
         writeData();
         writeExtraIndexEntries();
-        exec(false, true);
+        exec(false, true, Optional.empty());
 
         Scanner scan = connector.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
         Iterator<Entry<Key, Value>> iter = scan.iterator();
@@ -590,16 +756,16 @@ public class TestRewriteIndex
     private void exec()
             throws Exception
     {
-        exec(false, false);
+        exec(false, false, Optional.empty());
     }
 
     private void exec(boolean dryRun)
             throws Exception
     {
-        exec(dryRun, false);
+        exec(dryRun, false, Optional.empty());
     }
 
-    private void exec(boolean dryRun, boolean addOnly)
+    private void exec(boolean dryRun, boolean addOnly, Optional<List<String>> columns)
             throws Exception
     {
         RewriteIndex tool = new RewriteIndex();
@@ -609,6 +775,7 @@ public class TestRewriteIndex
         tool.setTableName(table.getTable());
         tool.setDryRun(dryRun);
         tool.setAddOnly(addOnly);
+        tool.setColumns(columns);
         assertTrue(tool.exec() == 0, "Expected exit code of value zero");
     }
 
