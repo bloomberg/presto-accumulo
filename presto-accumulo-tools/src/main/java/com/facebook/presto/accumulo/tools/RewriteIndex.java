@@ -539,7 +539,7 @@ public class RewriteIndex
                 }
 
                 if (handle.get().getFamily().isPresent() && handle.get().getQualifier().isPresent()) {
-                    LOG.info(format("Fetching column %s:%s for table %s", handle.get().getFamily(), handle.get().getQualifier(), tableName));
+                    LOG.info(format("Fetching column %s:%s for table %s", handle.get().getFamily().get(), handle.get().getQualifier().get(), tableName));
                     scanner.fetchColumn(new Text(handle.get().getFamily().get()), new Text(handle.get().getQualifier().get()));
                 }
                 else {
