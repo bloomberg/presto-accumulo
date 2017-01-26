@@ -16,6 +16,7 @@
 package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
+import com.google.common.collect.ImmutableList;
 import io.airlift.units.Duration;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
@@ -30,10 +31,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.reflections.Reflections;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -59,26 +58,16 @@ public class Main
         implements Tool
 {
     /**
-     * List of all discovered tasks
+     * List of all tasks
      */
-    private static List<Task> tasks = new ArrayList<>();
+    private static List<Task> tasks = ImmutableList.of(
+            new PaginationTask(),
+            new QueryMetrics(),
+            new RewriteIndex(),
+            new TimestampCheckTask());
 
     private static final Option HELP = OptionBuilder.withDescription("Print this help message").withLongOpt("help").create();
     private static final Option CONFIG = OptionBuilder.withDescription("accumulo.properties file").withLongOpt("config").hasArg().create('c');
-
-    static {
-        // Search the classpath for implementations of Task in the tools package
-        Reflections reflections = new Reflections("com.facebook.presto.accumulo.tools");
-        for (Class<? extends Task> task : reflections.getSubTypesOf(Task.class)) {
-            try {
-                tasks.add(task.newInstance());
-            }
-            catch (InstantiationException | IllegalAccessException e) {
-                System.err.println("Failed to instantiate " + task);
-                e.printStackTrace();
-            }
-        }
-    }
 
     /**
      * Gets a {@link Task} that matches the given task name
@@ -97,15 +86,8 @@ public class Main
         return null;
     }
 
-    /**
-     * Gets all available {@link Task} objects, sorted by name
-     *
-     * @return Sorted list of Tasks
-     */
     public static List<Task> getTasks()
     {
-        // Sort by name
-        Collections.sort(tasks, (Task o1, Task o2) -> o1.getTaskName().compareTo(o2.getTaskName()));
         return tasks;
     }
 
