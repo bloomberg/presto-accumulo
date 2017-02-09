@@ -251,7 +251,7 @@ public class TestRewriteIndex
     {
         writeData();
 
-        exec(false, false, Optional.of(ImmutableList.of("age", "birthday", "firstname")));
+        exec(false, true, Optional.of(ImmutableList.of("age", "birthday", "firstname")));
 
         Scanner scan = connector.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
         Iterator<Entry<Key, Value>> iter = scan.iterator();
@@ -327,7 +327,7 @@ public class TestRewriteIndex
         writeData();
         writeMetrics(true);
 
-        exec(false, false, Optional.of(ImmutableList.of("age", "birthday", "firstname")));
+        exec(false, true, Optional.of(ImmutableList.of("age", "birthday", "firstname")));
 
         Scanner scan = connector.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
         Iterator<Entry<Key, Value>> iter = scan.iterator();
@@ -400,14 +400,14 @@ public class TestRewriteIndex
     public void testColumnDoesNotExist()
             throws Exception
     {
-        exec(false, false, Optional.of(ImmutableList.of("doesnotexist")));
+        exec(false, true, Optional.of(ImmutableList.of("doesnotexist")));
     }
 
     @Test(expectedExceptions = InvalidParameterException.class)
     public void testColumnIsRowID()
             throws Exception
     {
-        exec(false, false, Optional.of(ImmutableList.of("id")));
+        exec(false, true, Optional.of(ImmutableList.of("id")));
     }
 
     @Test
@@ -499,7 +499,7 @@ public class TestRewriteIndex
     {
         writeData();
         writeExtraIndexEntries();
-        exec(false, true, Optional.empty());
+        exec(false, false, Optional.empty());
 
         Scanner scan = connector.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
         Iterator<Entry<Key, Value>> iter = scan.iterator();
@@ -756,16 +756,16 @@ public class TestRewriteIndex
     private void exec()
             throws Exception
     {
-        exec(false, false, Optional.empty());
+        exec(false, true, Optional.empty());
     }
 
     private void exec(boolean dryRun)
             throws Exception
     {
-        exec(dryRun, false, Optional.empty());
+        exec(dryRun, true, Optional.empty());
     }
 
-    private void exec(boolean dryRun, boolean addOnly, Optional<List<String>> columns)
+    private void exec(boolean dryRun, boolean delete, Optional<List<String>> columns)
             throws Exception
     {
         RewriteIndex tool = new RewriteIndex();
@@ -774,7 +774,7 @@ public class TestRewriteIndex
         tool.setSchema(table.getSchema());
         tool.setTableName(table.getTable());
         tool.setDryRun(dryRun);
-        tool.setAddOnly(addOnly);
+        tool.setDelete(delete);
         tool.setColumns(columns);
         assertTrue(tool.exec() == 0, "Expected exit code of value zero");
     }

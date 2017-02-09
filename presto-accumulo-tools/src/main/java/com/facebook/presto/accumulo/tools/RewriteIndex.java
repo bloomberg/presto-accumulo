@@ -96,7 +96,7 @@ public class RewriteIndex
     private static final char TABLE_OPT = 't';
     private static final char AUTHORIZATIONS_OPT = 'a';
     private static final String FORCE_OPT = "force";
-    private static final String ADD_ONLY_OPT = "add-only";
+    private static final String DELETE_OPT = "delete";
     private static final String COLUMNS_OPT = "l";
 
     // User-configured values
@@ -106,7 +106,7 @@ public class RewriteIndex
     private String schema;
     private String tableName;
     private boolean dryRun;
-    private boolean addOnly;
+    private boolean delete;
     private Optional<List<String>> columns = Optional.empty();
 
     private long numDeletedIndexEntries = 0L;
@@ -148,11 +148,11 @@ public class RewriteIndex
 
         addIndexEntries(connector, table, start);
 
-        if (!addOnly) {
+        if (delete) {
             deleteIndexEntries(connector, table, start);
         }
         else {
-            LOG.info("Add only is true, only added index entries.  Did not delete index or rewrite metrics.");
+            LOG.info("Delete is false, only added index entries.  Did not delete any index entries.");
         }
 
         LOG.info("Finished re-writing index.");
@@ -568,7 +568,7 @@ public class RewriteIndex
         this.setSchema(cmd.getOptionValue(SCHEMA_OPT));
         this.setTableName(cmd.getOptionValue(TABLE_OPT));
         this.setDryRun(!cmd.hasOption(FORCE_OPT));
-        this.setAddOnly(cmd.hasOption(ADD_ONLY_OPT));
+        this.setDelete(cmd.hasOption(DELETE_OPT));
 
         if (cmd.hasOption(COLUMNS_OPT)) {
             this.setColumns(Optional.of(ImmutableList.copyOf(cmd.getOptionValues(COLUMNS_OPT))));
@@ -607,9 +607,9 @@ public class RewriteIndex
         this.dryRun = dryRun;
     }
 
-    public void setAddOnly(boolean addOnly)
+    public void setDelete(boolean delete)
     {
-        this.addOnly = addOnly;
+        this.delete = delete;
     }
 
     public void setColumns(Optional<List<String>> columns)
@@ -661,8 +661,8 @@ public class RewriteIndex
                         .create());
         opts.addOption(
                 OptionBuilder
-                        .withLongOpt(ADD_ONLY_OPT)
-                        .withDescription("Only add index entries, do not delete them or run the rewrite metrics tool.  Requires --force to do anything.  Default is to add and delete.")
+                        .withLongOpt(DELETE_OPT)
+                        .withDescription("Delete index entries.  Requires --force to do anything.  Default is to only add entries.")
                         .create());
         opts.addOption(
                 OptionBuilder
