@@ -18,6 +18,8 @@ limitations under the License.
 
 A Presto connector for reading and writing data backed by Apache Accumulo.
 
+Looking for the `PrestoBatchWriter`? Check out the 0.178 branch.
+
 This repository contains four sub-projects:
 
 1. _presto-accumulo-iterators_ - A collection of Accumulo iterators to be installed on the TabletServers.  These iterators are required to user the connector.
