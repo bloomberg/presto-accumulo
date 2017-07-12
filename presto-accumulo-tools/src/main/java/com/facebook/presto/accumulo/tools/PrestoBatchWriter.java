@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Bloomberg L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,9 @@ package com.facebook.presto.accumulo.tools;
 
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.index.Indexer;
-import com.facebook.presto.accumulo.index.metrics.MetricsWriter;
 import com.facebook.presto.accumulo.io.AccumuloPageSink;
-import com.facebook.presto.accumulo.metadata.AccumuloMetadataManager;
 import com.facebook.presto.accumulo.metadata.AccumuloTable;
+import com.facebook.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import com.facebook.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.accumulo.model.Row;
 import com.facebook.presto.accumulo.model.RowSchema;
@@ -91,10 +90,8 @@ public class PrestoBatchWriter
     // Created by task
     private int numMutations;
     private AccumuloTable table = null;
-    private MultiTableBatchWriter multiTableWriter = null;
     private BatchWriter writer = null;
     private Indexer indexer = null;
-    private MetricsWriter metricsWriter = null;
 
     /**
      * Initializes the {@link PrestoBatchWriter}, connecting to Accumulo and creating a BatchWriter
@@ -113,7 +110,7 @@ public class PrestoBatchWriter
         Connector connector = inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword()));
 
         // Fetch the table metadata
-        AccumuloMetadataManager manager = config.getMetadataManager(new TypeRegistry());
+        ZooKeeperMetadataManager manager = new ZooKeeperMetadataManager(config, new TypeRegistry());
         this.table = manager.getTable(new SchemaTableName(schema, tableName));
 
         if (this.table == null) {
@@ -136,11 +133,9 @@ public class PrestoBatchWriter
 
         // Create the batch writer and the index tool if this table is indexed.
 
-        multiTableWriter = connector.createMultiTableBatchWriter(bwc);
-        writer = multiTableWriter.getBatchWriter(table.getFullTableName());
+        writer = connector.createBatchWriter(table.getFullTableName(), bwc);
         if (table.isIndexed()) {
-            metricsWriter = table.getMetricsStorageInstance(connector, config).newWriter(table);
-            indexer = new Indexer(config, auths, table, multiTableWriter.getBatchWriter(table.getIndexTableName()), metricsWriter);
+            indexer = new Indexer(connector, auths, table, bwc);
             LOG.info(format("Created writer and indexer for table %s", table.getFullTableName()));
         }
         else {
@@ -198,10 +193,10 @@ public class PrestoBatchWriter
     public void flush()
             throws MutationsRejectedException
     {
-        if (metricsWriter != null) {
-            metricsWriter.flush();
+        if (indexer != null) {
+            indexer.flush();
         }
-        multiTableWriter.flush();
+        writer.flush();
     }
 
     /**
@@ -212,11 +207,10 @@ public class PrestoBatchWriter
     public void close()
             throws MutationsRejectedException
     {
-        if (metricsWriter != null) {
-            metricsWriter.close();
+        if (indexer != null) {
+            indexer.close();
         }
-
-        multiTableWriter.close();
+        writer.close();
 
         LOG.info(format("Wrote %s mutations to table", numMutations));
     }

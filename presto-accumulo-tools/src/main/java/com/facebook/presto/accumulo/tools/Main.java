@@ -60,11 +60,7 @@ public class Main
     /**
      * List of all tasks
      */
-    private static List<Task> tasks = ImmutableList.of(
-            new PaginationTask(),
-            new QueryMetrics(),
-            new RewriteIndex(),
-            new TimestampCheckTask());
+    private static List<Task> tasks = ImmutableList.of(new PrestoBatchWriter());
 
     private static final Option HELP = OptionBuilder.withDescription("Print this help message").withLongOpt("help").create();
     private static final Option CONFIG = OptionBuilder.withDescription("accumulo.properties file").withLongOpt("config").hasArg().create('c');
