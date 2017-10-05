@@ -35,7 +35,6 @@ import org.apache.hadoop.util.ToolRunner;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import static com.facebook.presto.accumulo.conf.AccumuloConfig.CARDINALITY_CACHE_EXPIRE_DURATION;
@@ -61,13 +60,16 @@ public class Main
      * List of all tasks
      */
     private static List<Task> tasks = ImmutableList.of(
+            new IndexMigration(),
             new PaginationTask(),
-            new QueryMetrics(),
-            new RewriteIndex(),
-            new TimestampCheckTask());
+            new QueryMetrics());
 
     private static final Option HELP = OptionBuilder.withDescription("Print this help message").withLongOpt("help").create();
     private static final Option CONFIG = OptionBuilder.withDescription("accumulo.properties file").withLongOpt("config").hasArg().create('c');
+    private static final Option INSTANCE_OPT = OptionBuilder.withLongOpt("instance").withDescription("Accumulo instance name").hasArg().create('i');
+    private static final Option ZOOKEEPERS_OPT = OptionBuilder.withLongOpt("zookeepers").withDescription("Accumulo ZooKeeper connect string").hasArg().create('z');
+    private static final Option USER_OPT = OptionBuilder.withLongOpt("user").withDescription("Accumulo username").hasArg().create('u');
+    private static final Option PASSWORD_OPT = OptionBuilder.withLongOpt("password").withDescription("Accumulo password").hasArg().create('p');
 
     /**
      * Gets a {@link Task} that matches the given task name
@@ -115,6 +117,10 @@ public class Main
         Options opts = new Options();
         opts.addOption(HELP);
         opts.addOption(CONFIG);
+        opts.addOption(INSTANCE_OPT);
+        opts.addOption(ZOOKEEPERS_OPT);
+        opts.addOption(USER_OPT);
+        opts.addOption(PASSWORD_OPT);
         for (Option o : (Collection<Option>) t.getOptions().getOptions()) {
             opts.addOption(o);
         }
@@ -141,15 +147,24 @@ public class Main
                 config = fromFile(new File(cmd.getOptionValue(CONFIG.getLongOpt())));
             }
             else {
-                // Validate PRESTO_HOME is set to pull accumulo properties from config path
-                String prestoHome = System.getenv("PRESTO_HOME");
-                if (prestoHome == null) {
-                    System.err.println("PRESTO_HOME is not set.  This is required to locate the etc/catalog/accumulo.properties file, or use --config option");
-                    System.exit(1);
+                if (cmd.hasOption(INSTANCE_OPT.getLongOpt()) && cmd.hasOption(ZOOKEEPERS_OPT.getLongOpt()) && cmd.hasOption(USER_OPT.getLongOpt()) && cmd.hasOption(PASSWORD_OPT.getLongOpt())) {
+                    config = new AccumuloConfig();
+                    config.setInstance(cmd.getOptionValue(INSTANCE_OPT.getLongOpt()));
+                    config.setZooKeepers(cmd.getOptionValue(ZOOKEEPERS_OPT.getLongOpt()));
+                    config.setUsername(cmd.getOptionValue(USER_OPT.getLongOpt()));
+                    config.setPassword(cmd.getOptionValue(PASSWORD_OPT.getLongOpt()));
                 }
+                else if (System.getenv("PRESTO_HOME") != null) {
+                    // Validate PRESTO_HOME is set to pull accumulo properties from config path
+                    String prestoHome = System.getenv("PRESTO_HOME");
 
-                // Create an AccumuloConfig from the accumulo properties file
-                config = fromFile(new File(System.getenv("PRESTO_HOME"), "etc/catalog/accumulo.properties"));
+                    // Create an AccumuloConfig from the accumulo properties file
+                    config = fromFile(new File(System.getenv("PRESTO_HOME"), "etc/catalog/accumulo.properties"));
+                }
+                else {
+                    System.err.println("PRESTO_HOME is not set.  This is required to locate the etc/catalog/accumulo.properties file, or use --config option or all four instance/zookeepers/user/password options");
+                    return 1;
+                }
             }
 
             // Run the tool and print help if anything bad happens

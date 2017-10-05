@@ -26,9 +26,6 @@ import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.JulAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.PatternLayout;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +39,8 @@ public class TestUtils
     private static final Logger LOG = Logger.get(TestUtils.class);
     private static AccumuloConfig config = null;
     private static Connector connector = getAccumuloConnector();
+
+    private TestUtils() {}
 
     public static synchronized AccumuloConfig getAccumuloConfig()
     {

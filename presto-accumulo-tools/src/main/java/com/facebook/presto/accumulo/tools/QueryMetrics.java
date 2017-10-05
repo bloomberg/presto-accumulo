@@ -15,15 +15,19 @@
  */
 package com.facebook.presto.accumulo.tools;
 
+import com.facebook.presto.accumulo.AccumuloEventListener;
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.accumulo.serializers.LexicoderRowSerializer;
+import com.facebook.presto.spi.block.Block;
+import com.facebook.presto.spi.block.MethodHandleUtil;
+import com.facebook.presto.spi.type.ArrayType;
+import com.facebook.presto.spi.type.MapType;
+import com.facebook.presto.spi.type.RowType;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.type.ArrayType;
-import com.facebook.presto.type.MapType;
-import com.facebook.presto.type.RowType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.airlift.slice.Slice;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.Scanner;
@@ -47,6 +51,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -102,7 +107,12 @@ public class QueryMetrics
                 .put("query:user", VARCHAR)
                 .put("query:user_agent", VARCHAR)
                 .put("query:sql", VARCHAR)
-                .put("query:session_properties", new MapType(VARCHAR, VARCHAR))
+                .put("query:session_properties", new MapType(
+                        VARCHAR,
+                        VARCHAR,
+                        MethodHandleUtil.methodHandle(Slice.class, "equals", Object.class).asType(MethodType.methodType(boolean.class, Slice.class, Slice.class)),
+                        MethodHandleUtil.methodHandle(Slice.class, "hashCode").asType(MethodType.methodType(long.class, Slice.class)),
+                        MethodHandleUtil.methodHandle(AccumuloEventListener.class, "blockVarcharHashCode", Block.class, int.class)))
                 .put("query:schema", VARCHAR)
                 .put("query:transaction_id", VARCHAR)
                 .put("query:state", VARCHAR)

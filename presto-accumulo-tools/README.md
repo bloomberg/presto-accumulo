@@ -17,15 +17,13 @@ limitations under the License.
 
 A collection of tools to assist in tasks related to the Accumulo Connector for Presto
 
-* [Rewrite index](#rewriteindex)
-* [Rewrite metrics](#rewritemetrics)
-* [Timestamp check](#timestamp-check)
+* [Index Migration](#index-migration)
 
 ## Dependencies
 * Java 1.7
 * Maven
-* Accumulo
-* _presto-accumulo_ (Built and installed from this repository)
+* Accumulo 1.7 or greater
+* Spark 2.x (for Index Migration)
 
 ## Usage
 Build the `presto-accumulo-tools` jar file using Maven, then execute the jar file to see all available tools:
@@ -37,79 +35,77 @@ $ java -jar target/presto-accumulo-tools-*.jar
 Usage: java -jar <jarfile> <tool> [args]
 Execute java -jar <jarfile> <tool> --help to see help for a tool.
 Available tools:
-    pagination  Queries a Presto table for rows of data, interactively displaying the results in pages
-    rewriteindex    Re-writes the index and metrics table based on the data table
-    rewritemetrics  Re-writes the metrics table based on the index table
+	index-migration	Copies the data of a Presto/Accumulo to a new table using the new indexing methods
+	pagination	Queries a Presto table for rows of data, interactively displaying the results in pages
+	query-metrics	Queries the metrics and trace tables for information regarding a Presto query
 ```
 
 ## Available Tools
 
-### rewriteindex
-Rewrites the index and metrics for a given Presto table.  Use this tool if:
+### index-migration
 
-1. You change an existing column's index status
-
-While newly inserted rows, either using SQL or the `PrestoBatchWriter`, will contain new index and metric entries, existing rows of data will not be indexed and will not show up in the result set of a query that uses that column's index.  Run this tool to rebuild the index and correct your table.
-
-2. Regularly insert rows containing the same row ID
-
-Inserting a row with the same row ID, either using SQL or the `PrestoBatchWriter`, will cause the metric counts to be larger than the actual number.  You can run this tool, but if the index entries do not need to be rebuilt, you can simply run the [rewriteindex|.
-
-3. Manually delete data records without modifying the index or metrics
-
-Deleting rows from the data table is fine, but the entries in the index and metrics table would not accurately reflect the table.  Queries will still be correct, but the planning time will be inflated due to gathering extra index rows that are never used, and the optimizer could make a poor decision because of inaccurate metrics.
-
-__*Example Usage*__
-
-Running the below command without the `--force` flag will do a dry-run of the tool, making no changes to the underlying tables but printing metrics about what would have been changed.
+This tool is used to migrate data from the previous Index 1.0 method to the new Index 2.0 strategies.
 
 ```bash
-java -jar target/presto-accumulo-tools-*.jar rewriteindex \
--c /path/to/presto/etc/catalog/accumulo.properties -s default -t foo -a private
-```
-If you're happy with what you're seeing, run again with the `--force` flag to make the changes.
-```bash
-java -jar target/presto-accumulo-tools-*.jar rewriteindex \
--c /path/to/presto/etc/catalog/accumulo.properties -s default -t foo -a private --force
-```
-
-### rewritemetrics 
-Rewrites the metrics for a given Presto table.  Use this tool if you regularly insert rows containing the same row ID.  This will read the index table and update the metrics table with the correct values.
-
-__*Example Usage*__
-
-Running the below command without the `--force` flag will do a dry-run of the tool, making no changes to the underlying table but printing metrics about what would have been changed.
-
-```bash
-java -jar target/presto-accumulo-tools-*.jar rewritemetrics \
--c /path/to/presto/etc/catalog/accumulo.properties -s default -t foo -a private
-```
-If you're happy with what you're seeing, run again with the `--force` flag to make the changes.
-```bash
-java -jar target/presto-accumulo-tools-*.jar rewritemetrics \
--c /path/to/presto/etc/catalog/accumulo.properties -s default -t foo -a private --force
+$ java -jar target/presto-accumulo-tools-0.184.0.bb-SNAPSHOT.jar index-migration --help
+Missing required options: s, d
+usage: usage: java -jar <jarfile> index-migration [args]
+ -a,--auths <arg>            Authorization string. Note that you'll need
+                             to specify all auths to cover all entries in
+                             the table to be properly copied
+ -c,--config <arg>           accumulo.properties file
+ -d,--dest-table <arg>       Dest table to copy to
+    --help                   Print this help message
+ -n,--num-partitions <arg>   Number of partitions to create when writing
+                             to Accumulo
+ -s,--src-table <arg>        Source table to copy from
 ```
 
-### timestamp-check
-Scans the metrics, index, and data tables for the number of entries in a timespan.  Used to help diagnose issues regarding differences in the three tables for timestamp-based columns.
+The workflow is:
 
-__*Example Usage*__
+Prereqs: Update your ingestion job to use the new version of `presto-accumulo`, 0.184.0.bb or later.  We will be stopping ingest and deploying this new version when ingest is re-enabled.
 
+1. Stop ingest on the old tables
+2. Rename the old table via SQL using the previous version of Presto
+```sql
+ALTER TABLE foo RENAME TO foo_old;
+```
+3. Launch the new version of Presto
+4. Run the DDL to create the new (empty) tables
+5. (Optional) Deploy the new ingestion job using the new version of `presto-accumulo`.  Ingest will begin writing to the old table, and we can migrate to the new table.
+    1.  If able, you should wait to deploy the updated ingestion job until after the migration and validation is complete.  If something happens, you'll need to account for the data that has been written the new tables and not in the old tables on rollback.
+6. Run the Spark job to copy the old table to the new table
 
 ```bash
-java -jar target/presto-accumulo-tools-*.jar timestamp-check \
--c /path/to/presto/etc/catalog/accumulo.properties -s default -t foo -a private \
--col recordtime -st 2016-08-01T00:00:00.000+0000 -e 2016-09-01T00:00:00.000+0000
-
-2016-09-20 12:23:23,804 [pool-5-thread-1] INFO  tools.TimestampCheckTask: Getting data count
-2016-09-20 12:23:23,805 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Getting index count
-2016-09-20 12:23:23,806 [pool-5-thread-3] INFO  tools.TimestampCheckTask: Getting metric count
-2016-09-20 12:23:24,313 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of rows in index table is 25764
-2016-09-20 12:23:24,356 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of index ranges is 25764
-2016-09-20 12:23:24,369 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of distinct index ranges is 25764
-2016-09-20 12:23:24,570 [pool-5-thread-3] INFO  tools.TimestampCheckTask: Number of rows from metrics table is 25764
-2016-09-20 12:23:26,877 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of rows from data table via index is 25764
-2016-09-20 12:23:26,877 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of rows from data table outside the time range is 0
-2016-09-20 12:23:26,877 [pool-5-thread-2] INFO  tools.TimestampCheckTask: Number of rows in the index not scanned from the table is 0
-2016-09-20 12:23:27,884 [pool-5-thread-1] INFO  tools.TimestampCheckTask: Number of rows from data table is 25764
+spark-submit --master local[*] \
+    --class com.facebook.presto.accumulo.tools.Main \
+    ./target/presto-accumulo-tools-0.184.0.bb-SNAPSHOT.jar \
+    index-migration \
+    -u root \
+    -p secret \
+    -i default \
+    -z localhost:2181 \
+    -s foo_old \
+    -d foo \
+    -a admin \
+    -n 100
 ```
+
+7. Once it is complete, do some validation and you can then offline/delete the old Accumulo tables and deploy the new ingestion job if you haven't done so already.
+
+Rollback instructions:
+
+1. Alter the new table to give it a new name, or alternatively drop the table.  If dropping an external table, use the Accumulo shell to delete the Accumulo tables.
+```sql
+ALTER TABLE foo RENAME TO foo_new;
+--or
+DROP TABLE foo;
+```
+
+2. Deploy the previous version of Presto
+3. Rename the old table to new
+```
+ALTER TABLE foo_old RENAME TO foo;
+```
+
+4. Turn on ingestion using the previous version of `presto-accumulo`
