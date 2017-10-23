@@ -56,8 +56,6 @@ import org.apache.hadoop.util.Progress
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.KryoRegistrator
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.storage.StorageLevel
-import org.apache.spark.storage.StorageLevel.MEMORY_AND_DISK
 import org.apache.spark.{SerializableWritable, TaskContext}
 
 import scala.collection.JavaConverters._
@@ -220,6 +218,7 @@ class IndexMigration extends Task with Serializable {
     for (dir <- fs.listStatus(outputPath).filter(_.isDirectory).filter(fs => !fs.getPath.getName.equals(failurePath.getName))) {
       val name = dir.getPath.getName
       connector.tableOperations().importDirectory(name, "%s/%s".format(workDir, name), failurePath.toString, false)
+      System.out.println("Imported %s into table %s".format(workDir, name))
     }
 
     //fs.delete(outputPath, true)
