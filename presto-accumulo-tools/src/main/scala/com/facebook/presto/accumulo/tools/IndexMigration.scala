@@ -217,8 +217,9 @@ class IndexMigration extends Task with Serializable {
     // Import all non-failure directory tables
     for (dir <- fs.listStatus(outputPath).filter(_.isDirectory).filter(fs => !fs.getPath.getName.equals(failurePath.getName))) {
       val name = dir.getPath.getName
-      connector.tableOperations().importDirectory(name, "%s/%s".format(workDir, name), failurePath.toString, false)
-      System.out.println("Imported %s into table %s".format(workDir, name))
+      val tableDir = "%s/%s".format(workDir, name)
+      connector.tableOperations().importDirectory(name, tableDir, failurePath.toString, false)
+      System.out.println("Imported %s into table %s".format(tableDir, name))
     }
 
     //fs.delete(outputPath, true)
