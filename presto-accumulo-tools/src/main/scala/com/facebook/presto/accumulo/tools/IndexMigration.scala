@@ -17,6 +17,7 @@ package com.facebook.presto.accumulo.tools
 
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.stream.Collectors
 
 import com.esotericsoftware.kryo.Kryo
 import com.facebook.presto.`type`.TypeRegistry
@@ -32,13 +33,13 @@ import com.facebook.presto.accumulo.tools.MultiOutputRDD._
 import com.facebook.presto.spi.SchemaTableName
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.base.Preconditions.checkState
-import com.google.common.collect.ListMultimap
+import com.google.common.collect.{ImmutableList, ListMultimap}
 import com.google.common.primitives.Bytes
 import org.apache.accumulo.core.client.mapreduce.lib.impl.{ConfiguratorBase, InputConfigurator}
 import org.apache.accumulo.core.client.mapreduce.{AccumuloFileOutputFormat, AccumuloInputFormat}
 import org.apache.accumulo.core.client.security.tokens.PasswordToken
-import org.apache.accumulo.core.client.{ClientConfiguration, ZooKeeperInstance}
-import org.apache.accumulo.core.data.{ColumnUpdate, Key, Mutation, Value}
+import org.apache.accumulo.core.client.{ClientConfiguration, Connector, ZooKeeperInstance}
+import org.apache.accumulo.core.data.{ColumnUpdate, Key, Mutation, Value, Range => AccumuloRange}
 import org.apache.accumulo.core.iterators.LongCombiner
 import org.apache.accumulo.core.iterators.LongCombiner.FixedLenEncoder
 import org.apache.accumulo.core.security.Authorizations
@@ -79,6 +80,7 @@ class IndexMigration extends Task with Serializable {
   private val NUM_PARTITIONS_OPT: Char = 'n'
   private val WORK_DIR_OPT: Char = 'w'
   private val OFFLINE_OPT: Char = 'o'
+  private val NUM_SPARK_JOBS_OPT: Char = 'j'
   private val EMPTY_BYTES: Array[Byte] = new Array[Byte](0)
 
   private var spark: Option[SparkSession] = None
@@ -114,8 +116,12 @@ class IndexMigration extends Task with Serializable {
     opts.addOption(OptionBuilder.create(WORK_DIR_OPT))
 
     OptionBuilder.withLongOpt("offline")
-    OptionBuilder.withDescription("Enabe run an offline table scan (requires table to be offline)")
+    OptionBuilder.withDescription("Enable run an offline table scan (requires table to be offline)")
     opts.addOption(OptionBuilder.create(OFFLINE_OPT))
+
+    OptionBuilder.withLongOpt("num-spark-jobs")
+    OptionBuilder.withDescription("Sets the number of sequential spark jobs, splitting the ingestion across multiple ranges")
+    opts.addOption(OptionBuilder.create(NUM_SPARK_JOBS_OPT))
 
     opts
   }
@@ -158,9 +164,10 @@ class IndexMigration extends Task with Serializable {
       new Authorizations
     }
 
+    val numSparkJobs = cmd.getOptionValue(NUM_SPARK_JOBS_OPT).toInt
 
     val isOfflineScan = cmd.hasOption(OFFLINE_OPT)
-    exec(conf, instance, zooKeepers, username, password, srcTableName, destTableName, auths, numPartitions, isOfflineScan, workDir)
+    exec(conf, instance, zooKeepers, username, password, srcTableName, destTableName, auths, numPartitions, isOfflineScan, workDir, numSparkJobs)
   }
 
   @VisibleForTesting
@@ -178,14 +185,77 @@ class IndexMigration extends Task with Serializable {
     })
   }
 
-  def exec(conf: AccumuloConfig, instance: String, zooKeepers: String, username: String, password: String, srcTableName: String, destTableName: String, auths: Authorizations, numPartitions: Int, isOfflineScan: Boolean, workDir: String): Int = {
+  def exec(
+            conf: AccumuloConfig,
+            instance: String,
+            zooKeepers: String,
+            username: String,
+            password: String,
+            srcTableName: String,
+            destTableName: String,
+            auths: Authorizations,
+            numPartitions: Int,
+            isOfflineScan: Boolean,
+            workDir: String,
+            numSparkJobs: Int): Int = {
     val connector = new ZooKeeperInstance(instance, zooKeepers).getConnector(username, new PasswordToken(password))
 
     checkState(connector.tableOperations().exists(srcTableName), "source table %s does not exist", srcTableName)
     checkState(connector.tableOperations().exists(destTableName), "destination table %s does not exist, create the Presto table and Accumulo tables", destTableName)
 
-    val spark = getSparkSession
 
+    val compactionRanges = scala.collection.mutable.ListBuffer[AccumuloRange]()
+
+    val tableSplits = connector.tableOperations.listSplits(srcTableName).stream.sorted.collect(Collectors.toList())
+    val numTabletServers = connector.instanceOperations.getTabletServers.size
+
+    if (numSparkJobs == 1) {
+      compactionRanges.append(new AccumuloRange())
+    } else {
+      val compactionPoints: List[Text] = (1 to tableSplits.size()).filter((n: Int) => n % numSparkJobs == 0).map((n: Int) => tableSplits.get(n)).toList
+
+      if (compactionPoints.isEmpty) {
+        compactionRanges.append(new AccumuloRange())
+      }
+      else {
+        // Add first range of (-inf, point[0])
+        compactionRanges.append(new AccumuloRange(null, true, compactionPoints.head, false))
+
+        // Add all ranges [point[i], point[i+1])
+        for (i <- 0 to compactionPoints.size) {
+          compactionRanges.append(new AccumuloRange(compactionPoints(i), true, compactionPoints(i + 1), false))
+        }
+
+        // Add final range of [point[size-1], +inf)
+        compactionRanges.append(new AccumuloRange(compactionPoints.last, null))
+      }
+    }
+
+    compactionRanges.foreach((range: AccumuloRange) => {
+      System.out.println("range: [{}, {})", if (range.getStartKey != null) encodeBytes(range.getStartKey.getRow.copyBytes()) else null, if (range.getEndKey != null) encodeBytes(range.getEndKey.getRow().copyBytes) else null)
+    })
+
+    System.out.println("{} tablet servers, {} splits in table, {} splits per batch, {} batches", numTabletServers, tableSplits.size, numSparkJobs, compactionRanges.size)
+
+    for (range <- compactionRanges) {
+      runSparkJob(range, connector, instance, zooKeepers, username, password, srcTableName, destTableName, auths, numPartitions, isOfflineScan, workDir)
+    }
+    0
+  }
+
+  def runSparkJob(
+                   range: AccumuloRange,
+                   connector: Connector,
+                   instance: String,
+                   zooKeepers: String,
+                   username: String,
+                   password: String,
+                   srcTableName: String,
+                   destTableName: String,
+                   auths: Authorizations,
+                   numPartitions: Int,
+                   isOfflineScan: Boolean,
+                   workDir: String): Unit = {
     val jobConf = new Configuration()
 
     val clientConfig = new ClientConfiguration()
@@ -197,6 +267,10 @@ class IndexMigration extends Task with Serializable {
     InputConfigurator.setScanAuthorizations(classOf[AccumuloInputFormat], jobConf, auths)
     InputConfigurator.setInputTableName(classOf[AccumuloInputFormat], jobConf, srcTableName)
     InputConfigurator.setOfflineTableScan(classOf[AccumuloInputFormat], jobConf, isOfflineScan)
+    InputConfigurator.setRanges(classOf[AccumuloInputFormat], jobConf, ImmutableList.of(range))
+    InputConfigurator.setAutoAdjustRanges(classOf[AccumuloInputFormat], jobConf, true)
+
+    val spark = getSparkSession
 
     // Group entries by key and then write each partition to Accumulo via the PrestoBatchWriter
     spark.sparkContext.newAPIHadoopRDD(jobConf, classOf[AccumuloInputFormat], classOf[Key], classOf[Value])
@@ -222,8 +296,7 @@ class IndexMigration extends Task with Serializable {
       System.out.println("Imported %s into table %s".format(tableDir, name))
     }
 
-    //fs.delete(outputPath, true)
-    0
+    fs.delete(outputPath, true)
   }
 
   def mapPartition(instance: String, zooKeepers: String, username: String, password: String, destTableName: String, partition: Iterator[(Text, Iterable[(Key, Value)])]): Iterator[(String, (Key, Value))] = {
@@ -305,6 +378,22 @@ class IndexMigration extends Task with Serializable {
     }
 
     keyValues.iterator
+  }
+
+  private def encodeBytes(ba: Array[Byte]) = {
+    val sb = new StringBuilder
+    for (b <- ba) {
+      val c = 0xff & b
+      if (c == '\\') {
+        sb.append("\\\\")
+      } else if (c >= 32 && c <= 126) {
+        sb.append(c.toChar)
+      } else {
+        sb.append("\\x")
+        sb.append(c.toLong.toHexString)
+      }
+    }
+    sb.toString
   }
 }
 

@@ -30,6 +30,7 @@ import com.facebook.presto.spi.type.TimestampType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.type.TypeRegistry;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedSet;
 import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
@@ -247,6 +248,8 @@ public class TestIndexMigration
         prestoBatchWriter.addMutations(ImmutableList.of(m1, m2v, m3v));
         prestoBatchWriter.close();
 
+        connector.tableOperations().addSplits(table.getFullTableName(), ImmutableSortedSet.of(new Text(M2_ROWID)));
+
         if (isOfflineScan) {
             connector.tableOperations().offline(table.getFullTableName(), true);
         }
@@ -271,7 +274,8 @@ public class TestIndexMigration
                 new Authorizations("private", "moreprivate"),
                 20,
                 isOfflineScan,
-                "output");
+                "output",
+                2);
 
         Scanner scan = connector.createScanner(newTable.getFullTableName(), new Authorizations("private", "moreprivate"));
         Iterator<Entry<Key, Value>> iter = scan.iterator();
