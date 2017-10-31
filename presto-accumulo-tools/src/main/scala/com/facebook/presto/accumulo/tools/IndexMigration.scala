@@ -121,6 +121,7 @@ class IndexMigration extends Task with Serializable {
 
     OptionBuilder.withLongOpt("num-spark-jobs")
     OptionBuilder.withDescription("Sets the number of sequential spark jobs, splitting the ingestion across multiple ranges")
+    OptionBuilder.hasArg
     opts.addOption(OptionBuilder.create(NUM_SPARK_JOBS_OPT))
 
     opts
@@ -164,7 +165,11 @@ class IndexMigration extends Task with Serializable {
       new Authorizations
     }
 
-    val numSparkJobs = cmd.getOptionValue(NUM_SPARK_JOBS_OPT).toInt
+    val numSparkJobs = if (cmd.hasOption(NUM_SPARK_JOBS_OPT)) {
+      cmd.getOptionValue(NUM_SPARK_JOBS_OPT).toInt
+    } else {
+      1
+    }
 
     val isOfflineScan = cmd.hasOption(OFFLINE_OPT)
     exec(conf, instance, zooKeepers, username, password, srcTableName, destTableName, auths, numPartitions, isOfflineScan, workDir, numSparkJobs)
@@ -216,13 +221,14 @@ class IndexMigration extends Task with Serializable {
 
       if (compactionPoints.isEmpty) {
         compactionRanges.append(new AccumuloRange())
-      }
-      else {
+      } else if (compactionPoints.size < numSparkJobs) {
+        compactionRanges.append(new AccumuloRange())
+      } else {
         // Add first range of (-inf, point[0])
         compactionRanges.append(new AccumuloRange(null, true, compactionPoints.head, false))
 
         // Add all ranges [point[i], point[i+1])
-        for (i <- 0 to compactionPoints.size) {
+        for (i <- 0 until compactionPoints.size - 1) {
           compactionRanges.append(new AccumuloRange(compactionPoints(i), true, compactionPoints(i + 1), false))
         }
 
@@ -232,18 +238,23 @@ class IndexMigration extends Task with Serializable {
     }
 
     compactionRanges.foreach((range: AccumuloRange) => {
-      System.out.println("range: [{}, {})", if (range.getStartKey != null) encodeBytes(range.getStartKey.getRow.copyBytes()) else null, if (range.getEndKey != null) encodeBytes(range.getEndKey.getRow().copyBytes) else null)
+      System.out.println(String.format("range: [%s, %s)", if (range.getStartKey != null) encodeBytes(range.getStartKey.getRow.copyBytes()) else null, if (range.getEndKey != null) encodeBytes(range.getEndKey.getRow().copyBytes) else null))
     })
 
-    System.out.println("{} tablet servers, {} splits in table, {} splits per batch, {} batches", numTabletServers, tableSplits.size, numSparkJobs, compactionRanges.size)
+    System.out.println("%s tablet servers, %s splits in table, %s splits per batch, %s batches".format(numTabletServers, tableSplits.size, numSparkJobs, compactionRanges.size))
+
+    val spark = getSparkSession
 
     for (range <- compactionRanges) {
-      runSparkJob(range, connector, instance, zooKeepers, username, password, srcTableName, destTableName, auths, numPartitions, isOfflineScan, workDir)
+      runSparkJob(spark, range, connector, instance, zooKeepers, username, password, srcTableName, destTableName, auths, numPartitions, isOfflineScan, workDir)
     }
+
+    spark.stop()
     0
   }
 
   def runSparkJob(
+                   spark: SparkSession,
                    range: AccumuloRange,
                    connector: Connector,
                    instance: String,
@@ -270,8 +281,6 @@ class IndexMigration extends Task with Serializable {
     InputConfigurator.setRanges(classOf[AccumuloInputFormat], jobConf, ImmutableList.of(range))
     InputConfigurator.setAutoAdjustRanges(classOf[AccumuloInputFormat], jobConf, true)
 
-    val spark = getSparkSession
-
     // Group entries by key and then write each partition to Accumulo via the PrestoBatchWriter
     spark.sparkContext.newAPIHadoopRDD(jobConf, classOf[AccumuloInputFormat], classOf[Key], classOf[Value])
       .repartition(numPartitions)
@@ -279,8 +288,6 @@ class IndexMigration extends Task with Serializable {
       .mapPartitions(partition => mapPartition(instance, zooKeepers, username, password, destTableName, partition))
       .sortBy(key => key._2._1)
       .saveAsMultiTextFiles(workDir)
-
-    spark.stop()
 
     val outputPath = new Path(workDir)
     val failurePath = new Path(workDir, "failure-%s".format(System.currentTimeMillis().toString))
