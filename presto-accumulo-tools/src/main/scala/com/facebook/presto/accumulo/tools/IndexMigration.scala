@@ -80,7 +80,7 @@ class IndexMigration extends Task with Serializable {
   private val NUM_PARTITIONS_OPT: Char = 'n'
   private val WORK_DIR_OPT: Char = 'w'
   private val OFFLINE_OPT: Char = 'o'
-  private val NUM_SPARK_JOBS_OPT: Char = 'j'
+  private val NUM_SPLITS_PER_JOB_OPT: Char = 'j'
   private val EMPTY_BYTES: Array[Byte] = new Array[Byte](0)
 
   private var spark: Option[SparkSession] = None
@@ -119,10 +119,10 @@ class IndexMigration extends Task with Serializable {
     OptionBuilder.withDescription("Enable run an offline table scan (requires table to be offline)")
     opts.addOption(OptionBuilder.create(OFFLINE_OPT))
 
-    OptionBuilder.withLongOpt("num-spark-jobs")
-    OptionBuilder.withDescription("Sets the number of sequential spark jobs, splitting the ingestion across multiple ranges")
+    OptionBuilder.withLongOpt("num-splits-per-job")
+    OptionBuilder.withDescription("Sets the number of splits for each spark job, splitting the ingestion across multiple ranges")
     OptionBuilder.hasArg
-    opts.addOption(OptionBuilder.create(NUM_SPARK_JOBS_OPT))
+    opts.addOption(OptionBuilder.create(NUM_SPLITS_PER_JOB_OPT))
 
     opts
   }
@@ -165,14 +165,14 @@ class IndexMigration extends Task with Serializable {
       new Authorizations
     }
 
-    val numSparkJobs = if (cmd.hasOption(NUM_SPARK_JOBS_OPT)) {
-      cmd.getOptionValue(NUM_SPARK_JOBS_OPT).toInt
+    val numSplitsPerJob = if (cmd.hasOption(NUM_SPLITS_PER_JOB_OPT)) {
+      cmd.getOptionValue(NUM_SPLITS_PER_JOB_OPT).toInt
     } else {
-      1
+      -1
     }
 
     val isOfflineScan = cmd.hasOption(OFFLINE_OPT)
-    exec(conf, instance, zooKeepers, username, password, srcTableName, destTableName, auths, numPartitions, isOfflineScan, workDir, numSparkJobs)
+    exec(conf, instance, zooKeepers, username, password, srcTableName, destTableName, auths, numPartitions, isOfflineScan, workDir, numSplitsPerJob)
   }
 
   @VisibleForTesting
@@ -202,7 +202,7 @@ class IndexMigration extends Task with Serializable {
             numPartitions: Int,
             isOfflineScan: Boolean,
             workDir: String,
-            numSparkJobs: Int): Int = {
+            numSplitsPerJob: Int): Int = {
     val connector = new ZooKeeperInstance(instance, zooKeepers).getConnector(username, new PasswordToken(password))
 
     checkState(connector.tableOperations().exists(srcTableName), "source table %s does not exist", srcTableName)
@@ -214,14 +214,12 @@ class IndexMigration extends Task with Serializable {
     val tableSplits = connector.tableOperations.listSplits(srcTableName).stream.sorted.collect(Collectors.toList())
     val numTabletServers = connector.instanceOperations.getTabletServers.size
 
-    if (numSparkJobs == 1) {
+    if (numSplitsPerJob <= 0) {
       compactionRanges.append(new AccumuloRange())
     } else {
-      val compactionPoints: List[Text] = (1 to tableSplits.size()).filter((n: Int) => n % numSparkJobs == 0).map((n: Int) => tableSplits.get(n)).toList
+      val compactionPoints: List[Text] = (1 to tableSplits.size()).filter((n: Int) => n % numSplitsPerJob == 0).map((n: Int) => tableSplits.get(n)).toList
 
       if (compactionPoints.isEmpty) {
-        compactionRanges.append(new AccumuloRange())
-      } else if (compactionPoints.size < numSparkJobs) {
         compactionRanges.append(new AccumuloRange())
       } else {
         // Add first range of (-inf, point[0])
