@@ -15,6 +15,8 @@
  */
 package com.facebook.presto.accumulo.tools
 
+import java.nio.ByteBuffer
+import java.nio.ByteBuffer.wrap
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.stream.Collectors
@@ -33,7 +35,7 @@ import com.facebook.presto.accumulo.tools.MultiOutputRDD._
 import com.facebook.presto.spi.SchemaTableName
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.base.Preconditions.checkState
-import com.google.common.collect.{ImmutableList, ListMultimap}
+import com.google.common.collect.{ImmutableList, ListMultimap, MultimapBuilder}
 import com.google.common.primitives.Bytes
 import org.apache.accumulo.core.client.mapreduce.lib.impl.{ConfiguratorBase, InputConfigurator}
 import org.apache.accumulo.core.client.mapreduce.{AccumuloFileOutputFormat, AccumuloInputFormat}
@@ -44,6 +46,7 @@ import org.apache.accumulo.core.iterators.LongCombiner
 import org.apache.accumulo.core.iterators.LongCombiner.FixedLenEncoder
 import org.apache.accumulo.core.security.Authorizations
 import org.apache.commons.cli.{CommandLine, OptionBuilder, Options}
+import org.apache.commons.lang3.tuple.Pair
 import org.apache.hadoop.conf.{Configurable, Configuration}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.{DataInputBuffer, Text}
@@ -239,7 +242,7 @@ class IndexMigration extends Task with Serializable {
       System.out.println(String.format("range: [%s, %s)", if (range.getStartKey != null) encodeBytes(range.getStartKey.getRow.copyBytes()) else null, if (range.getEndKey != null) encodeBytes(range.getEndKey.getRow().copyBytes) else null))
     })
 
-    System.out.println("%s tablet servers, %s splits in table, %s splits per batch, %s batches".format(numTabletServers, tableSplits.size, numSparkJobs, compactionRanges.size))
+    System.out.println("%s tablet servers, %s splits in table, %s splits per batch, %s batches".format(numTabletServers, tableSplits.size, numSplitsPerJob, compactionRanges.size))
 
     val spark = getSparkSession
 
@@ -342,8 +345,16 @@ class IndexMigration extends Task with Serializable {
         keyValues.add(("%s/%s".format(destTableName, "data"), (new Key(row._1.getBytes, cf.copyBytes(), cq.copyBytes(), entry._1.getColumnVisibility.copyBytes(), entry._1.getTimestamp, false, true), entry._2)))
       })
 
+      // Convert the list of updates into a data structure we can use for indexing
+      val updates = MultimapBuilder.hashKeys().arrayListValues().build().asInstanceOf[ListMultimap[Pair[ByteBuffer, ByteBuffer], ColumnUpdate]]
+      for (columnUpdate <- mutation.getUpdates) {
+        val family = wrap(columnUpdate.getColumnFamily)
+        val qualifier = wrap(columnUpdate.getColumnQualifier)
+        updates.put(Pair.of(family, qualifier), columnUpdate)
+      }
+
       for (indexColumn <- table.getParsedIndexColumns.asScala.toList) {
-        val indexColumnUpdates: ListMultimap[Destination, ColumnUpdate] = Indexer.getIndexColumnUpdates(table, indexColumn, mutation, serializer)
+        val indexColumnUpdates: ListMultimap[Destination, ColumnUpdate] = Indexer.getIndexColumnUpdates(table, indexColumn, updates, serializer)
 
         for (indexValue <- indexColumnUpdates.get(INDEX)) {
           var rowBytes = indexValue.getColumnQualifier
