@@ -358,6 +358,10 @@ public class PaginationTask
         maxOffset = 0;
     }
 
+    public long getMaxOffset() {
+        return maxOffset;
+    }
+
     @Override
     public int run(AccumuloConfig config, CommandLine cmd)
             throws Exception
