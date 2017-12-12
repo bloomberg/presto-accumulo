@@ -67,7 +67,6 @@ public class PaginationTask
     private static final char COLUMNS_OPT = 'c';
     private static final char PAGE_SIZE_OPT = 's';
     private static final char USER_OPT = 'u';
-    private static final char PASSWORD_OPT = 'p';
 
     // JDBC constants
     private static final String JDBC_DRIVER = "com.facebook.presto.jdbc.PrestoDriver";
@@ -127,7 +126,6 @@ public class PaginationTask
     private String query;
     private String[] columns = null;
     private String user = null;
-    private String password = null;
 
     private String tmpTableName;
     private PrestoConnection conn;
@@ -213,7 +211,6 @@ public class PaginationTask
         numErrors += checkParam(query, "query");
         numErrors += checkParam(columns, "columns");
         numErrors += checkParam(user, "user");
-        numErrors += checkParam(password, "password");
 
         if (numErrors > 0) {
             return 1;
@@ -225,7 +222,7 @@ public class PaginationTask
         // Open JDBC connection
         String dbUrl = String.format("%s%s:%d/%s", SCHEME, host, port, CATALOG);
         Properties jdbcProps = new Properties();
-        jdbcProps.setProperty(user, password);
+        jdbcProps.setProperty("user", user);
         conn = (PrestoConnection) DriverManager.getConnection(dbUrl, jdbcProps);
         conn.setCatalog(CATALOG);
         setSessionProperties(conn);
@@ -369,7 +366,6 @@ public class PaginationTask
         this.setHost(cmd.getOptionValue(HOST_OPT));
         this.setPort(Integer.parseInt(cmd.getOptionValue(PORT_OPT)));
         this.setUser(cmd.getOptionValue(USER_OPT));
-        this.setPassword(cmd.getOptionValue(USER_OPT));
         this.setQuery(IOUtils.toString(new FileInputStream(cmd.getOptionValue(QUERY_FILE_OPT))));
         this.setQueryColumnNames(cmd.getOptionValues(COLUMNS_OPT));
         this.setPageSize(Integer.parseInt(cmd.getOptionValue(PAGE_SIZE_OPT, "20")));
@@ -414,16 +410,6 @@ public class PaginationTask
     public void setUser(String user)
     {
         this.user = user;
-    }
-
-    /**
-     * Sets the password for the JDBC Driver
-     *
-     * @param password Password
-     */
-    public void setPassword(String password)
-    {
-        this.password = password;
     }
 
     /**
@@ -577,9 +563,6 @@ public class PaginationTask
         opts.addOption(OptionBuilder.withLongOpt("user")
                 .withDescription("Presto username").hasArg()
                 .isRequired().create(USER_OPT));
-        opts.addOption(OptionBuilder.withLongOpt("password")
-                .withDescription("Presto password").hasArg()
-                .isRequired().create(PASSWORD_OPT));
         opts.addOption(OptionBuilder.withLongOpt("size")
                 .withDescription("Page size.  Default 20 rows per page").hasArg()
                 .create(PAGE_SIZE_OPT));
