@@ -66,6 +66,8 @@ public class PaginationTask
     private static final char QUERY_FILE_OPT = 'f';
     private static final char COLUMNS_OPT = 'c';
     private static final char PAGE_SIZE_OPT = 's';
+    private static final char USER_OPT = 'u';
+    private static final char PASSWORD_OPT = 'p';
 
     // JDBC constants
     private static final String JDBC_DRIVER = "com.facebook.presto.jdbc.PrestoDriver";
@@ -91,24 +93,24 @@ public class PaginationTask
 
     // @formatter:off
     private final String createTableTemplate = StringUtils.join(new String[] {
-        "CREATE TABLE ${" + TMP_TABLE + "}",
-        "WITH",
-        "(",
-        "    column_mapping = '${" + TMP_COLUMN_MAPPING + "}'",
-        ")",
-        "AS",
-        "SELECT ",
-        "    row_number() OVER (PARTITION BY t.groupby) AS offset, ${" + SUBQUERY_COLUMNS + "}",
-        "FROM",
-        "(",
-        "    ${" + USER_QUERY + "}",
-        ") t"
+            "CREATE TABLE ${" + TMP_TABLE + "}",
+            "WITH",
+            "(",
+            "    column_mapping = '${" + TMP_COLUMN_MAPPING + "}'",
+            ")",
+            "AS",
+            "SELECT ",
+            "    row_number() OVER (PARTITION BY t.groupby) AS offset, ${" + SUBQUERY_COLUMNS + "}",
+            "FROM",
+            "(",
+            "    ${" + USER_QUERY + "}",
+            ") t"
     }, '\n');
 
     private final String selectQueryTemplate =
             "SELECT ${" + SUBQUERY_COLUMNS + "} " +
-            "FROM ${" + TMP_TABLE + "} " +
-            "WHERE offset > ${" + MIN + "} AND offset <= ${" + MAX + "}";
+                    "FROM ${" + TMP_TABLE + "} " +
+                    "WHERE offset > ${" + MIN + "} AND offset <= ${" + MAX + "}";
     // @formatter:on
 
     // User-specified configuration items
@@ -124,6 +126,8 @@ public class PaginationTask
     private Integer rowsPerSplit;
     private String query;
     private String[] columns = null;
+    private String user = null;
+    private String password = null;
 
     private String tmpTableName;
     private PrestoConnection conn;
@@ -208,6 +212,8 @@ public class PaginationTask
         numErrors += checkParam(port, "port");
         numErrors += checkParam(query, "query");
         numErrors += checkParam(columns, "columns");
+        numErrors += checkParam(user, "user");
+        numErrors += checkParam(password, "password");
 
         if (numErrors > 0) {
             return 1;
@@ -219,7 +225,7 @@ public class PaginationTask
         // Open JDBC connection
         String dbUrl = String.format("%s%s:%d/%s", SCHEME, host, port, CATALOG);
         Properties jdbcProps = new Properties();
-        jdbcProps.setProperty("user", "root");
+        jdbcProps.setProperty(user, password);
         conn = (PrestoConnection) DriverManager.getConnection(dbUrl, jdbcProps);
         conn.setCatalog(CATALOG);
         setSessionProperties(conn);
@@ -236,15 +242,12 @@ public class PaginationTask
         }
         columnMapping.deleteCharAt(columnMapping.length() - 1);
 
-        StringBuilder queryWithGroupBy = new StringBuilder("SELECT 0 AS groupby, ");
-        queryWithGroupBy.append(query.substring(query.indexOf("SELECT ") + 7));
-
         // Substitute the parameters to generate the create table query
         Map<String, String> queryProps = new HashMap<>();
         queryProps.put(TMP_TABLE, tmpTable);
         queryProps.put(TMP_COLUMN_MAPPING, columnMapping.toString());
         queryProps.put(SUBQUERY_COLUMNS, StringUtils.join(columns, ','));
-        queryProps.put(USER_QUERY, queryWithGroupBy.toString());
+        queryProps.put(USER_QUERY, "SELECT 0 AS groupby, " + query.substring(query.indexOf("SELECT ") + 7));
 
         // Execute the create table query
         StrSubstitutor sub = new StrSubstitutor(queryProps);
@@ -365,6 +368,8 @@ public class PaginationTask
         this.setConfig(config);
         this.setHost(cmd.getOptionValue(HOST_OPT));
         this.setPort(Integer.parseInt(cmd.getOptionValue(PORT_OPT)));
+        this.setUser(cmd.getOptionValue(USER_OPT));
+        this.setPassword(cmd.getOptionValue(USER_OPT));
         this.setQuery(IOUtils.toString(new FileInputStream(cmd.getOptionValue(QUERY_FILE_OPT))));
         this.setQueryColumnNames(cmd.getOptionValues(COLUMNS_OPT));
         this.setPageSize(Integer.parseInt(cmd.getOptionValue(PAGE_SIZE_OPT, "20")));
@@ -399,6 +404,26 @@ public class PaginationTask
     public void setPort(Integer port)
     {
         this.port = port;
+    }
+
+    /**
+     * Sets the username for the JDBC Driver
+     *
+     * @param user Username
+     */
+    public void setUser(String user)
+    {
+        this.user = user;
+    }
+
+    /**
+     * Sets the password for the JDBC Driver
+     *
+     * @param password Password
+     */
+    public void setPassword(String password)
+    {
+        this.password = password;
     }
 
     /**
@@ -549,6 +574,12 @@ public class PaginationTask
         opts.addOption(OptionBuilder.withLongOpt("columns")
                 .withDescription("Columns returned from the SQL SELECT, in order").hasArgs()
                 .isRequired().create(COLUMNS_OPT));
+        opts.addOption(OptionBuilder.withLongOpt("user")
+                .withDescription("Presto username").hasArg()
+                .isRequired().create(USER_OPT));
+        opts.addOption(OptionBuilder.withLongOpt("password")
+                .withDescription("Presto password").hasArg()
+                .isRequired().create(PASSWORD_OPT));
         opts.addOption(OptionBuilder.withLongOpt("size")
                 .withDescription("Page size.  Default 20 rows per page").hasArg()
                 .create(PAGE_SIZE_OPT));
