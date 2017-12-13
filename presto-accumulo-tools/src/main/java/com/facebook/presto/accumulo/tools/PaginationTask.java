@@ -140,6 +140,10 @@ public class PaginationTask
     // Default page size for moving between the tables
     private long pageSize = 20;
 
+    private ResultSet resultSet = null;
+    private Statement currentStatement = null;
+    private boolean open = false;
+
     /**
      * This function executes the query, paging results to stdout
      *
@@ -179,6 +183,8 @@ public class PaginationTask
 
                     // Print the rows!
                     table.printRows(rows, false);
+
+                    this.closePage();
 
                     // If there is still data to present, wait for user input, going to the next
                     // page or exiting if 'q' is entered
@@ -253,12 +259,17 @@ public class PaginationTask
         Statement stmt = conn.createStatement();
         stmt.execute(createTableQuery);
 
+        stmt.close();
+
         // Execute the query to get the max offset i.e. number of rows from the user query
         stmt = conn.createStatement();
         ResultSet results = stmt.executeQuery("SELECT MAX(offset) FROM " + tmpTable);
         results.next();
         maxOffset = results.getLong(1);
         LOG.info(format("Query has %d results", maxOffset));
+
+        results.close();
+        stmt.close();
 
         // Set the temp table name now that we have made it through the gauntlet
         this.tmpTableName = tmpTable;
@@ -276,9 +287,11 @@ public class PaginationTask
     }
 
     /**
-     * Queries the temporary table, retrieving the next page of results
+     * Queries the temporary table, retrieving the next page of results.
+     * Call {@link PaginationTask#closePage} after processing the ResultSet before fetching the next page.
      *
      * @return Next page's ResultSet
+     * @throws RuntimeException If closePage was not called before this method
      * @throws SQLException
      */
     public ResultSet next()
@@ -289,14 +302,17 @@ public class PaginationTask
             min = max;
             max = Math.min(max + pageSize, maxOffset);
         }
+
         // else, just use the last min/max and run the query again
         return getRows(min, max);
     }
 
     /**
      * Queries the temporary table, retrieving the previous page of results
+     * Call {@link PaginationTask#closePage} after processing the ResultSet before fetching the next page.
      *
      * @return Previous page's ResultSet
+     * @throws RuntimeException If closePage was not called before this method
      * @throws SQLException If an error occurs issuing the query
      */
     public ResultSet previous()
@@ -311,15 +327,21 @@ public class PaginationTask
 
     /**
      * Queries the temporary table for the rows of data from [min, max)
+     * Call {@link PaginationTask#closePage} after processing the ResultSet before fetching the next page.
      *
      * @param min Minimum value of the offset to be retrieved, inclusive
      * @param max Maximum value of the offset to be retrieved, exclusive
      * @return ResultSet of the rows between the given offset
+     * @throws RuntimeException If closePage was not called before this method
      * @throws SQLException If an error occurs issuing the query
      */
     public ResultSet getRows(long min, long max)
             throws SQLException
     {
+        if (open) {
+            throw new RuntimeException("Page is currently open.  Call PaginationTask#closePage before fetching another page");
+        }
+
         Map<String, Object> queryProps = new HashMap<>();
         queryProps.put(SUBQUERY_COLUMNS, StringUtils.join(columns, ','));
         queryProps.put(TMP_TABLE, tmpTableName);
@@ -330,7 +352,25 @@ public class PaginationTask
         String prevQuery = sub.replace(selectQueryTemplate);
 
         LOG.info(format("Executing %s", prevQuery));
-        return conn.createStatement().executeQuery(prevQuery);
+        currentStatement = conn.createStatement();
+        open = true;
+        resultSet = currentStatement.executeQuery(prevQuery);
+        return resultSet;
+    }
+
+    /**
+     * Call this method after processing the result set but before the next call to next/previous/getRows
+     *
+     * @throws SQLException
+     */
+    public void closePage()
+            throws SQLException
+    {
+        if (open) {
+            resultSet.close();
+            currentStatement.close();
+            open = false;
+        }
     }
 
     /**
@@ -358,7 +398,8 @@ public class PaginationTask
         maxOffset = 0;
     }
 
-    public long getMaxOffset() {
+    public long getMaxOffset()
+    {
         return maxOffset;
     }
 
