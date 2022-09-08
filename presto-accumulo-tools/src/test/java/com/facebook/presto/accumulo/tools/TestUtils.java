@@ -15,9 +15,9 @@
  */
 package com.facebook.presto.accumulo.tools;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.spi.PrestoException;
-import io.airlift.log.Logger;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
@@ -26,10 +26,6 @@ import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.JulAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.PatternLayout;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

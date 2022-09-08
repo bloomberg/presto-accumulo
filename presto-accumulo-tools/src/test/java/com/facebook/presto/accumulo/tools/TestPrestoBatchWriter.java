@@ -34,9 +34,9 @@ import com.facebook.presto.accumulo.metadata.AccumuloTable;
 import com.facebook.presto.accumulo.metadata.ZooKeeperMetadataManager;
 import com.facebook.presto.accumulo.model.AccumuloColumnHandle;
 import com.facebook.presto.accumulo.serializers.LexicoderRowSerializer;
-import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.type.ArrayType;
-import com.facebook.presto.type.TypeRegistry;
+import com.facebook.presto.common.type.ArrayType;
+import com.facebook.presto.common.type.Type;
+import com.facebook.presto.metadata.FunctionAndTypeManager;
 import com.google.common.collect.ImmutableList;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
@@ -63,8 +63,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.facebook.presto.accumulo.serializers.AccumuloRowSerializer.getBlockFromArray;
-import static com.facebook.presto.spi.type.BigintType.BIGINT;
-import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+import static com.facebook.presto.common.type.BigintType.BIGINT;
+import static com.facebook.presto.common.type.VarcharType.VARCHAR;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
@@ -146,7 +146,7 @@ public class TestPrestoBatchWriter
     public void setup()
             throws AccumuloSecurityException, AccumuloException, TableNotFoundException, TableExistsException
     {
-        metadataManager = new ZooKeeperMetadataManager(CONFIG, new TypeRegistry());
+        metadataManager = new ZooKeeperMetadataManager(CONFIG, FunctionAndTypeManager.createTestFunctionAndTypeManager());
         if (metadataManager.getTable(table.getSchemaTableName()) == null) {
             metadataManager.createTableMetadata(table);
         }
