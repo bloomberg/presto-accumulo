@@ -30,7 +30,7 @@ Make sure the accumulo2 version in this pom.xml match the version of the accumul
 * Java 1.7
 * Maven
 * Accumulo
-* _presto-accumulo_ (Built and installed from this repository)
+* presto-accumulo_ (Built and installed from this repository)
 
 ## Usage
 Build the `presto-accumulo-tools` jar file using Maven, then execute the jar file to see all available tools:
