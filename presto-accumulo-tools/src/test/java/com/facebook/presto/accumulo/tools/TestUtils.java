@@ -18,11 +18,7 @@ package com.facebook.presto.accumulo.tools;
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.accumulo.conf.AccumuloConfig;
 import com.facebook.presto.spi.PrestoException;
-import org.apache.accumulo.core.client.AccumuloException;
-import org.apache.accumulo.core.client.AccumuloSecurityException;
-import org.apache.accumulo.core.client.Connector;
-import org.apache.accumulo.core.client.Instance;
-import org.apache.accumulo.core.client.ZooKeeperInstance;
+import org.apache.accumulo.core.client.AccumuloClient;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.commons.io.FileUtils;
@@ -32,16 +28,16 @@ import java.nio.file.Files;
 
 import static com.facebook.presto.accumulo.AccumuloErrorCode.MINI_ACCUMULO;
 import static com.facebook.presto.accumulo.AccumuloErrorCode.UNEXPECTED_ACCUMULO_ERROR;
+import static com.facebook.presto.accumulo.tools.TestPrestoBatchWriter.CONFIG;
 
 public class TestUtils
 {
     private static final Logger LOG = Logger.get(TestUtils.class);
-    private static AccumuloConfig config = null;
-    private static Connector connector = getAccumuloConnector();
+    private static AccumuloClient accumuloClient = getAccumuloClient();
 
     public static synchronized AccumuloConfig getAccumuloConfig()
     {
-        return config;
+        return CONFIG;
     }
 
     /**
@@ -50,27 +46,24 @@ public class TestUtils
      *
      * @return Accumulo connector
      */
-    public static synchronized Connector getAccumuloConnector()
+    public static synchronized AccumuloClient getAccumuloClient()
     {
-        if (connector != null) {
-            return connector;
+        if (accumuloClient != null) {
+            return accumuloClient;
         }
 
         try {
-            MiniAccumuloCluster accumulo = createMiniAccumuloCluster();
+            MiniAccumuloCluster miniAccumuloCluster = createMiniAccumuloCluster();
+            accumuloClient = miniAccumuloCluster.createAccumuloClient("root", new PasswordToken("secret"));
+            CONFIG.setUsername("root");
+            CONFIG.setPassword("secret");
+            CONFIG.setInstance(miniAccumuloCluster.getInstanceName());
+            CONFIG.setZooKeepers(miniAccumuloCluster.getZooKeepers());
 
-            config = new AccumuloConfig();
-            config.setInstance(accumulo.getInstanceName());
-            config.setZooKeepers(accumulo.getZooKeepers());
-            config.setUsername("root");
-            config.setPassword("secret");
-
-            Instance instance = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
-            connector = instance.getConnector(config.getUsername(), new PasswordToken(config.getPassword()));
-            LOG.info("Connection to MAC instance %s at %s established, user %s password %s", config.getInstance(), config.getZooKeepers(), config.getUsername(), config.getPassword());
-            return connector;
+            LOG.info("Connection to MAC instance %s at %s established, user %s password %s", CONFIG.getInstance(), CONFIG.getZooKeepers(), CONFIG.getUsername(), CONFIG.getPassword());
+            return accumuloClient;
         }
-        catch (AccumuloException | AccumuloSecurityException | InterruptedException | IOException e) {
+        catch (InterruptedException | IOException e) {
             throw new PrestoException(UNEXPECTED_ACCUMULO_ERROR, "Failed to get connector to Accumulo", e);
         }
     }

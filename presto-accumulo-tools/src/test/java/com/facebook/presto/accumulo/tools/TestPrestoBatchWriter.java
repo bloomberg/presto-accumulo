@@ -38,9 +38,9 @@ import com.facebook.presto.common.type.ArrayType;
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.metadata.FunctionAndTypeManager;
 import com.google.common.collect.ImmutableList;
+import org.apache.accumulo.core.client.AccumuloClient;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
-import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.TableExistsException;
@@ -76,7 +76,7 @@ public class TestPrestoBatchWriter
 {
     private static final LexicoderRowSerializer SERIALIZER = new LexicoderRowSerializer();
 
-    private static final AccumuloConfig CONFIG = new AccumuloConfig();
+    public static final AccumuloConfig CONFIG = new AccumuloConfig();
 
     private static final byte[] AGE = bytes("age");
     private static final byte[] CF = bytes("cf");
@@ -101,7 +101,7 @@ public class TestPrestoBatchWriter
     private Mutation m2v = null;
     private Mutation m3v = null;
     private AccumuloTable table;
-    private Connector connector;
+    private AccumuloClient accumuloClient;
     private PrestoBatchWriter prestoBatchWriter;
     private ZooKeeperMetadataManager metadataManager;
 
@@ -109,13 +109,8 @@ public class TestPrestoBatchWriter
     public void setupClass()
             throws Exception
     {
-        connector = TestUtils.getAccumuloConnector();
-        connector.securityOperations().changeUserAuthorizations("root", new Authorizations("private", "moreprivate", "foo", "bar", "xyzzy"));
-
-        CONFIG.setUsername("root");
-        CONFIG.setPassword("secret");
-        CONFIG.setInstance(connector.getInstance().getInstanceName());
-        CONFIG.setZooKeepers(connector.getInstance().getZooKeepers());
+        accumuloClient = TestUtils.getAccumuloClient();
+        accumuloClient.securityOperations().changeUserAuthorizations("root", new Authorizations("private", "moreprivate", "foo", "bar", "xyzzy"));
 
         AccumuloColumnHandle c1 = new AccumuloColumnHandle("id", Optional.empty(), Optional.empty(), VARCHAR, 0, "", false);
         AccumuloColumnHandle c2 = new AccumuloColumnHandle("age", Optional.of("cf"), Optional.of("age"), BIGINT, 1, "", true);
@@ -144,34 +139,34 @@ public class TestPrestoBatchWriter
 
     @BeforeMethod
     public void setup()
-            throws AccumuloSecurityException, AccumuloException, TableNotFoundException, TableExistsException
-    {
+        throws AccumuloSecurityException, AccumuloException, TableNotFoundException, TableExistsException {
+
         metadataManager = new ZooKeeperMetadataManager(CONFIG, FunctionAndTypeManager.createTestFunctionAndTypeManager());
         if (metadataManager.getTable(table.getSchemaTableName()) == null) {
             metadataManager.createTableMetadata(table);
         }
 
-        if (!connector.tableOperations().exists(table.getFullTableName())) {
-            connector.tableOperations().create(table.getFullTableName());
+        if (!accumuloClient.tableOperations().exists(table.getFullTableName())) {
+            accumuloClient.tableOperations().create(table.getFullTableName());
         }
 
-        if (!connector.tableOperations().exists(table.getIndexTableName())) {
-            connector.tableOperations().create(table.getIndexTableName());
+        if (!accumuloClient.tableOperations().exists(table.getIndexTableName())) {
+            accumuloClient.tableOperations().create(table.getIndexTableName());
         }
 
-        if (!connector.tableOperations().exists(table.getMetricsTableName())) {
-            connector.tableOperations().create(table.getMetricsTableName());
+        if (!accumuloClient.tableOperations().exists(table.getMetricsTableName())) {
+            accumuloClient.tableOperations().create(table.getMetricsTableName());
         }
 
         // Set locality groups on index and metrics table
         Map<String, Set<Text>> indexGroups = Indexer.getLocalityGroups(table);
-        connector.tableOperations().setLocalityGroups(table.getIndexTableName(), indexGroups);
-        connector.tableOperations().setLocalityGroups(table.getMetricsTableName(), indexGroups);
+        accumuloClient.tableOperations().setLocalityGroups(table.getIndexTableName(), indexGroups);
+        accumuloClient.tableOperations().setLocalityGroups(table.getMetricsTableName(), indexGroups);
 
         // Attach iterators to metrics table
         for (IteratorSetting setting : Indexer.getMetricIterators(table)) {
-            if (!connector.tableOperations().listIterators(table.getMetricsTableName()).containsKey(setting.getName())) {
-                connector.tableOperations().attachIterator(table.getMetricsTableName(), setting);
+            if (!accumuloClient.tableOperations().listIterators(table.getMetricsTableName()).containsKey(setting.getName())) {
+                accumuloClient.tableOperations().attachIterator(table.getMetricsTableName(), setting);
             }
         }
 
@@ -186,16 +181,16 @@ public class TestPrestoBatchWriter
     public void cleanup()
             throws Exception
     {
-        if (connector.tableOperations().exists(table.getFullTableName())) {
-            connector.tableOperations().delete(table.getFullTableName());
+        if (accumuloClient.tableOperations().exists(table.getFullTableName())) {
+            accumuloClient.tableOperations().delete(table.getFullTableName());
         }
 
-        if (connector.tableOperations().exists(table.getIndexTableName())) {
-            connector.tableOperations().delete(table.getIndexTableName());
+        if (accumuloClient.tableOperations().exists(table.getIndexTableName())) {
+            accumuloClient.tableOperations().delete(table.getIndexTableName());
         }
 
-        if (connector.tableOperations().exists(table.getMetricsTableName())) {
-            connector.tableOperations().delete(table.getMetricsTableName());
+        if (accumuloClient.tableOperations().exists(table.getMetricsTableName())) {
+            accumuloClient.tableOperations().delete(table.getMetricsTableName());
         }
         this.metadataManager.deleteTableMetadata(table.getSchemaTableName());
     }
@@ -207,7 +202,7 @@ public class TestPrestoBatchWriter
         prestoBatchWriter.addMutation(m1);
         prestoBatchWriter.flush();
 
-        Scanner scan = connector.createScanner(table.getFullTableName(), new Authorizations("private", "moreprivate"));
+        Scanner scan = accumuloClient.createScanner(table.getFullTableName(), new Authorizations("private", "moreprivate"));
         Iterator<Entry<Key, Value>> iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), bytes("row1"), "cf", "age", AGE_VALUE);
@@ -216,7 +211,7 @@ public class TestPrestoBatchWriter
         assertFalse(iter.hasNext());
         scan.close();
 
-        scan = connector.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
+        scan = accumuloClient.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
         iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "row1", "");
@@ -227,7 +222,7 @@ public class TestPrestoBatchWriter
         assertFalse(iter.hasNext());
         scan.close();
 
-        scan = connector.createScanner(table.getMetricsTableName(), new Authorizations("private", "moreprivate"));
+        scan = accumuloClient.createScanner(table.getMetricsTableName(), new Authorizations("private", "moreprivate"));
         iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "___card___", "1");
@@ -244,7 +239,7 @@ public class TestPrestoBatchWriter
         prestoBatchWriter.addMutation(m2v);
         prestoBatchWriter.flush();
 
-        scan = connector.createScanner(table.getFullTableName(), new Authorizations("private", "moreprivate"));
+        scan = accumuloClient.createScanner(table.getFullTableName(), new Authorizations("private", "moreprivate"));
         iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), bytes("row1"), "cf", "age", AGE_VALUE);
@@ -256,7 +251,7 @@ public class TestPrestoBatchWriter
         assertFalse(iter.hasNext());
         scan.close();
 
-        scan = connector.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
+        scan = accumuloClient.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
         iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "row1", "");
@@ -272,7 +267,7 @@ public class TestPrestoBatchWriter
         assertFalse(iter.hasNext());
         scan.close();
 
-        scan = connector.createScanner(table.getMetricsTableName(), new Authorizations("private", "moreprivate"));
+        scan = accumuloClient.createScanner(table.getMetricsTableName(), new Authorizations("private", "moreprivate"));
         iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "___card___", "1");
@@ -294,7 +289,7 @@ public class TestPrestoBatchWriter
         prestoBatchWriter.addMutation(m3v);
         prestoBatchWriter.close();
 
-        scan = connector.createScanner(table.getFullTableName(), new Authorizations("private", "moreprivate"));
+        scan = accumuloClient.createScanner(table.getFullTableName(), new Authorizations("private", "moreprivate"));
         iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), bytes("row1"), "cf", "age", AGE_VALUE);
@@ -309,7 +304,7 @@ public class TestPrestoBatchWriter
         assertFalse(iter.hasNext());
         scan.close();
 
-        scan = connector.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
+        scan = accumuloClient.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
         iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "row1", "");
@@ -330,7 +325,7 @@ public class TestPrestoBatchWriter
         assertFalse(iter.hasNext());
         scan.close();
 
-        scan = connector.createScanner(table.getMetricsTableName(), new Authorizations("private", "moreprivate"));
+        scan = accumuloClient.createScanner(table.getMetricsTableName(), new Authorizations("private", "moreprivate"));
         iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "___card___", "1");
@@ -362,7 +357,7 @@ public class TestPrestoBatchWriter
         prestoBatchWriter.addMutations(ImmutableList.of(m1, m2v, m3v));
         prestoBatchWriter.close();
 
-        Scanner scan = connector.createScanner(table.getFullTableName(), new Authorizations("private", "moreprivate"));
+        Scanner scan = accumuloClient.createScanner(table.getFullTableName(), new Authorizations("private", "moreprivate"));
         Iterator<Entry<Key, Value>> iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), bytes("row1"), "cf", "age", AGE_VALUE);
@@ -377,7 +372,7 @@ public class TestPrestoBatchWriter
         assertFalse(iter.hasNext());
         scan.close();
 
-        scan = connector.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
+        scan = accumuloClient.createScanner(table.getIndexTableName(), new Authorizations("private", "moreprivate"));
         iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "row1", "");
@@ -398,7 +393,7 @@ public class TestPrestoBatchWriter
         assertFalse(iter.hasNext());
         scan.close();
 
-        scan = connector.createScanner(table.getMetricsTableName(), new Authorizations("private", "moreprivate"));
+        scan = accumuloClient.createScanner(table.getMetricsTableName(), new Authorizations("private", "moreprivate"));
         iter = scan.iterator();
         assertTrue(iter.hasNext());
         assertKeyValuePair(iter.next(), AGE_VALUE, "cf_age", "___card___", "1");

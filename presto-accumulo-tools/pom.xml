@@ -21,6 +21,7 @@
         <air.check.skip-license>false</air.check.skip-license>
         <air.check.fail-checkstyle>true</air.check.fail-checkstyle>
         <air.check.fail-enforcer>false</air.check.fail-enforcer>
+        <air.check.fail-dependency>false</air.check.fail-dependency>
         <air.check.skip-duplicate-finder>true</air.check.skip-duplicate-finder>
         <air.java.version>1.8.0-60</air.java.version>
         <air.maven.version>3.3.9</air.maven.version>
@@ -33,7 +34,7 @@
         <dep.presto.version>0.270-SNAPSHOT</dep.presto.version>
         <dep.protobuf.version>2.6.1</dep.protobuf.version>
         <dep.slice.version>0.38</dep.slice.version>
-        <dep.jackson.version>2.10.0</dep.jackson.version>
+        <dep.jackson.version>2.10.5</dep.jackson.version>
         <dep.jetty.version>9.4.19.v20190610</dep.jetty.version>
         <dep.jersey.version>2.28</dep.jersey.version>
         <dep.hk2.version>2.5.0-b42</dep.hk2.version>
@@ -78,6 +79,21 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>2.3.3</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio</artifactId>
+                <version>1.13.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>2.6.0</version>
+            </dependency>
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
@@ -211,7 +227,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.4</version>
+                <version>3.12.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.zookeeper</groupId>
@@ -490,10 +506,10 @@
                         <groupId>com.facebook.presto</groupId>
                         <artifactId>presto-array</artifactId>
                     </exclusion>
-                    <exclusion>
-                        <groupId>com.facebook.presto</groupId>
-                        <artifactId>presto-bytecode</artifactId>
-                    </exclusion>
+<!--                    <exclusion>-->
+<!--                        <groupId>com.facebook.presto</groupId>-->
+<!--                        <artifactId>presto-bytecode</artifactId>-->
+<!--                    </exclusion>-->
                     <exclusion>
                         <groupId>com.facebook.presto</groupId>
                         <artifactId>presto-client</artifactId>
@@ -671,10 +687,6 @@
                         <artifactId>commons-configuration2</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>org.apache.accumulo</groupId>
-                        <artifactId>accumulo-start</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.apache.commons</groupId>
                         <artifactId>commons-math</artifactId>
                     </exclusion>
@@ -759,10 +771,6 @@
                         <artifactId>commons-configuration2</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>org.apache.accumulo</groupId>
-                        <artifactId>accumulo-start</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.apache.commons</groupId>
                         <artifactId>commons-math</artifactId>
                     </exclusion>
@@ -820,7 +828,7 @@
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.9</version>
+                <version>1.12</version>
             </dependency>
 
             <dependency>
@@ -923,7 +931,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>21.0</version>
+                <version>26.0-jre</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -1036,10 +1044,10 @@
                     <groupId>com.facebook.airlift</groupId>
                     <artifactId>bytecode</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>com.facebook.presto</groupId>
-                    <artifactId>presto-bytecode</artifactId>
-                </exclusion>
+<!--                <exclusion>-->
+<!--                    <groupId>com.facebook.presto</groupId>-->
+<!--                    <artifactId>presto-bytecode</artifactId>-->
+<!--                </exclusion>-->
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-jdk</artifactId>
@@ -1223,6 +1231,109 @@
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>slice</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client-runtime</artifactId>
+            <version>${dep.hadoop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>2.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-vfs2</artifactId>
+            <version>2.9.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.htrace</groupId>
+            <artifactId>htrace-core</artifactId>
+            <version>3.2.0-incubating</version>
+        </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.11.1</version>
+        </dependency>
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>fastutil</artifactId>
+            <version>8.5.8</version>
+        </dependency>
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-bytecode</artifactId>
+            <version>${dep.presto.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+            <version>${dep.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${dep.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-guava</artifactId>
+            <version>${dep.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-parameter-names</artifactId>
+            <version>${dep.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-joda</artifactId>
+            <version>${dep.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okio</groupId>
+            <artifactId>okio</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+        </dependency>
+
+
+        <!-- Test Dependencies -->
         <dependency>
             <groupId>org.apache.accumulo</groupId>
             <artifactId>accumulo-minicluster</artifactId>
