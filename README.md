@@ -20,7 +20,7 @@ This repository contains tooling and examples for the Presto Accumulo connector 
 
 Looking for the `PrestoBatchWriter`? Check out the 0.178 branch.
 
-This repository contains four sub-projects:
+This repository contains three sub-projects:
 
 1. _presto-accumulo-iterators_ - A collection of Accumulo iterators to be installed on the TabletServers.  These iterators are required to user the connector.
 2. _presto-accumulo-tools_ - A Java project with some tools to help out with metadata management tasks that could not otherwise be done using SQL.
