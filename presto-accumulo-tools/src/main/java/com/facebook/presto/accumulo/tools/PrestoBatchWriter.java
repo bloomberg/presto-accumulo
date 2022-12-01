@@ -31,6 +31,7 @@ import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
+import org.apache.accumulo.core.client.MultiTableBatchWriter;
 import org.apache.accumulo.core.client.MutationsRejectedException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
@@ -63,12 +64,12 @@ import static com.facebook.presto.metadata.FunctionAndTypeManager.createTestFunc
  * ingest a delimited file into Presto, but is intended to be used programatically.
  */
 public class PrestoBatchWriter
-    extends Task
+        extends Task
 {
     public static final String TASK_NAME = "batchwriter";
     public static final String DESCRIPTION =
-        "Writes rows of data from a file to a Presto table via an Accumulo BatchWriter.  "
-            + "Writes any index mutations if appropriate";
+            "Writes rows of data from a file to a Presto table via an Accumulo BatchWriter.  "
+                    + "Writes any index mutations if appropriate";
 
     private static final Logger LOG = Logger.getLogger(PrestoBatchWriter.class);
 
@@ -102,14 +103,14 @@ public class PrestoBatchWriter
      * @throws TableNotFoundException If a table is not found in Accumulo
      */
     public void init()
-        throws AccumuloException, AccumuloSecurityException, TableNotFoundException
+            throws AccumuloException, AccumuloSecurityException, TableNotFoundException
     {
         // Create the instance and the connector
         Instance inst = new ZooKeeperInstance(config.getInstance(), config.getZooKeepers());
         Connector connector = inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword()));
 
         // Fetch the table metadata
-        // TODO: consruct real TypeManager
+        // TODO: construct real TypeManager
         ZooKeeperMetadataManager manager = new ZooKeeperMetadataManager(config, createTestFunctionAndTypeManager());
         this.table = manager.getTable(new SchemaTableName(schema, tableName));
 
@@ -161,7 +162,7 @@ public class PrestoBatchWriter
      * @throws MutationsRejectedException If the mutation is rejected
      */
     public void addMutation(Mutation m)
-        throws MutationsRejectedException
+            throws MutationsRejectedException
     {
         writer.addMutation(m);
         if (indexer != null) {
@@ -177,7 +178,7 @@ public class PrestoBatchWriter
      * @throws MutationsRejectedException If the mutation is rejected
      */
     public void addMutations(Iterable<Mutation> m)
-        throws MutationsRejectedException
+            throws MutationsRejectedException
     {
         writer.addMutations(m);
         if (indexer != null) {
@@ -191,7 +192,7 @@ public class PrestoBatchWriter
      * @throws MutationsRejectedException If a mutation is rejected
      */
     public void flush()
-        throws MutationsRejectedException
+            throws MutationsRejectedException
     {
         if (indexer != null) {
             indexer.flush();
@@ -205,7 +206,7 @@ public class PrestoBatchWriter
      * @throws MutationsRejectedException If a mutation is rejected
      */
     public void close()
-        throws MutationsRejectedException
+            throws MutationsRejectedException
     {
         if (indexer != null) {
             indexer.close();
@@ -222,7 +223,7 @@ public class PrestoBatchWriter
      * @throws Exception
      */
     public int exec()
-        throws Exception
+            throws Exception
     {
         // Validate the parameters have been set
         int numErrors = checkParam(config, "config");
@@ -272,7 +273,7 @@ public class PrestoBatchWriter
                 String line;
                 while ((line = rdr.readLine()) != null) {
                     this.addMutation(AccumuloPageSink.toMutation(Row.fromString(schema, line, delimiter),
-                        rowIdOrdinal, columns, serializer));
+                            rowIdOrdinal, columns, serializer));
                 }
             }
         }
@@ -285,7 +286,7 @@ public class PrestoBatchWriter
 
     @Override
     public int run(AccumuloConfig config, CommandLine cmd)
-        throws Exception
+            throws Exception
     {
         this.setConfig(config);
         this.setSchema(cmd.getOptionValue(SCHEMA_OPT));
@@ -382,16 +383,16 @@ public class PrestoBatchWriter
     {
         Options opts = new Options();
         opts.addOption(
-            OptionBuilder.withLongOpt("schema").withDescription("Schema name for the table")
-                .hasArg().isRequired().create(SCHEMA_OPT));
+                OptionBuilder.withLongOpt("schema").withDescription("Schema name for the table")
+                        .hasArg().isRequired().create(SCHEMA_OPT));
         opts.addOption(OptionBuilder.withLongOpt("table").withDescription("Table name").hasArg()
-            .isRequired().create(TABLE_OPT));
+                .isRequired().create(TABLE_OPT));
         opts.addOption(OptionBuilder.withLongOpt("file")
-            .withDescription("Hadoop Path to a file or directory of files to write to Accumulo").hasArg().isRequired()
-            .create(PATH_OPT));
+                .withDescription("Hadoop Path to a file or directory of files to write to Accumulo").hasArg().isRequired()
+                .create(PATH_OPT));
         opts.addOption(OptionBuilder.withLongOpt("delimiter")
-            .withDescription("Delimiter of the file.  Default is a comma").hasArg()
-            .create(DELIMITER_OPT));
+                .withDescription("Delimiter of the file.  Default is a comma").hasArg()
+                .create(DELIMITER_OPT));
         return opts;
     }
 }

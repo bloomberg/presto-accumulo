@@ -22,7 +22,7 @@ A collection of tools to assist in tasks related to the Accumulo Connector for P
 * [Timestamp check](#timestamp-check)
 
 ## Note
-This is a forked branch that provides support for Accumulo 2. In order to build you will need to pull and build the accumulo2 branch of presto https://github.com/cch-k/presto/tree/accumulo2/presto-accumulo
+This is a forked branch that provides support for Accumulo 2. In order to build you will need to pull and build the accumulo2 branch of presto https://github.com/cch-k/presto/tree/master/presto-accumulo
 From the presto-accumulo2 directory run `mvn install -am -B -V -T C1 -DskipTests -Dair.check.skip-all -U -Dmaven.javadoc.skip=true`
 Make sure the accumulo2 version in this pom.xml match the version of the accumulo2 jar that was built
 
@@ -30,7 +30,7 @@ Make sure the accumulo2 version in this pom.xml match the version of the accumul
 * Java 1.7
 * Maven
 * Accumulo
-* presto-accumulo_ (Built and installed from this repository)
+* _presto-accumulo_ (Built and installed from this repository)
 
 ## Usage
 Build the `presto-accumulo-tools` jar file using Maven, then execute the jar file to see all available tools:
