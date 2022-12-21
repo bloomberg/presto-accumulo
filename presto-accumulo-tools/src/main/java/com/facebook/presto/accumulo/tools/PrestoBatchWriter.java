@@ -25,7 +25,6 @@ import com.facebook.presto.accumulo.model.Row;
 import com.facebook.presto.accumulo.model.RowSchema;
 import com.facebook.presto.accumulo.serializers.AccumuloRowSerializer;
 import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.type.TypeRegistry;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchWriter;
@@ -56,6 +55,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.lang.String.format;
+import static com.facebook.presto.metadata.FunctionAndTypeManager.createTestFunctionAndTypeManager;
 
 /**
  * This task is intended to be used as a wrapper of Accumulo's BatchWriter object. This leverages
@@ -110,7 +110,8 @@ public class PrestoBatchWriter
         Connector connector = inst.getConnector(config.getUsername(), new PasswordToken(config.getPassword()));
 
         // Fetch the table metadata
-        ZooKeeperMetadataManager manager = new ZooKeeperMetadataManager(config, new TypeRegistry());
+        // TODO: construct real TypeManager
+        ZooKeeperMetadataManager manager = new ZooKeeperMetadataManager(config, createTestFunctionAndTypeManager());
         this.table = manager.getTable(new SchemaTableName(schema, tableName));
 
         if (this.table == null) {
