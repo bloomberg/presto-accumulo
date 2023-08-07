@@ -12,7 +12,7 @@
     <properties>
         <accumulo.version>1.7.0</accumulo.version>
         <curator.version>2.9.1</curator.version>
-        <jackson.version>2.4.4</jackson.version>
+        <jackson.version>2.12.7.1</jackson.version>
         <javax.inject.version>1</javax.inject.version>
         <guava.version>18.0</guava.version>
         <mavenPluginPluginVersion>3.2</mavenPluginPluginVersion>
